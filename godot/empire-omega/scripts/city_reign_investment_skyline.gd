@@ -82,7 +82,25 @@ static func _identity(st: SurfaceTool,id: String,height: float,level: int) -> vo
 				_box(st,Vector3(float(x),height*0.50,-7.88),
 					Vector3(0.40,height*0.42,0.38),CHALK)
 			_box(st,Vector3(0,height-1.6,-8.10),Vector3(7.1,0.35,0.43),BRONZE)
-			_box(st,Vector3(0,4.6,-8.15),Vector3(3.05,4.0,0.12),GLASS)
+			# Actual Chromium proof exposed an oversized solid cyan panel:
+			# it completely occluded the civic entrance. Replace that flat
+			# rectangle with three separated true stone-mullion glass bays,
+			# an inset central dark door, bronze handles and stepped lintel.
+			# Source colored glass stays PBR/opaque but is no longer a wall.
+			for x in [-3.2,0.0,3.2]:
+				_box(st,Vector3(float(x),4.25,-8.13),
+					Vector3(0.92,2.64,0.10),GLASS)
+				_box(st,Vector3(float(x),7.00,-8.18),
+					Vector3(1.13,0.14,0.18),BRONZE)
+			for x in [-1.60,1.60]:
+				_box(st,Vector3(float(x),4.38,-8.27),
+					Vector3(0.14,3.21,0.14),CHALK)
+			_box(st,Vector3(0,2.65,-8.40),
+				Vector3(1.14,1.81,0.07),DARK)
+			for x in [-0.62,0.62]:
+				_box(st,Vector3(float(x),2.30,-8.49),
+					Vector3(0.045,0.44,0.055),BRONZE)
+			_box(st,Vector3(0,7.46,-8.23),Vector3(4.90,0.26,0.41),STONE)
 			_box(st,Vector3(0,height+0.62,0),Vector3(5.8,0.38,5.5),CHALK)
 		"clinic":
 			_box(st,Vector3(0,height*0.58,-8.02),
