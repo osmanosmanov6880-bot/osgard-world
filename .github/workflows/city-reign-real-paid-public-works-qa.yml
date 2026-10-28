@@ -9,6 +9,9 @@ on:
       - 'godot/empire-omega/scripts/city_reign_civic_outcomes.gd'
       - 'godot/empire-omega/scripts/world_builder.gd'
       - 'godot/empire-omega/tests/v128_city_reign_paid_public_works.gd'
+      - 'godot/empire-omega/scripts/city_reign_civic_traffic_safety.gd'
+      - 'godot/empire-omega/scripts/traffic_agent.gd'
+      - 'godot/empire-omega/tests/v129_city_reign_paid_crossing_traffic.gd'
       - 'godot/empire-omega/tests/city_reign_public_works_pixel_fixture.gd'
       - 'godot/empire-omega/tests/city_reign_public_works_pixel_fixture.tscn'
       - 'scripts/city-reign-public-works-webgl.spec.mjs'
@@ -57,6 +60,8 @@ jobs:
           set -euo pipefail
           for suite in \
             v128_city_reign_paid_public_works \
+            v129_city_reign_paid_crossing_traffic \
+            v68_r47_predictive_crosswalk_traffic \
             v110_city_reign_first_mandate \
             v121_city_reign_first_promise_street_director \
             v123_city_reign_street_world_integrity \
