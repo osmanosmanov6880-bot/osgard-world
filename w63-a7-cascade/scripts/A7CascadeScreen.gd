@@ -221,6 +221,7 @@ var w80_full_bleed: A7FullBleedViewport
 var w82_nav_cockpit: A7MissionNavCockpit
 var w83_dual_touch: A7DualTouchLook
 var w84_studio: A7MobileControlStudio
+var w85_field_guide: A7MissionFieldGuide
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -291,6 +292,13 @@ func _ready() -> void:
     w84_studio.build(stage_shell,w78_touch_overlay,w83_dual_touch)
     w84_studio.opened_changed.connect(_w84_on_studio_opened)
     w84_studio.profile_changed.connect(_w84_on_profile_changed)
+    # W85: the original playable five-objective mission now has a compact
+    # source-driven FIELD GUIDE on the live 3D stage; NO synthetic progress.
+    w85_field_guide = A7MissionFieldGuide.new()
+    stage_shell.add_child(w85_field_guide)
+    w85_field_guide.build(stage_shell,stage_3d.spatial_mission,
+        stage_3d.field_operations,stage_3d.first_person,w82_nav_cockpit)
+    w85_field_guide.opened_changed.connect(_w85_on_guide_opened)
     sound_bus = A7ProceduralAudio.new()
     add_child(sound_bus)
     _create_web_accessibility()
@@ -1284,7 +1292,10 @@ func _layout_stage() -> void:
     if w84_studio != null and stage_3d != null:
         w84_studio.set_context(touch_context and w76_immersive and
             stage_3d.first_person.piloting,locale,size)
-        _w84_sync_modal_input()
+    if w85_field_guide != null and stage_3d != null:
+        w85_field_guide.set_context(touch_context and w76_immersive and
+            stage_3d.first_person.piloting,locale,size,model.snapshot())
+    _w84_sync_modal_input()
     if w82_nav_cockpit != null:
         w82_nav_cockpit.configure(size.x)
     if cinematic_hud != null:
@@ -1298,14 +1309,21 @@ func _layout_stage() -> void:
     call_deferred("_publish_web_accessibility")
 
 func _w84_sync_modal_input() -> void:
-    if w84_studio == null:
-        return
-    var modal: bool = w84_studio.opened and w84_studio.visible
+    # W85: ONE safe modal input arbiter for real W84 tuning and source-only
+    # mission help. It never alters the original W70 physics game itself.
+    var tuning: bool = w84_studio != null and w84_studio.visible and w84_studio.opened
+    var guiding: bool = (w85_field_guide != null and
+        w85_field_guide.visible and w85_field_guide.opened)
+    var modal: bool = tuning or guiding
     if w83_dual_touch != null:
         w83_dual_touch.input_suspended = modal
+    if w84_studio != null and w84_studio.settings_button != null:
+        w84_studio.settings_button.visible = w84_studio.visible and not guiding
+    if w85_field_guide != null and w85_field_guide.entry_button != null:
+        w85_field_guide.entry_button.visible = w85_field_guide.visible and not tuning
     if modal:
-        # No original machine/decision/held physical action while changing
-        # touch comfort options. Restored through native source context.
+        # Block real W78 movement and W79 machine/decision commands
+        # while either genuine native source overlay is being read.
         if w78_touch_overlay != null:
             w78_touch_overlay.visible = false
         if w79_mission_deck != null:
@@ -1313,10 +1331,26 @@ func _w84_sync_modal_input() -> void:
 
 func _w84_on_studio_opened(is_open: bool) -> void:
     if is_open:
+        if w85_field_guide != null and w85_field_guide.opened:
+            w85_field_guide.close_guide()
         if w78_touch_overlay != null:
             w78_touch_overlay.release_all()
         if w83_dual_touch != null:
             w83_dual_touch.cancel_capture()
+    else:
+        _layout_stage()
+        _render(model.snapshot())
+    _w84_sync_modal_input()
+    call_deferred("_publish_web_accessibility")
+
+func _w85_on_guide_opened(is_open: bool) -> void:
+    if is_open:
+        if w84_studio != null and w84_studio.opened:
+            w84_studio._toggle_open()
+        if w83_dual_touch != null:
+            w83_dual_touch.cancel_capture()
+        if w78_touch_overlay != null:
+            w78_touch_overlay.release_all()
     else:
         _layout_stage()
         _render(model.snapshot())
@@ -1540,7 +1574,10 @@ func _render(state: Dictionary) -> void:
     if w84_studio != null and stage_3d != null:
         w84_studio.set_context(_w81_touch_context() and w76_immersive and
             stage_3d.first_person.piloting,locale,size)
-        _w84_sync_modal_input()
+    if w85_field_guide != null and stage_3d != null:
+        w85_field_guide.set_context(_w81_touch_context() and w76_immersive and
+            stage_3d.first_person.piloting,locale,size,state)
+    _w84_sync_modal_input()
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
     load_button.text = _t("load_game")
@@ -1861,6 +1898,19 @@ func _publish_web_accessibility() -> void:
         "w84_modal_actually_suspends_touch":w83_dual_touch.input_suspended if w83_dual_touch != null else false,
         "w84_original_core_actions_issued":w84_studio.original_game_commands_issued if w84_studio != null else -1,
         "w84_no_phone_hardware_certification":true,
+        "w85_source_guide_visible":w85_field_guide.visible if w85_field_guide != null else false,
+        "w85_source_guide_open":w85_field_guide.opened if w85_field_guide != null else false,
+        "w85_actual_original_phase":w85_field_guide.current_phase if w85_field_guide != null else -1,
+        "w85_actual_source_history":w85_field_guide.source_history_count if w85_field_guide != null else 0,
+        "w85_source_distance_m":w85_field_guide.current_distance_m if w85_field_guide != null else -1.0,
+        "w85_source_near_device":w85_field_guide.within_source_range if w85_field_guide != null else false,
+        "w85_guide_renders":w85_field_guide.renders if w85_field_guide != null else 0,
+        "w85_real_guide_opens":w85_field_guide.opens if w85_field_guide != null else 0,
+        "w85_real_guide_closes":w85_field_guide.closes if w85_field_guide != null else 0,
+        "w85_real_guide_issue_actions":w85_field_guide.gameplay_actions_issued if w85_field_guide != null else -1,
+        "w85_safe_source_modal":w83_dual_touch.input_suspended if w83_dual_touch != null else false,
+        "w85_real_original_body_id":w85_field_guide.qa_readout()["real_original_w70_body"] if w85_field_guide != null else 0,
+        "w85_hardware_verified":false,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1933,6 +1983,11 @@ func _publish_web_accessibility() -> void:
         "w84_hand_button":_web_rect(w84_studio.handed_button) if w84_studio != null else [],
         "w84_reset_button":_web_rect(w84_studio.reset_button) if w84_studio != null else [],
         "w84_done_button":_web_rect(w84_studio.done_button) if w84_studio != null else [],
+        "w85_guide_entry":_web_rect(w85_field_guide.entry_button) if w85_field_guide != null else [],
+        "w85_guide_panel":_web_rect(w85_field_guide.panel) if w85_field_guide != null else [],
+        "w85_guide_objective":_web_rect(w85_field_guide.objective_label) if w85_field_guide != null else [],
+        "w85_guide_distance":_web_rect(w85_field_guide.distance_label) if w85_field_guide != null else [],
+        "w85_guide_close":_web_rect(w85_field_guide.close_button) if w85_field_guide != null else [],
         "w80_true_native_menu":_web_rect(w80_full_bleed.exit_button) if w80_full_bleed != null else [],
         "w80_true_native_language":_web_rect(w80_full_bleed.language_button) if w80_full_bleed != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),
