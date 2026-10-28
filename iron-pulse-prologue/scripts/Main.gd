@@ -1196,6 +1196,14 @@ func _continue_checkpoint() -> bool:
         return false
     if payload.get("scenario") != restored_engine.scenario_id:
         return false
+    # V6-V8.6 saves legitimately have no field_state. V9 state must be
+    # completely validated before the actual world or player are mutated.
+    var stored_field: Variant = payload.get("field_state",{})
+    if not stored_field is Dictionary:
+        return false
+    var staged_field := IPContainmentRun.new()
+    if not staged_field.restore(stored_field) or staged_field.lost_suit:
+        return false
     var pos: Variant = payload.get("player_position",null)
     if not pos is Array or pos.size() != 3:
         return false
@@ -1225,6 +1233,7 @@ func _continue_checkpoint() -> bool:
     session = restored_engine
     story = restored_story
     selected_scenario = session.scenario_id
+    containment_run.restore(stored_field)
     locale = saved_locale
     quality_mode = saved_quality
     reduced_motion = bool(payload["reduced_motion"])
