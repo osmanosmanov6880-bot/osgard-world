@@ -215,6 +215,7 @@ var w77_focus_cancelled_by_actual_input: int = 0
 var w76_immersive: bool = false
 var w76_immersive_switches: int = 0
 var top_rail: HFlowContainer
+var w78_touch_overlay: A7TouchFieldControls
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -440,6 +441,13 @@ func _build() -> void:
     cinematic_hud = A7CinematicHud.new()
     cinematic_hud.name = "ObsidianAuroraLiveHUD"
     stage_shell.add_child(cinematic_hud)
+    w78_touch_overlay = A7TouchFieldControls.new()
+    stage_shell.add_child(w78_touch_overlay)
+    w78_touch_overlay.build(stage_3d.first_person)
+    w78_touch_overlay.world_tool_requested.connect(_world_use)
+    w78_touch_overlay.physical_inspection_requested.connect(_pilot_inspect)
+    w78_touch_overlay.actual_manual_motion_started.connect(
+        _w77_cancel_guided_camera_on_manual_input)
     cinema_readout = _label(cinema, "", 12, MINT)
     w76_objective_label = _label(cinema, "", 15, GOLD)
     w76_objective_label.name = "W76ActualMissionGoalAndPhysicalDistance"
@@ -1173,6 +1181,9 @@ func _layout_stage() -> void:
             Vector2(160,40) if compact else Vector2(220,45))
     if stage_3d != null:
         stage_3d.set_compact_view(compact)
+    if w78_touch_overlay != null and stage_3d != null:
+        w78_touch_overlay.set_context(compact,w76_immersive,
+            stage_3d.first_person.piloting,locale)
     if cinematic_hud != null:
         cinematic_hud.set_compact_mode(compact)
     for view in camera_buttons:
@@ -1356,6 +1367,9 @@ func _render(state: Dictionary) -> void:
     w76_play_button.text = _t("w76_play")
     w76_focus_button.text = _t("w76_focus_off" if w76_immersive else "w76_focus_on")
     _w76_update_goal()
+    if w78_touch_overlay != null and stage_3d != null:
+        w78_touch_overlay.set_context(size.x < 640.0,w76_immersive,
+            stage_3d.first_person.piloting,locale)
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
     load_button.text = _t("load_game")
@@ -1601,6 +1615,14 @@ func _publish_web_accessibility() -> void:
         "w77_true_bulkhead_open_events":int(stage_state.get("w77_real_bulkhead_openings",0)),
         "w77_native_door_open_ratio":float(stage_state.get("w77_real_door_open_ratio",0.0)),
         "w77_genuine_player_motion_focus_cancels":w77_focus_cancelled_by_actual_input,
+        "w78_original_touch_movement_visible":w78_touch_overlay.visible if w78_touch_overlay != null else false,
+        "w78_true_native_touch_button_count":w78_touch_overlay.controls.size() if w78_touch_overlay != null else 0,
+        "w78_true_touch_physics_frames":w78_touch_overlay.live_touch_motion_frames if w78_touch_overlay != null else 0,
+        "w78_touch_player_inputs":w78_touch_overlay.touch_press_events if w78_touch_overlay != null else 0,
+        "w78_touch_look_frames":w78_touch_overlay.actual_continuous_look_frames if w78_touch_overlay != null else 0,
+        "w78_touch_actual_world_G_actions":w78_touch_overlay.world_use_requests if w78_touch_overlay != null else 0,
+        "w78_touch_actual_E_inspections":w78_touch_overlay.inspect_requests if w78_touch_overlay != null else 0,
+        "w78_phone_hardware_approved":false,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1645,6 +1667,9 @@ func _publish_web_accessibility() -> void:
         "w76_play":_web_rect(w76_play_button),
         "w76_immersive":_web_rect(w76_focus_button),
         "w76_current_goal":_web_rect(w76_objective_label),
+        "w78_true_touch_forward":_web_rect(w78_touch_overlay.controls["forward"] as Control) if w78_touch_overlay != null else [],
+        "w78_true_touch_world_use":_web_rect(w78_touch_overlay.controls["world_use"] as Control) if w78_touch_overlay != null else [],
+        "w78_true_touch_inspect":_web_rect(w78_touch_overlay.controls["inspect"] as Control) if w78_touch_overlay != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),
