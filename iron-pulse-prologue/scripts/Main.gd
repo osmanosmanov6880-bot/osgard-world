@@ -520,6 +520,7 @@ func _make_complex() -> void:
     add_child(containment_fx)
     kinetic_iris = IPKineticIris.new()
     add_child(kinetic_iris)
+    kinetic_iris.bind_reactor_pbr(reactor_atrium._painted)
     if reactor_core != null and reactor_atrium.core_plasma_material != null:
         reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
