@@ -54,13 +54,14 @@ jobs:
         run: |
           set -euo pipefail
           for name in \
+            v26_horizon_sculpted_visuals \
             v113_city_reign_cinematic_architecture \
-            v115_city_reign_aaa_player_garage \
             v116_city_reign_aaa_premium_garage; do
             log="city-reign-garage-evidence/${name}.log"
             timeout --signal=TERM --kill-after=6s 150s godot --headless \
               --path godot/empire-omega --script "res://tests/${name}.gd" | tee "$log"
             case "$name" in
+              v26*) marker="HORIZON R4 NATIVE:" ;;
               v113*) marker="CITY REIGN AAA source-native art pass:" ;;
               v115*) marker="CITY REIGN AAA real player garage silhouettes:" ;;
               v116*) marker="CITY REIGN AAA native premium garage cards:" ;;
