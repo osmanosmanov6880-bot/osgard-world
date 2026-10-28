@@ -7,6 +7,7 @@ on:
     paths:
       - 'w63-a7-cascade/**'
       - 'docs/LAST_FRONTIER_W79_COMPLETE_MOBILE_GAME.md'
+      - 'docs/LAST_FRONTIER_W79_COMPLETE_MOBILE.md'
       - '.github/workflows/last-frontier-w79-complete-mobile.yml'
 
 permissions:
@@ -27,7 +28,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Exactly six source/docs/QA paths and all original A7 code byte-identical
+      - name: Exactly eight source/docs/QA paths and all original A7 code byte-identical
         env:
           HEAD: ${{ github.event.pull_request.head.sha }}
         shell: bash
@@ -50,7 +51,9 @@ jobs:
               'w63-a7-cascade/scripts/A7CascadeScreen.gd',
               'w63-a7-cascade/tests/test_w79_complete_mobile_mission.gd',
               'w63-a7-cascade/ci/w79_browser_mobile_mission.py',
+              'w63-a7-cascade/ci/w79_browser_complete_mobile.py',
               'docs/LAST_FRONTIER_W79_COMPLETE_MOBILE_GAME.md',
+              'docs/LAST_FRONTIER_W79_COMPLETE_MOBILE.md',
               '.github/workflows/last-frontier-w79-complete-mobile.yml',
           }
           assert changed==allowed,{
@@ -128,7 +131,7 @@ jobs:
           retention-days: 45
 
   true-native-and-browser:
-    name: Seven real Godot suites incl true 12-action win, original WASM and 12 genuine browser screenshots
+    name: Eight real Godot suites incl true 12-action win, original WASM and 18 genuine browser screenshots
     runs-on: ubuntu-latest
     needs: true-source-isolation
     timeout-minutes: 115
@@ -149,15 +152,16 @@ jobs:
           mkdir -p w79-evidence
           timeout 300s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w79-evidence/import.log
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w79-evidence/import.log; then exit 1; fi
-      - name: Execute seven native regression suites, all real five-phase mobile commands, exactly 12 accepted source decisions and final containment
+      - name: Execute eight native regression suites, all real five-phase mobile commands, exactly 12 accepted source decisions and final containment
         shell: bash
         run: |
           set -euo pipefail
-          for test in test_a7_cascade test_w73_world_and_checkpoint test_w74_gamepad_feedback test_w76_immersive_level test_w77_sector_bulkhead test_w78_touch_gameplay test_w79_complete_mobile_mission; do
+          for test in test_a7_cascade test_w72_field_operations test_w73_world_and_checkpoint test_w74_gamepad_feedback test_w76_immersive_level test_w77_sector_bulkhead test_w78_touch_gameplay test_w79_complete_mobile_mission; do
             timeout 510s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w79-evidence/$test.log"
             if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w79-evidence/$test.log"; then exit 1; fi
           done
           grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w79-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W72 TRUE THREE PHYSICAL INDUSTRIAL PUZZLES PASS:' w79-evidence/test_w72_field_operations.log
           grep -q 'LAST FRONTIER W73 TRUE WORLD RAYCAST AND TRANSACTIONAL CHECKPOINT PASS:' w79-evidence/test_w73_world_and_checkpoint.log
           grep -q 'LAST FRONTIER W74 TRUE DIEGETIC PHYSICS GAMEPAD AND FRAME TELEMETRY PASS:' w79-evidence/test_w74_gamepad_feedback.log
           grep -q 'LAST FRONTIER W76 REAL IMMERSIVE PHYSICAL LEVEL AND WORLD NAVIGATION PASS:' w79-evidence/test_w76_immersive_level.log
@@ -189,13 +193,16 @@ jobs:
           grep -q 'LAST FRONTIER W78 TRUE GODOT MOBILE TOUCH CHROMIUM PASS:' w79-evidence/w78-browser.log
           timeout 1150s /tmp/w79-godot/bin/python w63-a7-cascade/ci/w79_browser_mobile_mission.py --export w63-a7-cascade/build/web --evidence w79-evidence/w79-original-webgl --sha "$SHA" 2>&1 | tee w79-evidence/w79-browser.log
           grep -q 'LAST FRONTIER W79 TRUE FIVE-PHASE MOBILE GAME CHROMIUM PASS:' w79-evidence/w79-browser.log
+          timeout 1150s /tmp/w79-godot/bin/python w63-a7-cascade/ci/w79_browser_complete_mobile.py --export w63-a7-cascade/build/web --evidence w79-evidence/w79-second-independent-browser --sha "$SHA" 2>&1 | tee w79-evidence/w79-second-browser.log
+          grep -q 'LAST FRONTIER W79 ORIGINAL COMPLETE MOBILE DECK GODOT CHROMIUM PASS:' w79-evidence/w79-second-browser.log
           python3 - <<'PY'
           import hashlib,json,os
           from pathlib import Path
           n=0
           for folder,name,key in [
               ('w78-original-regression','W78_ORIGINAL_GODOT_TOUCH_BROWSER_PROOF.json','source_sha'),
-              ('w79-original-webgl','W79_ACTUAL_GODOT_MOBILE_MISSION_BROWSER.json','head_source_sha')]:
+              ('w79-original-webgl','W79_ACTUAL_GODOT_MOBILE_MISSION_BROWSER.json','head_source_sha'),
+              ('w79-second-independent-browser','W79_ORIGINAL_MOBILE_GODOT_BROWSER_EVIDENCE.json','source_sha')]:
               root=Path('w79-evidence')/folder
               obj=json.loads((root/name).read_text())
               assert obj[key]==os.environ['SHA'] and obj['result']=='PASS'
@@ -206,8 +213,8 @@ jobs:
                   assert len(data)>12000 and len(data)==frame['bytes']
                   assert hashlib.sha256(data).hexdigest()==frame['sha256']
                   n+=1
-          assert n==12
-          print('W79 real original WebGL 12 unaltered exact-source PNG frames PASS')
+          assert n==18
+          print('W79 real original WebGL 18 unaltered exact-source PNG frames PASS')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
