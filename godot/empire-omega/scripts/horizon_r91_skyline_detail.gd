@@ -3,8 +3,11 @@ extends Node3D
 ## Shared deterministic seed/shape sequence with the R90 outer skyline.
 const COUNT: int = 72
 const ROW_CAP: int = 12
+const ROOF_DETAIL = preload("res://scripts/city_reign_rooftop_geometry.gd")
 var facade_glass: MultiMeshInstance3D
 var rooftop_crowns: MultiMeshInstance3D
+var rooftop_standard_mesh: ArrayMesh
+var rooftop_cinematic_mesh: ArrayMesh
 var source_skyline: MultiMeshInstance3D
 var original_tower_transforms: Array[Transform3D] = []
 var original_rooftop_transforms: Array[Transform3D] = []
@@ -21,44 +24,14 @@ func _ready() -> void:
 	_build_geometry()
 	set_quality("standard")
 
-# R114: four true 3D architectural masses per rooftop, combined into ONE
-# indexed visual mesh; original 72 source transforms and one MultiMesh draw
-# instance per building remain intact. Never sample random numbers or spawn
-# collisions. Dedicated equipment sits above (not inside) the original roof.
-static func _roof_box(st: SurfaceTool, minimum: Vector3, maximum: Vector3) -> void:
-	var v: Array[Vector3] = [
-		Vector3(minimum.x,minimum.y,minimum.z),
-		Vector3(maximum.x,minimum.y,minimum.z),
-		Vector3(maximum.x,minimum.y,maximum.z),
-		Vector3(minimum.x,minimum.y,maximum.z),
-		Vector3(minimum.x,maximum.y,minimum.z),
-		Vector3(maximum.x,maximum.y,minimum.z),
-		Vector3(maximum.x,maximum.y,maximum.z),
-		Vector3(minimum.x,maximum.y,maximum.z)
-	]
-	var quads: Array = [
-		[0,1,2,3], [4,7,6,5], [0,4,5,1],
-		[1,5,6,2], [2,6,7,3], [3,7,4,0]
-	]
-	for quad in quads:
-		var a: Vector3 = v[int(quad[0])]
-		var b: Vector3 = v[int(quad[1])]
-		var c: Vector3 = v[int(quad[2])]
-		var d: Vector3 = v[int(quad[3])]
-		var normal: Vector3 = (b-a).cross(c-a).normalized()
-		for vertex in [a,b,c,a,c,d]:
-			st.set_normal(normal)
-			st.add_vertex(vertex)
-
-static func _architectural_roof_mesh() -> ArrayMesh:
+# CITY REIGN: two genuine mesh LODs share the ORIGINAL roof MultiMesh.
+# STANDARD remains byte-for-byte the original four box silhouette budget.
+# CINEMATIC adds roofline parapets and mechanical equipment with actual depth,
+# colored PBR vertices and face normals. Both keep 72 source transforms.
+static func _architectural_roof_mesh(cinematic: bool = false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	# One broad original structural cornice, then 3 modelled roof objects.
-	# Width/depth are relative to the original transformed building footprint.
-	_roof_box(st,Vector3(-0.50,-0.50,-0.50),Vector3(0.50,0.50,0.50))
-	_roof_box(st,Vector3(-0.18,0.50,-0.28),Vector3(0.17,2.60,0.14))
-	_roof_box(st,Vector3(-0.25,2.60,-0.32),Vector3(0.24,2.85,0.18))
-	_roof_box(st,Vector3(0.22,0.50,-0.20),Vector3(0.32,3.10,-0.09))
+	ROOF_DETAIL.append_geometry(st, cinematic)
 	return st.commit()
 
 # R119: real front + rear glazing with physical recessed glass and
@@ -106,10 +79,11 @@ func _build_geometry() -> void:
 	var shades: Array[Color] = []
 	# R114: an actual stepped rooftop pavilion/vents in the SAME one GPU batch.
 	# Draw-instance count and collision behavior are strictly unchanged.
-	var roof_mesh := _architectural_roof_mesh()
+	rooftop_standard_mesh = _architectural_roof_mesh(false)
+	rooftop_cinematic_mesh = _architectural_roof_mesh(true)
 	var roofs := MultiMesh.new()
 	roofs.transform_format = MultiMesh.TRANSFORM_3D
-	roofs.mesh = roof_mesh
+	roofs.mesh = rooftop_standard_mesh
 	roofs.instance_count = COUNT
 	original_rooftop_transforms.clear()
 	for i in range(COUNT):
@@ -176,7 +150,8 @@ func _build_geometry() -> void:
 	rooftop_crowns.name = "Original3DRooftopMeshes"
 	rooftop_crowns.multimesh = roofs
 	var crown_material := StandardMaterial3D.new()
-	crown_material.albedo_color = Color("63717b")
+	crown_material.albedo_color = Color.WHITE
+	crown_material.vertex_color_use_as_albedo = true
 	crown_material.metallic = 0.51
 	crown_material.roughness = 0.35
 	rooftop_crowns.material_override = crown_material
@@ -190,6 +165,11 @@ func set_quality(tier: String) -> void:
 		facade_glass.visible = show_art
 	if rooftop_crowns != null:
 		rooftop_crowns.visible = show_art
+		# Changing the shared mesh keeps one draw batch and every original
+		# instance transform. No new nodes, physics or saved-state writes.
+		var desired: ArrayMesh = rooftop_cinematic_mesh if tier == "cinematic" else rooftop_standard_mesh
+		if desired != null and rooftop_crowns.multimesh.mesh != desired:
+			rooftop_crowns.multimesh.mesh = desired
 
 func graphics_are_bounded() -> bool:
 	return (source_skyline != null and
@@ -199,6 +179,9 @@ func graphics_are_bounded() -> bool:
 		facade_glass.multimesh.instance_count >= 2000 and
 		facade_glass.multimesh.instance_count <= COUNT*ROW_CAP*8 and
 		rooftop_crowns.multimesh.instance_count == COUNT and
+		rooftop_standard_mesh != null and rooftop_cinematic_mesh != null and
+		rooftop_standard_mesh.get_surface_count() == 1 and
+		rooftop_cinematic_mesh.get_surface_count() == 1 and
 		get_child_count() == 2 and
 		original_tower_transforms.size() == COUNT and
 		original_rooftop_transforms.size() == COUNT)
