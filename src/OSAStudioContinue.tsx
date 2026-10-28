@@ -3,11 +3,13 @@ import { ArrowRight, BookmarkCheck, Clapperboard } from 'lucide-react'
 import { getOSALearningProgress, subscribeOSALearningProgress } from './osaProgress'
 import type { StudioLocale } from './osaCinemaStudioRegistry'
 
-type Session = { index: number; completed: boolean; updatedAt: string | null }
+type Session = { index: number; completed: boolean; hasStoryEvidence: boolean }
 const TOTAL_SCENES = 8
 function readSession(): Session {
   const { cinema, updatedAt } = getOSALearningProgress()
-  return { index: cinema.index, completed: cinema.completed, updatedAt }
+  void updatedAt
+  const hasStoryEvidence = cinema.completed || cinema.index > 0 || Object.keys(cinema.answers).length > 0 || Object.values(cinema.selfChecks).some(Boolean)
+  return { index: cinema.index, completed: cinema.completed, hasStoryEvidence }
 }
 /** Displays only progress that the original interactive player really saved.
  * Stored locally; never masquerades as streaming history or a server account.
@@ -15,7 +17,7 @@ function readSession(): Session {
 export default function OSAStudioContinue({ locale }: { locale: StudioLocale }) {
   const [session, setSession] = useState<Session>(readSession)
   useEffect(() => subscribeOSALearningProgress(() => setSession(readSession())), [])
-  if (!session.updatedAt) return null
+  if (!session.hasStoryEvidence) return null
   const ru = locale === 'ru'
   const scene = session.completed ? 0 : Math.min(Math.max(session.index, 0), TOTAL_SCENES - 1)
   const percentage = session.completed ? 100 : Math.round((scene + 1) / TOTAL_SCENES * 100)
