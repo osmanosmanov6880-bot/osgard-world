@@ -150,6 +150,18 @@ static func objective(state: Dictionary,locale: String = "ru") -> Dictionary:
 		return {}
 	return {"id":tag,"stage":stage,"position":point,"title":line}
 
+static func display_position(goal: Dictionary) -> Vector3:
+	# Actual target stays untouched for gameplay/proximity. Physically place
+	# the ornamental on-street arch NEXT TO the source 3D proposal/scaffold,
+	# not on top of its real entrance, driving lane or existing text placard.
+	var site: Vector3 = goal.get("position",Vector3.ZERO)
+	var id: String = str(goal.get("id",""))
+	if id=="market":
+		return site+Vector3(0,0,-19.0)
+	if id=="car":
+		return site+Vector3(0,0,0)
+	return site+Vector3(0,0,8.4)
+
 func _ready() -> void:
 	name = "CityReignAuthenticOpeningStreetDirector"
 	marker = MeshInstance3D.new()
@@ -191,7 +203,7 @@ func sync_state(state: Dictionary,locale: String) -> void:
 	current_stage = str(goal["stage"])
 	last_title = str(goal["title"])
 	last_position = goal["position"]
-	position = last_position
+	position = display_position(goal)
 	if caption != null:
 		caption.text = last_title
 	light_energy = clampi(int(state.get("energy",100)),0,100)

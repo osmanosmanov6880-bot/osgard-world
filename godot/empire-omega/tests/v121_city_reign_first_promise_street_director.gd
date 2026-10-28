@@ -38,6 +38,8 @@ func _run() -> void:
 			Vector3(-120.0,0,-104.0))<0.01,
 			"three-language initial car uses saved true vehicle position "+lang)
 	state["mission"]=1
+	check(DIRECTOR.display_position(DIRECTOR.objective(state,"en"))==
+		Vector3(130,0,-149),"delivery gate stands at real market frontage, not INSIDE a 25m building")
 	check(DIRECTOR.objective(state,"en")["id"]=="market" and
 		DIRECTOR.objective(state,"en")["position"]==Vector3(130.0,0,-130.0),
 		"original first delivery correctly leads to actual City Market")
@@ -88,8 +90,9 @@ func _run() -> void:
 	guide.call("sync_state",state,"ru")
 	guide.call("set_view",Vector3(-120,1.3,-104),false,false)
 	check(guide.visible and guide.get("chosen")=="open_records" and
-		guide.position==DIRECTOR.PROJECTS.POSITIONS["open_records"],
-		"original street beacon uses actual selected genuine civic site")
+		guide.get("last_position")==DIRECTOR.PROJECTS.POSITIONS["open_records"] and
+		guide.position==DIRECTOR.PROJECTS.POSITIONS["open_records"]+Vector3(0,0,8.4),
+		"original gate stands at the real selected site but does not cover paid proposal board")
 	guide.call("set_quality","low")
 	check(not guide.visible and guide.get_child_count()==2,
 		"phone LOW removes all new 3D guide GPU work without deleting nodes")
