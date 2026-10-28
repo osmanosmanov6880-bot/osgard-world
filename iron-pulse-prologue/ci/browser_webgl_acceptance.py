@@ -312,6 +312,18 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
+                        # V16: the telemetry strip is computed by IPCrisisEngine.
+                        # Post-mission review is forbidden until actual win/loss.
+                        threat=state.get("threat_radar",{})
+                        assert threat.get("schema")=="IRON_PULSE_THREAT_RADAR_V16", (
+                            "V16 cockpit has no source-backed threat monitor",threat)
+                        assert threat.get("scenario")=="blackout" and threat.get("tier")=="STABLE", (
+                            "Real GRID opening conditions are not reflected by threat monitor",threat)
+                        assert state.get("threat_hud","").startswith("A7 / "), (
+                            "Real localized hazard strip is not rendered on Godot HUD",state)
+                        assert state.get("black_box",{}).get("available") is False and state.get("black_box",{}).get("visible") is False, (
+                            "The game fabricated a black-box result before player finished",state)
+                        report.setdefault("v16_live_threat_and_black_box_gate",{})[name]="native GRID telemetry; honest unopened black box PASS"
 
                         # V15: interact with the *actual* exported Godot tactical
                         # console, not a separate HTML mockup. Mobile opens
