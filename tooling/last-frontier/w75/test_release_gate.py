@@ -201,17 +201,23 @@ class W75NoFalseRelease(unittest.TestCase):
         self.assertFalse(report["checks"]["real_hardware"])
         self.assertFalse(report["checks"]["human_playtests"])
 
-    def test_14_real_build_audit_requires_actual_two_local_files(self):
-        a,hash_a=self.proof("build/W74_SOURCE_AUDIT.json",b'not a signed source but a local fixture')
-        b,hash_b=self.proof("build/evidence.json",b'fake fixture')
+    def test_14_fake_json_or_fake_native_binary_cannot_pass_build(self):
+        a,hash_a=self.proof("build/W74_SOURCE_AUDIT.json",b'not a valid source audit JSON')
+        b,hash_b=self.proof("build/evidence.json",b'fabricated JSON placeholder')
         self.m["build"].update({
             "source_verification_file":a,
             "source_verification_sha256":hash_a,
             "webgl_export_manifest_file":b,
             "webgl_export_manifest_sha256":hash_b,
+            "webgl_binary_file":"build/missing.wasm",
+            "webgl_binary_sha256":"1"*64,
+            "webgl_pck_file":"build/missing.pck",
+            "webgl_pck_sha256":"2"*64,
         })
         report=evaluate(self.m,self.root)
-        self.assertTrue(report["checks"]["build_evidence"])
+        self.assertFalse(report["checks"]["build_evidence"])
+        self.assertFalse(report["checks"]["local_source_audit_file_hash"])
+        self.assertFalse(report["checks"]["local_native_webgl_manifest_hash"])
         self.assertFalse(report["checks"]["human_playtests"])
         self.assertEqual(report["next_state"],"PRODUCTION_HOLD")
         self.assertFalse(report["steam_or_public_domain_publish_authorized_by_software"])
