@@ -4,7 +4,7 @@ Date: 28 October 2026. Godot 4.4.1, original A7 facility. **Real code and native
 
 ## Development base and truthful readiness
 
-W70.1 `0fea3572b6ce75d3aab144ff678eb181b1713aac` has a genuine 3/3 [Godot+Chromium PASS](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40628540819). This W72 work is stacked on provisional **W71** exact SHA `8c711f89018f56f380655f5a806edaf9e8ad4af3` in [PR #617](https://github.com/osmanosmanov6880-bot/osgard-world/pull/617); W71's final source-specific browser CI is a dependency and not inherited from older passed builds.
+W70.1 `0fea3572b6ce75d3aab144ff678eb181b1713aac` has a genuine 3/3 [Godot+Chromium PASS](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40628540819). This W72 work is stacked on provisional **W71** exact SHA `dcfbb3080f01e07504f9ba333f677bb083798d18` in [PR #617](https://github.com/osmanosmanov6880-bot/osgard-world/pull/617); W71's final source-specific browser CI is a dependency and not inherited from older passed builds.
 
 W72 is an **opt-in advanced mission** within the SAME W71 game, not an isolated screenshot demo. The original W63 six-cycle core, all W70 first-person CharacterBody physics, and the simpler W71 mission remain available without extra puzzle gates.
 
@@ -39,7 +39,7 @@ W72 is an **opt-in advanced mission** within the SAME W71 game, not an isolated 
 
 ## Nonnegotiable exact source acceptance
 
-1. Exact descendant of W71 source SHA `8c711f89018f56f380655f5a806edaf9e8ad4af3`. Guard preserved source hashes for original A7 core, W70 player physics, W71 five-step spatial logic regression suites, W69 cinematic art, W68 PBR texture cache, original Godot `Main.tscn` and export config.
+1. Exact descendant of W71 source SHA `dcfbb3080f01e07504f9ba333f677bb083798d18`. Guard preserved source hashes for original A7 core, W70 player physics, W71 five-step spatial logic regression suites, W69 cinematic art, W68 PBR texture cache, original Godot `Main.tscn` and export config.
 2. Actual Godot 4.4.1 native scene import; **nine** native test suites W63…W72. W72 specifically completes: legacy W71 no-field mode, 3 independent true-world mechanics with physics gate, authorized/unauthorized E, original 12-choice winning game, final advanced success, ECO, reduced-motion, RU/EN, 320/390/768/1366px, true reset.
 3. Genuine Godot WebGL `index.wasm`, `index.pck`, and original Javascript export. Two independent actual headless Chromium drivers: unchanged W71 browser regression (7 original source-linked captures) and new W72 actual keyboard `Y/P/S/K/E/1/4/L` test. Together **16 genuine SHA-256-linked screenshots**, with source SHA in auditable JSON.
 4. Keep new W72 PR in **DRAFT** until exact commit all checks succeed. Older success is not evidence of latest code.
