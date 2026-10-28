@@ -173,3 +173,65 @@ godot --headless --path godot/empire-omega --script res://tests/v122_city_reign_
 **Marketing restriction:** describe only completed, source-proven milestones.
 Do not call CITY REIGN a finished world-class AAA game until that claim has
 independent, playable, artistic and hardware evidence. Do not merge a red PR.
+
+---
+
+## B49–B52 — native architectural city-body upgrade (candidate, awaiting exact-head CI)
+
+The first browser screenshots showed excessive repetition: most visible original
+`Building_###` bodies were plain rectangular boxes even when their storefront
+and roof ornamentation used genuine 3D. To address the most obvious visual
+bottleneck, B49 modifies the real source body's geometry *in place*.
+
+**Source:** `scripts/city_reign_tower_body_lod.gd` plus
+`scripts/world_builder.gd`. Only the original `VisualMesh.mesh` changes.
+
+- **B49 — source-authored closed building solids:** actual eight-edge
+  chamfered high-rise cores (not merely painting a box), real stone plinths
+  and top courses with correct outward face normals.
+- **B50 — four neighborhood art identities:** district-dependent chamfer
+  widths and surface tinting plus restrained facade piers, inter-floor
+  shadow lines and physical roof mechanical volumes. Original PBR texture
+  families remain shared (no external or uncleared model download).
+- **B51 — original resource-quality tiers:** original lightweight `BoxMesh`
+  remains resident for LOW; sculpted STANDARD and CINEMATIC `ArrayMesh`
+  alternatives swap *inside the same real building MeshInstance3D*, without
+  changing any collision body or adding a render node per building.
+- **B52 — true source/world verification:** native
+  `tests/v124_city_reign_tower_silhouette_lod.gd` checks mathematical
+  mesh bounds, finite normals, physical geometry outside the old cuboid,
+  all existing original building colliders, original window/material
+  bindings, all three LOD settings, wet-road/night changes and immutable
+  monetary/campaign state. CI runs the new suite alongside the genuine
+  prior mission/road/traffic tests.
+
+**Budgets** (engineering limits, not GPU profiling):
+up to 128 original towers; each STANDARD model ≤600 vertices,
+each CINEMATIC model ≤2400 vertices; same one mesh renderer per
+original colliding building. Low retains original 12-triangle BoxMesh.
+The original 52m road grid, real driving collision and source-pinned
+40-stage story are unaffected in code.
+
+**Evidence gate:** The source and native regression suite must be
+verified on the exact post-commit SHA. A green old head is not proof
+of this new candidate. Real screenshots at the same viewpoint must
+be inspected before visual benefit can be claimed. This improves
+procedural architecture only; it still does **not** reach the geometry,
+shading, crowds or photogrammetry quality of the AAA benchmarks.
+
+## Art and product decision after native QA
+
+Do not mistake source triangles for AAA photorealism. The visual
+reviewer must still explicitly compare the actual upgraded Godot
+frame against the earlier image in:
+- overall silhouette diversity, street-level architectural depth,
+  believable roofline and windows;
+- no z-fighting, window obstruction, geometry pop, sidewalk overlap
+  or vehicle collision regressions;
+- 720p/1080p desktop and constrained-phone hardware;
+- profiling and independent playtests (these remain open release gates).
+
+The project is a **playable city-game candidate**, not a finished
+world-class platform. Windows, Linux and WebGL candidate artifacts
+may be downloaded from source-locked CI; no production deployment
+has been authorized.
