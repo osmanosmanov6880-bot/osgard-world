@@ -786,7 +786,10 @@ func _w76_update_goal() -> void:
             gate_status = "GATE LOCKED" if stage_3d.sector_bulkhead.physically_blocked else "GATE OPEN"
         helper += "  ·  " + gate_status
     w76_objective_label.text = (label + "   /   " + helper) if mission != null and mission.active else ""
-    w76_objective_label.visible = mission != null and mission.active
+    # W80: the W79 true phase deck already shows the live objective inside
+    # the world. Never repeat the same long objective below the phone scene.
+    w76_objective_label.visible = (mission != null and mission.active
+        and not (w76_immersive and size.x < 640.0))
 
 func _w76_toggle_immersive() -> void:
     w76_immersive = not w76_immersive
@@ -1154,7 +1157,9 @@ func _layout_stage() -> void:
     if w76_immersive:
         height = maxf(height, clampf(size.y * 0.81, 420.0, 850.0))
         if size.x < 640.0:
-            height = clampf(size.y * 0.61, 345.0, 570.0)
+            # Original native 3D viewport gains real visible area as mobile
+            # controls become a predictable compact two-row thumb grid.
+            height = clampf(size.y * 0.65, 385.0, 600.0)
     if cinema_mode:
         var cinema_target: float = clampf(size.y * 0.78, 585.0, 760.0)
         if size.x < 640.0:
@@ -1390,6 +1395,12 @@ func _render(state: Dictionary) -> void:
     intro.text = _t("intro")
     language_button.text = _t("language")
     w76_play_button.text = _t("w76_play")
+    # W80 real mobile usability: PLAY NOW is redundant AFTER it actually
+    # started the first-person mission; remove that entire header row.
+    # It reappears on leaving immersive/physical mode for easy reentry.
+    w76_play_button.visible = not (w76_immersive and stage_3d != null
+        and stage_3d.first_person != null
+        and stage_3d.first_person.piloting)
     w76_focus_button.text = _t("w76_focus_off" if w76_immersive else "w76_focus_on")
     _w76_update_goal()
     if w78_touch_overlay != null and stage_3d != null:
@@ -1468,7 +1479,9 @@ func _render(state: Dictionary) -> void:
         cinematic_hud.present(state, locale)
     if stage_3d != null:
         stage_3d.apply_snapshot(state)
-        cinema_caption.text = _t("stage")
+        cinema_caption.text = (
+            ("A7 / ПОЛЕВАЯ МИССИЯ" if locale=="ru" else "A7 / FIELD MISSION")
+            if size.x < 640.0 and w76_immersive else _t("stage"))
         var stats_display: Dictionary = state["metrics"]
         cinema_readout.text = _t("visual") % [
             int(stats_display["heat"]), int(stats_display["pressure"]),
@@ -1661,6 +1674,10 @@ func _publish_web_accessibility() -> void:
         "w79_original_offline_save_requests":w79_mission_deck.save_requests if w79_mission_deck != null else 0,
         "w79_checked_load_requests":w79_mission_deck.load_requests if w79_mission_deck != null else 0,
         "w79_phone_hardware_certified":false,
+        "w80_true_native_touch_grid_columns":w78_touch_overlay.rail.columns if w78_touch_overlay != null else 0,
+        "w80_real_immersive_play_button_hidden":not w76_play_button.visible,
+        "w80_redundant_long_objective_hidden":not w76_objective_label.visible,
+        "w80_unmodified_original_gameplay_authority":true,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1716,6 +1733,13 @@ func _publish_web_accessibility() -> void:
         "w79_command4":_web_rect(w79_mission_deck.slots[4]) if w79_mission_deck != null else [],
         "w79_offline_save":_web_rect(w79_mission_deck.save_button) if w79_mission_deck != null else [],
         "w79_checked_load":_web_rect(w79_mission_deck.load_button) if w79_mission_deck != null else [],
+        "w80_touch_left":_web_rect(w78_touch_overlay.controls["left"] as Control) if w78_touch_overlay != null else [],
+        "w80_touch_back":_web_rect(w78_touch_overlay.controls["back"] as Control) if w78_touch_overlay != null else [],
+        "w80_touch_right":_web_rect(w78_touch_overlay.controls["right"] as Control) if w78_touch_overlay != null else [],
+        "w80_touch_look_left":_web_rect(w78_touch_overlay.controls["look_left"] as Control) if w78_touch_overlay != null else [],
+        "w80_touch_look_right":_web_rect(w78_touch_overlay.controls["look_right"] as Control) if w78_touch_overlay != null else [],
+        "w80_native_touch_rail":_web_rect(w78_touch_overlay.rail) if w78_touch_overlay != null else [],
+        "w80_native_mission_panel":_web_rect(w79_mission_deck.panel) if w79_mission_deck != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),
