@@ -83,8 +83,8 @@ func _run() -> void:
     career.record_finished(breach,["reactor","service","evacuation"])
     _check(career.achievements.has("THREE_FRONTS") and career.victories==3,
         "Three fronts unlocks only after actual wins in GRID, HEAT and AIR")
-    _check(career.recommended_scenario()=="breach",
-        "Operator is guided to the least-completed mission, without paid gating")
+    _check(career.recommended_scenario()=="blackout",
+        "When all three wins tie, operator is guided to least-attempted mission without paid gating")
 
     _check(career.save(path), "Dedicated V9 profile saves into true atomic offline user storage")
     var reloaded := IPCareerProfile.new()
