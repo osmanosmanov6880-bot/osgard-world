@@ -160,6 +160,18 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert containment.get("vapor_visible") is False and containment.get("spark_burst_visible") is False, (
                             "False catastrophe effects appear on the idle scenario menu",containment)
                         report.setdefault("v8_6_reactive_world",{})[name]=containment
+                        # V9 field-campaign instrumentation is emitted by the
+                        # running exported Godot scene, never by the test.
+                        field_run = idle.get("containment_run",{})
+                        assert field_run.get("zones")==["reactor","service","evacuation"], (
+                            "Three genuine geographically distinct hazard sectors are absent",field_run)
+                        assert field_run.get("physical_consoles")==3 and field_run.get("physical_arches")==3, (
+                            "Safety seals are not represented by three actual in-world consoles/arches",field_run)
+                        assert field_run.get("suit")==100.0 and field_run.get("budget")==2 and field_run.get("used_seals")==[], (
+                            "Intro starts with false suit injury or pre-spent field authorization",field_run)
+                        assert field_run.get("quality")==("eco" if mobile else "hero"), (
+                            "New environmental campaign ignores mobile graphics budget",field_run)
+                        report.setdefault("v9_spatial_campaign_world",{})[name]=field_run
                         assert bay.get("open_core_inspection") is True, (
                             "V8.3 reactor remains obscured by front armour despite successful render",bay)
                         assert bay.get("cinematic_vault") is True, (
@@ -448,6 +460,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                         "G button did not switch actual V8 vaulted reactor geometry",state.get("reactor_atrium"))
                                     assert state.get("containment_fx",{}).get("quality") == expected, (
                                         "G button did not scale procedural pressure vents/steam",state.get("containment_fx"))
+                                    assert state.get("containment_run",{}).get("quality") == expected, (
+                                        "G button did not preserve the native V9 3D field hierarchy",state.get("containment_run"))
                                     if expected=="eco":
                                         assert state.get("containment_fx",{}).get("vapor_visible") is False, (
                                             "ECO retained heavyweight vapor rendering",state.get("containment_fx"))
