@@ -14,7 +14,7 @@ var actual_observed_seconds: float = 0.0
 var longest_frame_ms: float = 0.0
 
 func sample_frame(delta: float) -> bool:
-    if not is_finite(delta) or delta < MIN_VALID_DELTA or (
+    if is_nan(delta) or is_inf(delta) or delta < MIN_VALID_DELTA or (
             delta > MAX_VALID_DELTA):
         rejected_samples += 1
         return false
