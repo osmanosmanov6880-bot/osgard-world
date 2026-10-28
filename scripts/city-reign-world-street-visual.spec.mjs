@@ -74,12 +74,22 @@ test('CITY REIGN world edition: actual 3D street materials, dusk, power outage a
   await page.keyboard.press('1')
   await page.waitForTimeout(850)
   const restored=(await captureAnimatedWebGLViewport(page)).png
+  // Real source-owned CAMERA REPOSITION to the original west-facing shop
+  // entrance. This is not a dummy hero render or decorative Web image.
+  await page.keyboard.press('7')
+  await page.waitForTimeout(1100)
+  const eyeLevel=(await captureAnimatedWebGLViewport(page)).png
+  await info.attach('original-godot-real-eye-level-streetfront-cinematic.png',{
+    body:eyeLevel,contentType:'image/png'})
+  const streetPerspective=compare(restored,eyeLevel)
+  expect(streetPerspective.meanMaxRgbDifference,
+    'eye-level review must show a different original live WorldBuilder camera').toBeGreaterThan(0.40)
   await page.keyboard.press('4')
   await page.waitForTimeout(900)
   const low=(await captureAnimatedWebGLViewport(page)).png
   await info.attach('original-godot-world-low-mobile-lod.png',{
     body:low,contentType:'image/png'})
-  const lowDelta=compare(restored,low)
+  const lowDelta=compare(eyeLevel,low)
   expect(lowDelta.meanMaxRgbDifference,
     'LOW must genuinely hide original premium architectural batches').toBeGreaterThan(0.12)
   await page.keyboard.press('5')
@@ -97,7 +107,7 @@ test('CITY REIGN world edition: actual 3D street materials, dusk, power outage a
     body:Buffer.from(JSON.stringify({
       source:'godot/empire-omega/tests/city_reign_world_street_pixel_fixture.tscn',
       scene:'WorldBuilder original actual 3D city',engine,dayEvidence,
-      dusk,brownout,lowDelta,qualityDelta,faults,viewport:page.viewportSize()
+      dusk,brownout,streetPerspective,lowDelta,qualityDelta,faults,viewport:page.viewportSize()
     },null,2)),contentType:'application/json'
   })
   expect(faults).toEqual([])
