@@ -119,16 +119,27 @@ func _run() -> void:
         persisted.summary("ru").contains("ЛИЧНЫЙ РЕКОРД"),
         "Bilingual overview uses actual stored entries and per-scenario personal best")
 
-    # Deliberate file corruption must not fabricate a clean pass.
-    var file: FileAccess=FileAccess.open(SAVE,FileAccess.READ_WRITE)
-    _assert(file!=null,"Corruption test accesses local records file")
+    # Corrupt the checksum, not JSON syntax: the Godot JSON parser itself
+    # logs fatal-looking parse errors on intentionally invalid tokens.
+    # A complete valid wrapper with a false digest must fail silently
+    # without treating an expected input rejection as an engine crash.
+    var file: FileAccess=FileAccess.open(SAVE,FileAccess.WRITE)
+    _assert(file!=null,"Checksum test accesses local records file")
     if file!=null:
-        file.seek(0)
-        file.store_string("X")
+        var bad_digest: Dictionary={
+            "format":IPCheckpointStore.FORMAT,
+            "version":IPCheckpointStore.VERSION,
+            "payload_json":"{}",
+            "sha256":"0000000000000000000000000000000000000000000000000000000000000000"
+        }
+        file.store_string(JSON.stringify(bad_digest))
         file.flush()
         file.close()
-    _assert(not persisted.load_archive() and persisted.entries.size()==16,
-        "Checksum/JSON corruption fails without deleting last loaded valid records")
+    _assert(not persisted.load_archive() and persisted.entries.size()==16 and persisted.is_corrupt,
+        "Checksum tampering fails closed without deleting valid loaded records")
+    var still_closed: Dictionary=persisted.entries.back().duplicate(true)
+    _assert(not persisted.record_finished(first) and persisted.entries.back()==still_closed,
+        "Corrupted original cannot be silently overwritten by a new completed game")
     # Path restriction and failed I/O must not change live memory.
     var old_path: String=persisted.archive_path
     persisted.archive_path="user://../outside_records.json"
