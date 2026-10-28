@@ -105,6 +105,7 @@ def run(export, out, sha):
             # Physically walk back toward original reactor, no teleports or
             # writing to the passive DOM status. Coordinates are hidden from
             # script and can only change by authentic Godot physics.
+            begin_z=float(snapshot(page)["w70_real_body_xyz"][2])
             page.keyboard.down("s")
             page.wait_for_timeout(1430)
             page.keyboard.up("s")
