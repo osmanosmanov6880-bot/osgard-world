@@ -28,6 +28,7 @@ const ROAD_WETNESS = preload("res://scripts/horizon_rain_puddles.gd")
 const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
 const CITY_REIGN_CRISIS = preload("res://scripts/city_reign_crisis_scene.gd")
 const CITY_REIGN_PROPOSALS = preload("res://scripts/city_reign_promise_markers.gd")
+const CITY_REIGN_OPENING_DIRECTOR = preload("res://scripts/city_reign_opening_director.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
 const TRIAL_MARKER_SCENE = preload("res://scripts/trial_marker.gd")
@@ -44,6 +45,7 @@ var ground_spray: Node3D
 var city_case_marker
 var city_reign_crisis: Node3D
 var city_reign_proposals: Node3D
+var city_reign_opening_director: Node3D
 var cargo_visual
 var current_weather_kind := "clear"
 var base_road_grip := 1.0
@@ -107,6 +109,11 @@ func _ready() -> void:
 	city_reign_proposals = CITY_REIGN_PROPOSALS.new()
 	add_child(city_reign_proposals)
 	city_reign_proposals.sync_state(GameState.data,GameState.locale)
+	# B34: read-only ORIGINAL 3D opening guidance follows the existing
+	# real mission + real resource-funded civic decisions, no new quest state.
+	city_reign_opening_director = CITY_REIGN_OPENING_DIRECTOR.new()
+	add_child(city_reign_opening_director)
+	city_reign_opening_director.call("sync_state",GameState.data,GameState.locale)
 	traffic_signals = SIGNALS_SCENE.new()
 	add_child(traffic_signals)
 	roadworks = ROADWORKS_SCENE.new()
@@ -426,6 +433,9 @@ func _physics_process(delta: float) -> void:
 	var desired_fov: float = SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
 	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,SAFE_CAMERA.time_alpha(2.2,delta))
 	var protagonist: Vector3 = car.global_position if driving else player.global_position
+	if city_reign_opening_director != null:
+		city_reign_opening_director.call("set_view",protagonist,
+			interiors.is_inside(),hud.is_strategy_open())
 	_tick_driving_trial(delta)
 	if world.weather_particles != null:
 		world.weather_particles.global_position = protagonist + Vector3(0,16,0)
@@ -643,6 +653,8 @@ func _apply_visual_budget() -> void:
 	# No re-spawn, traffic AI update or shadow-map allocation on switches.
 	if traffic_signals != null:
 		traffic_signals.call("set_quality",effective)
+	if city_reign_opening_director != null:
+		city_reign_opening_director.call("set_quality",effective)
 	# Switching live mobile quality adjusts ONLY cached traffic render
 	# meshes; no lane/traffic/vehicle collider changes and no allocations
 	# beyond the 6 shared precomputed city-fleet variant surfaces.
@@ -974,6 +986,8 @@ func _on_game_changed(reason: String) -> void:
 		city_reign_crisis.sync_state(GameState.data,GameState.locale)
 	if city_reign_proposals != null:
 		city_reign_proposals.sync_state(GameState.data,GameState.locale)
+	if city_reign_opening_director != null:
+		city_reign_opening_director.call("sync_state",GameState.data,GameState.locale)
 	world.update_language(GameState.locale)
 	_apply_weather()
 
