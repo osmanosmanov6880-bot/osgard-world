@@ -86,6 +86,12 @@ func _run() -> void:
     var loaded := IPCrisisEngine.new()
     loaded.reset("breach")
     _check(loaded.restore_checkpoint(source), "New V9 state restores cleanly into same exact gameplay engine")
+    var actual_json: Variant = JSON.parse_string(JSON.stringify(source))
+    var json_reloaded := IPCrisisEngine.new()
+    _check(actual_json is Dictionary and json_reloaded.restore_checkpoint(actual_json),
+        "Actual Godot JSON integer/float conversion preserves all V9 checkpoint fields")
+    _check(json_reloaded.cascade_phase == 3 and json_reloaded.cascade_state == "completed",
+        "Completed physical cascade survives a genuine offline JSON roundtrip")
     _check(loaded.cascade_state=="completed" and loaded.cascade_phase==3,
         "Completed optional event persists after actual restart and save load")
     _check(loaded.scenario_id == "blackout" and loaded.relays_activated.is_empty(),
@@ -122,6 +128,10 @@ func _run() -> void:
     var before: Dictionary = earlier.checkpoint()
     _check(not earlier.restore_checkpoint(cheat), "Fabricated success with only one stage is rejected")
     _check(earlier.checkpoint() == before, "Invalid cascade progress never partially mutates restored resources")
+    cheat = source.duplicate(true)
+    cheat["cascade_state"] = "active"
+    cheat["cascade_phase"] = 1.5
+    _check(not earlier.restore_checkpoint(cheat), "Fractional fake stage rejected even if Godot JSON accepts floating numbers")
     cheat = source.duplicate(true)
     cheat["cascade_state"] = "active"
     cheat["cascade_phase"] = 3
