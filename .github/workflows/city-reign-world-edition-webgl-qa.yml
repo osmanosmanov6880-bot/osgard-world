@@ -18,6 +18,13 @@ on:
 permissions:
   contents: read
 
+# Keep only the latest source candidate for this exact PR. Repeated 46-job
+# suites on superseded commits wasted GPU/CPU runners and blocked useful
+# playable acceptance. Never cancel an unrelated PR or a master build.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   real-world-3d-native-browser-pixels:
     runs-on: ubuntu-latest
