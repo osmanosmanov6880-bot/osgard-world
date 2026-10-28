@@ -144,6 +144,19 @@ func ending_text(locale: String = "ru") -> String:
     var endings: Dictionary = endings_en if locale == "en" else endings_ru
     return str(endings[result])
 
+func readout() -> Dictionary:
+    return {
+        "schema":SCHEMA,
+        "wins":wins(),
+        "stage_index":stage_index(),
+        "next_scenario":next_scenario(),
+        "finished":finished(),
+        "grade":campaign_grade(),
+        "ending":ending_id(),
+        "carryover":carryover(),
+        "completed":completed.duplicate(true)
+    }
+
 func checkpoint() -> Dictionary:
     return {"schema":SCHEMA,"completed":completed.duplicate(true)}
 
