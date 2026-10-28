@@ -212,6 +212,7 @@ var quality: String = "hero"
 var reduced_motion: bool = false
 var w76_immersive: bool = false
 var w76_immersive_switches: int = 0
+var top_rail: HFlowContainer
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -365,6 +366,7 @@ func _build() -> void:
     top.add_theme_constant_override("h_separation", 12)
     top.add_theme_constant_override("v_separation", 8)
     body.add_child(top)
+    top_rail = top
     brand_label = _label(top, "", 27, GOLD)
     language_button = _button(top, "EN", _toggle_locale)
     language_button.custom_minimum_size = Vector2(90, 45)
@@ -1120,6 +1122,35 @@ func _layout_stage() -> void:
     visual_container.custom_minimum_size = Vector2(0, height)
     visual_container.stretch_shrink = 2 if quality == "eco" else 1
     var compact: bool = size.x < 640.0
+    # W77 real-Chromium mobile art QA: A7 title must be a FIRST ROW,
+    # never a 2-character column that inflates three buttons to 400px.
+    if brand_label != null:
+        brand_label.autowrap_mode = (
+            TextServer.AUTOWRAP_OFF if compact else
+            TextServer.AUTOWRAP_WORD_SMART)
+        brand_label.size_flags_horizontal = (
+            Control.SIZE_SHRINK_BEGIN if compact else
+            Control.SIZE_EXPAND_FILL)
+        brand_label.custom_minimum_size = (
+            Vector2(maxf(150.0,size.x - 52.0),40.0)
+            if compact else Vector2.ZERO)
+        brand_label.add_theme_font_size_override(
+            "font_size",20 if compact else 27)
+        brand_label.text = (
+            ("A7  /  РУБЕЖ" if locale == "ru" else "A7  /  FRONTIER")
+            if compact else _t("brand"))
+    if top_rail != null:
+        top_rail.add_theme_constant_override(
+            "h_separation",8 if compact else 12)
+    if language_button != null:
+        language_button.custom_minimum_size = (
+            Vector2(62,40) if compact else Vector2(90,45))
+    if w76_play_button != null:
+        w76_play_button.custom_minimum_size = (
+            Vector2(155,40) if compact else Vector2(185,45))
+    if w76_focus_button != null:
+        w76_focus_button.custom_minimum_size = (
+            Vector2(160,40) if compact else Vector2(220,45))
     if stage_3d != null:
         stage_3d.set_compact_view(compact)
     if cinematic_hud != null:
@@ -1290,7 +1321,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _render(state: Dictionary) -> void:
     if brand_label == null:
         return
-    brand_label.text = _t("brand")
+    brand_label.text = (
+        ("A7  /  РУБЕЖ" if locale == "ru" else "A7  /  FRONTIER")
+        if size.x < 640.0 else _t("brand"))
     subtitle.text = _t("sub")
     intro.text = _t("intro")
     language_button.text = _t("language")
