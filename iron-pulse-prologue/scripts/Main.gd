@@ -52,6 +52,17 @@ const COPY := {
         "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
         "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
         "relay_budget": "ЛИМИТ: доступны только две станции спасения.",
+        "coil_alpha": "КАТУШКА АЛЬФА", "coil_beta": "КАТУШКА БЕТА", "coil_gamma": "КАТУШКА ГАММА",
+        "coil_hint": "КОНТУР A7 / {name} / {distance} м  [E] СИНХРОНИЗИРОВАТЬ",
+        "coil_spent": "КОНТУР A7 / {name} / УЖЕ АКТИВИРОВАН",
+        "circuit_compact": "КОНТУР {used}/3 · ДАЛЬШЕ {next}",
+        "rescue_compact": "СПАСЕНИЕ {used}/2",
+        "containment_final": "Синхронизация A7: {status}",
+        "circuit_complete": "ПОЛНАЯ", "circuit_incomplete": "НЕ ЗАВЕРШЕНА",
+        "containment_stage": "КАТУШКА ПОДКЛЮЧЕНА. ИДИ К СЛЕДУЮЩЕЙ.",
+        "containment_misroute": "НЕВЕРНЫЙ ПОРЯДОК. ЦЕПЬ СБРОШЕНА.",
+        "containment_expired": "ВРЕМЯ СИНХРОНИЗАЦИИ ИСТЕКЛО.",
+        "containment_online": "ПОЛНАЯ СТАБИЛИЗАЦИЯ КОМПЛЕКСА A7.",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -119,6 +130,17 @@ const COPY := {
         "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
         "relay_uplink": "UPLINK: additional evacuation time secured.",
         "relay_budget": "CAPACITY LIMIT: only two rescue stations may run.",
+        "coil_alpha": "ALPHA COIL", "coil_beta": "BETA COIL", "coil_gamma": "GAMMA COIL",
+        "coil_hint": "A7 CIRCUIT / {name} / {distance} m  [E] SYNCHRONIZE",
+        "coil_spent": "A7 CIRCUIT / {name} / ALREADY ACTIVATED",
+        "circuit_compact": "CIRCUIT {used}/3 · NEXT {next}",
+        "rescue_compact": "RESCUE {used}/2",
+        "containment_final": "A7 synchronization: {status}",
+        "circuit_complete": "COMPLETE", "circuit_incomplete": "INCOMPLETE",
+        "containment_stage": "COIL CONNECTED. FIND THE NEXT UNIT.",
+        "containment_misroute": "WRONG ORDER. CIRCUIT RESET.",
+        "containment_expired": "SYNCHRONIZATION TIMED OUT.",
+        "containment_online": "FULL A7 REACTOR STABILIZATION ONLINE.",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -159,6 +181,7 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var containment_circuit: IPContainmentCircuit
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -327,6 +350,7 @@ func _publish_web_state() -> void:
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["containment_fx"] = containment_fx.readout() if containment_fx != null else {}
+    state["containment_circuit"] = containment_circuit.readout() if containment_circuit != null else {}
     # Read-only native material/geometry facts; Chromium QA never invents art.
     var actual_core: SphereMesh = reactor_core.mesh as SphereMesh
     var support_count: int = 0
@@ -509,6 +533,8 @@ func _make_complex() -> void:
     _build_reactor()
     _build_terminals()
     _build_rescue_relays()
+    containment_circuit = IPContainmentCircuit.new()
+    add_child(containment_circuit)
     _build_bulkhead()
     art_stage = IPCinematicStage.new()
     add_child(art_stage)
@@ -1198,6 +1224,7 @@ func _continue_checkpoint() -> bool:
     world_sectors.set_quality(quality_mode)
     reactor_atrium.set_quality(quality_mode)
     containment_fx.set_quality(quality_mode)
+    containment_circuit.set_quality(quality_mode)
     exit_gate.position.y = 6.2 if session.override_set else 2.6
     for index in range(legacy_lamps.size()):
         legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
@@ -1379,6 +1406,7 @@ func _input(event: InputEvent) -> void:
             world_sectors.set_quality(quality_mode)
             reactor_atrium.set_quality(quality_mode)
             containment_fx.set_quality(quality_mode)
+            containment_circuit.set_quality(quality_mode)
             for i in range(legacy_lamps.size()):
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
@@ -1492,6 +1520,7 @@ func _process(delta: float) -> void:
         session.scenario_id,session.heat,session.oxygen,runtime_seconds,
         reduced_motion,session.thermal_pulses,session.thermal_shield,
         started and not paused and not session.finished())
+    containment_circuit.sync_engine(session,session.elapsed,reduced_motion)
     if started and not paused and not session.finished():
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
@@ -1556,6 +1585,19 @@ func _nearest_relay() -> Dictionary:
             chosen = relay
     return chosen
 
+func _nearest_containment_coil() -> Dictionary:
+    if player == null or containment_circuit == null:
+        return {}
+    var selected: Dictionary = {}
+    var nearest: float = 2.85
+    for coil in containment_circuit.terminals:
+        var position: Vector3 = coil["position"]
+        var distance: float = _physical_distance(position)
+        if distance < nearest:
+            nearest = distance
+            selected = coil
+    return selected
+
 func _physical_distance(point: Vector3) -> float:
     return Vector2(point.x,point.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
 
@@ -1564,6 +1606,21 @@ func _interact(fast: bool = false) -> void:
         return
     var target: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
+    var coil: Dictionary = _nearest_containment_coil()
+    if not coil.is_empty() and not fast:
+        var coil_distance: float = _physical_distance(coil["position"])
+        var terminal_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
+        var relay_distance: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+        if coil_distance < minf(terminal_distance,relay_distance):
+            session.operate_containment_coil(str(coil["id"]))
+            previous_event = session.last_event
+            _story_event(session.last_event)
+            _announce(session.last_event)
+            _save_checkpoint()
+            if session.finished():
+                _show_end()
+            _refresh_hud()
+            return
     if not rescue.is_empty() and not fast:
         var main_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
         var rescue_distance: float = _physical_distance(rescue["position"])
@@ -1617,9 +1674,13 @@ func _announce(key: String) -> void:
             audio_director.cue("surge")
         "crew_evacuated":
             audio_director.cue("victory")
+        "containment_expired":
+            audio_director.cue("surge")
+        "containment_misroute":
+            audio_director.cue("denied")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink", "containment_stage", "containment_online":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -1641,12 +1702,15 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    end_stats.text += "\n" + _copy("containment_final").format({
+        "status":_copy("circuit_complete") if session.containment_online else _copy("circuit_incomplete")})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 func _refresh_hud() -> void:
     if objective_label == null:
         return
+    containment_circuit.sync_engine(session,session.elapsed,reduced_motion)
     var objective_key: String = session.objective_id()
     if objective_key == "victory":
         objective_key = "victory_objective"
@@ -1665,19 +1729,38 @@ func _refresh_hud() -> void:
         _copy("heat"),int(session.heat),_copy("oxygen"),int(session.oxygen),
         _copy("crew"),int(session.crew_health),_copy("door"),int(session.door_charge),
         _copy("time"),floori(session.time_left/60.0),int(session.time_left)%60]
-    allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
+    var hud_width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
+    var rescue_caption: String = _copy("rescue_compact") if hud_width < 650.0 else _copy("rescue_count")
+    var next_coil: String = session.next_containment_coil()
+    var next_name: String = _copy("coil_"+next_coil) if next_coil != "" else "OK"
+    var coil_caption: String = _copy("circuit_compact").format({
+        "used":session.containment_sequence.size(),"next":next_name})
+    allocation_label.text = "%s  /  A: %s   |   B: %s\n%s   ·   %s" % [
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
-        _copy("rescue_count").format({"used":session.relays_activated.size()})]
+        rescue_caption.format({"used":session.relays_activated.size()}),coil_caption]
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
     var nearby: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
-    var show_rescue: bool = not rescue.is_empty()
+    var circuit_node: Dictionary = _nearest_containment_coil()
+    var show_coil: bool = not circuit_node.is_empty()
+    if show_coil and not rescue.is_empty():
+        show_coil = _physical_distance(circuit_node["position"]) < _physical_distance(rescue["position"])
+    if show_coil and not nearby.is_empty():
+        show_coil = _physical_distance(circuit_node["position"]) < _physical_distance(nearby["position"])
+    var show_rescue: bool = not rescue.is_empty() and not show_coil
     if show_rescue and not nearby.is_empty():
         show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
-    if started and not session.finished() and show_rescue:
+    if started and not session.finished() and show_coil:
+        var selected_coil_id: String = str(circuit_node["id"])
+        var unlocked: bool = session.core_scanned and not session.containment_online and not session.containment_sequence.has(selected_coil_id)
+        var coil_key: String = "coil_hint" if unlocked else "coil_spent"
+        interaction_label.text = _copy(coil_key).format({
+            "name":_copy("coil_"+selected_coil_id),
+            "distance":"%.1f" % _physical_distance(circuit_node["position"])})
+    elif started and not session.finished() and show_rescue:
         var relay_dist: float = _physical_distance(rescue["position"])
         var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
         var rescue_key: String = "rescue_hint" if available else "rescue_spent"
