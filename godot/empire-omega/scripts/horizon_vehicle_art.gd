@@ -4,6 +4,7 @@ const SCULPT = preload("res://scripts/horizon_coupe_sculpt.gd")
 const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_player_vehicle_profiles.gd")
 const R39_DETAIL = preload("res://scripts/horizon_r39_wheel_detail.gd")
+const CITY_REIGN_COCKPIT = preload("res://scripts/city_reign_cockpit_interior.gd")
 ## OSGARD HORIZON DRIVE: original PBR sports coupe assembled in Godot.
 ## These are editable original meshes, not meshes or assets from Forza.
 ## Built for Godot 4.4.1 GL Compatibility / HTML5.
@@ -12,6 +13,7 @@ var painted_parts: Array[MeshInstance3D] = []
 var wheel_rigs: Array[Node3D] = []
 var wheel_detail_nodes: Array[Node3D] = []
 var brake_strip: MeshInstance3D
+var cockpit_interior: Node3D
 var body_paint: Color = Color("d45835")
 var first_build := true
 var body_parts: Array[MeshInstance3D] = []
@@ -35,6 +37,10 @@ func _ready() -> void:
 	_create_wheels()
 	_attach_wheel_detail_packs()
 	_create_lighting()
+	# R164: 3 real PBR interior meshes built once and hidden outside
+	# the driver-seat camera. No extra car collider or Godot Camera3D.
+	cockpit_interior = CITY_REIGN_COCKPIT.new()
+	add_child(cockpit_interior)
 	var default_body: MeshInstance3D = get_node_or_null("FlowBody") as MeshInstance3D
 	var default_roof: MeshInstance3D = get_node_or_null("AerodynamicGreenhouse") as MeshInstance3D
 	original_flow = default_body.mesh if default_body != null else null
@@ -282,6 +288,14 @@ func _attach_wheel_detail_packs() -> void:
 		detail.call("configure",rig.position.x)
 		spin.add_child(detail)
 		wheel_detail_nodes.append(detail)
+
+func set_cockpit_active(value: bool) -> void:
+	if cockpit_interior != null:
+		cockpit_interior.set_active(value,self)
+
+func set_cockpit_data(forward_speed: float,steering: float) -> void:
+	if cockpit_interior != null and cockpit_interior.active:
+		cockpit_interior.set_live_data(forward_speed,steering)
 
 func set_detail_quality(tier: String) -> void:
 	for item in wheel_detail_nodes:

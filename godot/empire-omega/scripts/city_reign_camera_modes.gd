@@ -1,11 +1,11 @@
 extends RefCounted
 ## CITY REIGN R160: true original-player Camera3D lenses. No extra
 ## scene camera, car physics, scripted screenshot, credits or save mutations.
-const MODES = ["street","classic","panorama"]
+const MODES = ["street","classic","panorama","cockpit"]
 const LABELS = {
-	"ru":{"street":"КАМЕРА · УЛИЦА","classic":"КАМЕРА · СТАНДАРТ","panorama":"КАМЕРА · ПАНОРАМА"},
-	"en":{"street":"CAMERA · STREET","classic":"CAMERA · CLASSIC","panorama":"CAMERA · PANORAMA"},
-	"zh":{"street":"镜头 · 街景","classic":"镜头 · 标准","panorama":"镜头 · 全景"}
+	"ru":{"street":"КАМЕРА · УЛИЦА","classic":"КАМЕРА · СТАНДАРТ","panorama":"КАМЕРА · ПАНОРАМА","cockpit":"КАМЕРА · САЛОН"},
+	"en":{"street":"CAMERA · STREET","classic":"CAMERA · CLASSIC","panorama":"CAMERA · PANORAMA","cockpit":"CAMERA · COCKPIT"},
+	"zh":{"street":"镜头 · 街景","classic":"镜头 · 标准","panorama":"镜头 · 全景","cockpit":"镜头 · 驾驶舱"}
 }
 const MIN_RATIO: float = 0.75
 const MAX_RATIO: float = 1.28
@@ -53,7 +53,7 @@ static func distance(focus: Vector3,ideal: Vector3,mode: String,
 	return result if result.is_finite() else focus
 
 static func bounded() -> bool:
-	if MODES.size()!=3:
+	if MODES.size()!=4:
 		return false
 	for mode in MODES:
 		for driving in [false,true]:

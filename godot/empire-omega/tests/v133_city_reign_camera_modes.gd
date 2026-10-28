@@ -1,5 +1,5 @@
 extends SceneTree
-## R160 native Godot proof: street, classic and panorama are genuine
+## R164 native Godot regression: four views preserve the original three genuine
 ## physical-camera compositions for driving/on-foot and mobile/desktop.
 const CAMERA = preload("res://scripts/city_reign_camera_modes.gd")
 const SAFE = preload("res://scripts/horizon_camera_collision.gd")
@@ -26,10 +26,11 @@ func _run() -> void:
 		return
 	var saved: Dictionary = (game.get("data") as Dictionary).duplicate(true)
 	var old_mode: String = str(settings.get("camera_mode"))
-	check(CAMERA.bounded(),"three presets are bounded in world space and translated")
+	check(CAMERA.bounded(),"four presets are bounded in world space and translated")
 	check(CAMERA.next_mode("street")=="classic" and
 		CAMERA.next_mode("classic")=="panorama" and
-		CAMERA.next_mode("panorama")=="street",
+		CAMERA.next_mode("panorama")=="cockpit" and
+		CAMERA.next_mode("cockpit")=="street",
 		"keyboard, phone and gamepad modes cycle in the same direction")
 	check(CAMERA.canonical("untrusted")=="classic",
 		"unrecognized view never creates invalid camera position")
