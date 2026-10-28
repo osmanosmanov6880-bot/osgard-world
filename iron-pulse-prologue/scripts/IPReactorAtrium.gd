@@ -17,6 +17,9 @@ const PLASMA := Color(0.22, 0.75, 0.83)
 var structure: Node3D
 var hero_details: Node3D
 var shield_housing: Node3D
+var director_camera: Camera3D
+var core_plasma_material: ShaderMaterial
+var _plasma_phase: float = 0.0
 var _painted: StandardMaterial3D
 var _steel: StandardMaterial3D
 var _deck: StandardMaterial3D
@@ -44,6 +47,7 @@ func _ready() -> void:
     hero_details.name = "HERO_OptionalDetail"
     add_child(hero_details)
     _make_original_materials()
+    _create_plasma_material()
     _build_open_vault()
     _build_guardrail()
     _build_monumental_core_housing()
@@ -51,7 +55,55 @@ func _ready() -> void:
     _build_machined_detail()
     _build_diegetic_signs()
     _build_lighting()
+    _build_director_camera()
     set_quality("hero")
+
+func _create_plasma_material() -> void:
+    # The existing playable reactor sphere receives a real runtime shader,
+    # not a prerendered sprite/video or an external borrowed VFX asset.
+    # All inputs are bounded and driven by live reactor temperature and oxygen.
+    var shader := Shader.new()
+    shader.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled;
+uniform float crisis : hint_range(0.0, 1.0) = 0.0;
+uniform float thermal_bias : hint_range(0.0, 1.0) = 0.15;
+uniform float motion_clock = 0.0;
+void fragment() {
+    vec2 uv = UV * vec2(4.0, 5.5);
+    float t = motion_clock;
+    float turbulence = sin(uv.x * 6.0 + t * 2.4 + sin(uv.y * 2.2 - t) * 1.7);
+    float strata = sin(uv.y * 13.0 - t * 3.5 + sin(uv.x * 2.8 + t) * 3.0);
+    float vein = smoothstep(0.42, 0.94, turbulence * 0.5 + 0.5);
+    float sweep = smoothstep(0.33, 0.96, strata * 0.5 + 0.5);
+    float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
+    float fresnel = pow(1.0 - facing, 2.1);
+    vec3 cold = vec3(0.08, 0.53, 0.78);
+    vec3 hot = vec3(1.0, 0.25, 0.07);
+    vec3 tone = mix(cold, hot, thermal_bias);
+    float light = 0.30 + vein * 0.55 + sweep * 0.60 + fresnel * 0.65;
+    ALBEDO = tone * 0.30;
+    EMISSION = tone * light * (1.35 + crisis * 1.20);
+}
+"""
+    core_plasma_material = ShaderMaterial.new()
+    core_plasma_material.shader = shader
+    core_plasma_material.set_shader_parameter("crisis",0.0)
+    core_plasma_material.set_shader_parameter("thermal_bias",0.15)
+    core_plasma_material.set_shader_parameter("motion_clock",0.0)
+
+func _build_director_camera() -> void:
+    # Real diegetic security camera mounted inside the actual reactor
+    # observation gallery. The user's physical player remains in place.
+    director_camera = Camera3D.new()
+    director_camera.name = "A7_ServiceObservationCamera"
+    director_camera.position = Vector3(2.45,4.20,-20.25)
+    director_camera.fov = 75.0
+    director_camera.near = 0.08
+    director_camera.far = 150.0
+    add_child(director_camera)
+    director_camera.look_at(CORE_CENTER+Vector3(0.0,-0.15,0.0),Vector3.UP)
+    director_camera.current = false
 
 func _procedural_pbr_maps() -> Dictionary:
     # One deterministic original paint/wear atlas: albedo grain, uneven
@@ -322,9 +374,11 @@ func _sign(label: String, text_value: String, pos: Vector3, tint: Color, font_si
 func _build_diegetic_signs() -> void:
     # English sign labels for original in-world fictional machinery; HUD has
     # RU/EN objective text that is independent of these decorative plates.
-    _box(structure,"ObservationHeaderPanel",Vector3(6.61,5.05,-20.3),Vector3(0.08,0.72,6.8),_dark)
-    _sign("WarningMain","A7  /  CONTAINMENT",Vector3(6.52,5.08,-19.85),PLASMA,51)
-    _sign("HighVoltage","HIGH ENERGY CORE",Vector3(6.50,4.60,-19.85),CAUTION,35)
+    # Previously this sign slab physically intercepted the camera-to-core
+    # ray. Raise it above the observation sightline instead.
+    _box(structure,"ObservationHeaderPanel",Vector3(6.61,6.55,-20.3),Vector3(0.08,0.72,6.8),_dark)
+    _sign("WarningMain","A7  /  CONTAINMENT",Vector3(6.52,6.58,-19.85),PLASMA,51)
+    _sign("HighVoltage","HIGH ENERGY CORE",Vector3(6.50,6.11,-19.85),CAUTION,35)
     _box(structure,"VaultSerialPlate",Vector3(18.03,10.6,-20.0),Vector3(0.12,0.84,8.0),_painted)
     _sign("CoreSerial","A7  //  IRON PULSE",Vector3(17.92,10.55,-19.3),Color(0.78,0.87,0.88),57)
 
@@ -366,6 +420,15 @@ func update_alarm(scenario: String, heat: float, oxygen: float, elapsed: float, 
     _warning.emission = alarm_tint
     _warning.emission_energy_multiplier = _last_emissive
     _plasma.emission_energy_multiplier = 0.78 + _hazard*0.29
+    # An authored plasma material responds to the SAME GAME simulation
+    # rather than animating a fixed decorative effect.
+    if core_plasma_material != null:
+        var thermal_bias: float = 1.0 if scenario == "thermal" else 0.12 if scenario == "blackout" else 0.0
+        core_plasma_material.set_shader_parameter("crisis",_hazard)
+        core_plasma_material.set_shader_parameter("thermal_bias",thermal_bias)
+        if not reduced_motion:
+            _plasma_phase = elapsed*0.65
+        core_plasma_material.set_shader_parameter("motion_clock",_plasma_phase)
     for index in range(_lights.size()):
         if index >= 3:
             _lights[index].light_color = alarm_tint
@@ -377,6 +440,10 @@ func update_alarm(scenario: String, heat: float, oxygen: float, elapsed: float, 
 func readout() -> Dictionary:
     return {
         "cinematic_vault":true,
+        "security_director_camera":director_camera != null,
+        "security_camera_position":[director_camera.global_position.x,director_camera.global_position.y,director_camera.global_position.z] if director_camera != null else [],
+        "plasma_shader_live":core_plasma_material != null,
+        "plasma_phase":_plasma_phase,
         "open_wall_span_m":OPENING_Z_MAX-OPENING_Z_MIN,
         "vault_height_m":15.0,
         "core_center":[CORE_CENTER.x,CORE_CENTER.y,CORE_CENTER.z],
