@@ -12,6 +12,14 @@ func _check(ok: bool, explanation: String) -> void:
     if not ok:
         problems.append(explanation)
 
+func _native_motion(ui: A7CascadeScreen, keycode: int, down: bool) -> void:
+    # Real original Godot InputEvent route, not direct teleport/mutating
+    # the physical player's held_keys from outside gameplay.
+    var event := InputEventKey.new()
+    event.keycode = keycode
+    event.pressed = down
+    ui._input(event)
+
 func _run() -> void:
     var scene := load("res://Main.tscn") as PackedScene
     _check(scene != null,"Original Godot playable A7 game available")
@@ -62,10 +70,10 @@ func _run() -> void:
 
     player.body.position = Vector3(6.4,1.33,12.60)
     player.body.rotation.y = PI
-    player.set_key(KEY_W,true)
+    _native_motion(ui,KEY_W,true)
     for i in range(60):
         await physics_frame
-    player.set_key(KEY_W,false)
+    _native_motion(ui,KEY_W,false)
     _check(player.body.position.z < 13.25,
         "True original CharacterBody3D cannot walk through physically closed relay door")
     _check(player.body.position.z > 12.55,
@@ -117,10 +125,10 @@ func _run() -> void:
 
     player.body.position = Vector3(6.40,1.33,12.60)
     player.body.rotation.y = PI
-    player.set_key(KEY_W,true)
+    _native_motion(ui,KEY_W,true)
     for i in range(74):
         await physics_frame
-    player.set_key(KEY_W,false)
+    _native_motion(ui,KEY_W,false)
     print("W77 REAL PHYSICAL CROSSING DEBUG:", {
         "player_xyz":player.body.global_position,
         "body_yaw":player.body.rotation.y,
@@ -130,6 +138,10 @@ func _run() -> void:
         "world_locked":door.physically_blocked,
         "real_original_mission_phase":mission.phase,
     })
+    _check(ui.w77_focus_cancelled_by_actual_input >= 1,
+        "Authentic keyboard move cancels unfinished cinematic rotation before walking")
+    _check(absf(wrapf(player.body.rotation.y,0.0,TAU)-PI) < 0.03,
+        "Physical player heading stays under manual control, no tween wrestles operator")
     _check(player.body.position.z > 15.0,
         "With actual collider disabled real native physics player now CROSSES sector boundary")
     _check(door.gate_body.collision_layer==1,
