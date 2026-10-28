@@ -37,6 +37,14 @@ W72 is an **opt-in advanced mission** within the SAME W71 game, not an isolated 
 - `A7CascadeScreen.gd`: two user-selectable mission types; a single contextual control group appears at the relevant stage: 2 valve controls, OR 3 bus controls, OR 3 sync controls. Nothing is shown when field mode is inactive. RU/EN native localized directions and status. 320/390px mobile sizes supported with world labels hidden as needed.
 - ECO reduces 3D spot intensity; reduced-motion mode keeps all puzzle interactions playable. All actions happen locally and fictionally.
 
+## Art-direction correction based on actual source screenshots
+
+I inspected actual W72 rendered Chromium frames `w72-04-after-real-spatial-core-approach.png` and `w72-05-real-3d-thermal-valve-solved.png`. They were initially pixel-identical even though the actual 3D rotor and real game state had changed: the operator was backing down the bridge, still looking **away** from the reactor machine. The player could interact but could not see the cause/effect.
+
+The game now provides **actual spatially grounded context camera focus on first accepted valve, relay or sync manipulation**. A short 0.32-second eased native Godot rotation turns the genuine `CharacterBody3D` view yaw and eye-camera pitch toward the actual equipment; there is **no camera teleport, virtual image enlargement or alternative renderer**. Reduced-motion users get an instant nonanimated camera reorientation; once focused the user controls the original look direction freely. This happens only once per physical station per session, and only after valid in-world interaction. New native test requires real operator yaw change, and the genuine exported browser QA requires optical change in the true 3D framebuffer plus passive source-bound focus metadata.
+
+This change solves a usability defect found from the real rendered image, not a request for more ornamental geometry. It does not claim final AAA art direction; the underlying assets remain largely procedural.
+
 ## Nonnegotiable exact source acceptance
 
 1. Exact descendant of W71 source SHA `dcfbb3080f01e07504f9ba333f677bb083798d18`. Guard preserved source hashes for original A7 core, W70 player physics, W71 five-step spatial logic regression suites, W69 cinematic art, W68 PBR texture cache, original Godot `Main.tscn` and export config.
