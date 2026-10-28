@@ -176,6 +176,9 @@ var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
 var threat_radar: IPThreatRadar = IPThreatRadar.new()
 var after_action_review: IPAfterActionReview = IPAfterActionReview.new()
 var black_box_report: Dictionary = {}
+var run_archive: IPRunArchive = IPRunArchive.new()
+var archive_last_save_ok: bool = false
+var archive_erase_armed: bool = false
 var decision_forecaster: IPDecisionForecast = IPDecisionForecast.new()
 var forecast_report: Dictionary = {}
 var forecast_update_clock: float = 0.0
@@ -229,6 +232,13 @@ var intro_body: Label
 var intro_button: Button
 var continue_button: Button
 var campaign_button: Button
+var archive_intro_button: Button
+var archive_end_button: Button
+var archive_panel: PanelContainer
+var archive_label: Label
+var archive_title: Label
+var archive_erase_button: Button
+var archive_close_button: Button
 var radio_panel: PanelContainer
 var radio_speaker: Label
 var radio_dialogue: Label
@@ -294,6 +304,8 @@ func _ready() -> void:
         if browser != null:
             initial_query = str(browser.location.search)
     _apply_world_launch(initial_query)
+    if DisplayServer.get_name() != "headless":
+        run_archive.load_archive()
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -444,6 +456,16 @@ func _publish_web_state() -> void:
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
     state["threat_radar"] = threat_radar.snapshot(session)
     state["threat_hud"] = threat_label.text if threat_label != null else ""
+    state["operator_records"] = {
+        "visible":archive_panel != null and archive_panel.visible,
+        "count":run_archive.entries.size(),
+        "readout":run_archive.readout(),
+        "local_save_success":archive_last_save_ok,
+        "open_intro_rect":_hud_rect(archive_intro_button) if archive_intro_button != null else [],
+        "open_end_rect":_hud_rect(archive_end_button) if archive_end_button != null else [],
+        "close_rect":_hud_rect(archive_close_button) if archive_close_button != null else [],
+        "summary_title":archive_title.text if archive_title != null else ""
+    }
     state["black_box"] = {
         "visible":debrief_panel != null and debrief_panel.visible,
         "available":not black_box_report.is_empty(),
@@ -919,7 +941,7 @@ func _make_vital_meter(parent: VBoxContainer, key: String, caption: String, tint
     vitals_meters[key] = meter
 
 func _make_overlays() -> void:
-    intro_panel = _panel(hud_root,Rect2(-310,-275,310,275),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
+    intro_panel = _panel(hud_root,Rect2(-310,-300,310,300),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     intro_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var start_box := VBoxContainer.new()
     start_box.add_theme_constant_override("separation",8)
@@ -966,6 +988,11 @@ func _make_overlays() -> void:
     campaign_button.custom_minimum_size = Vector2(0,48)
     campaign_button.pressed.connect(_start_campaign)
     start_box.add_child(campaign_button)
+    archive_intro_button = Button.new()
+    archive_intro_button.name = "OpenLocalOperatorRecords"
+    archive_intro_button.custom_minimum_size = Vector2(0,52)
+    archive_intro_button.pressed.connect(_toggle_run_archive)
+    start_box.add_child(archive_intro_button)
     continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
     pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
@@ -1002,6 +1029,11 @@ func _make_overlays() -> void:
     debrief_button.custom_minimum_size = Vector2(0,52)
     debrief_button.pressed.connect(_toggle_after_action)
     end_box.add_child(debrief_button)
+    archive_end_button = Button.new()
+    archive_end_button.name = "ReadPriorRealGameRuns"
+    archive_end_button.custom_minimum_size = Vector2(0,52)
+    archive_end_button.pressed.connect(_toggle_run_archive)
+    end_box.add_child(archive_end_button)
     end_panel.visible = false
     # Native evidence panel. Its 3D game event history comes only from the
     # currently finished engine; the existing end screen stays mounted.
@@ -1025,7 +1057,34 @@ func _make_overlays() -> void:
     debrief_close_button.pressed.connect(_toggle_after_action)
     debrief_box.add_child(debrief_close_button)
     debrief_panel.visible = false
+    # Persistent personal attempt ledger; native Godot, no external services.
+    archive_panel = _panel(hud_root,Rect2(-315,-300,315,300),Rect2(0.5,0.5,0.5,0.5),Color(0.011,0.018,0.025,0.995))
+    archive_panel.name = "V17_LocalOperatorRecords"
+    archive_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+    var records_box := VBoxContainer.new()
+    records_box.add_theme_constant_override("separation",10)
+    archive_panel.add_child(records_box)
+    archive_title = _label(records_box,"A7 / OPERATOR RECORDS",24,CYAN)
+    var records_scroll := ScrollContainer.new()
+    records_scroll.name = "LocalRunsScrollableHistory"
+    records_scroll.custom_minimum_size = Vector2(0,392)
+    records_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    records_box.add_child(records_scroll)
+    archive_label = _label(records_scroll,"",12,WHITE)
+    archive_label.name = "OnlyActualLocalRunResults"
+    archive_erase_button = Button.new()
+    archive_erase_button.name = "TwoStepEraseLocalRuns"
+    archive_erase_button.custom_minimum_size = Vector2(0,52)
+    archive_erase_button.pressed.connect(_request_archive_erase)
+    records_box.add_child(archive_erase_button)
+    archive_close_button = Button.new()
+    archive_close_button.name = "CloseLocalRuns"
+    archive_close_button.custom_minimum_size = Vector2(0,52)
+    archive_close_button.pressed.connect(_toggle_run_archive)
+    records_box.add_child(archive_close_button)
+    archive_panel.visible = false
     _refresh_after_action_locale()
+    _refresh_run_archive_locale()
 
 func _touch_button(parent: Control, text_value: String, x: float, y: float, width: float, move_key: String = "") -> Button:
     var btn := Button.new()
@@ -1193,6 +1252,13 @@ func _layout_hud() -> void:
     end_panel.offset_left = -minf(300.0,width*0.45)
     end_panel.offset_right = minf(300.0,width*0.45)
     end_stats.custom_minimum_size.x = minf(500.0,width*0.83-28.0)
+    if archive_panel != null:
+        var archive_half: float = minf(315.0,width*0.45)
+        archive_panel.offset_left = -archive_half
+        archive_panel.offset_right = archive_half
+        archive_label.custom_minimum_size.x = archive_half*2.0-48.0
+        archive_label.add_theme_font_size_override("font_size",11 if narrow else 12)
+        archive_title.add_theme_font_size_override("font_size",18 if narrow else 24)
     if debrief_panel != null:
         var review_half: float = minf(315.0,width*0.45)
         debrief_panel.offset_left = -review_half
