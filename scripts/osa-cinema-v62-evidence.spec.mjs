@@ -56,6 +56,7 @@ test('V62 real metadata: 2-person review with role isolation, no false legal cle
  await root.getByRole('textbox',{name:'Existing account username'}).fill(viewer.username)
  await root.getByRole('combobox',{name:'Role'}).selectOption('viewer')
  await root.getByRole('button',{name:'Save server-side role'}).click()
+ await expect(root.locator('.osa-collab-people')).toContainText(viewer.username)
  const peerPage=await context.newPage();await auth(peerPage,peer.token)
  await peerPage.goto('/osa-cinema/studio/collaboration?lang=en')
  await peerPage.getByRole('tab',{name:'Evidence room'}).click()
