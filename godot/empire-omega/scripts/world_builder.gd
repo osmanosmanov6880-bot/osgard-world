@@ -42,6 +42,7 @@ var architecture_trim: MultiMeshInstance3D
 var r98_facade_ribs: MultiMeshInstance3D
 var city_reign_facades: Node3D
 var city_reign_squares: Node3D
+var city_reign_building_finishes: Array[StandardMaterial3D] = []
 var streetfront: Node3D
 var facade_balconies: Node3D
 var road_paint: Node3D
@@ -259,7 +260,15 @@ func _create_city() -> void:
 				var width := rng.randf_range(11,15)
 				var color := base_color.lightened(rng.randf_range(0.05,0.32)) if (ix + iz + n) % 3 == 0 else base_color.darkened(rng.randf_range(0.08,0.28))
 				var pos := Vector3(x+offset,height*0.5,z+(offset if (ix + iz) % 2 == 0 else -offset))
-				_box(chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
+				# CITY REIGN A3: real shared 128px three-family procedural PBR on
+				# existing physically colliding walls; geometry unchanged.
+				# The old grey single-color body is not a fake texture anymore.
+				var actual_building: Node3D = _box(
+					chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
+				var actual_body: MeshInstance3D = actual_building.get_node("VisualMesh") as MeshInstance3D
+				var building_finish: StandardMaterial3D = FACADE_PACK.facade(color,building_count)
+				actual_body.material_override = building_finish
+				city_reign_building_finishes.append(building_finish)
 				architecture_trim.call("record",pos,width,height)
 				r98_facade_ribs.call("record",pos,width,height,id)
 				# Entrances and the ground-floor window gap must share the same
@@ -568,6 +577,11 @@ func _apply_r90_offline_pbr() -> void:
 func apply_visual_budget(mode: String) -> void:
 	visual_budget = mode if ["low","standard","cinematic"].has(mode) else "standard"
 	_apply_r90_offline_pbr()
+	# Three SHARED original stone/plaster/brick texture families remain
+	# resident; normals are enabled only for the opted-in cinematic tier.
+	# Low and standard players retain the albedo, but skip normal-map cost.
+	for finish in city_reign_building_finishes:
+		finish.normal_enabled = visual_budget == "cinematic"
 	if weather_particles != null:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if r90_urban != null:
