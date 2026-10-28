@@ -17,6 +17,7 @@ const AMBER := Color("efb970")
 
 var art_kit: A7ArchitecturalDetail
 var cathedral: A7IndustrialCathedral
+var hero_art: A7CinematicHeroSet
 var guide_progress: float = 0.0
 var sector_index: int = 0
 var guide_moves: int = 0
@@ -63,6 +64,9 @@ func _ready() -> void:
     cathedral = A7IndustrialCathedral.new()
     add_child(cathedral)
     cathedral.build()
+    hero_art = A7CinematicHeroSet.new()
+    add_child(hero_art)
+    hero_art.build()
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -272,12 +276,14 @@ func set_camera(index: int) -> void:
         cathedral.set_sector(0)
     if camera == null:
         return
-    var spots := [Vector3(5.6, 4.25, 8.15),
-        Vector3(0.0, 3.85, 8.30),
-        Vector3(-5.7, 3.60, 7.10)]
+    # W68 eye-level camera reads the machinery as industrial scale,
+    # instead of turning it into a top-down miniature.
+    var spots := [Vector3(5.3, 3.20, 8.40),
+        Vector3(0.0, 3.15, 8.45),
+        Vector3(-5.15, 3.25, 8.10)]
     camera.position = spots[camera_index]
     camera.fov = 52.0
-    camera.look_at(Vector3(0.0, 2.40, -0.95), Vector3.UP)
+    camera.look_at(Vector3(0.0, 2.80, -0.95), Vector3.UP)
     camera.current = true
 
 # W67: real spatial inspection between physically modeled reactor and relay
@@ -306,11 +312,11 @@ func step_inspection_route(direction: int) -> void:
 func _apply_guide_pose() -> void:
     # Coordinate-based route lies between two REAL modeled locations:
     # core chamber (z~0) and power relay room (z~19).
-    var start := Vector3(5.6, 4.25, 8.15)
+    var start := Vector3(5.3, 3.20, 8.40)
     # Pull away from the power bus towers so the three capacitor stacks,
     # rear bulkhead and actual depth of the relay hall fit in frame.
     var end := Vector3(8.0, 5.1, 28.10)
-    var look_start := Vector3(0, 2.4, -0.95)
+    var look_start := Vector3(0, 2.80, -0.95)
     var look_end := Vector3(8.0, 3.45, 16.45)
     camera.position = start.lerp(end, guide_progress)
     camera.fov = lerpf(52.0, 64.0, guide_progress)
@@ -332,6 +338,8 @@ func set_quality(new_mode: String) -> void:
         art_kit.visible = mode == "hero"
     if cathedral != null:
         cathedral.set_quality(mode)
+    if hero_art != null:
+        hero_art.set_quality(mode)
     if key_light != null:
         key_light.light_energy = 2.30 if mode == "hero" else 1.25
         fill_light.visible = mode == "hero"
@@ -384,6 +392,8 @@ func apply_snapshot(state: Dictionary) -> void:
         art_kit.present(state)
     if cathedral != null:
         cathedral.present(state)
+    if hero_art != null:
+        hero_art.present(state)
     snapshot_count += 1
 
 func _process(delta: float) -> void:
@@ -409,6 +419,11 @@ func qa_readout() -> Dictionary:
         "original_art_kit": art_kit != null,
         "art_geometry": art_kit.real_geometry_count if art_kit != null else 0,
         "cathedral_geometry": cathedral.mesh_instances if cathedral != null else 0,
+        "w68_hero_geometry": hero_art.structure_count if hero_art != null else 0,
+        "w68_machined_torus": hero_art.true_torus_count if hero_art != null else 0,
+        "w68_hero_spots": 2 if hero_art != null and hero_art.spot_core != null and hero_art.spot_relay != null else 0,
+        "w68_original_texture_profiles": hero_art.surface_lab.generated if hero_art != null else 0,
+        "w68_original_texture_pixels": hero_art.surface_lab.pixels_written if hero_art != null else 0,
         "cathedral_two_real_sectors": cathedral != null and cathedral.relay_terminals == 3,
         "inspection_sector": sector_index,
         "inspection_progress": guide_progress,
