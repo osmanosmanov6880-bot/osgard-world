@@ -296,6 +296,20 @@ func _process(_delta: float) -> void:
         recovered_missing_end_timeout += 1
         cancel_capture()
 
+func is_source_walk_held() -> bool:
+    # Read EXACT original W70 physics key. This is a read-only source
+    # integrity witness, not an auto-walk or synthetic distance counter.
+    if actor == null or source_walk_fingers.is_empty():
+        return false
+    for source_key in source_walk_fingers.values():
+        var key_name: String = str(source_key)
+        if not A7TouchFieldControls.WALK_KEYS.has(key_name):
+            return false
+        var godot_key: int = int(A7TouchFieldControls.WALK_KEYS[key_name])
+        if not bool(actor.held_keys.get(godot_key,false)):
+            return false
+    return true
+
 func qa_readout() -> Dictionary:
     return {
         "schema":"LAST_FRONTIER_W83_TRUE_GODOT_INDEXED_MULTITOUCH_V1",
@@ -313,6 +327,7 @@ func qa_readout() -> Dictionary:
         "touch_end_index_recoveries":recovered_end_by_position,
         "touch_end_loss_watchdog_recoveries":recovered_missing_end_timeout,
         "source_active_walk_fingers":source_walk_fingers.size(),
+        "original_W70_walk_key_still_pressed":is_source_walk_held(),
         "source_walk_touch_starts":actual_walk_touch_starts,
         "source_walk_touch_ends":actual_walk_touch_ends,
         "original_W70_walk_reassert_frames":original_walk_reassert_frames,

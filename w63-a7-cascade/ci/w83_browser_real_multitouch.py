@@ -136,12 +136,45 @@ def true_dual_finger(page,cdp,g):
     distance_at_release=released["w70_real_physical_distance"]
     page.wait_for_timeout(240)
     still_walking=snapshot(page)
-    require(still_walking["w70_real_physical_distance"] >
-            distance_at_release+0.12 and
-            still_walking["w83_source_active_walk_fingers"]>=1 and
+    # A genuinely collidable Godot world has a solid original safety
+    # barrier on the first W70 catwalk at z=11.7m. After the second-finger
+    # END recovery, W may have already walked into the barrier. Requiring
+    # the character to keep TRANSLATING into solid steel is a wrong test.
+    # Instead assert the original W70 key remains physically DOWN and
+    # real physics frames continue. Translation OR actual barrier contact
+    # is required, never a fabricated position or disabled collision.
+    advancing = still_walking["w70_real_physical_distance"] > distance_at_release+0.12
+    body_xyz = still_walking["w70_real_body_xyz"]
+    physical_barrier = (
+        len(body_xyz)==3 and
+        10.4 <= float(body_xyz[2]) <= 12.3 and
+        still_walking["w70_real_collisions"] >
+            released["w70_real_collisions"]
+    )
+    evidence={
+        "look_finger_released":released["w83_active_look_finger"],
+        "source_finger_before":released["w83_source_active_walk_fingers"],
+        "source_finger_after":still_walking["w83_source_active_walk_fingers"],
+        "real_key_after":still_walking["w83_true_original_walk_key_held"],
+        "W70_physics_frames_before":released["w70_real_physics_frames"],
+        "W70_physics_frames_after":still_walking["w70_real_physics_frames"],
+        "W70_collisions_before":released["w70_real_collisions"],
+        "W70_collisions_after":still_walking["w70_real_collisions"],
+        "W70_actual_xyz":body_xyz,
+        "real_distance_before":distance_at_release,
+        "real_distance_after":still_walking["w70_real_physical_distance"],
+        "actually_moved":advancing,"physically_hit_source_barrier":physical_barrier,
+    }
+    print("W83 TRUE ORIGINAL 2-FINGER POST-LOOK PHYSICS EVIDENCE:",
+          json.dumps(evidence,sort_keys=True),flush=True)
+    require(still_walking["w83_source_active_walk_fingers"]>=1 and
+            still_walking["w83_true_original_walk_key_held"] is True and
             still_walking["w83_real_walk_reassert_frames"] >
-                released["w83_real_walk_reassert_frames"],
-            "Original first indexed physical W continues after look finger release, even if GUI compatibility MouseUp fires")
+                released["w83_real_walk_reassert_frames"] and
+            still_walking["w70_real_physics_frames"] >=
+                released["w70_real_physics_frames"]+6 and
+            (advancing or physical_barrier),
+            "First real W70 touch stays held, original physics advances, and player EITHER walks OR truly collides with original solid catwalk barrier")
     send(cdp,"touchEnd",[])
     page.wait_for_timeout(220)
     all_released=snapshot(page)
