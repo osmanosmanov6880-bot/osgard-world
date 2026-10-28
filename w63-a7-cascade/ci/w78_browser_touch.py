@@ -113,8 +113,8 @@ def run(export,evidence,sha):
             page.mouse.up()
             check(during["w78_true_touch_physics_frames"]>3,
                   "Actual Godot held native Button.down moved W70 CharacterBody frames")
-            check(during["w70_actual_walk_distance"] >
-                  old["w70_actual_walk_distance"]+0.35,
+            check(during["w70_real_physical_distance"] >
+                  old["w70_real_physical_distance"]+0.35,
                   "Pointer held on actual original Godot touch button MOVES physical actor")
             page.wait_for_timeout(150)
             after=screenshot(page,evidence,
