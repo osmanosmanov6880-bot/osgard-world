@@ -39,7 +39,7 @@ static func speed_cap(follower: Vector3,heading: Vector3,follower_speed: float,
     var leader_speed: float = maxf(0.0,other.dot(forward))
     var smooth_target: float = leader_speed+maxf(0.0,available-headway)*0.76
     var stop_bound: float = SAFETY.safe_speed(available,allowed,wetness)
-    return clampf(minf(allowed,smooth_target,stop_bound),0.0,allowed)
+    return clampf(minf(allowed,minf(smooth_target,stop_bound)),0.0,allowed)
 
 static func scan(car: Node3D,neighbors: Array,heading: Vector3,
         own_speed: float,cruise: float,wetness: float) -> float:

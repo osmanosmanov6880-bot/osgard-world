@@ -6,7 +6,7 @@ on:
       - feat/city-reign-r163-street-dynamics-20261029
   pull_request:
     branches:
-      - feat/city-reign-r163-drive-intelligence-20261029
+      - feat/city-reign-r162-drive-intelligence-20261029
 
 permissions:
   contents: read
