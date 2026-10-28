@@ -18,7 +18,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора    P — следующий план    F3 — диагностика\nH — показать / скрыть 3D-цель    T — прогноз энергосистемы\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    K — автонастройка    C — камера реактора    P — следующий план    F3 — диагностика\nH — показать / скрыть 3D-цель    T — прогноз энергосистемы\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -88,11 +88,13 @@ const COPY := {
         "motion_reduced": "КАМЕРА: БЕЗ ПОКАЧИВАНИЯ", "motion_normal": "КАМЕРА: КИНОРЕЖИМ",
         "audio_off": "ЗВУК: ВЫКЛ.", "audio_on": "ЗВУК: ВКЛ.",
         "quality_eco": "ГРАФИКА: ECO", "quality_hero": "ГРАФИКА: HERO",
+        "auto_on": "АВТОГРАФИКА: АКТИВНА / РЕАЛЬНЫЕ КАДРЫ", "auto_off": "АВТОГРАФИКА: ВЫКЛ.",
+        "auto_reduce": "АВТО: ECO / НЕСТАБИЛЬНОЕ ВРЕМЯ КАДРА", "auto_recover": "АВТО: HERO / СТАБИЛЬНЫЕ КАДРЫ",
         "footer": "IRON PULSE / BLACKOUT   •   ВЫМЫШЛЕННАЯ СИМУЛЯЦИЯ   •   БЕЗ СЕТЕВЫХ ПОДКЛЮЧЕНИЙ"
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera    P — next shot    F3 — diagnostics\nH — show / hide 3D objective    T — power-route forecast\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    K — adaptive quality    C — reactor camera    P — next shot    F3 — diagnostics\nH — show / hide 3D objective    T — power-route forecast\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -162,6 +164,8 @@ const COPY := {
         "motion_reduced": "CAMERA: REDUCED MOTION", "motion_normal": "CAMERA: CINEMATIC",
         "audio_off": "AUDIO: OFF", "audio_on": "AUDIO: ON",
         "quality_eco": "GRAPHICS: ECO", "quality_hero": "GRAPHICS: HERO",
+        "auto_on": "AUTO GRAPHICS: ON / REAL FRAME MEASUREMENTS", "auto_off": "AUTO GRAPHICS: OFF",
+        "auto_reduce": "AUTO: ECO / SLOW LOCAL FRAME PACING", "auto_recover": "AUTO: HERO / STABLE LOCAL FRAMES",
         "footer": "IRON PULSE / BLACKOUT   •   FICTIONAL SIMULATION   •   OFFLINE BY DESIGN"
     }
 }
@@ -1779,6 +1783,37 @@ func _toggle_language() -> void:
     _refresh_run_archive_locale()
     _refresh_radio_ui()
 
+func _apply_graphics_profile(next_mode: String) -> void:
+    if next_mode not in ["hero","eco"] or next_mode == quality_mode:
+        return
+    quality_mode = next_mode
+    art_stage.set_quality(quality_mode)
+    world_sectors.set_quality(quality_mode)
+    reactor_atrium.set_quality(quality_mode)
+    containment_fx.set_quality(quality_mode)
+    for index in range(legacy_lamps.size()):
+        legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
+    if quality_state_label != null:
+        quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
+
+func _refresh_auto_quality_ui() -> void:
+    if auto_quality_button == null:
+        return
+    var english: bool = locale == "en"
+    if adaptive_performance.enabled:
+        auto_quality_button.text = "K / AUTO GRAPHICS ON  •  TAP TO DISABLE" if english else "K / АВТОГРАФИКА ВКЛ.  •  ОТКЛЮЧИТЬ"
+    else:
+        auto_quality_button.text = "K / ENABLE MEASURED AUTO GRAPHICS" if english else "K / ВКЛЮЧИТЬ АВТОГРАФИКУ"
+    if quality_state_label != null:
+        quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
+
+func _toggle_auto_quality() -> void:
+    adaptive_performance.set_enabled(not adaptive_performance.enabled)
+    adaptive_sampling_clock = 0.0
+    _refresh_auto_quality_ui()
+    _announce("auto_on" if adaptive_performance.enabled else "auto_off")
+    _publish_web_state()
+
 func _gamepad_axis(axis_id: int) -> float:
     var joypads: Array[int] = Input.get_connected_joypads()
     if joypads.is_empty():
@@ -1872,14 +1907,15 @@ func _input(event: InputEvent) -> void:
             _save_checkpoint()
             _refresh_hud()
             return
+        if event.keycode == KEY_K:
+            _toggle_auto_quality()
+            return
         if event.keycode == KEY_G:
-            quality_mode = "eco" if quality_mode == "hero" else "hero"
-            art_stage.set_quality(quality_mode)
-            world_sectors.set_quality(quality_mode)
-            reactor_atrium.set_quality(quality_mode)
-            containment_fx.set_quality(quality_mode)
-            for i in range(legacy_lamps.size()):
-                legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
+            # An explicit player selection always takes priority over AUTO.
+            adaptive_performance.set_enabled(false)
+            adaptive_sampling_clock = 0.0
+            _apply_graphics_profile("eco" if quality_mode == "hero" else "hero")
+            _refresh_auto_quality_ui()
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
             return
         if event.keycode == KEY_C and started and not paused and not session.finished():
@@ -1973,7 +2009,22 @@ func _physics_process(delta: float) -> void:
         _show_end()
 
 func _process(delta: float) -> void:
-    performance_audit.observe(delta,started and not paused,quality_mode)
+    var gameplay_active: bool = started and not paused and not session.finished()
+    performance_audit.observe(delta,gameplay_active,quality_mode)
+    if adaptive_performance.enabled and gameplay_active and is_finite(delta) and delta > 0.0 and delta <= 0.25:
+        adaptive_sampling_clock += delta
+        if adaptive_sampling_clock >= 0.2:
+            var sample_delta: float = minf(adaptive_sampling_clock,0.25)
+            adaptive_sampling_clock = 0.0
+            var compact: bool = (_browser_css_size.x > 0 and _browser_css_size.x < 650) or get_viewport().get_visible_rect().size.x < 650
+            var next_quality: String = adaptive_performance.observe(sample_delta,true,quality_mode,performance_audit.telemetry(),compact)
+            if next_quality != "":
+                _apply_graphics_profile(next_quality)
+                _announce("auto_reduce" if next_quality == "eco" else "auto_recover")
+    else:
+        adaptive_sampling_clock = 0.0
+        if adaptive_performance.enabled:
+            adaptive_performance.observe(0.0,false,quality_mode,{},adaptive_performance.compact_device)
     runtime_seconds += delta
     if OS.has_feature("web") and runtime_seconds - _last_web_resize_check >= 0.4:
         _last_web_resize_check = runtime_seconds
