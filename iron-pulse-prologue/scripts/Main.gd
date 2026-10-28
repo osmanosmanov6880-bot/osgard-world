@@ -48,6 +48,11 @@ const COPY := {
         "rescue_medbay": "МЕДИЦИНСКИЙ УЗЕЛ", "rescue_quench": "ТЕПЛОВОЙ ГАСИТЕЛЬ", "rescue_uplink": "СВЯЗЬ И ЭВАКУАЦИЯ",
         "rescue_count": "СПАСАТЕЛЬНЫЕ СТАНЦИИ {used}/2",
         "rescue_final": "Станции спасения: {used}/2",
+        "campaign_start": "КАМПАНИЯ / ТРИ АВАРИИ",
+        "campaign_next": "СЛЕДУЮЩАЯ ОПЕРАЦИЯ",
+        "campaign_replay": "ПЕРЕИГРАТЬ КАМПАНИЮ",
+        "campaign_progress": "ОПЕРАЦИЯ {index}/3",
+        "campaign_carry": "НАСЛЕДИЕ РЕШЕНИЙ: ресурсы следующей операции изменены",
         "relay_medbay": "МЕДБЛОК: воздух и здоровье восстановлены.",
         "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
         "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
@@ -115,6 +120,11 @@ const COPY := {
         "rescue_medbay": "MEDICAL BAY", "rescue_quench": "HEAT SUPPRESSOR", "rescue_uplink": "EVACUATION UPLINK",
         "rescue_count": "RESCUE NETWORK {used}/2",
         "rescue_final": "Rescue stations: {used}/2",
+        "campaign_start": "CAMPAIGN / THREE EMERGENCIES",
+        "campaign_next": "NEXT OPERATION",
+        "campaign_replay": "REPLAY CAMPAIGN",
+        "campaign_progress": "OPERATION {index}/3",
+        "campaign_carry": "PREVIOUS CHOICES: next operation resources have changed",
         "relay_medbay": "MEDBAY: air and crew condition restored.",
         "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
         "relay_uplink": "UPLINK: additional evacuation time secured.",
@@ -156,6 +166,8 @@ var session: IPCrisisEngine = IPCrisisEngine.new()
 var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
+var campaign: IPCampaignFlow = IPCampaignFlow.new()
+const CAMPAIGN_RECORD_PATH: String = "user://iron_pulse_campaign_progress_v9.json"
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
@@ -201,6 +213,7 @@ var intro_title: Label
 var intro_body: Label
 var intro_button: Button
 var continue_button: Button
+var campaign_button: Button
 var radio_panel: PanelContainer
 var radio_speaker: Label
 var radio_dialogue: Label
@@ -360,6 +373,7 @@ func _publish_web_state() -> void:
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["story"] = story.diagnostic()
+    state["campaign"] = campaign.diagnostic()
     state["relay_3d_terminals"] = relay_terminals.size()
     var real_relays: Array = []
     for relay_info in relay_terminals:
@@ -843,6 +857,12 @@ func _make_overlays() -> void:
     continue_button.custom_minimum_size = Vector2(0,46)
     continue_button.pressed.connect(_continue_checkpoint)
     start_box.add_child(continue_button)
+    campaign_button = Button.new()
+    campaign_button.name = "CampaignThreeEmergencies"
+    campaign_button.text = _copy("campaign_start")
+    campaign_button.custom_minimum_size = Vector2(0,48)
+    campaign_button.pressed.connect(_start_campaign)
+    start_box.add_child(campaign_button)
     continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
     pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
@@ -867,7 +887,7 @@ func _make_overlays() -> void:
     end_button = Button.new()
     end_button.text = _copy("restart")
     end_button.custom_minimum_size = Vector2(0,55)
-    end_button.pressed.connect(_restart)
+    end_button.pressed.connect(_end_action)
     end_box.add_child(end_button)
     end_panel.visible = false
 
@@ -1131,7 +1151,8 @@ func _checkpoint_payload() -> Dictionary:
         "quality":quality_mode,
         "reduced_motion":reduced_motion,
         "player_position":[player.position.x,player.position.y,player.position.z],
-        "visited_sectors":visited_sectors.duplicate()
+        "visited_sectors":visited_sectors.duplicate(),
+        "campaign":campaign.checkpoint()
     }
 
 func _save_checkpoint() -> bool:
@@ -1179,11 +1200,23 @@ func _continue_checkpoint() -> bool:
     var saved_locale: String = str(payload.get("locale","ru"))
     if saved_locale not in ["ru","en"] or typeof(payload.get("reduced_motion",null)) != TYPE_BOOL:
         return false
+    # Validate the optional V9+ campaign atomically before any game mutation.
+    # Historical V6-V8.6 saves have no campaign field and must still load.
+    var saved_campaign := IPCampaignFlow.new()
+    if payload.has("campaign"):
+        if not payload["campaign"] is Dictionary or not saved_campaign.restore(payload["campaign"]):
+            return false
+    if saved_campaign.active:
+        if saved_campaign.current_scenario() != restored_engine.scenario_id:
+            return false
+        if saved_campaign.records.size() != saved_campaign.index:
+            return false
     # Now, after atomic validation, restore all gameplay and authored story state.
     cinematic_view = false
     _apply_cinematic_view()
     session = restored_engine
     story = restored_story
+    campaign = saved_campaign
     selected_scenario = session.scenario_id
     locale = saved_locale
     quality_mode = saved_quality
@@ -1237,6 +1270,30 @@ func _select_scenario(next_scenario: String) -> void:
     _update_scenario_picker()
     _refresh_hud()
 
+func _start_campaign() -> void:
+    if started:
+        return
+    campaign.begin()
+    selected_scenario = campaign.current_scenario()
+    _restart()
+
+func _end_action() -> void:
+    if not campaign.active or not session.won:
+        _restart()
+        return
+    if campaign.awaiting_advance():
+        if campaign.advance():
+            selected_scenario = campaign.current_scenario()
+            _restart()
+        return
+    # Three real victories produced the final campaign dossier.
+    if campaign.completed():
+        campaign.begin()
+        selected_scenario = campaign.current_scenario()
+        _restart()
+        return
+    _restart()
+
 func _fast_interact() -> void:
     _interact(true)
 
@@ -1262,6 +1319,8 @@ func _restart() -> void:
     cinematic_view = false
     _apply_cinematic_view()
     session.reset(selected_scenario)
+    if campaign.active and campaign.index > 0:
+        campaign.apply_to_next(session)
     story.reset(selected_scenario)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
@@ -1308,10 +1367,11 @@ func _toggle_language() -> void:
     locale = "en" if locale == "ru" else "ru"
     intro_body.text = _copy("intro")
     intro_button.text = _copy("start")
+    campaign_button.text = _copy("campaign_start")
     _update_scenario_picker()
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
-    end_button.text = _copy("restart")
+    end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
     _announce("language")
     _refresh_hud()
@@ -1340,7 +1400,7 @@ func _gamepad_button(button_index: int) -> void:
         return
     if session.finished():
         if button_index == JOY_BUTTON_A:
-            _restart()
+            _end_action()
         return
     match button_index:
         JOY_BUTTON_A:
@@ -1412,7 +1472,7 @@ func _input(event: InputEvent) -> void:
             return
         if session.finished():
             if event.keycode == KEY_R:
-                _restart()
+                _end_action()
             return
         if event.keycode == KEY_1 or event.keycode == KEY_2:
             _choose_priority("crew" if event.keycode == KEY_1 else "core")
@@ -1628,6 +1688,10 @@ func _show_end() -> void:
     if end_panel.visible:
         return
     end_panel.visible = true
+    if session.won and campaign.active:
+        if campaign.record_victory(session):
+            checkpoint_store.save(campaign.checkpoint(),CAMPAIGN_RECORD_PATH)
+    end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     if DisplayServer.get_name() != "headless":
         checkpoint_store.clear(checkpoint_path)
     end_title.text = _copy("victory") if session.won else _copy("failure")
@@ -1641,6 +1705,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    if campaign.active:
+        end_stats.text += "\n\n" + campaign.summary(locale)
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1659,6 +1725,8 @@ func _refresh_hud() -> void:
     subtitle_label.text = _copy("scenario_title_" + selected_scenario)
     if started:
         subtitle_label.text += " / " + _copy("sector_" + active_sector)
+    if campaign.active:
+        subtitle_label.text += " / " + _copy("campaign_progress").format({"index":campaign.index+1})
     _update_guidance(objective_key)
     _update_terminal_highlights(objective_key)
     telemetry_label.text = "%s  %d°C    |    %s  %d%%\n%s  %d%%    |    %s  %d%%    |    %s  %02d:%02d" % [
