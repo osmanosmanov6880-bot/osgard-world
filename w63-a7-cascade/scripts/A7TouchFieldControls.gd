@@ -24,7 +24,7 @@ const WALK_KEYS := {
 }
 
 var actor: A7FirstPersonOperator
-var rail: HBoxContainer
+var rail: GridContainer
 var controls: Dictionary = {}
 var held_directions: Dictionary = {}
 var held_look: int = 0
@@ -65,17 +65,22 @@ func build(physical_operator: A7FirstPersonOperator) -> void:
     name = "W78ActualBrowserTouchToNative3DPhysics"
     mouse_filter = Control.MOUSE_FILTER_IGNORE
     set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    rail = HBoxContainer.new()
-    rail.name = "W78CompactLiveTouchNavAndUse"
+    # W80: authentic 390px/320px screenshot QA exposed the long W78
+    # single row spilling E outside the 3D stage. Four-column native Godot
+    # layout fits the actual stage width, not the wider root browser frame.
+    rail = GridContainer.new()
+    rail.columns = 4
+    rail.name = "W80TwoRowSourcePhysicsThumbControls"
     rail.anchor_left = 0.0
     rail.anchor_right = 1.0
     rail.anchor_top = 1.0
     rail.anchor_bottom = 1.0
     rail.offset_left = 8.0
     rail.offset_right = -8.0
-    rail.offset_top = -63.0
+    rail.offset_top = -119.0
     rail.offset_bottom = -7.0
-    rail.add_theme_constant_override("separation",3)
+    rail.add_theme_constant_override("h_separation",4)
+    rail.add_theme_constant_override("v_separation",5)
     rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(rail)
     for key in ["left","forward","back","right",
@@ -158,7 +163,7 @@ func set_context(compact: bool, immersed: bool, piloting: bool,
     if visible:
         # Minimum touch hit target is 40px for a 390px CSS viewport, with
         # 320px fallback; no oversized 400px buttons or vertical word wrap.
-        var smallest: float = 32.0 if actual_screen_width < 355.0 else 39.0
+        var smallest: float = 32.0 if actual_screen_width < 355.0 else 48.0
         for button in controls.values():
             (button as Button).custom_minimum_size = Vector2(smallest,48)
     (controls["inspect"] as Button).tooltip_text = (
