@@ -1,0 +1,115 @@
+name: CITY REIGN AAA CINEMATIC ART — exact Godot and regression, NO DEPLOY
+on:
+  push:
+    branches:
+      - feat/city-reign-cinematic-art-pass-20261028
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-cinematic-art-qa.yml'
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-cinematic-art-qa.yml'
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-art-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  exact-original-godot-cinematic-art:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Source-lock to exact original art candidate, never master
+        env:
+          SOURCE: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE"
+          test "${#SOURCE}" -eq 40
+          mkdir -p city-reign-art-evidence
+          echo "$SOURCE" > city-reign-art-evidence/source-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Import authentic original 3D game and deterministic sound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-art-evidence/native-import.log
+      - name: Run real AAA art geometry test and all CITY REIGN gameplay suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          for testfile in \
+            v106_city_reign_world_consequences \
+            v107_city_reign_impact_story \
+            v108_city_reign_unique_landmarks \
+            v109_city_reign_policies_crises \
+            v110_city_reign_first_mandate \
+            v111_city_reign_street_interaction \
+            v112_city_reign_resident_reactions \
+            v113_city_reign_cinematic_architecture; do
+            log="city-reign-art-evidence/${testfile}.log"
+            timeout --signal=TERM --kill-after=6s 140s godot --headless \
+              --path godot/empire-omega --script "res://tests/${testfile}.gd" | tee "$log"
+            case "$testfile" in
+              v106*) marker="CITY REIGN C1 real Godot world consequences:" ;;
+              v107*) marker="CITY REIGN C2 impact and story:" ;;
+              v108*) marker="CITY REIGN C3 distinct civic 3D:" ;;
+              v109*) marker="CITY REIGN C5 real policy and emergencies:" ;;
+              v110*) marker="CITY REIGN E01 real playable promise:" ;;
+              v111*) marker="CITY REIGN E01 real on-foot street choice:" ;;
+              v112*) marker="CITY REIGN E01 real resident reactions:" ;;
+              v113*) marker="CITY REIGN AAA source-native art pass:" ;;
+            esac
+            grep -Fq "$marker" "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::ART QA real Godot suite failed: $testfile"; exit 1
+            fi
+          done
+      - name: Re-check manual-only release contract, never SSH publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-direct-publish.contract.test.mjs \
+            | tee city-reign-art-evidence/manual-release-safety.log
+      - name: Generate source SHA-256 proof and explicit AAA hold
+        env:
+          SOURCE: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          files=[
+            'godot/empire-omega/scripts/world_builder.gd',
+            'godot/empire-omega/scripts/city_reign_cinematic_facades.gd',
+            'godot/empire-omega/scripts/city_reign_signature_squares.gd',
+            'godot/empire-omega/tests/v113_city_reign_cinematic_architecture.gd',
+          ]
+          out={'source_sha':os.environ['SOURCE'],'engine':'Godot 4.4.1 GL Compatibility',
+            'proof_sha256':{p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in files},
+            'original_3d':True,'art_team_human_approval':False,
+            'real_hardware_fps_evidence':False,'photoreal_aaa_approved':False,
+            'production_release_approved':False}
+          Path('city-reign-art-evidence/manifest.json').write_text(json.dumps(out,indent=2)+'\n')
+          PY
+      - name: Archive actual source, tests and no-release provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-art-${{ github.run_id }}
+          path: city-reign-art-evidence/
+          if-no-files-found: warn
+          retention-days: 14

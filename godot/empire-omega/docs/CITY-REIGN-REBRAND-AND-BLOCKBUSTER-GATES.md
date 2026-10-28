@@ -55,3 +55,9 @@
 - [E01 addendum] Original in-world proposal boards are now genuine walk-up F interactions: they open the live governance UI, select the physical district, and perform NO silent cost/XP transaction. Only explicit investment buttons can spend. Full-world SceneTree regression `v111_city_reign_street_interaction.gd` tests real scene/player/3D signs/street accessibility, two sites, unchanged original 34 pedestrians and 12 traffic cars.
 
 - [E01 citizens] Real residents' native `J` dialogue now varies with actual saved construction/completion of Open Budget or Safe Crossings; other districts mention actual low district quality or general concerns, and live crises add concern. `city_reign_resident_reactions.gd` is pure narrative commentary (no automated trust/stat change); `v112_city_reign_resident_reactions.gd` verifies displayed real popups, 4 districts, 3 languages, states and save immutability.
+
+## A1-A3 — REAL 3D cinematic metropolis (source candidate)
+- Deterministic 4-batch per-original-building architectural 3D cornice/header/vertical facade detail, no new building/physics lot; 4 sculpted location-specific installation meshes and 12 instanced wayfinding accents.
+- Existing original shared 128px plaster/ashlar/brick PBR triplanar materials now applied to original physical building bodies (not simply imported unused). High-tier normals only; GL Compatibility mobile budget remains bounded.
+- Real electricity + hour drives night accent emission; reset, routes, money, camera and original 40 missions are not touched. Three localized plaza label languages.
+- New native `v113` and workflow `city-reign-cinematic-art-qa.yml`: pending exact SHA engine verification; **no photoreal AAA claim and no production GO**.
