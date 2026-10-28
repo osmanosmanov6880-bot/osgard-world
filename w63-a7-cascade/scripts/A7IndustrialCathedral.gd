@@ -29,6 +29,7 @@ var catwalk_sections: int = 0
 var relay_terminals: int = 0
 var readouts: int = 0
 var sector: int = 0
+var compact_view: bool = false
 var energy: float = 0.85
 var danger: float = 0.0
 var signal_quality: float = 0.44
@@ -262,6 +263,13 @@ func build() -> void:
 func set_sector(index: int) -> void:
     sector = clampi(index, 0, 1)
 
+func set_compact_view(enabled: bool) -> void:
+    compact_view = enabled
+    # At 320-390px the true 3D world captions must not visually collide
+    # with accessible HUD, camera reticle or the native game controls.
+    for sign in sector_signs:
+        sign.visible = not enabled
+
 func set_quality(mode: String) -> void:
     if high_detail != null:
         high_detail.visible = mode != "eco"
@@ -294,6 +302,8 @@ func qa_readout() -> Dictionary:
         "physical_catwalk_modules": catwalk_sections,
         "real_relay_machines": relay_terminals,
         "sector": sector,
+        "compact_view": compact_view,
+        "world_text_hidden_on_phone": compact_view and not sector_signs[0].visible,
         "has_two_spatially_separate_wings": main_arch != null and relay_sector != null,
         "real_native_3d_signs": sector_signs.size() == 4,
         "energy": energy, "danger": danger,
