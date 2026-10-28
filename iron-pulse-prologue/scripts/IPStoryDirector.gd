@@ -85,6 +85,7 @@ const SOURCE_EVENTS := {
     "relay_medbay":"relay_medbay",
     "relay_quench":"relay_quench",
     "relay_uplink":"relay_uplink",
+    "relay_budget":"relay_budget",
     "override_authorized":"override",
     "reactor_overheat":"failure",
     "life_support_lost":"failure",
