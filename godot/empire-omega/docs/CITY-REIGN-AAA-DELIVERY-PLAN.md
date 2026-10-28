@@ -95,6 +95,14 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] Commission and license high-poly hero vehicles and record actual real-hardware FPS; current shapes are original stylized 3D art, not AAA photoreal approval.
 - Complete source and acceptance contract: `docs/CITY-REIGN-AUTOMOTIVE-ART-DIRECTION.md`.
 
+## AAA A7 — source-real playable player car silhouettes
+- [x] All four original owned vehicle models (compact, courier, executive, utility) have distinct real 3D closed profile shapes and corrected glass rest transforms, not just car color.
+- [x] The original compact always keeps its exact original FlowBody and AerodynamicGreenhouse meshes and all existing wheel/brake/vehicle physics. Three other families share at most 6 new cached original Mesh resources.
+- [x] Native garage action `VehicleController.apply_variant` now also updates existing exact body/canopy 3D; original vehicle catalog prices, speed, fuel and save schema unchanged.
+- [ ] Original full-world `v115` and authentic v26/v21/v22/v113 Godot acceptance on exact branch head REQUIRED. No photoreal AAA acceptance.
+- [ ] Final hero GLB meshes, true skinning and PBR consistency, hardware GPU benchmark and independent aesthetic/driver testing.
+- Architecture and source-art contract: `docs/CITY-REIGN-HERO-GARAGE-AAA-DESIGN.md`.
+
 ## A9 — Premium interactive garage (real Godot UI)
 - [x] Four source-bound original Godot PanelContainer vehicle cards, R90 charcoal/brass visual hierarchy, mobile 1-column / desktop 2-column, direct visible 46px actions and RU/EN/ZH.
 - [x] Actual speed/acceleration/handling source multipliers and catalog costs/condition; no fake stats or economy change.
