@@ -313,6 +313,9 @@ func _spawn_traffic() -> void:
 	for i in range(12):
 		var route: Array[Vector3] = _road_loop(i)
 		var traffic = TRAFFIC_SCENE.new()
+		# Three real vehicles per authored silhouette; deterministic and
+		# independent of instance IDs, saves or route randomization.
+		traffic.visual_style = ["sedan","taxi","courier","executive"][i%4]
 		add_child(traffic)
 		traffic.set_route(route,6.5+float(i%4)*2.0)
 		traffic.signal_controller = traffic_signals
@@ -635,6 +638,11 @@ func _apply_visual_budget() -> void:
 		car.update_headlights(float(GameState.data.get("day_clock",12.0)),effective)
 	world.sun.shadow_enabled = effective != "low"
 	world.apply_visual_budget(effective)
+	# Switching live mobile quality adjusts ONLY cached traffic render
+	# meshes; no lane/traffic/vehicle collider changes and no allocations
+	# beyond the 6 shared precomputed city-fleet variant surfaces.
+	for street_car in ambient_cars:
+		street_car.set_visual_quality(effective)
 	if camera != null:
 		camera.far = 520.0 if effective == "low" else (720.0 if effective == "standard" else 900.0)
 	world.update_language(GameState.locale)

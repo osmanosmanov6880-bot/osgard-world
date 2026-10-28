@@ -21,6 +21,10 @@ var wetness := 1.0
 var citizens: Array = []
 var _last_braking := true
 var patrol_vehicle := false
+# CITY REIGN A5: authored visual model family. This affects ONLY the
+# original two existing cached 3D chassis meshes, never AI or physical box.
+var visual_style: String = "sedan"
+var visual_quality: String = "standard"
 var siren_left: MeshInstance3D
 var siren_right: MeshInstance3D
 var siren_timer := 0.0
@@ -37,14 +41,20 @@ func _ready() -> void:
 	collider.shape = shape
 	collider.position.y = 0.45
 	add_child(collider)
-	_part("CarBody",Vector3(2.26,0.8,4.05),Vector3(0,0.35,0),Color("182d56") if patrol_vehicle else (Color("5d8198") if get_instance_id()%2==0 else Color("89685b")))
+	var body_tint: Color = Color("182d56") if patrol_vehicle else (
+		Color("b89453") if visual_style=="taxi" else (
+		Color("647884") if visual_style=="courier" else (
+		Color("273c50") if visual_style=="executive" else (
+		Color("5d8198") if get_instance_id()%2==0 else Color("89685b")))))
+	_part("CarBody",Vector3(2.26,0.8,4.05),Vector3(0,0.35,0),body_tint)
 	_part("Cabin",Vector3(1.9,0.65,2.1),Vector3(0,0.98,0.1),Color("f2f2e6") if patrol_vehicle else Color("3c5262"))
 	# R126: visually replace original two rigid cuboids with actual cached,
 	# curved PBR closed 3D car/greenhouse meshes without adding ANY nodes.
 	var sculpted_body: MeshInstance3D = get_node("CarBody") as MeshInstance3D
 	var sculpted_cabin: MeshInstance3D = get_node("Cabin") as MeshInstance3D
-	sculpted_body.mesh = SEDAN_SURFACE.body_mesh()
-	sculpted_cabin.mesh = SEDAN_SURFACE.cabin_mesh()
+	# The pre-approved default patrol/original car still uses R126's exact
+	# shared mesh. City-owned 12 traffic agents may select a visual model.
+	set_visual_quality(visual_quality)
 	var body_finish: StandardMaterial3D = sculpted_body.material_override as StandardMaterial3D
 	body_finish.vertex_color_use_as_albedo = true
 	body_finish.metallic = 0.57
@@ -74,6 +84,18 @@ func _ready() -> void:
 		var lamp := _part("BrakeLamp",Vector3(0.34,0.2,0.06),Vector3(x*0.67,0.3,2.05),Color("4a181f"),true)
 		brake_meshes.append(lamp)
 	_update_brake_lights(false)
+
+func set_visual_quality(tier: String) -> void:
+	visual_quality = tier if ["low","standard","cinematic"].has(tier) else "standard"
+	var chassis: MeshInstance3D = get_node_or_null("CarBody") as MeshInstance3D
+	var roof: MeshInstance3D = get_node_or_null("Cabin") as MeshInstance3D
+	if chassis == null or roof == null: return
+	# LOW reuses only three original R126 physical source meshes globally.
+	# STANDARD/CINEMATIC gain 3 more cached model families, still only
+	# two real draw nodes per vehicle; no runtime SurfaceTool allocations.
+	var desired: String = "sedan" if patrol_vehicle or visual_quality=="low" else visual_style
+	chassis.mesh = SEDAN_SURFACE.body_mesh_for(desired)
+	roof.mesh = SEDAN_SURFACE.cabin_mesh_for(desired)
 
 func _part(label: String, dimensions: Vector3, at: Vector3, color: Color, emit: bool = false) -> MeshInstance3D:
 	var part := MeshInstance3D.new()
