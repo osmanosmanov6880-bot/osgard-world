@@ -55,7 +55,7 @@ const COPY := {
         "coil_alpha": "КАТУШКА АЛЬФА", "coil_beta": "КАТУШКА БЕТА", "coil_gamma": "КАТУШКА ГАММА",
         "coil_hint": "КОНТУР A7 / {name} / {distance} м  [E] СИНХРОНИЗИРОВАТЬ",
         "coil_spent": "КОНТУР A7 / {name} / УЖЕ АКТИВИРОВАН",
-        "circuit_compact": "КОНТУР {used}/3 · ДАЛЬШЕ {next}",
+        "circuit_compact": "A7 {used}/3 > {next}",
         "rescue_compact": "СПАСЕНИЕ {used}/2",
         "containment_final": "Синхронизация A7: {status}",
         "circuit_complete": "ПОЛНАЯ", "circuit_incomplete": "НЕ ЗАВЕРШЕНА",
@@ -133,7 +133,7 @@ const COPY := {
         "coil_alpha": "ALPHA COIL", "coil_beta": "BETA COIL", "coil_gamma": "GAMMA COIL",
         "coil_hint": "A7 CIRCUIT / {name} / {distance} m  [E] SYNCHRONIZE",
         "coil_spent": "A7 CIRCUIT / {name} / ALREADY ACTIVATED",
-        "circuit_compact": "CIRCUIT {used}/3 · NEXT {next}",
+        "circuit_compact": "A7 {used}/3 > {next}",
         "rescue_compact": "RESCUE {used}/2",
         "containment_final": "A7 synchronization: {status}",
         "circuit_complete": "COMPLETE", "circuit_incomplete": "INCOMPLETE",
@@ -1731,10 +1731,11 @@ func _refresh_hud() -> void:
         _copy("heat"),int(session.heat),_copy("oxygen"),int(session.oxygen),
         _copy("crew"),int(session.crew_health),_copy("door"),int(session.door_charge),
         _copy("time"),floori(session.time_left/60.0),int(session.time_left)%60]
-    var hud_width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
-    var rescue_caption: String = _copy("rescue_compact") if hud_width < 650.0 else _copy("rescue_count")
+    # Compact 2-line risk interface; real V9 screenshot review found that
+    # verbose route labels wrapped to a third line over the 3D corridor.
+    var rescue_caption: String = _copy("rescue_compact")
     var next_coil: String = session.next_containment_coil()
-    var next_name: String = _copy("coil_"+next_coil) if next_coil != "" else "OK"
+    var next_name: String = next_coil.to_upper() if next_coil != "" else "OK"
     var coil_caption: String = _copy("circuit_compact").format({
         "used":session.containment_sequence.size(),"next":next_name})
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s   ·   %s" % [
