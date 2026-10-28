@@ -35,18 +35,18 @@ func _mat(color: Color, glow: float = 0.0, unshaded: bool = false) -> StandardMa
         result.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     return result
 
-func _detail_box(stage: A7CinematicStage, parent: Node3D,
+func _detail_box(stage: Node3D, parent: Node3D,
         id: String, dim: Vector3, origin: Vector3, material: StandardMaterial3D) -> MeshInstance3D:
     real_geometry_count += 1
-    return stage._box(parent, id, dim, origin, material)
+    return stage.call("_box", parent, id, dim, origin, material) as MeshInstance3D
 
-func _detail_cylinder(stage: A7CinematicStage, parent: Node3D,
+func _detail_cylinder(stage: Node3D, parent: Node3D,
         id: String, radius: float, h: float, origin: Vector3,
         material: StandardMaterial3D) -> MeshInstance3D:
     real_geometry_count += 1
-    return stage._cylinder(parent, id, radius, h, origin, material)
+    return stage.call("_cylinder", parent, id, radius, h, origin, material) as MeshInstance3D
 
-func build(stage: A7CinematicStage) -> void:
+func build(stage: Node3D) -> void:
     name = "ObsidianAuroraArtDistrict"
     var metal := _mat(Color("687d8e"))
     var metal_dark := _mat(Color("2c3c4d"))
