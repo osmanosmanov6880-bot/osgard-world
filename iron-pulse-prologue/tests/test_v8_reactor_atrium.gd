@@ -127,6 +127,16 @@ func _run() -> void:
         "Six main mission stations and three optional V7 rescues are unchanged")
     game._select_scenario("thermal")
     game.start_run()
+    _key(game,KEY_C)
+    _check(game.cinematic_view and not game.header_panel.visible and not game.side_panel.visible,
+        "Real C input clears obstructing HUD to reveal authored reactor environment")
+    _check(not game.prompt_panel.visible and not game.crosshair.visible,
+        "Cinematic inspection removes overlay clutter without moving camera")
+    _check(game.session.objective_id() == "scan" and not game.paused,
+        "C mode does not silently pause or skip active gameplay")
+    _key(game,KEY_C)
+    _check(not game.cinematic_view and game.header_panel.visible and game.side_panel.visible,
+        "Second C input restores gameplay HUD and original mission guidance")
     game.player.position = Vector3(-3.0,1.1,-15.5)
     game._interact()
     _check(game.session.core_scanned and game.session.objective_id() == "repair",
