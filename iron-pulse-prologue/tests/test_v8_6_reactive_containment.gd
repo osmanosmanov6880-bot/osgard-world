@@ -84,9 +84,11 @@ func _run() -> void:
     fx.update_from_crisis("thermal",95.0,80.0,20.0,false,1,false,true)
     _check(fx.readout()["spark_burst_visible"] and fx.readout()["actual_surge_count"] == 1,
         "An actual pulse event triggers GPU-instanced short emergency spark burst")
-    var spark_location: Vector3 = fx._spark_meshes.get_instance_transform(0).origin
-    _check(spark_location.distance_to(Vector3(12.6,7.2,-20.5)) < 3.0,
-        "Spark instances are positioned in the real reactor chamber")
+    var submitted: Array = fx.readout()["spark_0_render_submission"]
+    var spark_location := Vector3(float(submitted[0]),float(submitted[1]),float(submitted[2]))
+    _check(spark_location.distance_to(Vector3(12.6,7.2,-20.5)) < 3.0 and
+        fx.spark_cluster.multimesh == fx._spark_meshes,
+        "Actual spark position is submitted to original reactor GPU MultiMesh")
     fx.update_from_crisis("thermal",95.0,80.0,22.0,false,1,false,true)
     _check(not fx.readout()["spark_burst_visible"],
         "Surge animation self-terminates; no infinite looping false alarm")
