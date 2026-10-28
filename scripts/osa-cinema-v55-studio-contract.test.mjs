@@ -100,7 +100,10 @@ test('Existing cinematic progress drives a truthful local-only resume CTA',()=>{
  assert.match(resume,/\/osa-cinema\?lang=/)
  assert.match(resume,/YOUR CINEMA \/ LOCAL PROGRESS/)
  assert.doesNotMatch(resume,/\/checkout|video src|fetch\(/i)
- assert.match(studio,/window\.addEventListener\('storage',onStorage\)/)
+ const watchlist=read('src/osaCinemaWatchlist.ts')
+ assert.match(studio,/subscribeWatchlist\(sync\)/)
+ assert.match(watchlist,/window\.addEventListener\('storage', storageChanged\)/)
+ assert.match(watchlist,/window\.addEventListener\(OSA_STUDIO_WATCHLIST_EVENT, callback\)/)
 })
 
 test('Studio route shells are real generated pages and recognized React destinations',()=>{
