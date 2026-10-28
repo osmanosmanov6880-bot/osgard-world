@@ -52,6 +52,21 @@ const COPY := {
         "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
         "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
         "relay_budget": "ЛИМИТ: доступны только две станции спасения.",
+        "signal_resonance":"ЧАСТОТА: ядро остыло, кислород потрачен.",
+        "signal_atmosphere":"АТМОСФЕРА: воздух восстановлен, тепло выросло.",
+        "signal_transit":"МАРШРУТ: заряд шлюза увеличен, экипаж пострадал.",
+        "directive_crew":"ПРОТОКОЛ: спасение экипажа ценой нагрева.",
+        "directive_core":"ПРОТОКОЛ: защита ядра ценой ресурсов людей.",
+        "signal_status":"СИГНАЛЫ {used}/3",
+        "signal_final":"Цепь сигналов: {used}/3  /  Итог: {choice}",
+        "signal_hint":"{name} {distance} м / [E] СЧИТАТЬ",
+        "signal_locked":"{name} / СНАЧАЛА СКАНЕР A7",
+        "signal_spent":"{name} / УЖЕ СЧИТАНО",
+        "signal_directive_locked":"ПРОТОКОЛ / СОБЕРИ 3 СИГНАЛА",
+        "signal_directive_hint":"ПРОТОКОЛ / [E] ЭКИПАЖ  [Q] ЯДРО",
+        "signal_directive_done":"ПРОТОКОЛ / РЕШЕНИЕ ПРИНЯТО",
+        "signal_resonance_name":"РЕЗОНАНС", "signal_atmosphere_name":"АТМОСФЕРА",
+        "signal_transit_name":"ТРАНЗИТ", "signal_directive_name":"ПРОТОКОЛ",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -119,6 +134,21 @@ const COPY := {
         "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
         "relay_uplink": "UPLINK: additional evacuation time secured.",
         "relay_budget": "CAPACITY LIMIT: only two rescue stations may run.",
+        "signal_resonance":"FREQUENCY: cooler reactor, oxygen consumed.",
+        "signal_atmosphere":"ATMOSPHERE: air restored, reactor hotter.",
+        "signal_transit":"TRANSIT: door charged, crew condition spent.",
+        "directive_crew":"DIRECTIVE: crew rescue at the cost of heat.",
+        "directive_core":"DIRECTIVE: reactor shielding costs crew resources.",
+        "signal_status":"SIGNALS {used}/3",
+        "signal_final":"Signal chain: {used}/3  /  Decision: {choice}",
+        "signal_hint":"{name} {distance} m / [E] READ",
+        "signal_locked":"{name} / SCAN CORE A7 FIRST",
+        "signal_spent":"{name} / ALREADY ACQUIRED",
+        "signal_directive_locked":"DIRECTIVE / COLLECT 3 SIGNALS",
+        "signal_directive_hint":"DIRECTIVE / [E] CREW  [Q] CORE",
+        "signal_directive_done":"DIRECTIVE / DECISION COMMITTED",
+        "signal_resonance_name":"RESONANCE", "signal_atmosphere_name":"ATMOSPHERE",
+        "signal_transit_name":"TRANSIT", "signal_directive_name":"DIRECTIVE",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -1584,6 +1614,11 @@ func _nearest_relay() -> Dictionary:
             chosen = relay
     return chosen
 
+func _nearest_signal() -> Dictionary:
+    if player == null or signal_sites == null:
+        return {}
+    return signal_sites.nearest(player.global_position)
+
 func _physical_distance(point: Vector3) -> float:
     return Vector2(point.x,point.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
 
@@ -1592,6 +1627,30 @@ func _interact(fast: bool = false) -> void:
         return
     var target: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
+    var signal: Dictionary = _nearest_signal()
+    if not signal.is_empty():
+        var near_signal: float = _physical_distance(signal["position"])
+        var near_main: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
+        var near_rescue: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+        if near_signal < near_main and near_signal < near_rescue:
+            var site_id: String = str(signal["id"])
+            if fast and site_id != "directive":
+                return
+            var applied: bool = false
+            if site_id == "directive":
+                applied = signal_campaign.commit_route("core" if fast else "crew",session)
+            elif not fast:
+                applied = signal_campaign.collect(site_id,session)
+            previous_event = session.last_event
+            if applied:
+                _story_event(session.last_event)
+                signal_sites.update_campaign(signal_campaign)
+            _announce(session.last_event)
+            _save_checkpoint()
+            if session.finished():
+                _show_end()
+            _refresh_hud()
+            return
     if not rescue.is_empty() and not fast:
         var main_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
         var rescue_distance: float = _physical_distance(rescue["position"])
@@ -1647,7 +1706,7 @@ func _announce(key: String) -> void:
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink", "signal_resonance", "signal_atmosphere", "signal_transit", "directive_crew", "directive_core":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -1669,6 +1728,9 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    end_stats.text += "\n" + _copy("signal_final").format({
+        "used":signal_campaign.collected.size(),
+        "choice":signal_campaign.directive if signal_campaign.directive != "" else "-"})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1693,9 +1755,10 @@ func _refresh_hud() -> void:
         _copy("heat"),int(session.heat),_copy("oxygen"),int(session.oxygen),
         _copy("crew"),int(session.crew_health),_copy("door"),int(session.door_charge),
         _copy("time"),floori(session.time_left/60.0),int(session.time_left)%60]
-    allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
+    allocation_label.text = "%s  /  A: %s   |   B: %s\n%s  /  %s" % [
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
-        _copy("rescue_count").format({"used":session.relays_activated.size()})]
+        _copy("rescue_count").format({"used":session.relays_activated.size()}),
+        _copy("signal_status").format({"used":signal_campaign.collected.size()})]
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
