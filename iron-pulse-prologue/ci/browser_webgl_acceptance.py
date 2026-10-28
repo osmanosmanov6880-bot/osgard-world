@@ -114,6 +114,21 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "Physical wayfinding or architectural silhouettes missing",world)
                         assert world.get("instanced_detail_count") == 108 and world.get("single_draw_deck") is True, (
                             "Optimized repeated world geometry was lost",world)
+                        # V7: verify three real scripted physical relay positions
+                        # are present inside the exported WebGL game, not injected.
+                        assert idle.get("relay_3d_terminals") == 3, (
+                            "Rescue relay consoles absent from actual exported 3D scene",idle)
+                        positions = idle.get("relay_positions",[])
+                        assert len(positions)==3 and [p[0] for p in positions] == ["medbay","quench","uplink"], (
+                            "3D relay identifiers differ from source gameplay",positions)
+                        assert abs(positions[0][2]+23.0)<0.1 and abs(positions[1][2]+39.5)<0.1 and abs(positions[2][2]+53.0)<0.1, (
+                            "Relays have no physical presence at required locations",positions)
+                        assert idle.get("relay_count",0)==0 and idle.get("thermal_shield") is False, (
+                            "Rescue budget silently pre-spent before real player action",idle)
+                        report.setdefault("v7_real_rescue_world",{})[name] = {
+                            "real_relay_positions":positions,
+                            "available_slots":2
+                        }
                         assert idle.get("world_sector") == "reactor",(
                             "Player starts in wrong world area",idle.get("world_sector"))
                         assert world.get("quality") in ("hero","eco"),world

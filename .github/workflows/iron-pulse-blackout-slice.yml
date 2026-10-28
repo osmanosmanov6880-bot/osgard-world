@@ -121,6 +121,20 @@ jobs:
           timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_v6_campaign_scene.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v6-scene.log"
           grep -q '^IRON PULSE V6 REAL CAMPAIGN PASS:' "$RUNNER_TEMP/iron-pulse-v6-scene.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v6-scene.log"; then exit 1; fi
+      - name: V7 deterministic 2-of-3 rescue decisions and backward compatible V6 checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_v7_rescue_rules.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v7-rules.log"
+          grep -q '^IRON PULSE V7 RESCUE NETWORK PASS:' "$RUNNER_TEMP/iron-pulse-v7-rules.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v7-rules.log"; then exit 1; fi
+      - name: V7 physical 3D relay gamepad HUD and saved-recovery scene QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_v7_rescue_gamepad_scene.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v7-gamepad.log"
+          grep -q '^IRON PULSE V7 PHYSICAL GAMEPAD PASS:' "$RUNNER_TEMP/iron-pulse-v7-gamepad.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v7-gamepad.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |

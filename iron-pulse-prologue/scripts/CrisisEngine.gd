@@ -5,6 +5,8 @@ class_name IPCrisisEngine
 
 const SYSTEMS: Array[String] = ["coolant", "life", "door"]
 const SCENARIOS: Array[String] = ["blackout", "thermal", "breach"]
+const RELAYS: Array[String] = ["medbay","quench","uplink"]
+const MAX_RELAYS: int = 2
 const MAX_TIME: float = 330.0
 const CHARGE_REQUIRED: float = 95.0
 const LOG_LIMIT: int = 32
@@ -12,6 +14,8 @@ const LOG_LIMIT: int = 32
 var scenario_id: String = "blackout"
 var repair_method: String = ""
 var priority_id: String = ""
+var relays_activated: Array[String] = []
+var thermal_shield: bool = false
 var time_left: float = MAX_TIME
 var heat: float = 48.0
 var oxygen: float = 93.0
@@ -59,6 +63,8 @@ func reset(next_scenario: String = "blackout") -> void:
     next_pulse_at = 45.0
     repair_method = ""
     priority_id = ""
+    relays_activated.clear()
+    thermal_shield = false
     won = false
     lost = false
     elapsed = 0.0
@@ -130,7 +136,8 @@ func _integrate_step(dt: float) -> void:
     if scenario_id == "thermal" and elapsed >= next_pulse_at:
         thermal_pulses += 1
         next_pulse_at += 55.0
-        heat += 12.0 if thermal_pulses == 1 else 7.0
+        var pulse: float = 12.0 if thermal_pulses == 1 else 7.0
+        heat += pulse * (0.55 if thermal_shield else 1.0)
         _record("thermal_pulse")
     if heat >= 100.0:
         lost = true
@@ -216,6 +223,31 @@ func choose_priority(choice: String) -> bool:
     _record("priority_" + choice)
     return true
 
+func activate_relay(relay_id: String) -> bool:
+    # An optional strategic layer: activate only two out of three site-based
+    # systems; every activation consumes real simulated time and resources.
+    if finished() or not core_scanned or not RELAYS.has(relay_id) or relays_activated.has(relay_id) or relays_activated.size() >= MAX_RELAYS:
+        return _reject()
+    tick(6.0)
+    if finished():
+        return false
+    match relay_id:
+        "medbay":
+            oxygen = minf(100.0,oxygen+13.0)
+            crew_health = minf(100.0,crew_health+18.0)
+            heat = minf(110.0,heat+4.0)
+        "quench":
+            heat = maxf(0.0,heat-18.0)
+            oxygen = maxf(0.0,oxygen-5.0)
+            thermal_shield = true
+        "uplink":
+            time_left = minf(MAX_TIME,time_left+40.0)
+            door_charge = minf(100.0,door_charge+12.0)
+            crew_health = maxf(0.0,crew_health-4.0)
+    relays_activated.append(relay_id)
+    _record("relay_" + relay_id)
+    return true
+
 func cycle_bus(bus_index: int) -> bool:
     if finished() or not coolant_repaired or (bus_index != 0 and bus_index != 1):
         return _reject()
@@ -280,6 +312,8 @@ func diagnostic_snapshot() -> Dictionary:
     return {
         "scenario": scenario_id, "repair_method": repair_method,
         "priority":priority_id,
+        "relays":relays_activated.duplicate(),"relay_count":relays_activated.size(),
+        "thermal_shield":thermal_shield,
         "thermal_pulses": thermal_pulses, "next_pulse": next_pulse_at,
         "leak_active": scenario_id == "breach" and (not coolant_repaired or repair_method == "rapid_patch"),
         "objective": objective_id(), "time_left": time_left, "heat": heat,
@@ -299,6 +333,8 @@ func checkpoint() -> Dictionary:
         "schema":"IRON_PULSE_ENGINE_V6",
         "scenario":scenario_id, "repair_method":repair_method,
         "priority":priority_id,
+        "relays_activated":relays_activated.duplicate(),
+        "thermal_shield":thermal_shield,
         "time_left":time_left, "heat":heat, "oxygen":oxygen,
         "crew_health":crew_health, "door_charge":door_charge,
         "bus_a":bus_a, "bus_b":bus_b,
@@ -332,6 +368,19 @@ func restore_checkpoint(data: Dictionary) -> bool:
             return false
     var saved_priority: String = str(data.get("priority",""))
     if saved_priority not in ["","crew","core"]:
+        return false
+    # Previously verified V6 saves lack relay fields: restore them as empty,
+    # and validate any V7 relay entries without mutating active state.
+    var saved_relays: Variant = data.get("relays_activated",[])
+    if not saved_relays is Array or saved_relays.size() > MAX_RELAYS:
+        return false
+    var checked_relays: Array[String] = []
+    for relay in saved_relays:
+        if not relay is String or not RELAYS.has(str(relay)) or checked_relays.has(str(relay)):
+            return false
+        checked_relays.append(str(relay))
+    var stored_shield: Variant = data.get("thermal_shield",false)
+    if typeof(stored_shield) != TYPE_BOOL or (bool(stored_shield) and not checked_relays.has("quench")):
         return false
     for key in ["time_left","heat","oxygen","crew_health","door_charge","elapsed","next_pulse_at"]:
         var max_value: float = 1000.0
@@ -376,6 +425,8 @@ func restore_checkpoint(data: Dictionary) -> bool:
     scenario_id = saved_scenario
     repair_method = saved_repair
     priority_id = saved_priority
+    relays_activated = checked_relays
+    thermal_shield = bool(stored_shield)
     time_left = float(data["time_left"])
     heat = float(data["heat"])
     oxygen = float(data["oxygen"])

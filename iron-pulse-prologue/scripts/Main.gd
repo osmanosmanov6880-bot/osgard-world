@@ -14,7 +14,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -39,6 +39,15 @@ const COPY := {
         "choice_crew": "1  /  ЛЮДИ", "choice_core": "2  /  ЯДРО",
         "story_choice": "МАРА ЖДЁТ ПРИКАЗА: 1 — ЭКИПАЖ / 2 — РЕАКТОР",
         "chapter_final": "АКТ {act} / РЕШЕНИЕ: {priority}",
+        "rescue_hint": "СТАНЦИЯ {name}  {distance} м  /  [E] АКТИВИРОВАТЬ",
+        "rescue_spent": "СТАНЦИЯ {name}  /  РЕСУРС НЕДОСТУПЕН",
+        "rescue_medbay": "МЕДИЦИНСКИЙ УЗЕЛ", "rescue_quench": "ТЕПЛОВОЙ ГАСИТЕЛЬ", "rescue_uplink": "СВЯЗЬ И ЭВАКУАЦИЯ",
+        "rescue_count": "СПАСАТЕЛЬНЫЕ СТАНЦИИ {used}/2",
+        "rescue_final": "Станции спасения: {used}/2",
+        "relay_medbay": "МЕДБЛОК: воздух и здоровье восстановлены.",
+        "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
+        "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
+        "relay_budget": "ЛИМИТ: доступны только две станции спасения.",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -72,7 +81,7 @@ const COPY := {
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -97,6 +106,15 @@ const COPY := {
         "choice_crew": "1  /  CREW", "choice_core": "2  /  CORE",
         "story_choice": "MARA AWAITS YOUR ORDER: 1 — CREW / 2 — REACTOR",
         "chapter_final": "ACT {act} / PRIORITY: {priority}",
+        "rescue_hint": "RESCUE STATION {name}  {distance} m  /  [E] ACTIVATE",
+        "rescue_spent": "RESCUE STATION {name}  /  CAPACITY EXHAUSTED",
+        "rescue_medbay": "MEDICAL BAY", "rescue_quench": "HEAT SUPPRESSOR", "rescue_uplink": "EVACUATION UPLINK",
+        "rescue_count": "RESCUE NETWORK {used}/2",
+        "rescue_final": "Rescue stations: {used}/2",
+        "relay_medbay": "MEDBAY: air and crew condition restored.",
+        "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
+        "relay_uplink": "UPLINK: additional evacuation time secured.",
+        "relay_budget": "CAPACITY LIMIT: only two rescue stations may run.",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -151,6 +169,9 @@ var reactor_core: MeshInstance3D
 var exit_gate: MeshInstance3D
 var reactor_rings: Array[Node3D] = []
 var terminals: Array[Dictionary] = []
+var relay_terminals: Array[Dictionary] = []
+var _relay_ready_material: StandardMaterial3D
+var _relay_done_material: StandardMaterial3D
 var hud_root: Control
 var brand_label: Label
 var subtitle_label: Label
@@ -301,6 +322,12 @@ func _publish_web_state() -> void:
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["story"] = story.diagnostic()
+    state["relay_3d_terminals"] = relay_terminals.size()
+    var real_relays: Array = []
+    for relay_info in relay_terminals:
+        var spot: Vector3 = relay_info["position"]
+        real_relays.append([str(relay_info["id"]),spot.x,spot.z])
+    state["relay_positions"] = real_relays
     state["radio_visible"] = radio_panel.visible if radio_panel != null else false
     state["priority_visible"] = priority_panel.visible if priority_panel != null else false
     state["radio_speaker"] = radio_speaker.text if radio_speaker != null else ""
@@ -436,6 +463,7 @@ func _make_complex() -> void:
         _box(self,Vector3(6.1,2.7,z+0.5),Vector3(0.09,0.85,0.14),red)
     _build_reactor()
     _build_terminals()
+    _build_rescue_relays()
     _build_bulkhead()
     art_stage = IPCinematicStage.new()
     add_child(art_stage)
@@ -507,6 +535,40 @@ func _build_terminals() -> void:
         label3d.modulate = WHITE
         terminal.add_child(label3d)
         terminals.append({"id":info["id"],"key":info["key"],"position":pos,"indicator":indicator,"label":label3d})
+
+func _build_rescue_relays() -> void:
+    # Physically optional second puzzle system in all three existing sectors.
+    # Three separate real terminal nodes, only two may actually be activated.
+    var positions: Array[Dictionary] = [
+        {"id":"medbay","key":"rescue_medbay","point":Vector3(-4.2,1.0,-23.0)},
+        {"id":"quench","key":"rescue_quench","point":Vector3(4.2,1.0,-39.5)},
+        {"id":"uplink","key":"rescue_uplink","point":Vector3(-4.2,1.0,-53.0)}
+    ]
+    _relay_ready_material = _metal(Color(0.97,0.66,0.30),0.13,true)
+    _relay_done_material = _metal(Color(0.16,0.74,0.52),0.12,true)
+    for info in positions:
+        var relay := Node3D.new()
+        relay.name = "RescueRelay_" + str(info["id"])
+        relay.position = info["point"]
+        add_child(relay)
+        _box(relay,Vector3.ZERO,Vector3(1.65,1.7,0.40),_metal(METAL))
+        var surface: MeshInstance3D = _box(relay,Vector3(0,0.05,0.25),Vector3(1.48,1.20,0.055),_metal(NIGHT,0.05))
+        surface.name = "RelayConsoleScreen"
+        var indicator: MeshInstance3D = _box(relay,Vector3(0,0.59,0.29),Vector3(1.43,0.13,0.07),_relay_ready_material)
+        indicator.name = "RelayStatusLight"
+        var marker := Label3D.new()
+        marker.name = "OptionalRelayName"
+        marker.text = str(info["id"]).to_upper()
+        marker.font_size = 42
+        marker.pixel_size = 0.0023
+        marker.position = Vector3(0,-0.02,0.38)
+        marker.modulate = WHITE
+        relay.add_child(marker)
+        relay_terminals.append({
+            "id":info["id"],"key":info["key"],
+            "position":info["point"],"indicator":indicator,
+            "node":relay
+        })
 
 func _build_bulkhead() -> void:
     _box(self,Vector3(-3.5,2.7,-59.0),Vector3(2.5,5.4,1.1),_metal(METAL))
@@ -1141,7 +1203,48 @@ func _toggle_language() -> void:
     _refresh_hud()
     _refresh_radio_ui()
 
+func _gamepad_axis(axis_id: int) -> float:
+    var joypads: Array[int] = Input.get_connected_joypads()
+    if joypads.is_empty():
+        return 0.0
+    var reading: float = Input.get_joy_axis(joypads[0],axis_id)
+    return reading if absf(reading) >= 0.18 else 0.0
+
+func _gamepad_button(button_index: int) -> void:
+    # Hardware performance/compatibility still requires real controller QA.
+    # This dispatch handles Godot's mapped standard gamepad button events.
+    if button_index == JOY_BUTTON_START:
+        if not started:
+            start_run()
+        else:
+            _pause_toggle()
+        return
+    if button_index == JOY_BUTTON_B:
+        _toggle_journal()
+        return
+    if not started or paused:
+        return
+    if session.finished():
+        if button_index == JOY_BUTTON_A:
+            _restart()
+        return
+    match button_index:
+        JOY_BUTTON_A:
+            _interact()
+        JOY_BUTTON_X:
+            _fast_interact()
+        JOY_BUTTON_Y:
+            flashlight.visible = not flashlight.visible
+            _announce("flashlight")
+        JOY_BUTTON_DPAD_UP:
+            _choose_priority("crew")
+        JOY_BUTTON_DPAD_DOWN:
+            _choose_priority("core")
+
 func _input(event: InputEvent) -> void:
+    if event is InputEventJoypadButton and event.pressed:
+        _gamepad_button(event.button_index)
+        return
     if event is InputEventKey and event.pressed and not event.echo:
         if event.keycode == KEY_L:
             _toggle_language()
@@ -1217,8 +1320,8 @@ func _physics_process(delta: float) -> void:
         return
     var horizontal: float = float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A))
     var vertical: float = float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
-    horizontal += float(touch_moves["right"]) - float(touch_moves["left"])
-    vertical += float(touch_moves["back"]) - float(touch_moves["forward"])
+    horizontal += float(touch_moves["right"]) - float(touch_moves["left"]) + _gamepad_axis(JOY_AXIS_LEFT_X)
+    vertical += float(touch_moves["back"]) - float(touch_moves["forward"]) + _gamepad_axis(JOY_AXIS_LEFT_Y)
     var stick := Vector2(horizontal,vertical).limit_length(1.0)
     var world_direction: Vector3 = player.global_basis * Vector3(stick.x,0,stick.y)
     var speed: float = 7.1 if Input.is_key_pressed(KEY_SHIFT) else 4.9
@@ -1245,6 +1348,9 @@ func _process(delta: float) -> void:
         _last_web_resize_check = runtime_seconds
         _sync_web_canvas_layout()
     if started and not paused and not session.finished():
+        var pad_look := Vector2(_gamepad_axis(JOY_AXIS_RIGHT_X),_gamepad_axis(JOY_AXIS_RIGHT_Y))
+        if pad_look.length() >= 0.18:
+            _look(pad_look*delta*690.0)
         var moving: bool = Vector2(player.velocity.x,player.velocity.z).length() > 0.65
         if moving and not reduced_motion:
             walking_phase += delta * (10.8 if Input.is_key_pressed(KEY_SHIFT) else 7.3)
@@ -1307,10 +1413,41 @@ func _nearest_terminal() -> Dictionary:
             closest = terminal
     return closest
 
+func _nearest_relay() -> Dictionary:
+    if player == null:
+        return {}
+    var chosen: Dictionary = {}
+    var nearest: float = 3.0
+    for relay in relay_terminals:
+        var where: Vector3 = relay["position"]
+        var dist: float = Vector2(where.x,where.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
+        if dist < nearest:
+            nearest = dist
+            chosen = relay
+    return chosen
+
+func _physical_distance(point: Vector3) -> float:
+    return Vector2(point.x,point.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
+
 func _interact(fast: bool = false) -> void:
     if not started or paused or session.finished():
         return
     var target: Dictionary = _nearest_terminal()
+    var rescue: Dictionary = _nearest_relay()
+    if not rescue.is_empty() and not fast:
+        var main_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
+        var rescue_distance: float = _physical_distance(rescue["position"])
+        if rescue_distance < main_distance:
+            var activated: bool = session.activate_relay(str(rescue["id"]))
+            previous_event = session.last_event
+            if activated:
+                _story_event(session.last_event)
+            elif session.relays_activated.size() >= IPCrisisEngine.MAX_RELAYS:
+                _story_event("relay_budget")
+            _announce(session.last_event)
+            _save_checkpoint()
+            _refresh_hud()
+            return
     if target.is_empty():
         return
     var terminal_id: String = str(target["id"])
@@ -1352,7 +1489,7 @@ func _announce(key: String) -> void:
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -1371,6 +1508,7 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("visited_sectors").format({"count":visited_sectors.size()})
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
+    end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1395,16 +1533,27 @@ func _refresh_hud() -> void:
         _copy("heat"),int(session.heat),_copy("oxygen"),int(session.oxygen),
         _copy("crew"),int(session.crew_health),_copy("door"),int(session.door_charge),
         _copy("time"),floori(session.time_left/60.0),int(session.time_left)%60]
-    allocation_label.text = "%s  /  A: %s   |   B: %s" % [
-        _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper()]
+    allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
+        _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
+        _copy("rescue_count").format({"used":session.relays_activated.size()})]
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
     var nearby: Dictionary = _nearest_terminal()
-    if not nearby.is_empty() and started and not session.finished():
+    var rescue: Dictionary = _nearest_relay()
+    var show_rescue: bool = not rescue.is_empty()
+    if show_rescue and not nearby.is_empty():
+        show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
+    if started and not session.finished() and show_rescue:
+        var relay_dist: float = _physical_distance(rescue["position"])
+        var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
+        var rescue_key: String = "rescue_hint" if available else "rescue_spent"
+        interaction_label.text = _copy(rescue_key).format({
+            "name":_copy(str(rescue["key"])),"distance":"%.1f" % relay_dist})
+    elif not nearby.is_empty() and started and not session.finished():
         var at: Vector3 = nearby["position"]
-        var dist: float = Vector2(at.x,at.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
+        var dist: float = _physical_distance(at)
         var hint_key: String = "choice_hint" if str(nearby["id"]) == "repair" and session.scenario_id != "blackout" and not session.coolant_repaired else "hint"
         interaction_label.text = _copy(hint_key).format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % dist})
     else:
@@ -1452,5 +1601,11 @@ func _update_terminal_highlights(objective_key: String) -> void:
         var active: bool = key == objective_key or (objective_key == "charge" and (key == "bus_a" or key == "bus_b"))
         var indicator: MeshInstance3D = info["indicator"]
         var material: StandardMaterial3D = _terminal_active_material if active else _terminal_idle_material
+        if indicator.material_override != material:
+            indicator.material_override = material
+    for relay in relay_terminals:
+        var indicator: MeshInstance3D = relay["indicator"]
+        var activated: bool = session.relays_activated.has(str(relay["id"]))
+        var material: StandardMaterial3D = _relay_done_material if activated else _relay_ready_material
         if indicator.material_override != material:
             indicator.material_override = material
