@@ -44,6 +44,7 @@ var save_requests: int = 0
 var load_requests: int = 0
 var restart_requests: int = 0
 var rejected_invalid_context: int = 0
+var real_source_proximity_rejections_shown: int = 0
 var compact: bool = false
 var immersed: bool = false
 var piloting: bool = false
@@ -280,6 +281,16 @@ func refresh(state: Dictionary) -> void:
         button.tooltip_text = ("Действие оригинальной игры: " if locale=="ru"
             else "Actual original game command: ") + command
 
+func report_real_physical_result(accepted: bool) -> void:
+    if accepted or not _eligible():
+        return
+    # Only the original W72 input handler knows whether collision/proximity
+    # rejected an action. Display its real result in the current mission dock;
+    # never show fake success or change field/mission/game state.
+    real_source_proximity_rejections_shown += 1
+    headline.text = ("ПОДОЙДИТЕ К УСТРОЙСТВУ • НЕ ПРИНЯТО"
+        if locale=="ru" else "MOVE CLOSER TO DEVICE • REJECTED")
+
 func _dispatch(idx: int) -> void:
     if not _eligible() or idx < 0 or idx >= actual_commands.size():
         rejected_invalid_context += 1
@@ -345,6 +356,7 @@ func qa_readout() -> Dictionary:
         "source_checked_load_requests":load_requests,
         "original_restart_requests":restart_requests,
         "rejected_context_inputs":rejected_invalid_context,
+        "real_source_proximity_rejections_shown":real_source_proximity_rejections_shown,
         "live_source_state_redraws":real_dynamic_ui_updates,
         "visible":visible,
         "read_only_source_authority":true,
