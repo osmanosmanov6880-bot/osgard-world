@@ -143,9 +143,20 @@ func _run() -> void:
 		"reset removes previously paid geometry instead of leaving ghost buildings")
 	check(bool(sim.call("load_game")),"original durable save can be restored")
 	world.call("update_development")
-	check(outcome.call("project_visible","safe_crossings") and
-		sim.get("data")==paid_snapshot,
-		"actual saved civic choice reconstructs built physical crossings on reload")
+	var restored: Dictionary = sim.get("data")
+	check(bool(outcome.call("project_visible","safe_crossings")),
+		"genuine saved paid crossing reappears as ACTUAL 3D city geometry on reload")
+	check((restored.get("projects_done",[]) as Array).has("safe_crossings") and
+		(restored.get("projects_active",{}) as Dictionary).is_empty(),
+		"saved civic project completion/remaining construction restored")
+	check(int(restored["treasury"])==int(paid_snapshot["treasury"]) and
+		int(restored["turn"])==int(paid_snapshot["turn"]) and
+		int(restored["mission"])==int(paid_snapshot["mission"]),
+		"saved treasury, construction time and original campaign position persist")
+	check(restored["inventories"]==paid_snapshot["inventories"] and
+		restored["trust"]==paid_snapshot["trust"] and
+		restored["buildings"]==paid_snapshot["buildings"],
+		"restored city inventory, trust and existing 12 building levels are exact")
 	check(outcome.get_child_count()==initial_works and
 		world.get_child_count()==initial_count,
 		"repeated reset/load never duplicates source scene nodes")
