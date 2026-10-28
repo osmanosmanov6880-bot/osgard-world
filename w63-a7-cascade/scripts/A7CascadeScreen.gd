@@ -51,6 +51,8 @@ const RU := {
     "guide_next": "ВПЕРЁД",
     "tour_status": "ПУТЬ ОПЕРАТОРА %d%%  •  W/A — ДВИЖЕНИЕ, N — ПЕРЕХОД",
     "sound_on": "ЗВУК / ВКЛ", "sound_off": "ЗВУК / ВЫКЛ",
+    "cinema_on": "КИНОРЕЖИМ / ВКЛ", "cinema_off": "КИНОРЕЖИМ / ВЫКЛ",
+    "focus_on": "ОПТИКА / ПРИБЛИЗИТЬ", "focus_off": "ОПТИКА / ОБЩИЙ ВИД",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
@@ -89,6 +91,8 @@ const EN := {
     "guide_next": "FORWARD",
     "tour_status": "GUIDED INSPECTION %d%%  •  W/A MOVE, N SWITCH SECTOR",
     "sound_on": "SOUND / ON", "sound_off": "SOUND / OFF",
+    "cinema_on": "CINEMA VIEW / ON", "cinema_off": "CINEMA VIEW / OFF",
+    "focus_on": "OPTICS / ZOOM IN", "focus_off": "OPTICS / WIDE VIEW",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
@@ -129,6 +133,9 @@ var _web_state_element: Variant = null
 # W65 new standalone narrative and original procedural sound (no external files).
 var sound_bus: A7ProceduralAudio
 var sound_button: Button
+var focus_button: Button
+var cinema_button: Button
+var cinema_mode: bool = false
 var narrative_title: Label
 var narrative_body: Label
 var forecast_label: Label
@@ -296,6 +303,10 @@ func _build() -> void:
     motion_button.custom_minimum_size = Vector2(158, 42)
     sound_button = _button(cinema_controls, "", _toggle_sound)
     sound_button.custom_minimum_size = Vector2(138, 42)
+    focus_button = _button(cinema_controls, "", _toggle_inspection_focus)
+    focus_button.custom_minimum_size = Vector2(167, 42)
+    cinema_button = _button(cinema_controls, "", _toggle_cinema_mode)
+    cinema_button.custom_minimum_size = Vector2(163, 42)
     # W67 real two-sector walk: native controls change only the camera
     # position along the modeled catwalk, never the six-cycle puzzle state.
     var route_rail := HFlowContainer.new()
@@ -478,6 +489,22 @@ func _step_route(direction: int) -> void:
         stage_3d.step_inspection_route(direction)
     _render(model.snapshot())
 
+func _toggle_inspection_focus() -> void:
+    if stage_3d != null:
+        stage_3d.toggle_inspection_focus()
+    _render(model.snapshot())
+
+func _toggle_cinema_mode() -> void:
+    # Recompose the real native SubViewport only; never enlarge a fake image
+    # or disconnect game commands, readable safety/status messages.
+    cinema_mode = not cinema_mode
+    cinema_readout.visible = not cinema_mode
+    route_label.visible = not cinema_mode
+    intro.visible = not cinema_mode
+    subtitle.visible = not cinema_mode
+    _layout_stage()
+    _render(model.snapshot())
+
 func _toggle_quality() -> void:
     quality = "eco" if quality == "hero" else "hero"
     if stage_3d != null:
@@ -499,6 +526,12 @@ func _layout_stage() -> void:
         height = clampf(size.x * 0.76, 242.0, 305.0)
     elif size.x < 900.0:
         height = clampf(size.y * 0.50, 350.0, 470.0)
+    if cinema_mode:
+        height = clampf(size.y * 0.78, 585.0, 760.0)
+        if size.x < 640.0:
+            height = clampf(size.x * 0.98, 325.0, 460.0)
+        elif size.x < 900.0:
+            height = clampf(size.y * 0.70, 475.0, 620.0)
     stage_shell.custom_minimum_size = Vector2(0, height)
     if cinematic_hud != null:
         cinematic_hud._relayout()
@@ -550,6 +583,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
         _toggle_sound()
         get_viewport().set_input_as_handled()
         return
+    if key.keycode == KEY_F:
+        _toggle_inspection_focus()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_X:
+        _toggle_cinema_mode()
+        get_viewport().set_input_as_handled()
+        return
     if key.keycode == KEY_W:
         _step_route(1)
         get_viewport().set_input_as_handled()
@@ -581,6 +622,8 @@ func _render(state: Dictionary) -> void:
     narrative_body.text = str(story.get("body", ""))
     _update_forecast(state)
     sound_button.text = _t("sound_off" if sound_bus != null and sound_bus.muted else "sound_on")
+    cinema_button.text = _t("cinema_off" if cinema_mode else "cinema_on")
+    focus_button.text = _t("focus_off" if stage_3d != null and stage_3d.inspection_focus else "focus_on")
     cycle_label.text = "%s %02d / 06" % [_t("round"), mini(6, int(state["shift"]) + 1)]
     actions_label.text = "%s: %d / 2" % [_t("actions"), int(state["actions_left"])]
     var result: String = str(state["status"])
@@ -696,6 +739,13 @@ func _publish_web_accessibility() -> void:
             bool(cinematic_hud.qa_readout()["read_only"]),
         "w68_mobile_hud_compact": cinematic_hud != null and
             bool(cinematic_hud.qa_readout()["w68_compact_minimal"]),
+        "w69_cinema_mode": cinema_mode,
+        "w69_focus_mode": bool(stage_state.get("w69_focus", false)),
+        "w69_focus_switches": int(stage_state.get("w69_focus_switches", 0)),
+        "w69_in_world_machine_readouts": int(stage_state.get("w69_live_in_world_readouts", 0)),
+        "w69_real_incident_shutters": int(stage_state.get("w69_real_hazard_shutters", 0)),
+        "w69_visual_severity": float(stage_state.get("w69_visual_severity", 0.0)),
+        "w69_real_action_reactions": int(stage_state.get("w69_cinema_actions", 0)),
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -725,6 +775,8 @@ func _publish_web_accessibility() -> void:
         "quality": _web_rect(quality_button),
         "motion": _web_rect(motion_button),
         "sound": _web_rect(sound_button),
+        "cinema": _web_rect(cinema_button),
+        "optics": _web_rect(focus_button),
         "walk_back": _web_rect(route_buttons[0]),
         "walk_forward": _web_rect(route_buttons[1]),
         "sector_0": _web_rect(sector_buttons[0]),
