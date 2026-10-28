@@ -1,0 +1,33 @@
+name: OSA CINEMA V53 Concept Evidence (Non-Public)
+on:
+  pull_request:
+    paths:
+      - docs/OSA_CINEMA_V53_CONCEPT_EVIDENCE_20261028.json
+      - docs/OSA_CINEMA_V53_MASTER_PRODUCTION_LEDGER_RU.md
+      - scripts/osa-cinema-v53-evidence.test.mjs
+      - .github/workflows/osa-cinema-v53-evidence.yml
+  push:
+    branches: [master]
+    paths:
+      - docs/OSA_CINEMA_V53_CONCEPT_EVIDENCE_20261028.json
+      - docs/OSA_CINEMA_V53_MASTER_PRODUCTION_LEDGER_RU.md
+      - scripts/osa-cinema-v53-evidence.test.mjs
+      - .github/workflows/osa-cinema-v53-evidence.yml
+
+permissions:
+  contents: read
+jobs:
+  verified-owner-concept:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reject fake film premiere or unchecked claims
+        run: node --test scripts/osa-cinema-v53-evidence.test.mjs
+      - name: Archive source-only milestone details
+        run: |
+          echo 'V53 concept-production evidence verified. No V53 film bytes or rights clearances published.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The actual MP4 and production source packages remain owner-local and require separate public rights clearance.' >> "$GITHUB_STEP_SUMMARY"

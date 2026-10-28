@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "project": "OSA CINEMA / BEYOND THE MODEL — ZERO WINDOW",
+  "version": "V53",
+  "asOf": "2026-10-28",
+  "creativeTitle": {
+    "ru": "ПОРОГ РЕШЕНИЯ",
+    "en": "THRESHOLD"
+  },
+  "creativeType": "ORIGINAL_CONCEPT_PREVIS_REUSING_OWNER_ATTESTED_V48_FOOTAGE",
+  "publicReleaseAuthorized": false,
+  "premiereUrl": null,
+  "shortFilmFinished": false,
+  "featureFilmFinished": false,
+  "actorSceneProduction": {
+    "scenesFilmed": 0,
+    "scenesPlanned": 13,
+    "shotsProposed": 78,
+    "shotsFilmed": 0,
+    "shortTargetSeconds": 1080,
+    "featureTreatmentBeats": 44,
+    "featureTargetMinutesUnapproved": 102
+  },
+  "media": {
+    "conceptCutSeconds": 160,
+    "framerate": 24,
+    "framesPerMaster": 3840,
+    "sourceSha256": "39afc1a738a4c0e1c100454ca23097559bc67d5910f3e5a1008e3e7f8db713aa",
+    "masters": [
+      {
+        "locale": "RU",
+        "quality": "720P",
+        "bytes": 15453727,
+        "sha256": "c2d78b3489fec79f2964b13c1bd275905398f5d3002630621cfc8a28e64e0c92"
+      },
+      {
+        "locale": "EN",
+        "quality": "720P",
+        "bytes": 41726289,
+        "sha256": "d7796e077b111031ba33218e5574b4d2897364e4634e91f00d8655d96bad0a15"
+      },
+      {
+        "locale": "RU",
+        "quality": "1080P",
+        "bytes": 171783167,
+        "sha256": "2ff1eaaf7613b33abf24fe1d30fcf14e6ca752dc55bcee27e7b2cdaf6e16a99b"
+      },
+      {
+        "locale": "EN",
+        "quality": "1080P",
+        "bytes": 172059646,
+        "sha256": "8a2687ccfd1bc7f470cc2924bbe1ca0d5ab00212b66249cf571a4cb82ba2d321"
+      }
+    ],
+    "subtitleTrackCount": 2,
+    "screenTitleCuesPerLanguage": 16,
+    "audioOrigin": "ORIGINAL_SYNTHESIZED_SCORE",
+    "integratedLUFS": -18.5,
+    "truePeakDbTP": -5.1
+  },
+  "qa": {
+    "fullMediaDecodes": "PASS_4_OF_4",
+    "originalHttpChromiumUI": "PASS_12_OF_12",
+    "extractedScreeningIntegration": "PASS_6_OF_6",
+    "zipCrcMemberSha": "PASS_EACH_OF_THREE_PACKAGES",
+    "chromiumActualPlayback": "NOT_VERIFIED_ENV_ADMIN_BLOCK",
+    "publicHttps": "NOT_VERIFIED",
+    "rights": "OWNER_SELF_ATTESTED_UNVERIFIED_INDEPENDENTLY",
+    "onSetSafety": "NOT_CLEARED"
+  },
+  "packages": [
+    {
+      "type": "SCREENING",
+      "name": "OSA_CINEMA_V53_SCREENING_RU_EN_20261028.zip",
+      "bytes": 62496319,
+      "sha256": "2bbb5a0447225eb52a58c48781e2c54581d5a5917741bf31b38fb5b0d5b5b30d",
+      "files": 38,
+      "availableAs": "OWNER_LOCAL_DOWNLOAD_NOT_IN_GIT",
+      "resolution": "720P",
+      "resolutionToggle1080Disabled": true
+    },
+    {
+      "type": "FULLHD",
+      "name": "OSA_CINEMA_V53_FULLHD_RU_EN_20261028.zip",
+      "bytes": 406339483,
+      "sha256": "55b3a56ec825a5e6b79c5d47e6fed5096d8982fc56923db06ce366a0c819eb26",
+      "files": 40,
+      "availableAs": "OWNER_LOCAL_DOWNLOAD_NOT_IN_GIT",
+      "resolution": "720P_AND_1080P",
+      "resolutionToggle1080Disabled": false
+    },
+    {
+      "type": "EDIT_SOURCE",
+      "name": "OSA_CINEMA_V53_EDIT_SOURCE_20261028.zip",
+      "bytes": 532650023,
+      "sha256": "72fe02b9eb346ee7700183831b57c258cceef3eda4cde6a86f02f779f990d099",
+      "files": 114,
+      "availableAs": "OWNER_LOCAL_DOWNLOAD_NOT_IN_GIT",
+      "contents": "V48 original owner source, original score, overlays, EDL, scripts, story material, QA"
+    }
+  ],
+  "goDecision": "OWNER_LOCAL_CONCEPT_SCREENING_ONLY_NO_PUBLIC_MOVIE_RELEASE",
+  "nextGates": [
+    "V54 casting and recorded dramatic scene + table read",
+    "V55 budget legal filming locations and safety",
+    "V56 principal photography 13 short scenes",
+    "V57 picture lock ADR 5.1 and graded masters",
+    "V58 independent audience QA festival/distribution and rights clearance"
+  ],
+  "historicalV50PublicationUnchanged": true
+}
