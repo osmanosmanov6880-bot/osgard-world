@@ -46,8 +46,6 @@ func _run() -> void:
     var fps: A7FrameTelemetry = ui.frame_telemetry
     _check(feedback != null and feedback.core_disc is MeshInstance3D,
         "Original actual Godot world has a real 3D machined response torus")
-    _check(feedback.real_prop_meshes if false else true,
-        "Godot original world remains live without false render claims")
     _check(feedback.actual_meshes >= 8,
         "Eight distinct truly native 3D feedback and instrument meshes")
     _check(feedback.relay_contacts.size() == 3 and feedback.sync_contacts.size() == 3,
