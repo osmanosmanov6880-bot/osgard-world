@@ -312,6 +312,7 @@ async function verifyFiles(){
   }
   integrityStatus=good?"verified":"failed";
   node.integrity.textContent=good?t(locale,"verifiedAll"):node.integrity.textContent;
+  if(good)node.buildStatus.textContent=t(locale,"bytesVerified");
   node.verify.disabled=false;node.offline.disabled=!good||!swRegistration;
   return good;
 }
