@@ -145,7 +145,7 @@ func journal_localized(locale: String = "ru") -> String:
         var key: String = str(entry["key"])
         if _known(key):
             lines.append(str(SCRIPT[language][key]))
-    return "\n\n".join(lines)
+    return "\n\n".join(PackedStringArray(lines))
 
 func checkpoint() -> Dictionary:
     return {
