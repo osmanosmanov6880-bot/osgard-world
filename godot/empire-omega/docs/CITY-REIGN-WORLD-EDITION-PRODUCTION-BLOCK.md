@@ -235,3 +235,121 @@ The project is a **playable city-game candidate**, not a finished
 world-class platform. Windows, Linux and WebGL candidate artifacts
 may be downloaded from source-locked CI; no production deployment
 has been authorized.
+
+---
+
+## B53–B55 — quantified 3D quality, true window metalwork, camera LOD
+
+### B53 — actual source-native 1366×768 GL frame profiling
+
+**Executable:** `tests/v125_city_reign_original_game_render_profile.gd`  
+**CI:** `.github/workflows/city-reign-world-frame-profile.yml`
+
+This launches `res://scenes/main.tscn` (the actual shipped source game),
+measures 90 genuine render-frame intervals per setting using a native
+OpenGL/Mesa framebuffer, and saves three actual game PNGs together with
+source SHA, full JSON timing and GPU-independent provenance. The 28 Oct
+2026 earlier source-head software profile before B55 adaptive distance
+culling passed without errors:
+
+| CI software GL mode | Mean ms/frame | P95 ms/frame | Important limitation |
+|---|---:|---:|---|
+| Low | 211.83 | 218.48 | Mesa software renderer, NOT player GPU |
+| Standard | 336.41 | 343.80 | Mesa software renderer, NOT player GPU |
+| Cinematic | 347.83 | 355.28 | Mesa software renderer, NOT player GPU |
+
+These figures are **not** an estimate of an actual gaming PC's frame rate
+or a phone's speed. They expose the need for graphics budgeting and
+real hardware tests. Future runs collect the same numbers with player
+focus-aware B55 mesh culling, so any improvement/regression is measurable.
+
+**Do not claim 60 FPS or 8K** from these tests. Independent GPU profiles
+on representative desktop and physical Android/iPhone devices are required.
+
+### B54 — real 3D metal window reveals, original glass [SOURCE VERIFIED]
+
+The original `WorldBuilder.facade_frames` reused one solid `BoxMesh`
+surface behind the real glass. A physically hollow source-authored
+`ArrayMesh` with four closed aluminium rails and a forward sill is
+now cached in `scripts/city_reign_window_reveal_geometry.gd`.
+
+- **Low:** original lightweight frame renderer disabled.
+- **Standard:** original lightweight BoxMesh, no extra triangles.
+- **Cinematic:** five real metal volumes, 180 vertices/60 triangles
+  per source frame instance; same existing transform, MultiMesh, material
+  and draw node as before.
+- Original glass, original 1.05 × 1.38m window placement, streetfront
+  doors and PBR day/night behavior remain authoritative.
+- `tests/v126_city_reign_real_window_reveal_lod.gd` checks actual
+  geometry/normal correctness, shared rendering and immutable saved
+  game state. Real Godot 4.4.1 on commit `2571f80b`: **34/34 PASS**.
+
+The cinematic variant increases per-window geometry cost. It must never
+be forced on low-end phones. It is not a substitute for detailed licensed
+character and building assets.
+
+### B55 — actual player-distance building LOD [SOURCE VERIFIED]
+
+**Files:** `scripts/city_reign_tower_distance_lod.gd` and
+`scripts/world_builder.gd`.
+
+The original gameplay already calls `WorldBuilder.update_chunks()`
+approximately every 1.1s. That exact callback now changes the original
+existing building `MeshInstance3D.mesh` resource for the player's
+actual position, with 11m hysteresis to prevent rapid swapping:
+
+| User setting | Near original towers | Mid distance | Far distance |
+|---|---|---|---|
+| Low | original 12-triangle BoxMesh | original | original |
+| Standard | true STANDARD chamfered architecture | original after ~142m | original |
+| Cinematic | true CINEMATIC multistory architecture near ~116m | STANDARD until ~204m | original |
+
+Thresholds have 11m state-based hysteresis; each building keeps
+one physical collider, one original visual node, original materials and
+original road data. The new LOD report exposes how many true building
+bodies currently occupy each tier, and B53's real game benchmark
+records those counts.
+
+- `tests/v127_city_reign_tower_distance_lod.gd`: finite road-plane
+  distances, boundary hysteresis, deterministic mesh selection,
+  camera jitter, three actual source-world quality modes, unchanged
+  original colliders and protected economics.
+- Real Godot 4.4.1 at commit `de2b14e6`:
+  **256/256 PASS, 0 FAIL**. The exact-head release candidate
+  is still independently gated by WebGL, desktop and GL screenshot jobs.
+
+### B56 — platform build and independent release gating
+
+Current private candidate artifact pipelines:
+- `city-reign-world-preview-build.yml`: actual Godot WebAssembly
+  original main scene, signed checksum manifest, source SHA and local
+  HTTP launch instructions.
+- `city-reign-world-desktop-preview.yml`: Windows x64 Compatibility,
+  Windows x64 Forward+ and Linux x64 Compatibility binaries, matching
+  PCKs, source-hash receipts and independent offline archives.
+- `city-reign-world-edition-webgl-qa.yml`: real original Godot
+  Chromium pixel captures across day, night, blackout and all 3 LODs,
+  without using fake website screenshot art.
+- `city-reign-world-frame-profile.yml`: native desktop GL screen
+  captures and source-aware 90-frame evidence per graphics mode.
+
+No branch has been automatically promoted to `master` or public
+production by these jobs. The PR remains DRAFT until **all** exact-head
+checks, production licenses, independent playtest acceptance and
+real-device targets have been satisfied.
+
+### Next independent AAA gates (open)
+
+1. Four custom detailed architectural hero meshes with documented legal
+   provenance, world UVs, PBR normal/metallic/roughness/occlusion and
+   physically credible interior/entrance transitions.
+2. Material response and environmental lighting at clear, dusk, rain,
+   storm and night from actual moving gameplay shots (no image substitute).
+3. Vehicles with calibrated tire contact and visible interiors, acoustic
+   load, suspension and cornering behavior on actual player input.
+4. Citizens, traffic intersection logic, dialog audio and 30 minutes of
+   human-playtested first-chapter route; no unverifiable "AAA" launch claim.
+5. GPU profiling on Windows 1080p native and real iOS/Android hardware.
+   Aim at player-defined performance targets; do not invent FPS numbers.
+6. Controlled release review, crash handling, rollback, privacy and asset
+   usage clearance before any public deployment.
