@@ -35,18 +35,18 @@ func _run() -> void:
 		{"center":Vector3(85.0,20.0,85.0),"w":15.0,"h":40.0,"district":"aqueduct","face":3}
 	]
 	for row in originals:
-		facade.record(row["center"],row["w"],row["h"],row["district"],row["face"])
+		facade.call("record",row["center"],row["w"],row["h"],row["district"],row["face"])
 	check(int(facade.get("building_count")) == 4,
 		"four different original district facade records accepted")
-	facade.record(Vector3.INF,14.0,40.0,"forum",0)
-	facade.record(Vector3(-85.0,10.0,-85.0),500.0,20.0,"forum",0)
-	facade.record(Vector3(-85.0,10.0,-85.0),14.0,20.0,"invalid",0)
+	facade.call("record",Vector3.INF,14.0,40.0,"forum",0)
+	facade.call("record",Vector3(-85.0,10.0,-85.0),500.0,20.0,"forum",0)
+	facade.call("record",Vector3(-85.0,10.0,-85.0),14.0,20.0,"invalid",0)
 	check(int(facade.get("building_count")) == 4,
 		"bad placement and unknown district cannot create geometry")
-	facade.finalize()
-	check(facade.graphics_are_bounded() and facade.get_child_count()==4,
+	facade.call("finalize")
+	check(bool(facade.call("graphics_are_bounded")) and facade.get_child_count()==4,
 		"only four original GPU instancing batches with zero child nodes")
-	check(int(facade.instance_count())==29,
+	check(int(facade.call("instance_count"))==29,
 		"four 3D parapets and three facade details per real building plus one rooftop plant")
 	var groups: Dictionary = facade.get("groups")
 	check((groups["CinematicRoofCornices"] as MultiMeshInstance3D).multimesh.instance_count==16,
@@ -56,25 +56,25 @@ func _run() -> void:
 	check((groups["CinematicVerticalJambs"] as MultiMeshInstance3D).multimesh.instance_count==8,
 		"two real facade reveals per 3D storefront")
 	for mode in ["low","standard","cinematic"]:
-		facade.set_quality(mode)
+		facade.call("set_quality",mode)
 		var roof: MultiMeshInstance3D = groups["CinematicRoofCornices"]
 		var jamb: MultiMeshInstance3D = groups["CinematicVerticalJambs"]
 		check(roof.visible == (mode!="low") and jamb.visible == (mode=="cinematic"),
 			"three hardware tiers respect source-locked geometry policy: "+mode)
 	var entry_finish: StandardMaterial3D = facade.get("accent_finish")
-	facade.set_quality("cinematic")
-	facade.update_ambience(12.0,100)
+	facade.call("set_quality","cinematic")
+	facade.call("update_ambience",12.0,100)
 	check(not entry_finish.emission_enabled or entry_finish.emission_energy_multiplier < 0.001,
 		"no fictitious midday city power glow")
-	facade.update_ambience(22.0,100)
+	facade.call("update_ambience",22.0,100)
 	check(entry_finish.emission_enabled and entry_finish.emission_energy_multiplier > 0.3,
 		"real evening and live power produce subdued PBR accent")
-	facade.update_ambience(22.0,0)
+	facade.call("update_ambience",22.0,0)
 	check(not entry_finish.emission_enabled,
 		"full city blackout removes ornamental facade electricity")
 	var squares: Node3D = source_squares.new()
 	root.add_child(squares)
-	check(squares.graphics_are_bounded(),
+	check(bool(squares.call("graphics_are_bounded")),
 		"four actual solid sculpted municipal sites plus 12 shared accent meshes")
 	var identities: Dictionary = squares.get("sites")
 	check(identities.size()==4 and squares.get_child_count()==5,
@@ -91,21 +91,21 @@ func _run() -> void:
 			absf(at.z-roundf(at.z/52.0)*52.0)>=8.5,
 			"site avoids original 10m road axes in true 3D")
 		for language in ["ru","en","zh"]:
-			squares.sync_language(language)
+			squares.call("sync_language",language)
 			var label: Label3D = squares.get("site_labels")[site_id] as Label3D
-			check(label.text==str(source_squares.SITES[site_id][language]),
+			check(label.text==str((source_squares.get_script_constant_map()["SITES"] as Dictionary)[site_id][language]),
 				"live real-world site label translates in "+language+": "+site_id)
-	squares.set_quality("low")
+	squares.call("set_quality","low")
 	check(not identities["market"].visible and not (squares.get("accent") as MultiMeshInstance3D).visible,
 		"phone LOW hardware skips nonessential original sculpture draw calls")
-	squares.set_quality("cinematic")
-	squares.sync_ambience(12.0,100)
+	squares.call("set_quality","cinematic")
+	squares.call("sync_ambience",12.0,100)
 	var light_finish: StandardMaterial3D = squares.get("accent_finish")
 	check(not light_finish.emission_enabled,"original daylight has no artificial electric glow")
-	squares.sync_ambience(22.0,100)
+	squares.call("sync_ambience",22.0,100)
 	check(light_finish.emission_enabled and light_finish.emission_energy_multiplier > 0.3,
 		"nighttime accent comes from real game-time and supply")
-	squares.sync_ambience(22.0,0)
+	squares.call("sync_ambience",22.0,0)
 	check(not light_finish.emission_enabled,"city energy zero cuts actual artistic light emission")
 	facade.queue_free()
 	squares.queue_free()
@@ -128,9 +128,9 @@ func _run() -> void:
 		var plaza: Node3D = world.get("city_reign_squares") as Node3D
 		var number: int = int(world.get("building_count"))
 		check(number>70 and number<=128,"only original city lots and bounded building counts")
-		check(architecture!=null and plaza!=null and architecture.graphics_are_bounded(),
+		check(architecture!=null and plaza!=null and bool(architecture.call("graphics_are_bounded")),
 			"premium facade kit is actually installed on real 3D city scene")
-		check(plaza.graphics_are_bounded() and plaza.is_inside_tree(),
+		check(bool(plaza.call("graphics_are_bounded")) and plaza.is_inside_tree(),
 			"four original sculptural sites occupy the actual live game world")
 		check(int(architecture.get("building_count"))==number,
 			"roof kit exactly follows original physical buildings without duplicate lots")
@@ -138,24 +138,24 @@ func _run() -> void:
 		check(materials.size()==number,
 			"each physical original building receives true PBR albedo / roughness")
 		var pack: Script = load("res://scripts/horizon_facade_material_pack.gd") as Script
-		check(int(pack.cached_styles())==3 and
-			pack.allocation_budget_bytes() <= 3*128*128*3*4,
+		check(int(pack.call("cached_styles"))==3 and
+			pack.call("allocation_budget_bytes") <= 3*128*128*3*4,
 			"all city walls share just three bounded 128px material families")
 		if materials.size()>3:
-			check(pack.textures_reused(materials[0],materials[3]),
+			check(pack.call("textures_reused",materials[0],materials[3]),
 				"every fourth building reuses the SAME actual GPU textures")
-		world.apply_visual_budget("low")
-		check(not architecture.groups["CinematicRoofCornices"].visible and
-			not plaza.sites["market"].visible and
+		world.call("apply_visual_budget","low")
+		check(not (architecture.get("groups") as Dictionary)["CinematicRoofCornices"].visible and
+			not (plaza.get("sites") as Dictionary)["market"].visible and
 			not (materials[0] as StandardMaterial3D).normal_enabled,
 			"real full-city mobile tier disables optional geometry and normals")
-		world.apply_visual_budget("cinematic")
-		check(architecture.groups["CinematicRoofCornices"].visible and
-			plaza.sites["market"].visible and
+		world.call("apply_visual_budget","cinematic")
+		check((architecture.get("groups") as Dictionary)["CinematicRoofCornices"].visible and
+			(plaza.get("sites") as Dictionary)["market"].visible and
 			(materials[0] as StandardMaterial3D).normal_enabled,
 			"real full-city cinematic tier enables original PBR geometry/normals")
-		world.update_language("zh")
-		check((plaza.site_labels["cityhall"] as Label3D).text=="市政广场",
+		world.call("update_language","zh")
+		check(((plaza.get("site_labels") as Dictionary)["cityhall"] as Label3D).text=="市政广场",
 			"actual game language updates the 3D civic place names")
 		check((game.get("pedestrians") as Array).size()==34 and
 			(game.get("ambient_cars") as Array).size()==12,
