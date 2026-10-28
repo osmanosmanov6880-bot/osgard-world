@@ -47,8 +47,8 @@ const RU := {
     "visual": "ТЕПЛО %d   •   ДАВЛЕНИЕ %d   •   ЭНЕРГИЯ %d",
     "area_core": "СЕКТОР 01 / РЕАКТОР",
     "area_relay": "СЕКТОР 02 / РЕЛЕЙНЫЙ ЗАЛ",
-    "guide_prev": "← НАЗАД",
-    "guide_next": "ВПЕРЁД →",
+    "guide_prev": "НАЗАД",
+    "guide_next": "ВПЕРЁД",
     "tour_status": "ПУТЬ ОПЕРАТОРА %d%%  •  W/A — ДВИЖЕНИЕ, N — ПЕРЕХОД",
     "sound_on": "ЗВУК / ВКЛ", "sound_off": "ЗВУК / ВЫКЛ",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
@@ -85,8 +85,8 @@ const EN := {
     "visual": "HEAT %d   •   PRESSURE %d   •   ENERGY %d",
     "area_core": "SECTOR 01 / REACTOR",
     "area_relay": "SECTOR 02 / RELAY HALL",
-    "guide_prev": "← BACK",
-    "guide_next": "FORWARD →",
+    "guide_prev": "BACK",
+    "guide_next": "FORWARD",
     "tour_status": "GUIDED INSPECTION %d%%  •  W/A MOVE, N SWITCH SECTOR",
     "sound_on": "SOUND / ON", "sound_off": "SOUND / OFF",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
@@ -467,6 +467,8 @@ func _layout_stage() -> void:
     visual_container.custom_minimum_size = Vector2(0, height)
     visual_container.stretch_shrink = 2 if quality == "eco" else 1
     var compact: bool = size.x < 640.0
+    if stage_3d != null:
+        stage_3d.set_compact_view(compact)
     for view in camera_buttons:
         view.custom_minimum_size.x = 84.0 if compact else 118.0
     if compact:
@@ -642,6 +644,8 @@ func _publish_web_accessibility() -> void:
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
         "w67_nav_steps": int(stage_state.get("inspection_navigation_moves", 0)),
+        "w67_mobile_world_text_hidden": bool(stage_state.get("mobile_world_text_hidden", false)),
+        "w67_relay_fov": float(stage_state.get("relay_framed_fov", 52.0)),
         "renderer_camera": int(stage_state["camera"]),
         "energy_gauge": float(stage_3d.energy_gauge.scale.y),
         "renderer_frames": Engine.get_frames_drawn(),
