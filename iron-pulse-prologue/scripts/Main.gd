@@ -914,6 +914,7 @@ func _make_hud() -> void:
     crosshair.offset_right = 24
     crosshair.offset_bottom = 30
     _make_overlays()
+    _refresh_auto_quality_ui()
     _make_touch_controls()
     _make_radio_ui()
     diagnostic_panel = _panel(hud_root,Rect2(-365,295,-15,485),Rect2(1,0,1,0),Color(0.015,0.027,0.045,0.94))
@@ -1023,6 +1024,7 @@ func _make_overlays() -> void:
     auto_quality_button = Button.new()
     auto_quality_button.name = "V18_OptInActualFrameAdaptiveGraphics"
     auto_quality_button.custom_minimum_size = Vector2(0,52)
+    auto_quality_button.add_theme_font_size_override("font_size",13)
     auto_quality_button.pressed.connect(_toggle_auto_quality)
     pause_box.add_child(auto_quality_button)
     pause_panel.visible = false
@@ -1268,6 +1270,8 @@ func _layout_hud() -> void:
         forecast_panel.offset_top = 290.0 if narrow else 296.0
         forecast_panel.offset_bottom = 594.0 if narrow else 601.0
         forecast_label.add_theme_font_size_override("font_size",11 if narrow else 13)
+    pause_panel.offset_left = -minf(240.0,width*0.45)
+    pause_panel.offset_right = minf(240.0,width*0.45)
     intro_panel.offset_left = -minf(310.0,width*0.45)
     intro_panel.offset_right = minf(310.0,width*0.45)
     end_panel.offset_left = -minf(300.0,width*0.45)
@@ -1801,9 +1805,9 @@ func _refresh_auto_quality_ui() -> void:
         return
     var english: bool = locale == "en"
     if adaptive_performance.enabled:
-        auto_quality_button.text = "K / AUTO GRAPHICS ON  •  TAP TO DISABLE" if english else "K / АВТОГРАФИКА ВКЛ.  •  ОТКЛЮЧИТЬ"
+        auto_quality_button.text = "K / AUTO ON · DISABLE" if english else "K / АВТО ВКЛ. · ВЫКЛ."
     else:
-        auto_quality_button.text = "K / ENABLE MEASURED AUTO GRAPHICS" if english else "K / ВКЛЮЧИТЬ АВТОГРАФИКУ"
+        auto_quality_button.text = "K / ENABLE AUTO" if english else "K / ВКЛЮЧИТЬ АВТО"
     if quality_state_label != null:
         quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
 
