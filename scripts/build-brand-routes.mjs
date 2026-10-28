@@ -1,5 +1,6 @@
 import { readFile,writeFile,mkdir } from 'node:fs/promises'
 import { build } from 'esbuild'
+import { createPublicCinemaCatalog } from './osa-cinema-public-catalog.mjs'
 const catalogBundle=await build({entryPoints:['src/redesignCatalog.ts'],bundle:true,write:false,format:'esm',platform:'node'})
 const {playGames}=await import('data:text/javascript;base64,'+Buffer.from(catalogBundle.outputFiles[0].text).toString('base64'))
 const studioBundle=await build({entryPoints:['src/osaCinemaStudioRegistry.ts'],bundle:true,write:false,format:'esm',platform:'node'})
@@ -59,4 +60,6 @@ for(const [path,title,description,theme] of routes){
  html=routeSchema.test(html)?html.replace(routeSchema,()=>schemaScript):html.replace('</head>',schemaScript+'\n</head>')
  await mkdir('dist/'+path,{recursive:true});await writeFile('dist/'+path+'/index.html',html)
 }
-console.log('Brand route shells: '+routes.length+' titles, descriptions, canonicals and PNG previews')
+const publicCatalog=createPublicCinemaCatalog(studioWorks)
+await writeFile('dist/osa-cinema/studio/catalog.v1.json',JSON.stringify(publicCatalog,null,2)+'\n')
+console.log('Brand route shells: '+routes.length+' titles, descriptions, canonicals and PNG previews; international film catalog: '+publicCatalog.total+' verified records')
