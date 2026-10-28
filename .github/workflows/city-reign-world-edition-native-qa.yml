@@ -9,6 +9,8 @@ on:
       - 'godot/empire-omega/scripts/city_reign_street_architecture.gd'
       - 'godot/empire-omega/scripts/world_builder.gd'
       - 'godot/empire-omega/tests/v123_city_reign_street_world_integrity.gd'
+      - 'godot/empire-omega/scripts/city_reign_tower_body_lod.gd'
+      - 'godot/empire-omega/tests/v124_city_reign_tower_silhouette_lod.gd'
       - 'godot/empire-omega/docs/CITY-REIGN-WORLD-EDITION-PRODUCTION-BLOCK.md'
       - '.github/workflows/city-reign-world-edition-native-qa.yml'
   workflow_dispatch:
@@ -62,6 +64,7 @@ jobs:
             v93_r116_architectural_tower_body \
             v122_city_reign_cinematic_rooftop_lod \
             v123_city_reign_street_world_integrity \
+            v124_city_reign_tower_silhouette_lod \
             v110_city_reign_first_mandate \
             v112_city_reign_resident_reactions \
             v121_city_reign_first_promise_street_director \
