@@ -6,6 +6,11 @@ const MAX_BATCHES: int = 7
 var batches: int = 0
 var pieces: int = 0
 var groups: Dictionary = {}
+# Preserve the CPU transforms actually submitted to MultiMesh for a true
+# strict headless source check; Godot's rendering-server readback may return
+# zero transforms without a GPU rendering device.
+var authored_pillar_poses: Array[Transform3D] = []
+var authored_capital_poses: Array[Transform3D] = []
 
 static func _positions(points: Array, size: Vector3) -> Array[Transform3D]:
 	var out: Array[Transform3D] = []
@@ -50,16 +55,103 @@ func _group(label: String, mesh: Mesh, poses: Array[Transform3D],
 	batches += 1
 	pieces += poses.size()
 
+# R130: one ORIGINAL shared 12-flute, 48-sector fluted shaft source mesh
+# for all six existing 10.8m civic entry columns. True radial depth, gradual
+# entasis and inset grooves, never six per-column scene objects or fake image.
+const R130_SECTORS: int = 48
+const R130_FLUTES: int = 12
+const R130_SHAFT_SEGMENTS: int = 8
+const R130_COLUMN_TRIANGLES: int = 864
+const R130_CAPITAL_TRIANGLES: int = 48
+
+static func _flute_radius(height: float, angle: float) -> float:
+	var progress: float = clampf(height+0.5,0.0,1.0)
+	var taper: float = lerpf(0.54,0.46,progress)
+	var entasis: float = 0.032*sin(PI*progress)
+	var groove: float = 0.055*pow(0.5+0.5*cos(float(R130_FLUTES)*angle),2)
+	return (taper+entasis)*(1.0-groove)
+
+static func _flute_point(y: float, angle: float) -> Vector3:
+	var radius: float = _flute_radius(y,angle)
+	return Vector3(radius*cos(angle),y,radius*sin(angle))
+
+static func _civic_face(st: SurfaceTool,a: Vector3,b: Vector3,
+		c: Vector3,d: Vector3, tint: Color) -> void:
+	st.set_color(tint)
+	# Godot 4.x clockwise front winding: keep outward-facing physical normals.
+	for v in [a,c,b,a,d,c]:
+		st.add_vertex(v)
+
+static func _sculpted_fluted_column() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var levels: Array[float] = [-0.50,-0.45,-0.36,-0.18,0.0,0.18,0.36,0.45,0.50]
+	for section in range(R130_SHAFT_SEGMENTS):
+		var low_y: float = levels[section]
+		var high_y: float = levels[section+1]
+		for index in range(R130_SECTORS):
+			var a: float = TAU*float(index)/float(R130_SECTORS)
+			var b: float = TAU*float(index+1)/float(R130_SECTORS)
+			var p0: Vector3 = _flute_point(low_y,a)
+			var p1: Vector3 = _flute_point(low_y,b)
+			var p2: Vector3 = _flute_point(high_y,b)
+			var p3: Vector3 = _flute_point(high_y,a)
+			# Correct outward side normals so original limestone normal/roughness
+			# under Godot sun remains physical instead of inward-facing.
+			_civic_face(st,p0,p3,p2,p1,Color.WHITE)
+	for index in range(R130_SECTORS):
+		var a: float = TAU*float(index)/float(R130_SECTORS)
+		var b: float = TAU*float(index+1)/float(R130_SECTORS)
+		var bottom: Vector3 = Vector3(0.0,-0.5,0.0)
+		var top: Vector3 = Vector3(0.0,0.5,0.0)
+		st.set_color(Color.WHITE)
+		for v in [bottom,_flute_point(-0.5,b),_flute_point(-0.5,a),
+				top,_flute_point(0.5,a),_flute_point(0.5,b)]:
+			st.add_vertex(v)
+	st.generate_normals()
+	return st.commit()
+
+static func _capital_box(st: SurfaceTool, centre: Vector3,
+		half: Vector3, tint: Color) -> void:
+	var low: Vector3 = centre-half
+	var high: Vector3 = centre+half
+	var a:=Vector3(low.x,low.y,low.z)
+	var b:=Vector3(high.x,low.y,low.z)
+	var c:=Vector3(high.x,low.y,high.z)
+	var d:=Vector3(low.x,low.y,high.z)
+	var e:=Vector3(low.x,high.y,low.z)
+	var f:=Vector3(high.x,high.y,low.z)
+	var g:=Vector3(high.x,high.y,high.z)
+	var h:=Vector3(low.x,high.y,high.z)
+	_civic_face(st,a,b,c,d,tint)
+	_civic_face(st,e,h,g,f,tint)
+	_civic_face(st,a,e,f,b,tint)
+	_civic_face(st,d,c,g,h,tint)
+	_civic_face(st,a,d,h,e,tint)
+	_civic_face(st,b,f,g,c,tint)
+
+static func _sculpted_stone_capital() -> ArrayMesh:
+	var st:=SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Four genuinely stepped carved strata, each joined into ONE original
+	# six-instance CivicCapitals GPU draw batch.
+	_capital_box(st,Vector3(0,-0.37,0),
+		Vector3(0.35,0.13,0.35),Color("e6e8e1"))
+	_capital_box(st,Vector3(0,-0.14,0),
+		Vector3(0.40,0.10,0.40),Color("d6d8d2"))
+	_capital_box(st,Vector3(0,0.13,0),
+		Vector3(0.45,0.16,0.45),Color("e3e6df"))
+	_capital_box(st,Vector3(0,0.39,0),
+		Vector3(0.50,0.11,0.50),Color("d0d5cf"))
+	st.generate_normals()
+	return st.commit()
+
 func _ready() -> void:
 	name = "HorizonCivicGatewayR28"
 	var box := BoxMesh.new()
 	box.size = Vector3.ONE
-	var limestone := CylinderMesh.new()
-	limestone.top_radius = 0.46
-	limestone.bottom_radius = 0.54
-	limestone.height = 1.0
-	limestone.radial_segments = 14
-	limestone.rings = 1
+	var limestone: ArrayMesh = _sculpted_fluted_column()
+	var carved_capital: ArrayMesh = _sculpted_stone_capital()
 	var pillars: Array[Vector3] = []
 	var capitals: Array[Vector3] = []
 	var glazing: Array[Vector3] = []
@@ -81,9 +173,13 @@ func _ready() -> void:
 	var window_colors: Array[Color] = []
 	for i in range(glazing.size()):
 		window_colors.append(Color("203642") if i%3==0 else Color("2b4653"))
-	_group("CivicStonePillars",limestone,_positions(pillars,Vector3(1.0,10.8,1.0)),
+	# These are the ACTUAL authored CPU poses fed unmodified to _group,
+	# which calls MultiMesh.set_instance_transform for every one of six items.
+	authored_pillar_poses = _positions(pillars,Vector3(1.0,10.8,1.0))
+	authored_capital_poses = _positions(capitals,Vector3(1.48,0.29,1.48))
+	_group("CivicStonePillars",limestone,authored_pillar_poses,
 		column_colors,0.79,0.015,true)
-	_group("CivicCapitals",box,_positions(capitals,Vector3(1.48,0.29,1.48)),
+	_group("CivicCapitals",carved_capital,authored_capital_poses,
 		_colors(6,Color("c0c4b9")),0.77,0.02,true)
 	_group("CivicWindowFrames",box,_positions(frames,Vector3(1.99,2.91,0.16)),
 		_colors(20,Color("82919c")),0.50,0.21)

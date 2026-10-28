@@ -1,0 +1,113 @@
+name: CITY REIGN AAA TRAFFIC — source-locked sculpted fleet, NO DEPLOY
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-fleet.yml'
+  push:
+    branches:
+      - feat/city-reign-aaa-traffic-fleet-20261028
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-fleet.yml'
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-aaa-fleet-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  original-godot-aaa-fleet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Freeze exact authored candidate commit
+        env:
+          SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "${#SOURCE_SHA}" -eq 40
+          mkdir -p city-reign-fleet-evidence
+          echo "$SOURCE_SHA" > city-reign-fleet-evidence/original-source-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Native original Godot game strict import
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-fleet-evidence/strict-import.log
+      - name: Run real original 3D traffic, CITY REIGN storyline and full 3D source art
+        shell: bash
+        run: |
+          set -euo pipefail
+          for testfile in \
+            v99_r126_real_physical_traffic_fleet \
+            v113_city_reign_cinematic_architecture \
+            v110_city_reign_first_mandate \
+            v111_city_reign_street_interaction \
+            v112_city_reign_resident_reactions \
+            v114_city_reign_aaa_vehicle_fleet; do
+            log="city-reign-fleet-evidence/${testfile}.log"
+            timeout --signal=TERM --kill-after=6s 150s godot --headless \
+              --path godot/empire-omega --script "res://tests/${testfile}.gd" | tee "$log"
+            case "$testfile" in
+              v99*) marker="EMPIRE OMEGA R126 original closed 3D AI sedan fleet:" ;;
+              v113*) marker="CITY REIGN AAA source-native art pass:" ;;
+              v110*) marker="CITY REIGN E01 real playable promise:" ;;
+              v111*) marker="CITY REIGN E01 real on-foot street choice:" ;;
+              v112*) marker="CITY REIGN E01 real resident reactions:" ;;
+              v114*) marker="CITY REIGN AAA sculpted original fleet:" ;;
+            esac
+            grep -Fq "$marker" "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::Actual Godot original scene regression: $testfile"; exit 1
+            fi
+          done
+      - name: Preserve exact independent release safety contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-direct-publish.contract.test.mjs \
+            | tee city-reign-fleet-evidence/manual-deploy-security.log
+      - name: SHA-256 evidence and honest AAA art release HOLD
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          paths=[
+            'godot/empire-omega/scripts/horizon_traffic_sedan_surface.gd',
+            'godot/empire-omega/scripts/traffic_agent.gd',
+            'godot/empire-omega/scripts/main.gd',
+            'godot/empire-omega/tests/v114_city_reign_aaa_vehicle_fleet.gd'
+          ]
+          obj={'sha':os.environ['SOURCE_SHA'],'engine':'Godot 4.4.1 original 3D',
+            'file_sha256':{s:hashlib.sha256(Path(s).read_bytes()).hexdigest() for s in paths},
+            'human_visual_approval':False,'licensed_final_car_assets':False,
+            'physical_mobile_fps_pass':False,'commercial_release_approved':False}
+          Path('city-reign-fleet-evidence/source-provenance.json').write_text(json.dumps(obj,indent=2)+'\n')
+          PY
+      - name: Archive native game and original source evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-aaa-fleet-${{ github.run_id }}
+          path: city-reign-fleet-evidence/
+          retention-days: 14
+          if-no-files-found: warn

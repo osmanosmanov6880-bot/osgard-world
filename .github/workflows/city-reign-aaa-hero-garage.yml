@@ -1,0 +1,120 @@
+name: CITY REIGN AAA HERO GARAGE — authentic native source, NO DEPLOY
+on:
+  push:
+    branches:
+      - feat/city-reign-aaa-player-car-silhouettes-20261028
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-hero-garage.yml'
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-hero-garage.yml'
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-aaa-hero-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  original-godot-hero-automotive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Check exact Git SHA without publishing
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "${#SOURCE_SHA}" -eq 40
+          mkdir -p city-reign-hero-evidence
+          echo "$SOURCE_SHA" > city-reign-hero-evidence/source-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Recreate original audio, strictly load original Godot game
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-hero-evidence/strict-import.log
+      - name: Test original steering and wheels plus new live garage body silhouettes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for testfile in \
+            v26_horizon_sculpted_visuals \
+            v21_vehicle_dynamics \
+            v22_vehicle_integrity \
+            v113_city_reign_cinematic_architecture \
+            v115_city_reign_aaa_player_garage; do
+            log="city-reign-hero-evidence/${testfile}.log"
+            timeout --signal=TERM --kill-after=6s 160s godot --headless \
+              --path godot/empire-omega --script "res://tests/${testfile}.gd" | tee "$log"
+            case "$testfile" in
+              v26*) marker="HORIZON R4 NATIVE:" ;;
+              v21*) marker="Vehicle dynamics" ;;
+              v22*) marker="Vehicle integrity" ;;
+              v113*) marker="CITY REIGN AAA source-native art pass:" ;;
+              v115*) marker="CITY REIGN AAA real player garage silhouettes:" ;;
+            esac
+            if [ "$testfile" = "v21_vehicle_dynamics" ] || [ "$testfile" = "v22_vehicle_integrity" ]; then
+              # Original legacy scripts do not have the same canonical
+              # output marker; enforce actual engine success via exit code.
+              :
+            else
+              grep -Fq "$marker" "$log"
+            fi
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::Original real driver scene failed: $testfile"; exit 1
+            fi
+          done
+      - name: Protect R138 manual-only release requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-direct-publish.contract.test.mjs \
+            | tee city-reign-hero-evidence/manual-release-gate.log
+      - name: Create SHA-256 reproducibility and explicit photorealism hold
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          files=[
+            'godot/empire-omega/scripts/horizon_vehicle_art.gd',
+            'godot/empire-omega/scripts/vehicle_controller.gd',
+            'godot/empire-omega/scripts/city_reign_player_vehicle_profiles.gd',
+            'godot/empire-omega/tests/v115_city_reign_aaa_player_garage.gd'
+          ]
+          out={'source_sha':os.environ['SOURCE_SHA'],
+            'file_digest':{f:hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in files},
+            'engine':'Godot 4.4.1 original native GL Compatibility',
+            'original_licensed_hero_cars_approved':False,
+            'real_hardware_fps_validated':False,
+            'photorealistic_aaa_approved':False,
+            'public_release_approved':False}
+          Path('city-reign-hero-evidence/source-provenance.json').write_text(json.dumps(out,indent=2)+'\n')
+          PY
+      - name: Archive real engine results, never SSH publish
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-hero-${{ github.run_id }}
+          path: city-reign-hero-evidence/
+          if-no-files-found: warn
+          retention-days: 14

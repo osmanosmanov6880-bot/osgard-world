@@ -1,0 +1,246 @@
+name: EMPIRE Omega R109 exact-source original Godot release evidence, NO DEPLOY
+on:
+  # Re-verify the ACTUAL integrated R90 SHA after a feature PR was merged;
+  # PR merge-preview SHA alone is never evidence for changed staging HEAD.
+  # Explicitly never publish, upload via SSH or touch master here.
+  push:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - 'scripts/omega-r109-release-sentinel.py'
+      - 'scripts/omega-r109-phone-webgl.spec.mjs'
+      - 'scripts/omega-r117-city-focus-webgl.spec.mjs'
+      - 'scripts/omega-r109-frame-telemetry.spec.mjs'
+      - 'playwright.omega-r109.config.mjs'
+      - 'scripts/r90_cc0_texture_pack.py'
+      - '.github/workflows/omega-r109-final-candidate-evidence.yml'
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/**'
+      - 'scripts/omega-r109-release-sentinel.py'
+      - 'scripts/omega-r109-phone-webgl.spec.mjs'
+      - 'scripts/omega-r117-city-focus-webgl.spec.mjs'
+      - 'scripts/omega-r109-frame-telemetry.spec.mjs'
+      - 'playwright.omega-r109.config.mjs'
+      - 'scripts/r90_cc0_texture_pack.py'
+      - '.github/workflows/omega-r109-final-candidate-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: omega-r109-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  exact-native-godot-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # PR events normally checkout a synthetic merge SHA, NOT the
+          # branch SHA. Check out exact immutable original source instead.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Fail if this job is not running the EXACT intended source SHA
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_SOURCE_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SOURCE_SHA" = "$EXPECTED_SOURCE_SHA"
+          echo "EMPIRE EXACT VERIFIED SOURCE SHA=$ACTUAL_SOURCE_SHA"
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Refuse incomplete source, missing real assets and SHA mismatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r109-release-sentinel.py
+      - name: Strict Godot 4.4.1 compiler and real native gameplay/test campaign
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          for suite in \
+            v29_responsive_layout \
+            v54_r32_cinematic_cabinet_wet_grip \
+            v50_organic_foliage_mobile_focus \
+            v69_r44_foliage_view_clearance \
+            v72_r55_forty_mission_event_save \
+            v74_r64_authoritative_mission_transactions \
+            v75_r68_policy_mission_real_change \
+            v76_r87_honest_mission_navigation \
+            v78_r90_reference_fidelity \
+            v79_r91_original_architecture \
+            v80_r92_real_district_projection \
+            v81_r93_live_civic_metrics \
+            v82_r95_city_massing \
+            v83_r97_cinematic_command_hierarchy \
+            v84_r98_facade_geometry \
+            v85_r99_command_visual_geometry \
+            v86_r102_real_asphalt_quality \
+            v87_r108_native_mountain_ridges \
+            v88_r106_embedded_cc0_road_activation \
+            v89_r111_stable_weather_pbr \
+            v90_r112_true_camera_inspection \
+            v91_r114_pbr_roofline_luxury \
+            v92_r115_true_world_focus \
+            v93_r116_architectural_tower_body \
+            v95_r119_real_glazing_readable_atlas \
+            v96_r120_sculpted_arbor_physical_wood \
+            v24_horizon_character_and_hall \
+            v63_r41_predictive_pedestrian_yield \
+            v68_r47_predictive_crosswalk_traffic \
+            v97_r123_real_pedestrian_body_gait \
+            v98_r124_foreground_window_day_night \
+            v99_r125_command_city_aperture \
+            v14_traffic_physics \
+            v62_r39_actual_wheel_art \
+            v99_r126_real_physical_traffic_fleet \
+            v100_r127_original_street_art \
+            v101_r127_live_drive_save_reload \
+            v102_r128_accessible_cabinet_refresh \
+            v103_r129_coupe_3d_glass_aero \
+            v52_civic_pbr_gateway \
+            v104_r130_fluted_civic_stone \
+            v105_r132_mission_briefing_accessibility; do
+            timeout --signal=TERM --kill-after=6s 120s godot --headless \
+              --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+  exact-webgl-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 33
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # PR events normally checkout a synthetic merge SHA, NOT the
+          # branch SHA. Check out exact immutable original source instead.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Fail if this job is not running the EXACT intended source SHA
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_SOURCE_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SOURCE_SHA" = "$EXPECTED_SOURCE_SHA"
+          echo "EMPIRE EXACT VERIFIED SOURCE SHA=$ACTUAL_SOURCE_SHA"
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Strict reviewed original files and export SAME checkout to WASM
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r109-release-sentinel.py
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web \
+            "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+          mkdir -p omega-r109-evidence
+          sha256sum godot/empire-omega/.build-web/index.html \
+            godot/empire-omega/.build-web/index.wasm \
+            godot/empire-omega/.build-web/index.pck > omega-r109-evidence/webgl-binary-sha256.txt
+          git rev-parse HEAD > omega-r109-evidence/exact-tested-checkout.txt
+      - name: Install pinned original WebGL Chromium and Mesa
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Start candidate export on loopback ONLY
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 \
+            --directory godot/empire-omega/.build-web > /tmp/r109-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/r109-http.log
+          exit 1
+      - name: Real Chromium captures 3D game before and after Tab, checks browser errors
+        shell: bash
+        env:
+          OMEGA_CI_GL_BACKEND: mesa
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-r109.config.mjs --workers=1 --retries=0
+      - name: Archive unpublished PLAYABLE Godot WebGL candidate from same tested checkout
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r109-actual-playable-webgl-candidate
+          path: godot/empire-omega/.build-web/
+          # GitHub upload-artifact skips hidden directories by default.
+          # The scoped .build-web is the original engine's output directory;
+          # enable it explicitly, not arbitrary hidden workspace files.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve original renderer screenshots and executable SHA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r109-exact-real-game-pixels-and-wasm-sha
+          path: |
+            omega-r90-results/
+            omega-r90-report/
+            omega-r109-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+  reproducible-provenance:
+    needs: [exact-native-godot-source, exact-webgl-chromium]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # PR events normally checkout a synthetic merge SHA, NOT the
+          # branch SHA. Check out exact immutable original source instead.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Fail if this job is not running the EXACT intended source SHA
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_SOURCE_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SOURCE_SHA" = "$EXPECTED_SOURCE_SHA"
+          echo "EMPIRE EXACT VERIFIED SOURCE SHA=$ACTUAL_SOURCE_SHA"
+      - name: Produce original game source manifest ONLY after both jobs succeed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r109-release-sentinel.py \
+            --output omega-r109-evidence/original-candidate-provenance.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omega-r109-reviewed-original-source-manifest
+          path: omega-r109-evidence/original-candidate-provenance.json
+          if-no-files-found: error
+          retention-days: 14

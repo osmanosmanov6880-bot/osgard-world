@@ -2,6 +2,7 @@ extends Node3D
 const SPRING = preload("res://scripts/horizon_chassis_spring.gd")
 const SCULPT = preload("res://scripts/horizon_coupe_sculpt.gd")
 const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
+const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_player_vehicle_profiles.gd")
 const R39_DETAIL = preload("res://scripts/horizon_r39_wheel_detail.gd")
 ## OSGARD HORIZON DRIVE: original PBR sports coupe assembled in Godot.
 ## These are editable original meshes, not meshes or assets from Forza.
@@ -21,6 +22,12 @@ var pitch_angle := 0.0
 var pitch_velocity := 0.0
 var ride_bob := 0.0
 var ride_bob_velocity := 0.0
+# Cache the exact original compact shapes and primary glass neutral
+# transforms so changing garages never modifies the actual physics car.
+var original_flow: Mesh
+var original_greenhouse: Mesh
+var original_window_poses: Dictionary = {}
+var current_visual_variant: String = "compact"
 
 func _ready() -> void:
 	name = "HorizonCoupe"
@@ -28,6 +35,10 @@ func _ready() -> void:
 	_create_wheels()
 	_attach_wheel_detail_packs()
 	_create_lighting()
+	var default_body: MeshInstance3D = get_node_or_null("FlowBody") as MeshInstance3D
+	var default_roof: MeshInstance3D = get_node_or_null("AerodynamicGreenhouse") as MeshInstance3D
+	original_flow = default_body.mesh if default_body != null else null
+	original_greenhouse = default_roof.mesh if default_roof != null else null
 	set_paint(body_paint)
 
 func _mat(color: Color, metal: float = 0.1, rough: float = 0.5, emission: bool = false) -> StandardMaterial3D:
@@ -56,21 +67,101 @@ func _part(id: String, size: Vector3, at: Vector3, tint: Color, metal: float = 0
 		painted_parts.append(visual)
 	return visual
 
+# R129: real layered ceramic windscreen perimeter and glass, not a
+# second transparent layer, PNG, or per-window extra draw call.
+# Every original FOUR windows remains one physical ArrayMesh/MeshInstance.
+static func _face(st: SurfaceTool, a: Vector3, b: Vector3,
+		c: Vector3, d: Vector3, tint: Color) -> void:
+	st.set_color(tint)
+	for v in [a,b,c,a,c,d]:
+		st.add_vertex(v)
+
+static func _aero_box(st: SurfaceTool, centre: Vector3,
+		half: Vector3, tint: Color) -> void:
+	var low: Vector3 = centre-half
+	var high: Vector3 = centre+half
+	_face(st,Vector3(low.x,low.y,low.z),Vector3(high.x,low.y,low.z),
+		Vector3(high.x,high.y,low.z),Vector3(low.x,high.y,low.z),tint)
+	_face(st,Vector3(high.x,low.y,high.z),Vector3(low.x,low.y,high.z),
+		Vector3(low.x,high.y,high.z),Vector3(high.x,high.y,high.z),tint)
+	_face(st,Vector3(low.x,low.y,high.z),Vector3(low.x,low.y,low.z),
+		Vector3(low.x,high.y,low.z),Vector3(low.x,high.y,high.z),tint)
+	_face(st,Vector3(high.x,low.y,low.z),Vector3(high.x,low.y,high.z),
+		Vector3(high.x,high.y,high.z),Vector3(high.x,high.y,low.z),tint)
+	_face(st,Vector3(low.x,high.y,low.z),Vector3(high.x,high.y,low.z),
+		Vector3(high.x,high.y,high.z),Vector3(low.x,high.y,high.z),tint)
+	_face(st,Vector3(low.x,low.y,high.z),Vector3(high.x,low.y,high.z),
+		Vector3(high.x,low.y,low.z),Vector3(low.x,low.y,low.z),tint)
+
+static func _machined_aero_lip() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# The single original "FrontSplitter" node replaces its box with one
+	# bounded 8-mass brushed metal/carbon sculpt. No extra draw batches.
+	_aero_box(surface,Vector3(0.0,-0.034,0.040),
+		Vector3(1.37,0.054,0.227),Color("1e272c"))
+	_aero_box(surface,Vector3(0.0,-0.071,-0.216),
+		Vector3(1.37,0.022,0.073),Color("11191e"))
+	for side in [-1.0,1.0]:
+		var x: float = float(side)*1.012
+		_aero_box(surface,Vector3(x,-0.002,-0.174),
+			Vector3(0.315,0.042,0.063),Color("0b151b"))
+		_aero_box(surface,Vector3(x,-0.015,-0.246),
+			Vector3(0.270,0.008,0.011),Color("84939a"))
+	_aero_box(surface,Vector3(0.0,0.018,-0.177),
+		Vector3(0.450,0.025,0.036),Color("303e46"))
+	_aero_box(surface,Vector3(0.0,0.056,-0.126),
+		Vector3(0.545,0.008,0.028),Color("8a9aa3"))
+	surface.generate_normals()
+	return surface.commit()
+
 func _glass_quad(id: String, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for v in [a,b,c,a,c,d]:
-		surface.add_vertex(v)
+	var centre: Vector3 = (a+b+c+d)*0.25
+	# Physical glazing/ceramic frit frame share the exact old quad bounds;
+	# the central glass is recessed INSIDE the perimeter, never coplanar
+	# overlapping transparent geometry.
+	var inner_a: Vector3 = a.lerp(centre,0.105)
+	var inner_b: Vector3 = b.lerp(centre,0.105)
+	var inner_c: Vector3 = c.lerp(centre,0.105)
+	var inner_d: Vector3 = d.lerp(centre,0.105)
+	var ceramic: Color = Color("1b252c")
+	_face(surface,inner_a,inner_b,inner_c,inner_d,Color("446979"))
+	_face(surface,a,b,inner_b,inner_a,ceramic)
+	_face(surface,b,c,inner_c,inner_b,ceramic)
+	_face(surface,c,d,inner_d,inner_c,ceramic)
+	_face(surface,d,a,inner_a,inner_d,ceramic)
+	# R129: two truly physical wiper blades, resting on bottom 1/4 of
+	# windshield, combined in the SAME window draw surface (not new nodes).
+	if id=="SlopedWindshield":
+		var normal: Vector3 = (b-a).cross(c-a).normalized()
+		for side in [0,1]:
+			var t0: float = 0.11 if side==0 else 0.56
+			var t1: float = 0.43 if side==0 else 0.87
+			var start: Vector3 = d.lerp(c,t0).lerp(a.lerp(b,t0),0.13)+normal*0.009
+			var stop: Vector3 = d.lerp(c,t1).lerp(a.lerp(b,t1),0.21)+normal*0.009
+			var lateral: Vector3 = normal.cross((stop-start).normalized())*0.010
+			_face(surface,start-lateral,start+lateral,
+				stop+lateral,stop-lateral,Color("151d22"))
 	surface.generate_normals()
 	var visual := MeshInstance3D.new()
 	visual.name = id
 	visual.mesh = surface.commit()
-	var glass := _mat(Color("39687a"),0.42,0.19)
+	# Auto glass should not generate four additional opaque WebGL shadow maps.
+	# The original painted chassis remains the authoritative shadow caster.
+	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var glass := _mat(Color.WHITE,0.36,0.24)
+	glass.vertex_color_use_as_albedo = true
+	glass.clearcoat_enabled = true
+	glass.clearcoat = 0.48
+	glass.clearcoat_roughness = 0.14
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = glass
 	add_child(visual)
 	body_parts.append(visual)
 	body_rest.append(visual.transform)
+	original_window_poses[id] = visual.transform
 
 func _create_body() -> void:
 	# Vehicle forward is -Z. Tapered upper surfaces visually reduce blockiness.
@@ -79,7 +170,15 @@ func _create_body() -> void:
 	_part("Cabin",Vector3(2.06,0.56,2.30),Vector3(0,0.37,0.05),body_paint.darkened(0.1),0.50,0.26,true)
 	_part("Roof",Vector3(1.92,0.18,1.45),Vector3(0,0.78,0.08),body_paint,0.6,0.22,true)
 	_part("HoodHighlight",Vector3(1.48,0.035,1.18),Vector3(0,-0.145,-1.42),body_paint.lightened(0.06),0.55,0.22,true)
-	_part("FrontSplitter",Vector3(2.75,0.13,0.64),Vector3(0,-0.65,-2.34),Color("101a24"),0.22,0.31)
+	var front_aero: MeshInstance3D = _part("FrontSplitter",
+		Vector3(2.75,0.13,0.64),Vector3(0,-0.65,-2.34),
+		Color("101a24"),0.22,0.31)
+	front_aero.mesh = _machined_aero_lip()
+	var aero_finish: StandardMaterial3D = front_aero.material_override as StandardMaterial3D
+	aero_finish.albedo_color = Color.WHITE
+	aero_finish.vertex_color_use_as_albedo = true
+	aero_finish.metallic = 0.32
+	aero_finish.roughness = 0.38
 	_part("RearDiffuser",Vector3(2.78,0.14,0.56),Vector3(0,-0.64,2.30),Color("101a24"),0.22,0.34)
 	_part("RearSpoiler",Vector3(2.60,0.10,0.45),Vector3(0,0.36,2.26),Color("101b23"),0.25,0.30)
 	for sign in [-1.0,1.0]:
@@ -194,6 +293,39 @@ func _create_lighting() -> void:
 	_part("LeftLED",Vector3(0.78,0.13,0.045),Vector3(-.83,-.29,-2.43),Color("d9f2ff"),0.0,0.15,false,true)
 	_part("RightLED",Vector3(0.78,0.13,0.045),Vector3(.83,-.29,-2.43),Color("d9f2ff"),0.0,0.15,false,true)
 	brake_strip = _part("FullWidthRearLight",Vector3(2.25,0.10,0.055),Vector3(0,-0.24,2.52),Color("ff5861"),0.0,0.2,false,true)
+
+func set_visual_variant(id: String) -> void:
+	# Original player vehicle catalog already owns all garage prices, saved
+	# ownership, speed and collisions. Only the ORIGINAL two source meshes
+	# and four existing glass pane transforms are allowed to change here.
+	var kind: String = id if CITY_REIGN_GARAGE.STYLES.has(id) else "compact"
+	var shape: MeshInstance3D = get_node_or_null("FlowBody") as MeshInstance3D
+	var roof: MeshInstance3D = get_node_or_null("AerodynamicGreenhouse") as MeshInstance3D
+	if shape == null or roof == null or original_flow == null or original_greenhouse == null:
+		return
+	current_visual_variant = kind
+	shape.mesh = original_flow if kind == "compact" else CITY_REIGN_GARAGE.body_mesh(kind)
+	roof.mesh = original_greenhouse if kind == "compact" else CITY_REIGN_GARAGE.canopy_mesh(kind)
+	var glass_multiplier: float = 1.0
+	match kind:
+		"courier": glass_multiplier = 1.33
+		"executive": glass_multiplier = 0.91
+		"utility": glass_multiplier = 1.38
+	for i in range(body_parts.size()):
+		var piece: MeshInstance3D = body_parts[i]
+		if original_window_poses.has(piece.name):
+			var rest: Transform3D = original_window_poses[piece.name]
+			var rescaled: Transform3D = Transform3D(
+				rest.basis.scaled(Vector3(1.0,glass_multiplier,1.0)),rest.origin)
+			body_rest[i] = rescaled
+			piece.transform = rescaled
+		if piece.name in ["RearSpoiler","SpoilerBracket"]:
+			piece.visible = kind == "compact" or kind == "executive"
+		if piece.name == "RoofCentreRail":
+			piece.visible = kind != "courier" and kind != "utility"
+	var paint: StandardMaterial3D = shape.material_override as StandardMaterial3D
+	if paint != null:
+		paint.roughness = 0.34 if kind in ["courier","utility"] else (0.20 if kind=="executive" else 0.26)
 
 func set_paint(color: Color) -> void:
 	body_paint = color

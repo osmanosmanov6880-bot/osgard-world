@@ -39,8 +39,15 @@ func _run() -> void:
 			verify(mat!=null and mat.vertex_color_use_as_albedo,"PBR material uses individual instance colors for "+str(key))
 			verify(mat!=null and not mat.emission_enabled,"no fluorescent fake-neon palace: "+str(key))
 	var columns: MultiMeshInstance3D = civic.get_node("CivicStonePillars")
-	verify(columns.multimesh.mesh is CylinderMesh,"columns use shaded cylindrical geometry instead of crude flat boxes")
-	verify((columns.multimesh.mesh as CylinderMesh).radial_segments>=12,"rounded facade columns have smooth real cross section")
+	var physical_stone: ArrayMesh = columns.multimesh.mesh as ArrayMesh
+	verify(physical_stone != null and physical_stone.get_surface_count()==1,
+		"R130 replaces simple cylinder with one actual authored fluted limestone 3D surface")
+	if physical_stone != null:
+		verify(physical_stone.surface_get_array_len(0)==GATEWAY.R130_COLUMN_TRIANGLES*3,
+			"R130 12 physical flutes and real entasis improve original 6 shared columns")
+	var capital_mesh: ArrayMesh = (civic.get_node("CivicCapitals") as MultiMeshInstance3D).multimesh.mesh as ArrayMesh
+	verify(capital_mesh != null and capital_mesh.surface_get_array_len(0)==GATEWAY.R130_CAPITAL_TRIANGLES*3,
+		"original six shared stone capitals now use 4 real carved profiles, not one pale box")
 	var stone_finish: StandardMaterial3D = columns.material_override as StandardMaterial3D
 	verify(stone_finish.normal_enabled and stone_finish.normal_texture!=null,"columns have actual PBR normal-textured stone finish")
 	var glass: StandardMaterial3D = (civic.get_node("CivicDarkGlass") as MultiMeshInstance3D).material_override as StandardMaterial3D

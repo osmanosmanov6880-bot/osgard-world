@@ -1,0 +1,36 @@
+name: EMPIRE Omega R98 authentic GPU-batched PBR facade geometry native QA
+on:
+  pull_request:
+    branches:
+      - feat/omega-r97-cinematic-command-hierarchy-20261026
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/scripts/horizon_r98_architectural_fins.gd'
+      - 'godot/empire-omega/tests/v84_r98_facade_geometry.gd'
+      - '.github/workflows/omega-r98-facade-geometry-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-native-3d-and-saved-game-invariants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Check real 3D native import, R95 collision, R97 UI and R98 geometry
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          for suite in v29_responsive_layout v76_r87_honest_mission_navigation v78_r90_reference_fidelity v82_r95_city_massing v83_r97_cinematic_command_hierarchy v84_r98_facade_geometry; do
+            timeout --signal=TERM --kill-after=5s 115s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done

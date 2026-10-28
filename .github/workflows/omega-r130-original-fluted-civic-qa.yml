@@ -1,0 +1,120 @@
+name: EMPIRE Omega R130 real 12-flute physical marble portico and stepped capitals native Chromium QA - NO DEPLOY
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/scripts/horizon_civic_gateway.gd'
+      - 'godot/empire-omega/tests/v52_civic_pbr_gateway.gd'
+      - 'godot/empire-omega/tests/v104_r130_fluted_civic_stone.gd'
+      - '.github/workflows/omega-r130-original-fluted-civic-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-original-fluted-portico-and-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Fail closed when GitHub checks out a synthetic PR merge SHA
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          python3 scripts/omega-r109-release-sentinel.py
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strict original R130 Godot 6 fluted 3D shafts, 6 carved capitals, 7 live PBR portico batches
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          for suite in v29_responsive_layout v54_r32_cinematic_cabinet_wet_grip v76_r87_honest_mission_navigation v78_r90_reference_fidelity v79_r91_original_architecture v80_r92_real_district_projection v81_r93_live_civic_metrics v82_r95_city_massing v83_r97_cinematic_command_hierarchy v84_r98_facade_geometry v85_r99_command_visual_geometry v88_r106_embedded_cc0_road_activation v90_r112_true_camera_inspection v91_r114_pbr_roofline_luxury v93_r116_architectural_tower_body v89_r111_stable_weather_pbr v95_r119_real_glazing_readable_atlas v96_r120_sculpted_arbor_physical_wood v97_r123_real_pedestrian_body_gait v98_r124_foreground_window_day_night v14_traffic_physics v63_r41_predictive_pedestrian_yield v68_r47_predictive_crosswalk_traffic v62_r39_actual_wheel_art v99_r126_real_physical_traffic_fleet v52_civic_pbr_gateway v100_r127_original_street_art v102_r128_accessible_cabinet_refresh v104_r130_fluted_civic_stone; do
+            timeout --signal=TERM --kill-after=5s 115s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+  exact-real-chromium-civic-opening-3d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Fail closed when GitHub checks out a synthetic PR merge SHA
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          python3 scripts/omega-r109-release-sentinel.py
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Export new Godot build without replacing production R87
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install pinned Chromium and Mesa software GPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Run unpublished game only on loopback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/r130-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/r130-http.log
+          exit 1
+      - name: Capture actual original Godot civic opening architecture and Tab cabinet
+        shell: bash
+        env:
+          OMEGA_CI_GL_BACKEND: mesa
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-r90.config.mjs --workers=1 --retries=0
+      - name: Preserve true unpublished WebGL screenshot and visual diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r130-fluted-limestone-and-capitals-original-Godot-Chromium
+          path: |
+            omega-r90-results/
+            omega-r90-report/
+          if-no-files-found: warn
+          retention-days: 14

@@ -7,10 +7,10 @@ const CITY_HALF = 224.0
 const ROAD_INTERVAL = 52.0
 const DISTRICT_NAMES = {"forum":"Сенатский форум", "housing":"Жилой квартал", "lower":"Нижний город", "aqueduct":"Акведуки"}
 const DISTRICT_COLORS = {
-	"forum":Color(0.37,0.48,0.63),
-	"housing":Color(0.36,0.57,0.49),
-	"lower":Color(0.49,0.44,0.38),
-	"aqueduct":Color(0.33,0.54,0.59)
+	"forum":Color(0.38,0.40,0.43),
+	"housing":Color(0.38,0.45,0.44),
+	"lower":Color(0.45,0.42,0.39),
+	"aqueduct":Color(0.39,0.45,0.49)
 }
 const LOCATION_DATA = {
 	"cityhall":{"name":"Дворец правителя","position":Vector3(-130,0,-130),"district":"forum"},
@@ -22,6 +22,10 @@ const LOCATION_DATA = {
 var locations := {}
 var markers := {}
 var project_visuals := {}
+## B33: exact four paid original collider/box meshes shared on demand,
+## never recreated when the HQ refreshes the city without a new purchase.
+var project_visual_levels: Dictionary = {}
+var project_geometry_cache: Dictionary = {}
 var property_markers := {}
 var weather_particles: GPUParticles3D
 var weather_mode := "clear"
@@ -39,6 +43,12 @@ var window_points: Array[Transform3D] = []
 var facade_windows: MultiMeshInstance3D
 var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
+var r98_facade_ribs: MultiMeshInstance3D
+var city_reign_facades: Node3D
+var city_reign_squares: Node3D
+var city_reign_hero_architecture: Node3D
+var city_reign_purchased_skyline: Node3D
+var city_reign_building_finishes: Array[StandardMaterial3D] = []
 var streetfront: Node3D
 var facade_balconies: Node3D
 var road_paint: Node3D
@@ -47,6 +57,8 @@ var cityhall_gateway: Node3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
+var r90_urban: Node3D
+var r127_shelters: MultiMeshInstance3D
 var streetlight_focus: Vector3 = Vector3.ZERO
 const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
 const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
@@ -58,13 +70,29 @@ const BALCONIES_SCENE = preload("res://scripts/horizon_facade_balconies.gd")
 const CIVIC_GATEWAY = preload("res://scripts/horizon_civic_gateway.gd")
 const ROAD_PAINT_SCENE = preload("res://scripts/horizon_road_paint_batches.gd")
 const ROAD_PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
+const R90_URBAN = preload("res://scripts/horizon_r90_street_dressing.gd")
+const R127_SHELTERS = preload("res://scripts/horizon_r127_street_shelters.gd")
+const R95_MASSING = preload("res://scripts/horizon_r95_city_massing.gd")
+const R98_FINS = preload("res://scripts/horizon_r98_architectural_fins.gd")
+const CITY_REIGN_FACADE = preload("res://scripts/city_reign_cinematic_facades.gd")
+const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.gd")
+const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.gd")
+const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_skyline.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
+var r90_original_asphalt_albedo: Texture2D
+var r90_original_asphalt_normal: Texture2D
 
 func _ready() -> void:
 	rng.seed = 428753
 	asphalt_pbr = ROAD_MATERIALS.asphalt()
 	concrete_pbr = ROAD_MATERIALS.concrete()
+	# R90 approved urban palette: real PBR tint, not a photograph or
+	# screen-space color overlay. All road wheel collision remains unchanged.
+	asphalt_pbr.albedo_color = Color("a2a8ad")
+	concrete_pbr.albedo_color = Color("bcb8b0")
+	r90_original_asphalt_albedo = asphalt_pbr.albedo_texture
+	r90_original_asphalt_normal = asphalt_pbr.normal_texture
 	city_root = Node3D.new()
 	city_root.name = "ProceduralDistricts"
 	add_child(city_root)
@@ -78,19 +106,44 @@ func _ready() -> void:
 	road_puddles = ROAD_PUDDLES.new()
 	city_root.add_child(road_puddles)
 	architecture_trim = ARCHITECTURE_TRIM.new()
+	r98_facade_ribs = R98_FINS.new()
+	city_reign_facades = CITY_REIGN_FACADE.new()
 	streetfront = STREETFRONT_SCENE.new()
 	facade_balconies = BALCONIES_SCENE.new()
 	_create_city()
 	architecture_trim.call("finalize")
 	city_root.add_child(architecture_trim)
+	r98_facade_ribs.call("finalize")
+	city_root.add_child(r98_facade_ribs)
+	city_reign_facades.call("finalize")
+	city_root.add_child(city_reign_facades)
 	streetfront.call("finalize")
 	city_root.add_child(streetfront)
 	facade_balconies.call("finalize")
 	city_root.add_child(facade_balconies)
 	_create_window_batch()
 	_create_landmarks()
+	# Real 4 physically-existing 25m city service buildings now get
+	# four original sculpted facades and 4 source-earned architectural
+	# upgrade crowns. The ORIGINAL static collider remains authoritative.
+	city_reign_hero_architecture = CITY_REIGN_HERO.new()
+	city_root.add_child(city_reign_hero_architecture)
+	city_reign_squares = CITY_REIGN_SQUARES.new()
+	city_root.add_child(city_reign_squares)
 	_create_waypoint_marker()
 	_create_project_visuals()
+	# B27: 12 original paid municipal 3D facades. The exact real 12
+	# existing StaticBody3D project colliders remain fully authoritative.
+	# Data locations come from _project_position, never invented plots.
+	var original_purchased_plots: Dictionary = {}
+	for id in GameState.BUILDING_ORDER:
+		original_purchased_plots[id] = {
+			"position":_project_position(id),
+			"district":str(GameState.BUILDINGS[id]["district"])
+		}
+	city_reign_purchased_skyline = CITY_REIGN_PAID_SKYLINE.new()
+	city_reign_purchased_skyline.call("configure",original_purchased_plots)
+	city_root.add_child(city_reign_purchased_skyline)
 	_create_property_markers()
 	_create_weather_particles()
 	# Original individual 85 cuboid TreeCrown/TreeTrunk decorations removed.
@@ -98,6 +151,13 @@ func _ready() -> void:
 	# GPU-instanced scenic art has no colliders and preserves all traffic/missions.
 	horizon_scenic = preload("res://scripts/horizon_roadscape.gd").new()
 	add_child(horizon_scenic)
+	r90_urban = R90_URBAN.new()
+	city_root.add_child(r90_urban)
+	# Real independent 3D street furniture lives in the original authoritative
+	# WorldBuilder, not under the R119 GPU window pass or original R90 roots.
+	# Therefore all three inherited skyline/facade hierarchies remain immutable.
+	r127_shelters = R127_SHELTERS.new()
+	city_root.add_child(r127_shelters)
 	update_development()
 
 func _material(color: Color, metallic: float = 0.0, roughness: float = 0.8, glow: bool = false) -> StandardMaterial3D:
@@ -221,17 +281,27 @@ func _create_city() -> void:
 			building_chunks[Vector2i(ix,iz)] = {"node":chunk,"center":Vector3(x,0,z),"active":true}
 			for n in range(2):
 				var offset := -9.0 if n == 0 else 9.0
-				var height := rng.randf_range(8,35) * (1.1 if id == "forum" else 1.0)
+				var height: float = R95_MASSING.height_for(id,rng.randf(),ix,iz,n)
 				var width := rng.randf_range(11,15)
 				var color := base_color.lightened(rng.randf_range(0.05,0.32)) if (ix + iz + n) % 3 == 0 else base_color.darkened(rng.randf_range(0.08,0.28))
 				var pos := Vector3(x+offset,height*0.5,z+(offset if (ix + iz) % 2 == 0 else -offset))
-				_box(chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
+				# CITY REIGN A3: real shared 128px three-family procedural PBR on
+				# existing physically colliding walls; geometry unchanged.
+				# The old grey single-color body is not a fake texture anymore.
+				var actual_building: Node3D = _box(chunk,"Building_%03d" % building_count,
+					Vector3(width,height,width),pos,color,true)
+				var actual_body: MeshInstance3D = actual_building.get_node("VisualMesh") as MeshInstance3D
+				var building_finish: StandardMaterial3D = R37_MATERIAL_PACK.facade(color,building_count)
+				actual_body.material_override = building_finish
+				city_reign_building_finishes.append(building_finish)
 				architecture_trim.call("record",pos,width,height)
+				r98_facade_ribs.call("record",pos,width,height,id)
 				# Entrances and the ground-floor window gap must share the same
 				# street-facing facade; never face an interior wall at random.
 				var entrance_face: int = STREETFRONT_SCENE.road_facing_variant(
 					pos,ROAD_INTERVAL,(ix+iz+n)%2==0)
 				streetfront.call("record",pos,width,height,building_count,entrance_face)
+				city_reign_facades.call("record",pos,width,height,id,entrance_face)
 				facade_balconies.call("record",pos,width,height,building_count,entrance_face)
 				_record_windows(pos,width,height,entrance_face)
 				building_count += 1
@@ -298,7 +368,11 @@ func _create_window_batch() -> void:
 	for i in range(window_points.size()):
 		multimesh.set_instance_transform(i,window_points[i])
 	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# R124: genuine SUN/SKY PER-PIXEL PBR on original near-camera window batch.
+	# Night mode and LOW phone keep original cheap unshaded visibility.
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	mat.metallic = 0.23
+	mat.roughness = 0.29
 	mat.vertex_color_use_as_albedo = true
 	facade_windows = MultiMeshInstance3D.new()
 	facade_windows.name = "InstancedFacadeWindows"
@@ -319,16 +393,30 @@ func _create_window_batch() -> void:
 	facade_frames.name = "InstancedMetalWindowFrames"
 	facade_frames.multimesh = frame_grid
 	var finish := StandardMaterial3D.new()
-	finish.albedo_color = Color("9ba5ad")
-	finish.metallic = 0.20
-	finish.roughness = 0.64
+	# R124: physically reflected satin gunmetal, not flat bright white frames.
+	finish.albedo_color = Color("77838c")
+	finish.metallic = 0.56
+	finish.roughness = 0.38
 	facade_frames.material_override = finish
 	facade_frames.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	city_root.add_child(facade_frames)
 	_update_windows(8.0,100)
 
+func _apply_window_shading(hour: float) -> void:
+	if facade_windows == null:
+		return
+	var glass: StandardMaterial3D = facade_windows.material_override as StandardMaterial3D
+	if glass == null:
+		return
+	# ONE authoritative existing MultiMesh material; no extra geometry,
+	# live reflection probes, lights, window colliders or new GPU batches.
+	var physical_daylight: bool = visual_budget != "low" and hour >= 6.5 and hour < 18.0
+	glass.shading_mode = (BaseMaterial3D.SHADING_MODE_PER_PIXEL
+		if physical_daylight else BaseMaterial3D.SHADING_MODE_UNSHADED)
+
 func _update_windows(hour: float, electricity: int) -> void:
 	if facade_windows == null: return
+	_apply_window_shading(hour)
 	var nighttime := hour < 6.5 or hour >= 18.0
 	var mode: int = (1 if nighttime else 0) + (2 if electricity < 25 else 0)
 	if mode == last_window_mode: return
@@ -433,6 +521,7 @@ func _create_project_visuals() -> void:
 		var holder := _box(city_root,"Project_" + id,Vector3(15,6,15),pos + Vector3(0,3,0),DISTRICT_COLORS[district].lightened(0.27),true)
 		var roof := _box(holder,"RoofNeon",Vector3(15.5,0.2,15.5),Vector3(0,3.3,0),Color("84c4c6"),false,true)
 		project_visuals[id] = {"root":holder,"roof":roof}
+		project_visual_levels[id] = -1
 		holder.visible = false
 
 func _create_property_markers() -> void:
@@ -486,16 +575,61 @@ func _create_weather_particles() -> void:
 	weather_particles.emitting = false
 	add_child(weather_particles)
 
+func _apply_r90_offline_pbr() -> void:
+	if asphalt_pbr == null: return
+	var root_path: String = "res://assets/r90/"
+	var diffuse: String = root_path+"aerial_asphalt_01_diff_1k.jpg"
+	var normals: String = root_path+"aerial_asphalt_01_nor_gl_1k.jpg"
+	var rough: String = root_path+"aerial_asphalt_01_rough_1k.jpg"
+	var available: bool = ResourceLoader.exists(diffuse) and ResourceLoader.exists(normals) and ResourceLoader.exists(rough)
+	var standard_photo: bool = visual_budget == "standard" and available
+	var cinematic_photo: bool = visual_budget == "cinematic" and available
+	# R102: all desktop players can see the real reviewed CC0 1K albedo.
+	# Medium uses the original cheap normals; cinematic unlocks the complete
+	# locked normal + roughness PBR pack. Low/mobile keeps prior GPU cost.
+	if standard_photo or cinematic_photo:
+		asphalt_pbr.albedo_texture = load(diffuse) as Texture2D
+		asphalt_pbr.normal_texture = load(normals) as Texture2D if cinematic_photo else r90_original_asphalt_normal
+		asphalt_pbr.roughness_texture = load(rough) as Texture2D if cinematic_photo else null
+		asphalt_pbr.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+		asphalt_pbr.uv1_scale = Vector3(0.12,0.12,0.12)
+	else:
+		# Safe fallback when original pinned binaries have not been staged yet.
+		asphalt_pbr.albedo_texture = r90_original_asphalt_albedo
+		asphalt_pbr.normal_texture = r90_original_asphalt_normal
+		asphalt_pbr.roughness_texture = null
+		asphalt_pbr.uv1_scale = Vector3(0.38,0.38,0.38)
+
 func apply_visual_budget(mode: String) -> void:
 	visual_budget = mode if ["low","standard","cinematic"].has(mode) else "standard"
+	_apply_r90_offline_pbr()
+	# Three SHARED original stone/plaster/brick texture families remain
+	# resident; normals are enabled only for the opted-in cinematic tier.
+	# Low and standard players retain the albedo, but skip normal-map cost.
+	for finish in city_reign_building_finishes:
+		finish.normal_enabled = visual_budget == "cinematic"
 	if weather_particles != null:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
+	if r90_urban != null:
+		r90_urban.call("set_quality",visual_budget)
+	if r127_shelters != null:
+		r127_shelters.call("set_budget",visual_budget)
 	if horizon_scenic != null:
 		horizon_scenic.visible = visual_budget != "low"
 		horizon_scenic.call("set_intersection_quality",visual_budget)
 		horizon_scenic.call("update_streetlights",ambience_time,visual_budget,streetlight_focus)
 	if architecture_trim != null:
 		architecture_trim.visible = visual_budget != "low"
+	if r98_facade_ribs != null:
+		r98_facade_ribs.call("set_quality",visual_budget)
+	if city_reign_facades != null:
+		city_reign_facades.call("set_quality",visual_budget)
+	if city_reign_squares != null:
+		city_reign_squares.call("set_quality",visual_budget)
+	if city_reign_hero_architecture != null:
+		city_reign_hero_architecture.call("set_quality",visual_budget)
+	if city_reign_purchased_skyline != null:
+		city_reign_purchased_skyline.call("set_quality",visual_budget)
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
 	if facade_balconies != null:
@@ -506,6 +640,9 @@ func apply_visual_budget(mode: String) -> void:
 		cityhall_gateway.visible = visual_budget != "low"
 	if facade_frames != null:
 		facade_frames.visible = visual_budget != "low"
+	# Quality tier changes update actual GPU material immediately, even if
+	# original night/district electricity state and cached window colors match.
+	_apply_window_shading(ambience_time)
 	_apply_lighting()
 
 func update_weather(kind: String) -> void:
@@ -535,6 +672,18 @@ func _apply_lighting() -> void:
 		return
 	LIGHT_GRADE.apply_to(sky_environment.environment,sun,atmosphere,weather_mode,visual_budget,daylight_brightness)
 	LIGHT_GRADE.apply_night_overlay(sky_environment.environment,sun,atmosphere,ambience_time)
+	if city_reign_facades != null:
+		city_reign_facades.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_squares != null:
+		city_reign_squares.call("sync_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_hero_architecture != null:
+		city_reign_hero_architecture.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	# Authored golden-hour grade affects real Godot light only, never UI screenshots.
+	if weather_mode == "clear" and visual_budget == "cinematic":
+		var golden_hour: float = clampf(1.0-absf(ambience_time-18.0)/3.0,0.0,1.0)
+		sun.light_color = sun.light_color.lerp(Color("ffd1a0"),0.35*golden_hour)
+		sky_environment.environment.fog_light_color = sky_environment.environment.fog_light_color.lerp(
+			Color("dca77f"),0.23*golden_hour)
 
 func update_development() -> void:
 	if not is_node_ready(): return
@@ -552,22 +701,40 @@ func update_development() -> void:
 		var nodes: Dictionary = project_visuals[id]
 		var root: Node3D = nodes["root"]
 		root.visible = level > 0
+		# Prior source allocated 12 NEW BoxMesh/BoxShape3D pairs EVERY time
+		# a citizen dialog/HQ/map refreshed development, even with no purchase.
+		# Only rebuild real original physics size on an ACTUAL changed level.
+		if int(project_visual_levels.get(id,-1)) == level:
+			continue
+		project_visual_levels[id] = level
 		var project_collider: CollisionShape3D = root.get_node("CollisionShape3D") as CollisionShape3D
 		project_collider.set_deferred("disabled",level == 0)
 		if level > 0:
 			var height: float = 6.0 + float(level) * 8.0
 			root.position = _project_position(id) + Vector3(0,height*0.5,0)
+			# FOUR shared source physical collider sizes (Lv1–Lv4),
+			# at most one BoxMesh and BoxShape3D allocation per distinct
+			# original level, not per building and redraw.
+			if not project_geometry_cache.has(level):
+				var cached_box := BoxMesh.new()
+				cached_box.size = Vector3(15,height,15)
+				var cached_shape := BoxShape3D.new()
+				cached_shape.size = Vector3(15,height,15)
+				project_geometry_cache[level] = {"mesh":cached_box,"shape":cached_shape}
+			var source_physics: Dictionary = project_geometry_cache[level]
 			var body: MeshInstance3D = root.get_node("VisualMesh") as MeshInstance3D
-			var box := BoxMesh.new()
-			box.size = Vector3(15,height,15)
-			body.mesh = box
-			var collision: CollisionShape3D = root.get_node("CollisionShape3D")
-			var shape := BoxShape3D.new()
-			shape.size = Vector3(15,height,15)
-			collision.shape = shape
+			body.mesh = source_physics["mesh"]
+			project_collider.shape = source_physics["shape"]
 			var roof: Node3D = nodes["roof"]
 			roof.position.y = height*0.5 + 0.15
 	_update_property_visuals()
+	# This is exactly the same real saved state used by all existing
+	# district building and 8 civic initiative workflows. An upgrade is
+	# earned, not simulated by opening a menu or switching graphics.
+	if city_reign_hero_architecture != null:
+		city_reign_hero_architecture.call("sync_state",state)
+	if city_reign_purchased_skyline != null:
+		city_reign_purchased_skyline.call("sync_state",state)
 
 func _update_property_visuals() -> void:
 	var owned: Dictionary = GameState.data.get("properties",{})
@@ -581,6 +748,8 @@ func _update_property_visuals() -> void:
 		orb.material_override = _material(Color("e5bd72") if level > 0 else Color("6e9db7"),0.2,0.25,true)
 
 func update_language(lang: String) -> void:
+	if city_reign_squares != null:
+		city_reign_squares.call("sync_language",lang)
 	for id in markers:
 		var marker: Node3D = markers[id]
 		var label: Label3D = marker.get_child(0)

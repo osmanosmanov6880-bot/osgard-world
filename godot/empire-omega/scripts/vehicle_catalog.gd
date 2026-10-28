@@ -2,11 +2,11 @@ extends RefCounted
 ## Original proxy vehicle designs; upgrade to authored GLB assets when available.
 const ORDER = ["compact", "courier", "executive", "utility"]
 const VEHICLES = {
-	"compact":{"price":0,"reputation":0,"speed":1.0,"acceleration":1.0,"fuel":1.0,"handling":1.0,"paint":"335770",
+	"compact":{"price":0,"reputation":0,"speed":1.0,"acceleration":1.0,"fuel":1.0,"handling":1.0,"paint":"202938",
 		"ru":"Городской хэтчбек","en":"City hatchback","zh":"城市掀背车"},
 	"courier":{"price":1200,"reputation":18,"speed":0.81,"acceleration":0.78,"fuel":1.18,"handling":0.81,"paint":"a5794b",
 		"ru":"Грузовой фургон","en":"Delivery van","zh":"配送厢式货车"},
-	"executive":{"price":2700,"reputation":32,"speed":1.32,"acceleration":1.28,"fuel":1.27,"handling":1.06,"paint":"6f819b",
+	"executive":{"price":2700,"reputation":32,"speed":1.32,"acceleration":1.28,"fuel":1.27,"handling":1.06,"paint":"1b2634",
 		"ru":"Представительский седан","en":"Executive sedan","zh":"行政轿车"},
 	"utility":{"price":4400,"reputation":52,"speed":0.91,"acceleration":0.88,"fuel":1.40,"handling":0.77,"paint":"738770",
 		"ru":"Инженерный внедорожник","en":"Utility off-roader","zh":"工程越野车"}

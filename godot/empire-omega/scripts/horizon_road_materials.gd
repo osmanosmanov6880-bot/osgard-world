@@ -48,6 +48,8 @@ static func _make_texture(concrete: bool, normals: bool) -> ImageTexture:
 
 static func _make_material(concrete: bool) -> StandardMaterial3D:
 	var surface := StandardMaterial3D.new()
+	# Stable semantic road identity: photographic PBR UV scale is NOT a type.
+	surface.resource_name = "HORIZON_ROAD_CONCRETE" if concrete else "HORIZON_ROAD_ASPHALT"
 	surface.albedo_color = Color.WHITE
 	surface.albedo_texture = _make_texture(concrete,false)
 	surface.roughness = 0.90 if concrete else 0.81
@@ -72,4 +74,10 @@ static func apply_weather(material: StandardMaterial3D, kind: String) -> void:
 	if material == null:
 		return
 	var wet: bool = kind == "rain" or kind == "storm"
-	material.roughness = (0.36 if wet else 0.81) if material.uv1_scale.x > 0.3 else (0.46 if wet else 0.90)
+	# In R90, approved photographic 1K asphalt requires uv1_scale.x=0.12.
+	# The historical UV>0.3 heuristic mislabeled that asphalt as concrete.
+	# Preserve the previous fallback for unrelated/legacy anonymous materials.
+	var asphalt: bool = material.resource_name == "HORIZON_ROAD_ASPHALT"
+	if not ["HORIZON_ROAD_ASPHALT","HORIZON_ROAD_CONCRETE"].has(material.resource_name):
+		asphalt = material.uv1_scale.x > 0.3
+	material.roughness = (0.36 if wet else 0.81) if asphalt else (0.46 if wet else 0.90)

@@ -1,0 +1,29 @@
+{
+  "asset": "aerial_asphalt_01",
+  "files": {
+    "albedo": {
+      "bytes": 635143,
+      "file": "aerial_asphalt_01_diff_1k.jpg",
+      "height": 1024,
+      "sha256": "28bfd71288b364f825e0feb750e487410422d80bf3c31d32da01cae3bf085b58",
+      "width": 1024
+    },
+    "normal_gl": {
+      "bytes": 560227,
+      "file": "aerial_asphalt_01_nor_gl_1k.jpg",
+      "height": 1024,
+      "sha256": "7a58cb4460f75b66359b8e19bc92585554a79c2b0009e2b9e21eccac0a58d3f6",
+      "width": 1024
+    },
+    "roughness": {
+      "bytes": 312445,
+      "file": "aerial_asphalt_01_rough_1k.jpg",
+      "height": 1024,
+      "sha256": "19ca745417e36a1cd1114411801933b3144a351d1409d0d9caa1046b9a20c0ec",
+      "width": 1024
+    }
+  },
+  "license": "CC0",
+  "license_url": "https://polyhaven.com/license",
+  "source": "https://polyhaven.com/a/aerial_asphalt_01"
+}

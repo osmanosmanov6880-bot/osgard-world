@@ -1,0 +1,78 @@
+name: EMPIRE Omega R132 original real mobile mission touch/journal native + immutable R87, NO DEPLOY
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/scripts/hud.gd'
+      - 'godot/empire-omega/tests/v105_r132_mission_briefing_accessibility.gd'
+      - 'scripts/omega-r109-release-sentinel.py'
+      - '.github/workflows/omega-r132-native-mission-briefing-qa.yml'
+  push:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/scripts/hud.gd'
+      - 'godot/empire-omega/tests/v105_r132_mission_briefing_accessibility.gd'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-r132-mission-briefing-and-r87-read-only-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact immutable candidate SHA, never synthetic merge
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          mkdir -p omega-r132-evidence
+          printf '%s\n' "$EXPECTED_SHA" > omega-r132-evidence/exact-original-source-sha.txt
+      - name: Read-only original R87 master manifest preservation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r128-r87-immutability.py --self-test
+          git fetch --no-tags --depth=1 origin master
+          git show FETCH_HEAD:public/games/omega-3d-preview/release.json > omega-r132-evidence/r87-master-manifest.json
+          python3 scripts/omega-r128-r87-immutability.py \
+            --manifest omega-r132-evidence/r87-master-manifest.json \
+            --output omega-r132-evidence/r87-immutability-result.json
+          python3 scripts/omega-r127-physical-device-gate.py --self-test
+          printf '%s\n' '{"physical_desktop_android_iphone_measured":false,"aaa_art_approved":false,"human_40_missions_walkthrough":false,"rollback_rehearsal_verified":false,"production_authorized":false}' > omega-r132-evidence/r132-production-hold.json
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strict original Godot source import, CC0 and native tab review
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r109-release-sentinel.py
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          timeout --signal=TERM --kill-after=6s 120s godot --headless \
+            --path godot/empire-omega --script res://tests/v105_r132_mission_briefing_accessibility.gd \
+            | tee omega-r132-evidence/r132-native-mission-briefing-320-390-844-desktop.log
+          timeout --signal=TERM --kill-after=6s 120s godot --headless \
+            --path godot/empire-omega --script res://tests/v102_r128_accessible_cabinet_refresh.gd \
+            | tee omega-r132-evidence/r132-r128-cabinet-regression.log
+          timeout --signal=TERM --kill-after=6s 120s godot --headless \
+            --path godot/empire-omega --script res://tests/v101_r127_live_drive_save_reload.gd \
+            | tee omega-r132-evidence/r132-r127-drive-save-regression.log
+      - name: Keep origin manifests, real native logs and explicit production HOLD
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r132-original-mission-briefing-and-production-hold
+          path: omega-r132-evidence/
+          if-no-files-found: error
+          retention-days: 14

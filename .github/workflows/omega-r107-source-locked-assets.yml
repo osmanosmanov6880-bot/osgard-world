@@ -1,0 +1,69 @@
+name: EMPIRE Omega R107 import original SHA-locked CC0 PBR into PR only
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - '.github/workflows/omega-r107-source-locked-assets.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  original-reviewed-three-jpeg-ingest:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Confirm intended same-repository PR and immutable source
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          test -n "$SOURCE_BRANCH"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$SOURCE_BRANCH" = "feat/omega-r107-original-cc0-asset-binaries-20261026"
+          test -s godot/empire-omega/assets/r90/provenance.json
+      - name: Fetch all THREE original Poly Haven CC0 maps with locked SHA and JPEG checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/r90_cc0_texture_pack.py fetch
+          python3 scripts/r90_cc0_texture_pack.py verify
+          for suffix in diff nor_gl rough; do
+            test -s "godot/empire-omega/assets/r90/aerial_asphalt_01_${suffix}_1k.jpg"
+          done
+          sha256sum godot/empire-omega/assets/r90/aerial_asphalt_01_*_1k.jpg
+      - name: Commit only verified 1K materials to THIS feature PR; never target R90 directly
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f godot/empire-omega/assets/r90/aerial_asphalt_01_diff_1k.jpg
+          git add -f godot/empire-omega/assets/r90/aerial_asphalt_01_nor_gl_1k.jpg
+          git add -f godot/empire-omega/assets/r90/aerial_asphalt_01_rough_1k.jpg
+          test "$(git diff --cached --name-only | wc -l)" -eq 3
+          git diff --cached --name-only | grep -E '^godot/empire-omega/assets/r90/aerial_asphalt_01_(diff|nor_gl|rough)_1k.jpg$' | grep -c '^' | grep -qx 3
+          git fetch --no-tags origin "$SOURCE_BRANCH"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$SOURCE_SHA"
+          git commit -m 'assets(EMPIRE Ω): original reviewed CC0 asphalt PBR 1K maps'
+          python3 scripts/r90_cc0_texture_pack.py verify
+          git push origin "HEAD:refs/heads/$SOURCE_BRANCH"
+      - name: Prove staging source has unchanged gameplay and correct binary hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/r90_cc0_texture_pack.py verify
+          git status --porcelain
+          test "$(git status --porcelain | wc -l)" -eq 0
+          echo 'PASS only original reviewed CC0 binary materials were pushed to the isolated PR branch'

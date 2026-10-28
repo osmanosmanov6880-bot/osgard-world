@@ -1,0 +1,29 @@
+name: EMPIRE Omega R101 reviewed CC0 photographic PBR asphalt source verification
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'scripts/r90_cc0_texture_pack.py'
+      - 'godot/empire-omega/assets/r90/provenance.json'
+      - '.github/workflows/omega-r101-offline-pbr-provenance-qa.yml'
+permissions:
+  contents: read
+jobs:
+  exact-reviewed-binary-before-releasing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch already-pinned CC0 originals and reject all unexpected bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s godot/empire-omega/assets/r90/provenance.json
+          python3 scripts/r90_cc0_texture_pack.py fetch
+          python3 scripts/r90_cc0_texture_pack.py verify
+          test -s godot/empire-omega/assets/r90/aerial_asphalt_01_diff_1k.jpg
+          test -s godot/empire-omega/assets/r90/aerial_asphalt_01_nor_gl_1k.jpg
+          test -s godot/empire-omega/assets/r90/aerial_asphalt_01_rough_1k.jpg
+          # Demonstrate the exact source-map checksums pinned by the human-reviewed manifest.
+          sha256sum godot/empire-omega/assets/r90/aerial_asphalt_01_*_1k.jpg

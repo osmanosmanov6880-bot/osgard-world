@@ -5,6 +5,15 @@ const RACE_NAVIGATOR = preload("res://scripts/horizon_race_navigator.gd")
 const TOUCH_MISSION = preload("res://scripts/horizon_mobile_onboarding.gd")
 const ROAD_GUIDE = preload("res://scripts/horizon_road_guidance.gd")
 const MISSION_NAV = preload("res://scripts/horizon_mission_navigation.gd")
+const R90_STYLE = preload("res://scripts/horizon_r90_reference_style.gd")
+const R90_DASHBOARD = preload("res://scripts/horizon_r90_premium_dashboard.gd")
+const R90_SPEED = preload("res://scripts/horizon_r90_speed_dial.gd")
+const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
+const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
+const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
+const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
+const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_premium_garage.gd")
+const CITY_REIGN_SHOWROOM = preload("res://scripts/city_reign_hero_showroom.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -65,7 +74,7 @@ const TRANSLATIONS = {
 	"ru":{
 		"repair_hint":"Для ремонта автомобиля нужно %d игровых кр.",
 		"condition":"Состояние","repaired":"Машина отремонтирована",
-		"paused":"ПАУЗА · OSGARD Ω",
+		"paused":"ПАУЗА · CITY REIGN",
 		"pause_description":"Время в городе остановлено. Продолжайте, сохраняйте игру или настройте управление.",
 		"resume":"ПРОДОЛЖИТЬ ИГРУ",
 		"preferences":"НАСТРОЙКИ",
@@ -113,7 +122,7 @@ const TRANSLATIONS = {
 		"action_save_game":"Сохранить",
 		"action_load_game":"Загрузить",
 		"action_language":"Сменить язык",
-		"action_pay_traffic_fines":"Оплатить штраф у мэрии","brand":"OSGARD  ·  ИМПЕРИЯ Ω","market_hint":"B — купить торговый бизнес","budget_graph":"ИСТОРИЯ КАЗНЫ / ЛИЧНЫХ ДЕНЕГ","sub":"ОТКРЫТЫЙ МИР / ПРАВЛЕНИЕ",
+		"action_pay_traffic_fines":"Оплатить штраф у мэрии","brand":"CITY REIGN  ·  ВЛАСТЬ НАД ГОРОДОМ","market_hint":"B — купить торговый бизнес","budget_graph":"ИСТОРИЯ КАЗНЫ / ЛИЧНЫХ ДЕНЕГ","sub":"ОТКРЫТЫЙ МИР / ПРАВЛЕНИЕ",
 		"cash":"Казна","wallet":"Личные деньги","business_income":"Доход бизнеса","invest":"ВЛОЖИТЬ 250 кр. В ГОРОД","contracts":"КОММЕРЧЕСКИЕ РЕЙСЫ","fuel":"Топливо","refueled":"Машина заправлена: −85 кр.","refuel_hint":"Для заправки нужно 85 кр. и неполный бак","accepted":"Груз принят: следуйте к пункту доставки","completed":"Доставка выполнена","unavailable":"Задания временно недоступны","population":"Население","stability":"Стабильность","energy":"Энергия","water":"Вода","food":"Продовольствие",
 		"turn":"Такт","mission":"МИССИЯ","hint":"WASD — идти · E — авто · F — действие · J — житель · T — автошкола · C — события · R — помощь · I — здание · Tab — правление · F3 — FPS",
 		"strategy":"КАБИНЕТ ПРАВИТЕЛЯ","close":"ЗАКРЫТЬ (Tab)","district":"РАЙОН","development":"СТРОИТЕЛЬСТВО","research":"ИССЛЕДОВАНИЯ",
@@ -124,7 +133,7 @@ const TRANSLATIONS = {
 	"en":{
 		"repair_hint":"Vehicle repair costs %d game кр.",
 		"condition":"Condition","repaired":"Vehicle repaired",
-		"paused":"PAUSED · OSGARD Ω",
+		"paused":"PAUSED · CITY REIGN",
 		"pause_description":"The city is paused. Resume, save your progress, or customize your controls.",
 		"resume":"RESUME GAME",
 		"preferences":"SETTINGS",
@@ -172,7 +181,7 @@ const TRANSLATIONS = {
 		"action_save_game":"Save",
 		"action_load_game":"Load",
 		"action_language":"Change language",
-		"action_pay_traffic_fines":"Pay city fine","brand":"OSGARD  ·  EMPIRE Ω","market_hint":"B — purchase market business","budget_graph":"TREASURY / WALLET HISTORY","sub":"OPEN WORLD / GOVERNANCE",
+		"action_pay_traffic_fines":"Pay city fine","brand":"CITY REIGN  ·  RULE THE CITY","market_hint":"B — purchase market business","budget_graph":"TREASURY / WALLET HISTORY","sub":"OPEN WORLD / GOVERNANCE",
 		"cash":"Treasury","wallet":"Your wallet","business_income":"Business income","invest":"INVEST 250 кр. INTO CITY","contracts":"COURIER CONTRACTS","fuel":"Fuel","refueled":"Refueled: −85 кр.","refuel_hint":"Refueling needs 85 кр. and a non-full tank","accepted":"Cargo collected: go to destination","completed":"Delivery completed","unavailable":"Contracts are unavailable","population":"Population","stability":"Stability","energy":"Energy","water":"Water","food":"Food",
 		"turn":"Turn","mission":"MISSION","hint":"WASD — move · E — car · F — act · J — residents · T — academy · C — incidents · R — service · I — interior · Tab — govern · F3 — FPS",
 		"strategy":"GOVERNOR'S CABINET","close":"CLOSE (Tab)","district":"DISTRICT","development":"CONSTRUCTION","research":"RESEARCH",
@@ -183,7 +192,7 @@ const TRANSLATIONS = {
 	"zh":{
 		"repair_hint":"修车需要 %d 游戏卢布",
 		"condition":"车况","repaired":"车辆已修好",
-		"paused":"游戏暂停 · OSGARD Ω",
+		"paused":"游戏暂停 · CITY REIGN",
 		"pause_description":"城市时间已暂停。可以继续游戏、保存进度或调整控制。",
 		"resume":"继续游戏",
 		"preferences":"设置",
@@ -231,7 +240,7 @@ const TRANSLATIONS = {
 		"action_save_game":"保存",
 		"action_load_game":"读取",
 		"action_language":"切换语言",
-		"action_pay_traffic_fines":"在市政厅缴纳罚款","brand":"OSGARD · 帝国 Ω","market_hint":"按 B 购买市场商铺","budget_graph":"国库 / 钱包历史","sub":"开放世界 / 城市治理",
+		"action_pay_traffic_fines":"在市政厅缴纳罚款","brand":"CITY REIGN · 掌控城市","market_hint":"按 B 购买市场商铺","budget_graph":"国库 / 钱包历史","sub":"开放世界 / 城市治理",
 		"cash":"国库","wallet":"个人资金","business_income":"企业收入","invest":"向城市投资 250 кр.","contracts":"配送合同","fuel":"燃油","refueled":"加油成功：−85 кр.","refuel_hint":"加油需要 85 кр. 且油箱未满","accepted":"已接货：前往目的地","completed":"配送完成","unavailable":"暂无配送合同","population":"人口","stability":"稳定度","energy":"能源","water":"水资源","food":"粮食",
 		"turn":"回合","mission":"任务","hint":"WASD 移动/驾驶 · E 汽车 · F 互动/维修 · J 居民 · T 驾考 · R 公共服务 · I 室内 · Tab 治理 · F3 性能 · L 语言",
 		"strategy":"执政官办公室","close":"关闭 (Tab)","district":"城区","development":"建设","research":"研究",
@@ -245,6 +254,14 @@ var open := false
 var root: Control
 var header_panel: PanelContainer
 var objective_panel: PanelContainer
+var objective_details_button: Button
+var mission_briefing_label: Label
+var city_reign_act_label: Label
+var city_reign_story_label: Label
+var city_reign_pulse_label: Label
+var city_reign_promise_title: Label
+var city_reign_promise_body: Label
+var city_reign_promise_hint: Label
 var controls_panel: PanelContainer
 var map_panel: PanelContainer
 var strategy_window: PanelContainer
@@ -262,6 +279,7 @@ var neighborhood_label: Label
 var context_label: Label
 var hint_label: Label
 var speed_label: Label
+var r90_speed_dial: Control
 var mission_distance_label: Label
 var journal_panel: PanelContainer
 var speed_panel: PanelContainer
@@ -278,9 +296,11 @@ var diagnostic_visible := false
 var map_visible_before_diagnostics := false
 var overlay: ColorRect
 var strategy_contents: VBoxContainer
+var city_reign_showroom: VBoxContainer
 var strategy_title: Label
 var strategy_close_button: Button
 var strategy_nav_buttons: Dictionary = {}
+var r90_legacy_navigation: HBoxContainer
 var strategy_anchors: Dictionary = {}
 var strategy_scroll: ScrollContainer
 var importer: FileDialog
@@ -360,25 +380,16 @@ func _style(background: Color, edge: Color, corner: int = 12) -> StyleBoxFlat:
 	return style
 
 func _strategy_style() -> StyleBoxFlat:
-	# Quiet luxury: legible charcoal glass and a narrow brass stroke.
-	var style := _style(Color("0c1925",0.97),Color("b9a178",0.91),18)
-	style.shadow_color = Color(0.0,0.0,0.0,0.46)
-	style.shadow_size = 20
-	style.shadow_offset = Vector2(5,7)
-	style.content_margin_left = 20
-	style.content_margin_right = 20
-	style.content_margin_top = 18
-	style.content_margin_bottom = 18
-	return style
+	return R90_STYLE.panel_style()
 
 func _strategy_stat(parent: Node, heading: String, value: String) -> void:
 	var tile := PanelContainer.new()
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var bg := _style(Color("162a37",0.96),Color("6c7b76",0.74),10)
-	bg.content_margin_left = 9
-	bg.content_margin_right = 9
-	bg.content_margin_top = 8
-	bg.content_margin_bottom = 8
+	var bg := R90_STYLE.card_style()
+	bg.content_margin_left = 14
+	bg.content_margin_right = 14
+	bg.content_margin_top = 12
+	bg.content_margin_bottom = 12
 	tile.add_theme_stylebox_override("panel",bg)
 	parent.add_child(tile)
 	var column := VBoxContainer.new()
@@ -411,7 +422,7 @@ func _panel(bounds: Rect2, anchor_right: float = 0.0, anchor_bottom: float = 0.0
 	panel.offset_top = bounds.position.y
 	panel.offset_right = bounds.position.x + bounds.size.x
 	panel.offset_bottom = bounds.position.y + bounds.size.y
-	panel.add_theme_stylebox_override("panel",_style(Color("141c25",0.90),Color("73828c")))
+	panel.add_theme_stylebox_override("panel",R90_STYLE.card_style())
 	root.add_child(panel)
 	return panel
 
@@ -420,7 +431,7 @@ func _label(parent: Node, text: String, font_size: int = 18, highlight: bool = f
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size",font_size)
-	label.add_theme_color_override("font_color",Color("f3dca7") if highlight else Color("f4f8fc"))
+	label.add_theme_color_override("font_color",R90_STYLE.GOLD if highlight else R90_STYLE.SILVER)
 	parent.add_child(label)
 	return label
 
@@ -435,11 +446,8 @@ func _button(parent: Node, title: String, callable: Callable, disabled: bool = f
 	button.add_theme_color_override("font_color",Color("e9e6dc"))
 	button.add_theme_color_override("font_hover_color",Color("fff4d8"))
 	button.add_theme_color_override("font_disabled_color",Color("8a969b"))
-	button.add_theme_stylebox_override("normal",_style(Color("19303c",0.92),Color("4e6269",0.8),9))
-	button.add_theme_stylebox_override("hover",_style(Color("2b4754",0.99),Color("c1a16f",0.96),9))
-	button.add_theme_stylebox_override("pressed",_style(Color("284451"),Color("d2b680"),9))
+	R90_STYLE.style_button(button)
 	button.add_theme_stylebox_override("disabled",_style(Color("101c25",0.72),Color("283641",0.42),9))
-	button.add_theme_stylebox_override("focus",StyleBoxEmpty.new())
 	button.pressed.connect(callable)
 	parent.add_child(button)
 	return button
@@ -456,7 +464,7 @@ func _make_hud() -> void:
 	var brand_stack := VBoxContainer.new()
 	brand_stack.add_theme_constant_override("separation",3)
 	header.add_child(brand_stack)
-	header_value = _label(brand_stack,"OSGARD EMPIRE",23,true)
+	header_value = _label(brand_stack,"CITY REIGN",23,true)
 	meters_label = _label(brand_stack,"",16)
 	objective_panel = _panel(Rect2(-476,20,452,150),1.0)
 	var objective := objective_panel
@@ -466,6 +474,16 @@ func _make_hud() -> void:
 	mission_chapter_label = _label(objective_stack,_v08("ВАША ЦЕЛЬ","YOUR OBJECTIVE","当前目标"),15,true)
 	mission_label = _label(objective_stack,"",22)
 	mission_distance_label = _label(objective_stack,"",16,true)
+	# R132: one REAL 46px touch/keyboard target opens the source journal.
+	# A second full text row cannot fit the genuine compact 320px mission card.
+	objective_details_button = Button.new()
+	objective_details_button.name = "R132MissionBriefingButton"
+	objective_details_button.text = "?"
+	objective_details_button.custom_minimum_size = Vector2(46,46)
+	objective_details_button.add_theme_font_size_override("font_size",20)
+	R90_STYLE.style_button(objective_details_button)
+	objective_details_button.pressed.connect(Callable(self,"toggle_field_journal"))
+	root.add_child(objective_details_button)
 	journal_panel = _panel(Rect2(-476,186,452,440),1.0)
 	journal_panel.visible = false
 	var journal_scroll := ScrollContainer.new()
@@ -477,6 +495,18 @@ func _make_hud() -> void:
 	details.add_theme_constant_override("separation",9)
 	journal_scroll.add_child(details)
 	_label(details,_v08("ПУЛЬС ГОРОДА · H — СКРЫТЬ","CITY JOURNAL · H — CLOSE","城市日志 · H 关闭"),18,true)
+	# Actual complete mission chapter + title, never the compact truncated hint.
+	_label(details,_v08("ТЕКУЩЕЕ ЗАДАНИЕ","CURRENT MISSION","当前任务"),16,true)
+	mission_briefing_label = _label(details,"",18)
+	_separator(details)
+	city_reign_act_label = _label(details,"",18,true)
+	city_reign_story_label = _label(details,"",16)
+	city_reign_pulse_label = _label(details,"",15,true)
+	_separator(details)
+	city_reign_promise_title = _label(details,"",18,true)
+	city_reign_promise_body = _label(details,"",16)
+	city_reign_promise_hint = _label(details,"",15,true)
+	_separator(details)
 	_label(details,_v08("ЭКОНОМИКА И БЕЗОПАСНОСТЬ","ECONOMY AND SAFETY","经济和安全"),14,true)
 	context_label = _label(details,"",16)
 	law_label = _label(details,"",16,true)
@@ -505,7 +535,12 @@ func _make_hud() -> void:
 	hint_label = _label(controls,"",17)
 	speed_panel = _panel(Rect2(-360,-145,336,122),1.0,1.0)
 	speed_panel.visible = false
-	speed_label = _label(speed_panel,"",20,true)
+	var speed_row := HBoxContainer.new()
+	speed_row.add_theme_constant_override("separation",12)
+	speed_panel.add_child(speed_row)
+	r90_speed_dial = R90_SPEED.new()
+	speed_row.add_child(r90_speed_dial)
+	speed_label = _label(speed_row,"",20,true)
 	toast_panel = _panel(Rect2(-252,24,504,64),0.5)
 	toast_panel.visible = false
 	toast_label = _label(toast_panel,"",18,true)
@@ -539,7 +574,7 @@ func _process(_delta: float) -> void:
 
 func _make_strategy() -> void:
 	overlay = ColorRect.new()
-	overlay.color = Color(0.005,0.012,0.025,0.32)
+	overlay.color = Color(0.005,0.008,0.014,0.36)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.visible = false
@@ -557,23 +592,32 @@ func _make_strategy() -> void:
 	window.add_theme_stylebox_override("panel",_strategy_style())
 	overlay.add_child(window)
 	var stack := VBoxContainer.new()
-	stack.add_theme_constant_override("separation",9)
+	stack.add_theme_constant_override("separation",13)
 	window.add_child(stack)
 	var title_row := HBoxContainer.new()
 	stack.add_child(title_row)
 	strategy_title = _label(title_row,"",29,true)
 	strategy_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# The genuine close button must remain at the upper right with the duplicate
+	# widescreen title hidden. This flex spacer preserves keyboard focus order.
+	var title_flex := Control.new()
+	title_flex.name = "R99CommandHeaderSpacer"
+	title_flex.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_child(title_flex)
 	strategy_close_button = _button(title_row,"×",Callable(self,"toggle_strategy"))
-	strategy_close_button.custom_minimum_size = Vector2(98,42)
+	strategy_close_button.custom_minimum_size = Vector2(98,46)
 	strategy_close_button.add_theme_font_size_override("font_size",14)
 	var navigation := HBoxContainer.new()
+	r90_legacy_navigation = navigation
 	navigation.add_theme_constant_override("separation",6)
 	stack.add_child(navigation)
 	for section in ["overview","council","economy","district"]:
 		var tab := _button(navigation,section,Callable(self,"_jump_to_strategy_section").bind(section))
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tab.custom_minimum_size.y = 38
-		tab.add_theme_font_size_override("font_size",12)
+		# B3: actual keyboard/two-finger mobile command buttons must offer a
+		# real >=44px hit area, including 320px devices (not CSS screenshots).
+		tab.custom_minimum_size.y = 46
+		tab.add_theme_font_size_override("font_size",14)
 		strategy_nav_buttons[section] = tab
 	strategy_scroll = ScrollContainer.new()
 	strategy_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -581,12 +625,12 @@ func _make_strategy() -> void:
 	stack.add_child(strategy_scroll)
 	strategy_contents = VBoxContainer.new()
 	strategy_contents.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	strategy_contents.add_theme_constant_override("separation",9)
+	strategy_contents.add_theme_constant_override("separation",13)
 	strategy_scroll.add_child(strategy_contents)
 
 func _make_dialogs() -> void:
 	importer = FileDialog.new()
-	importer.title = "OSGARD — v3 → v4"
+	importer.title = "CITY REIGN — legacy OSGARD save v3 → v4"
 	importer.access = FileDialog.ACCESS_FILESYSTEM
 	importer.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	importer.filters = PackedStringArray(["*.json ; OSGARD v3 JSON"])
@@ -596,7 +640,7 @@ func _make_dialogs() -> void:
 	confirm_reset.confirmed.connect(_confirm_new_game)
 	add_child(confirm_reset)
 	citizen_popup = ConfirmationDialog.new()
-	citizen_popup.title = "OSGARD — CITIZEN"
+	citizen_popup.title = "CITY REIGN — CITIZEN"
 	citizen_popup.confirmed.connect(_support_citizen)
 	citizen_popup.custom_action.connect(_citizen_custom_action)
 	citizen_popup.visibility_changed.connect(_citizen_visibility_changed)
@@ -604,7 +648,7 @@ func _make_dialogs() -> void:
 	listen_button = citizen_popup.add_button("Listen",true,"listen")
 	neighborhood_button = citizen_popup.add_button("Neighborhood job",true,"neighborhood_job")
 	city_case_popup = ConfirmationDialog.new()
-	city_case_popup.title = "OSGARD · CITY INCIDENT"
+	city_case_popup.title = "CITY REIGN · CITY INCIDENT"
 	city_case_popup.confirmed.connect(_city_case_second)
 	city_case_popup.custom_action.connect(_city_case_custom_action)
 	city_case_popup.visibility_changed.connect(_city_case_visibility_changed)
@@ -678,6 +722,11 @@ func show_citizen(citizen_id: int, district: String) -> void:
 	var messages: Dictionary = GameState.CITIZEN_REQUESTS.LABELS.get(GameState.locale,GameState.CITIZEN_REQUESTS.LABELS["ru"])
 	citizen_popup.title = str(messages["title"])
 	citizen_popup.dialog_text = GameState.CITIZEN_REQUESTS.text(GameState.data,citizen_id,GameState.locale)
+	# Real resident conversation reflects the specific saved civic construction
+	# and fulfilled public promise of THIS district. Speaking remains read-only.
+	var citizen_view: Dictionary = CITY_REIGN_VOICES.feedback(GameState.data,district,GameState.locale)
+	if not citizen_view.is_empty():
+		citizen_popup.dialog_text += "\n\n" + str(citizen_view["title"]) + "\n" + str(citizen_view["comment"])
 	var local_job: Dictionary = GameState.NEIGHBORHOOD.offer(GameState.data,citizen_id,district)
 	if not local_job.is_empty():
 		citizen_popup.dialog_text += "\n\n" + str(local_job["title"].get(GameState.locale,local_job["title"]["ru"]))
@@ -727,7 +776,7 @@ func _on_mission_changed(_index: int, _title: String) -> void:
 
 func _refresh() -> void:
 	if header_value == null: return
-	header_value.text = _v08("EMPIRE Ω","EMPIRE Ω","帝国 Ω") if compact_hud else t("brand")
+	header_value.text = _v08("CITY REIGN","CITY REIGN","CITY REIGN") if compact_hud else _v08("◆ CITY REIGN · ВЛАСТЬ НАД ГОРОДОМ","◆ CITY REIGN · RULE THE CITY","◆ CITY REIGN · 掌控城市")
 	var d: Dictionary = GameState.data
 	meters_label.text = ("№%d  ·  %d кр." % [d["turn"],d["wallet"]]) if compact_hud else ("%s %d   ·   %s %d кр.   ·   %s %d кр." % [t("turn"),d["turn"],t("wallet"),d["wallet"],t("cash"),d["treasury"]])
 	context_label.text = "%s: %s\n%s: %d\n%s: %d%%  |  %s: %d%%\n%s: %d%%  |  %s: %d%%" % [t("cash"),str(d["treasury"])+" кр.",t("population"),d["population"],t("stability"),d["stability"],t("energy"),d["energy"],t("water"),d["water"],t("food"),d["food"]]
@@ -744,6 +793,24 @@ func _refresh() -> void:
 	if mission_chapter_label != null:
 		mission_chapter_label.text = MissionManager.chapter_title(GameState.locale,compact_hud)
 	mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
+	if mission_briefing_label != null:
+		mission_briefing_label.text = MissionManager.chapter_title(GameState.locale,false) + "\n" + MissionManager.title(GameState.locale)
+	var story: Dictionary = CITY_REIGN_STORY.briefing(d,GameState.locale)
+	if city_reign_act_label != null:
+		city_reign_act_label.text = str(story["heading"])
+	if city_reign_story_label != null:
+		city_reign_story_label.text = str(story["copy"])
+	if city_reign_pulse_label != null:
+		city_reign_pulse_label.text = str(story["pulse"])
+	var first_promise: Dictionary = CITY_REIGN_PROMISE.briefing(d,GameState.BUILDINGS,GameState.locale)
+	if city_reign_promise_title != null:
+		city_reign_promise_title.text = str(first_promise["heading"])
+	if city_reign_promise_body != null:
+		city_reign_promise_body.text = str(first_promise["body"])
+	if city_reign_promise_hint != null:
+		city_reign_promise_hint.text = str(first_promise["hint"])
+	if objective_details_button != null:
+		objective_details_button.tooltip_text = _v08("ПОДРОБНОСТИ ЗАДАНИЯ · ОТКРЫТЬ / ЗАКРЫТЬ","MISSION DETAILS · OPEN / CLOSE","任务详情 · 打开 / 关闭")
 	if trial_label != null:
 		var session: Dictionary = d.get("driving_trial",{})
 		var route: Dictionary = GameState.TRIALS.find_route(str(session.get("id",""))) if not session.is_empty() else GameState.TRIALS.offer(d)
@@ -763,7 +830,17 @@ func _refresh() -> void:
 			city_case_label.text = str(case["title"].get(GameState.locale,case["title"]["ru"])) + "\n" + _v08("Решить до такта ","Resolve before turn ","处理截止回合 ") + str(d["city_case"]["due_turn"]) + "  ·  C / Tab"
 	hint_label.text = _v08("АВТО · ИДТИ · ДЕЙСТВИЯ","CAR · WALK · ACTIONS","车辆 · 行走 · 操作") if compact_hud else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志")
 	if open:
+		# UI state is not campaign state: retain the real player's position in
+		# the scrolling cabinet while updating wallet/missions/taxes. The legacy
+		# redraw detached all Controls and reset scroll after every transaction.
+		var prior_scroll: int = strategy_scroll.scroll_vertical if strategy_scroll != null else 0
 		_redraw_strategy()
+		if prior_scroll > 0:
+			call_deferred("_restore_strategy_scroll",prior_scroll)
+
+func _restore_strategy_scroll(offset: int) -> void:
+	if open and strategy_scroll != null and is_instance_valid(strategy_scroll):
+		strategy_scroll.scroll_vertical = maxi(0,offset)
 
 func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true) -> void:
 	if map != null:
@@ -803,6 +880,8 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 				mission_distance_label.text = MISSION_NAV.hud_hint(str(MissionManager.get_mission().get("id","complete")),GameState.locale,DisplayServer.is_touchscreen_available())
 	if speed_panel != null:
 		speed_panel.visible = is_driving
+	if r90_speed_dial != null:
+		r90_speed_dial.call("set_vehicle",speed,fuel,condition)
 	if is_driving:
 		if compact_hud:
 			speed_label.text = COMPACT_TELEMETRY.speed_lines(speed,gear,fuel,condition,handbrake,drift_score,assist_power,assist_steering,GameState.locale)
@@ -872,6 +951,7 @@ func toggle_strategy() -> void:
 	if pause_open: return
 	open = not open
 	overlay.visible = open
+	if objective_details_button != null: objective_details_button.visible = not open
 	if journal_panel != null: journal_panel.visible = false
 	if open:
 		_redraw_strategy()
@@ -909,8 +989,89 @@ func _do_vehicle(id: String) -> void:
 	else:
 		announce(t("need"))
 
+func _city_reign_garage_stat(parent: Node,code: String,value: float,lang: String) -> void:
+	var translations: Dictionary = CITY_REIGN_GARAGE.SPEC_LABELS[lang]
+	var stat_name: String = str(translations[code])
+	var text_row: Label = _label(parent,"%s  ·  ×%.2f" % [stat_name,value],13)
+	text_row.name = "CityReignGarageValue_"+code
+	var indicator := ProgressBar.new()
+	indicator.name = "CityReignGarageMeter_"+code
+	indicator.custom_minimum_size.y = 8
+	indicator.max_value = CITY_REIGN_GARAGE.MAX_COMPARE_FACTOR
+	indicator.value = clampf(value,0.0,CITY_REIGN_GARAGE.MAX_COMPARE_FACTOR)
+	indicator.show_percentage = false
+	indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bottom := StyleBoxFlat.new()
+	bottom.bg_color = Color("202b33")
+	bottom.set_corner_radius_all(2)
+	var foreground := StyleBoxFlat.new()
+	foreground.bg_color = R90_STYLE.GOLD
+	foreground.set_corner_radius_all(2)
+	indicator.add_theme_stylebox_override("background",bottom)
+	indicator.add_theme_stylebox_override("fill",foreground)
+	parent.add_child(indicator)
+
+func _draw_city_reign_premium_garage(d: Dictionary) -> void:
+	var locale: String = GameState.locale if CITY_REIGN_GARAGE.SPEC_LABELS.has(GameState.locale) else "ru"
+	var compact: bool = compact_hud or get_viewport().get_visible_rect().size.x < 1000.0
+	city_reign_showroom = CITY_REIGN_SHOWROOM.new()
+	city_reign_showroom.name = "CityReignSourceCarShowroom"
+	strategy_contents.add_child(city_reign_showroom)
+	city_reign_showroom.call("build",locale,compact,GameSettings.graphics!="low",
+		str(d.get("vehicle_selected","compact")))
+	var grid := GridContainer.new()
+	grid.name = "CityReignAAAOriginalGarageGallery"
+	grid.columns = CITY_REIGN_GARAGE.columns_for(get_viewport().get_visible_rect().size.x,compact)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation",12)
+	grid.add_theme_constant_override("v_separation",12)
+	strategy_contents.add_child(grid)
+	for vehicle_id in GameState.VEHICLE_CATALOG.ORDER:
+		var actual: Dictionary = CITY_REIGN_GARAGE.details(d,vehicle_id,locale)
+		var frame := PanelContainer.new()
+		frame.name = "CityReignGarageCard_"+vehicle_id
+		frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		frame.add_theme_stylebox_override("panel",R90_STYLE.card_style(bool(actual["selected"])))
+		grid.add_child(frame)
+		var content := VBoxContainer.new()
+		content.add_theme_constant_override("separation",7)
+		frame.add_child(content)
+		var top := HBoxContainer.new()
+		top.add_theme_constant_override("separation",8)
+		content.add_child(top)
+		var heading: Label = _label(top,str(actual["title"]),18,true)
+		heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var badge: Label = _label(top,str(actual["status"]),11,true)
+		badge.name = "CityReignGarageStatus_"+vehicle_id
+		_label(content,str(actual["caption"]),14)
+		for key in ["speed","acceleration","handling"]:
+			_city_reign_garage_stat(content,key,float(actual[key]),locale)
+		_label(content,str(actual["labels"]["fuel"]) + " · ×%.2f" % float(actual["fuel"]),13)
+		if bool(actual["owned"]):
+			_label(content,str(actual["labels"]["condition"]) +
+				" · %d%%   ⛽ %d%%" % [roundi(float(actual["health"])),
+				roundi(float(actual["remaining_fuel"]))],13)
+		else:
+			_label(content,"%d кр.  ·  ★ %d" % [int(actual["price"]),
+				int(actual["reputation"])],15,true)
+		var action_label: String = str(actual["action"])
+		if not bool(actual["owned"]):
+			action_label += "  ·  %d кр." % int(actual["price"])
+		var action_button: Button = _button(content,action_label,
+			Callable(self,"_do_vehicle").bind(vehicle_id),bool(actual["disabled"]))
+		action_button.name = "CityReignGarageAction_"+vehicle_id
+		var inspect: Button = _button(content,
+			_v08("ОСМОТРЕТЬ 3D","INSPECT 3D","查看3D"),
+			Callable(self,"_preview_city_reign_vehicle").bind(vehicle_id),
+			GameSettings.graphics=="low")
+		inspect.name = "CityReignGaragePreview_"+vehicle_id
+
+func _preview_city_reign_vehicle(id: String) -> void:
+	if city_reign_showroom != null and is_instance_valid(city_reign_showroom):
+		city_reign_showroom.call("preview_vehicle",id)
+
 func _redraw_strategy() -> void:
-	strategy_title.text = t("strategy")
+	strategy_title.text = _v08("CITY REIGN · КОМАНДНЫЙ ЦЕНТР","CITY REIGN · OPERATIONS","CITY REIGN · 指挥中心")
 	strategy_close_button.text = _v08("ЗАКРЫТЬ ×","CLOSE ×","关闭 ×")
 	strategy_anchors.clear()
 	var labels := {
@@ -926,7 +1087,41 @@ func _redraw_strategy() -> void:
 		child.queue_free()
 	var d: Dictionary = GameState.data
 	var forecast: Dictionary = GameState.forecast()
+	# The overview anchor must precede the premium screen so seven top
+	# nav buttons return to the full cabinet, not legacy content below.
 	_mark_strategy_section("overview")
+	# Live camera and data: never a reference PNG in runtime.
+	var operations: Control = R90_DASHBOARD.new()
+	strategy_contents.add_child(operations)
+	operations.connect("navigate",Callable(self,"_jump_to_strategy_section"))
+	operations.connect("select_district",Callable(self,"_select_district"))
+	operations.connect("select_vehicle",Callable(self,"_do_vehicle"))
+	var premium_compact: bool = compact_hud or get_viewport().get_visible_rect().size.x < 1200.0
+	operations.call("build",d,forecast,MissionManager.title(GameState.locale),
+		get_viewport().world_3d,premium_compact,GameState.locale)
+	var narrative: Dictionary = CITY_REIGN_STORY.briefing(d,GameState.locale)
+	_label(strategy_contents,str(narrative["heading"]),19,true)
+	_label(strategy_contents,str(narrative["copy"]),15)
+	_label(strategy_contents,str(narrative["pulse"]),15,true)
+	_separator(strategy_contents)
+	var mandate: Dictionary = CITY_REIGN_PROMISE.briefing(d,GameState.BUILDINGS,GameState.locale)
+	_label(strategy_contents,str(mandate["heading"]),20,true)
+	_label(strategy_contents,str(mandate["body"]),16)
+	_label(strategy_contents,str(mandate["hint"]),15,true)
+	for mandate_id in CITY_REIGN_PROMISE.CHOICES:
+		var offer: Dictionary = CITY_REIGN_PROMISE.choice(d,GameState.BUILDINGS,mandate_id,GameState.locale)
+		if bool(offer["completed"]):
+			_label(strategy_contents,str(offer["title"]) + "  ✓  " + _v08("ЗАВЕРШЁН","COMPLETED","已完成"),17,true)
+		elif bool(offer["active"]):
+			_label(strategy_contents,str(offer["title"]) + " · " + str(offer["remaining"]) + " " + _v08("тактов до сдачи","turns remaining","回合剩余"),16,true)
+		else:
+			var decide: Button = _button(strategy_contents,CITY_REIGN_PROMISE.button_text(offer,GameState.locale),
+				Callable(self,"_do_initiative").bind(mandate_id),not bool(offer["allowed"]))
+			decide.name = "CityReignPromise_" + mandate_id
+			var projected: Dictionary = offer["forecast"]
+			if not projected.is_empty():
+				_label(strategy_contents,CITY_REIGN_IMPACT.explain(projected,GameState.locale),14)
+	_separator(strategy_contents)
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)
 	var overview := HBoxContainer.new()
 	overview.add_theme_constant_override("separation",7)
@@ -1058,21 +1253,9 @@ func _redraw_strategy() -> void:
 		_button(trade_row,_v08("Продать","Sell","卖出")+"  %d кр." % int(sell_quote["total"]),Callable(self,"_do_trade").bind(product,false),not bool(sell_quote["allowed"]))
 	_separator(strategy_contents)
 	_label(strategy_contents,_v08("АВТОПАРК · КУПИТЬ / ВЫБРАТЬ","GARAGE · BUY / SELECT","车库 · 购买 / 选择"),20,true)
-	for vehicle_id in GameState.VEHICLE_CATALOG.ORDER:
-		var profile: Dictionary = GameState.VEHICLE_CATALOG.VEHICLES[vehicle_id]
-		var owned: bool = bool(d["vehicle_owned"].get(vehicle_id,false))
-		var selected: bool = str(d["vehicle_selected"]) == vehicle_id
-		var vehicle_label: String = str(profile.get(GameState.locale,profile["ru"]))
-		if owned:
-			var condition: Dictionary = d.get("garage_status",{}).get(vehicle_id,{})
-			vehicle_label += "  ·  ⛽ %d%%  ·  ◆ %d%%" % [roundi(float(condition.get("fuel",100.0))),roundi(float(condition.get("health",100.0)))]
-		if selected:
-			vehicle_label += "  ✓"
-		elif owned:
-			vehicle_label += "  ·  " + _v08("ВЫБРАТЬ","SELECT","选择")
-		else:
-			vehicle_label += "  ·  %d кр.  /  ★ %d" % [int(profile["price"]),int(profile["reputation"])]
-		_button(strategy_contents,vehicle_label,Callable(self,"_do_vehicle").bind(vehicle_id),selected or (not owned and (int(d["wallet"]) < int(profile["price"]) or int(d["reputation"]) < int(profile["reputation"]))))
+	# A9 source-bound 2-column/phone single-column card gallery. No change
+	# to original purchase, save, garage fuel or car selection callback.
+	_draw_city_reign_premium_garage(d)
 	_separator(strategy_contents)
 	_mark_strategy_section("district")
 	_label(strategy_contents,t("district"),20,true)
@@ -1103,6 +1286,10 @@ func _redraw_strategy() -> void:
 		else:
 			var detail: String = "%s  ·  %d кр.  ·  %d M / %d G  ·  %d t" % [title_text,int(project["cost"]),int(project["materials"]),int(project["goods"]),int(project["turns"])]
 			_button(strategy_contents,detail,Callable(self,"_do_initiative").bind(project_id),not GameState.INITIATIVES.can_start(d,project_id))
+		if not d.get("projects_done",[]).has(project_id):
+			var impact: Dictionary = CITY_REIGN_IMPACT.preview(d,GameState.BUILDINGS,project_id)
+			if not impact.is_empty():
+				_label(strategy_contents,CITY_REIGN_IMPACT.explain(impact,GameState.locale),14)
 	_separator(strategy_contents)
 	_label(strategy_contents,t("research"),20,true)
 	var research_grid := GridContainer.new()
@@ -1128,6 +1315,12 @@ func _redraw_strategy() -> void:
 	for course in ["balance","industry","energy","welfare"]:
 		var localization: String = "energy_policy" if course == "energy" else str(course)
 		_button(policies,("◈ " if d["course"] == course else "")+t(localization),Callable(self,"_choose_policy").bind(course))
+		# The governance choice stays the original real policy transaction.
+		# These counterfactual numbers never cause a mutation or grant XP.
+		if str(d["course"]) != course:
+			var policy_impact: Dictionary = CITY_REIGN_IMPACT.policy_preview(d,GameState.BUILDINGS,course)
+			if not policy_impact.is_empty():
+				_label(strategy_contents,t(localization) + " → " + CITY_REIGN_IMPACT.explain_policy(policy_impact,GameState.locale),14)
 	_separator(strategy_contents)
 	_label(strategy_contents,t("business"),20,true)
 	for id in GameState.BUSINESSES:
@@ -1308,7 +1501,7 @@ func _make_pause_menu() -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation",14)
 	panel.add_child(column)
-	pause_heading = _label(column,"OSGARD Ω",29,true)
+	pause_heading = _label(column,"CITY REIGN",29,true)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
@@ -1324,6 +1517,7 @@ func toggle_pause() -> void:
 	if pause_open:
 		pause_open = false
 		pause_overlay.visible = false
+		if objective_details_button != null: objective_details_button.visible = not open
 		settings_page = false
 		awaiting_binding = ""
 		get_tree().paused = false
@@ -1332,6 +1526,7 @@ func toggle_pause() -> void:
 	if open:
 		toggle_strategy()
 	pause_open = true
+	if objective_details_button != null: objective_details_button.visible = false
 	settings_page = false
 	pause_overlay.visible = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -1503,6 +1698,11 @@ func _apply_responsive_layout() -> void:
 	if header_panel == null or pause_panel == null or strategy_window == null: return
 	var screen: Vector2 = get_viewport().get_visible_rect().size
 	if screen.x < 1.0 or screen.y < 1.0: return
+	# R125 command-city aperture scrim: the uncovered 3D city is the
+	# actual gameplay frame, never a reference image or a second fake world.
+	# Retain original full-screen input interception on the overlay.
+	if overlay != null:
+		overlay.color = Color(0.005,0.008,0.014,R90_STYLE.command_backdrop_alpha(screen))
 	var frames: Dictionary = HORIZON_LAYOUT.compute(screen)
 	compact_hud = bool(frames.get("compact",false))
 	if compact_hud:
@@ -1518,6 +1718,8 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(diagnostic_panel,HORIZON_LAYOUT.diagnostics_frame(screen),0,0,0,0)
 		_set_panel_frame(toast_panel,frames["toast"],0,0,0,0)
 		var modal: Rect2 = frames["modal"]
+		r90_speed_dial.visible = false
+		r90_legacy_navigation.visible = true
 		var panel_frame := Rect2(modal.position-screen*0.5,modal.size)
 		_set_panel_frame(strategy_window,panel_frame,0.5,0.5,0.5,0.5)
 		strategy_title.add_theme_font_size_override("font_size",22)
@@ -1529,7 +1731,7 @@ func _apply_responsive_layout() -> void:
 		# Original container has 12+12px vertical padding. A 54px portrait
 		# status/speed box needs 6+6px instead, otherwise native Labels clip.
 		for compact_card in [header_panel,speed_panel]:
-			var card_style: StyleBoxFlat = _style(Color("141c25",0.90),Color("73828c"))
+			var card_style: StyleBoxFlat = R90_STYLE.card_style()
 			if portrait_slim:
 				card_style.content_margin_top = 5
 				card_style.content_margin_bottom = 5
@@ -1558,15 +1760,20 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(journal_panel,Rect2(-476,186,452,440),1,1,0,0)
 		_set_panel_frame(diagnostic_panel,HORIZON_LAYOUT.diagnostics_frame(screen),0,0,0,0)
 		_set_panel_frame(toast_panel,Rect2(-252,24,504,64),0.5,0.5,0,0)
-		# The cabinet docks left, leaving the car and the city visible in play.
-		_set_panel_frame(strategy_window,HORIZON_LAYOUT.strategy_dock(screen),0,0,0,0)
+		# Existing left-hand dock remains for smaller desktops. Wide desktop
+		# opens the signed-off full-screen dashboard, using real in-world 3D.
+		var command_frame: Rect2 = HORIZON_LAYOUT.strategy_dock(screen)
+		if screen.x >= 1200.0 and screen.y >= 680.0:
+			command_frame = R90_STYLE.command_center_frame(screen)
+		_set_panel_frame(strategy_window,command_frame,0,0,0,0)
+		r90_legacy_navigation.visible = not (screen.x >= 1200.0 and screen.y >= 680.0)
+		r90_speed_dial.visible = true
 		strategy_title.add_theme_font_size_override("font_size",29)
 		_set_panel_frame(pause_panel,Rect2(-390,-340,780,680),0.5,0.5,0.5,0.5)
 		map.custom_minimum_size = Vector2(208,208)
 		if not map_override: map_panel.visible = true
 		for desktop_card in [header_panel,speed_panel]:
-			desktop_card.add_theme_stylebox_override("panel",
-				_style(Color("141c25",0.90),Color("73828c")))
+			desktop_card.add_theme_stylebox_override("panel",R90_STYLE.card_style())
 		var desktop_mission_stack: Node = mission_label.get_parent()
 		if desktop_mission_stack is VBoxContainer:
 			(desktop_mission_stack as VBoxContainer).add_theme_constant_override("separation",7)
@@ -1578,6 +1785,19 @@ func _apply_responsive_layout() -> void:
 		toast_label.add_theme_font_size_override("font_size",18)
 		speed_label.add_theme_font_size_override("font_size",20)
 		hint_label.add_theme_font_size_override("font_size",17)
+	# The immersive cabinet already carries its own editorial masthead.
+	# Keep the native title on compact screens for orientation, but remove
+	# the redundant duplicate from widescreen command view.
+	strategy_title.visible = compact_hud or screen.x < 1200.0 or screen.y < 680.0
+	# Actual mission-card geometry, on 320/390px portrait/landscape and
+	# wide desktop; no CSS mock or duplicate rendering pass.
+	var mission_rect: Rect2 = frames["objective"] if compact_hud else Rect2(
+		screen.x-476.0,20.0,452.0,150.0)
+	if objective_details_button != null:
+		objective_details_button.position = Vector2(
+			mission_rect.end.x-52.0,mission_rect.position.y+6.0)
+		objective_details_button.size = Vector2(46.0,46.0)
+		objective_details_button.visible = not open and not pause_open
 	_refresh()
 
 func toggle_map() -> void:

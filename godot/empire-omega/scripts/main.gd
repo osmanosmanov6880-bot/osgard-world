@@ -26,6 +26,9 @@ const SKID_SCENE = preload("res://scripts/horizon_skid_trails.gd")
 const GROUND_SPRAY_SCENE = preload("res://scripts/horizon_ground_spray.gd")
 const ROAD_WETNESS = preload("res://scripts/horizon_rain_puddles.gd")
 const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
+const CITY_REIGN_CRISIS = preload("res://scripts/city_reign_crisis_scene.gd")
+const CITY_REIGN_PROPOSALS = preload("res://scripts/city_reign_promise_markers.gd")
+const CITY_REIGN_OPENING_DIRECTOR = preload("res://scripts/city_reign_opening_director.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
 const TRIAL_MARKER_SCENE = preload("res://scripts/trial_marker.gd")
@@ -40,6 +43,9 @@ var soundscape
 var skid_trails: Node3D
 var ground_spray: Node3D
 var city_case_marker
+var city_reign_crisis: Node3D
+var city_reign_proposals: Node3D
+var city_reign_opening_director: Node3D
 var cargo_visual
 var current_weather_kind := "clear"
 var base_road_grip := 1.0
@@ -96,7 +102,18 @@ func _ready() -> void:
 	add_child(discovery_markers)
 	landmarks = LANDMARKS_SCENE.new()
 	add_child(landmarks)
-	landmarks.sync_projects(GameState.data.get("projects_done",[]))
+	landmarks.sync_projects(GameState.data.get("projects_done",[]), GameState.data.get("projects_active",{}))
+	city_reign_crisis = CITY_REIGN_CRISIS.new()
+	add_child(city_reign_crisis)
+	city_reign_crisis.sync_state(GameState.data,GameState.locale)
+	city_reign_proposals = CITY_REIGN_PROPOSALS.new()
+	add_child(city_reign_proposals)
+	city_reign_proposals.sync_state(GameState.data,GameState.locale)
+	# B34: read-only ORIGINAL 3D opening guidance follows the existing
+	# real mission + real resource-funded civic decisions, no new quest state.
+	city_reign_opening_director = CITY_REIGN_OPENING_DIRECTOR.new()
+	add_child(city_reign_opening_director)
+	city_reign_opening_director.call("sync_state",GameState.data,GameState.locale)
 	traffic_signals = SIGNALS_SCENE.new()
 	add_child(traffic_signals)
 	roadworks = ROADWORKS_SCENE.new()
@@ -138,6 +155,7 @@ func _ready() -> void:
 	touch_controls = TOUCH_CONTROLS_SCENE.new()
 	add_child(touch_controls)
 	world.update_language(GameState.locale)
+	landmarks.update_language(GameState.locale)
 	_apply_weather()
 	hud.strategy_changed.connect(_on_strategy_changed)
 	hud.dialogue_changed.connect(_on_dialogue_changed)
@@ -302,6 +320,9 @@ func _spawn_traffic() -> void:
 	for i in range(12):
 		var route: Array[Vector3] = _road_loop(i)
 		var traffic = TRAFFIC_SCENE.new()
+		# Three real vehicles per authored silhouette; deterministic and
+		# independent of instance IDs, saves or route randomization.
+		traffic.visual_style = ["sedan","taxi","courier","executive"][i%4]
 		add_child(traffic)
 		traffic.set_route(route,6.5+float(i%4)*2.0)
 		traffic.signal_controller = traffic_signals
@@ -412,6 +433,9 @@ func _physics_process(delta: float) -> void:
 	var desired_fov: float = SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
 	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,SAFE_CAMERA.time_alpha(2.2,delta))
 	var protagonist: Vector3 = car.global_position if driving else player.global_position
+	if city_reign_opening_director != null:
+		city_reign_opening_director.call("set_view",protagonist,
+			interiors.is_inside(),hud.is_strategy_open())
 	_tick_driving_trial(delta)
 	if world.weather_particles != null:
 		world.weather_particles.global_position = protagonist + Vector3(0,16,0)
@@ -434,6 +458,11 @@ func _physics_process(delta: float) -> void:
 		if site_id != "":
 			var site: Dictionary = GameState.DISCOVERY.find_site(site_id)
 			near_name = "◈ " + GameState.DISCOVERY.title(site,GameState.locale)
+	if near_name == "" and not driving and not interiors.is_inside() and city_reign_proposals != null:
+		var proposal_id: String = city_reign_proposals.closest_proposal(protagonist,10.0)
+		if proposal_id != "":
+			var option: Dictionary = GameState.INITIATIVES.PROJECTS[proposal_id]
+			near_name = _three("ПРЕДЛОЖЕНИЕ · F: ","CITY PROPOSAL · F: ","城市规划 · F: ") + str(option.get(GameState.locale,option["ru"]))
 	if near_name == "":
 		var property_id: String = world.closest_property(protagonist,20.0)
 		if property_id != "":
@@ -553,6 +582,10 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("language"):
 		hud.switch_language()
 		world.update_language(GameState.locale)
+		if city_reign_crisis != null:
+			city_reign_crisis.sync_state(GameState.data,GameState.locale)
+		if city_reign_proposals != null:
+			city_reign_proposals.sync_state(GameState.data,GameState.locale)
 	elif event.is_action_pressed("save_game"):
 		_save()
 	elif event.is_action_pressed("load_game"):
@@ -615,6 +648,18 @@ func _apply_visual_budget() -> void:
 		car.update_headlights(float(GameState.data.get("day_clock",12.0)),effective)
 	world.sun.shadow_enabled = effective != "low"
 	world.apply_visual_budget(effective)
+	# A17 real physical signal geometry: desktop 3-LED die-cast heads in
+	# nine shared GPU draws; LOW uses the EXACT original simple signals.
+	# No re-spawn, traffic AI update or shadow-map allocation on switches.
+	if traffic_signals != null:
+		traffic_signals.call("set_quality",effective)
+	if city_reign_opening_director != null:
+		city_reign_opening_director.call("set_quality",effective)
+	# Switching live mobile quality adjusts ONLY cached traffic render
+	# meshes; no lane/traffic/vehicle collider changes and no allocations
+	# beyond the 6 shared precomputed city-fleet variant surfaces.
+	for street_car in ambient_cars:
+		street_car.set_visual_quality(effective)
 	if camera != null:
 		camera.far = 520.0 if effective == "low" else (720.0 if effective == "standard" else 900.0)
 	world.update_language(GameState.locale)
@@ -770,6 +815,20 @@ func _interact() -> void:
 		if local_outcome == "completed": MissionManager.register_action("neighborhood_deliver")
 		hud.announce(GameState.NEIGHBORHOOD.status_text(local_outcome,GameState.locale))
 		return
+	# Episode 01 street decision: physically walk to one of the two real
+	# budget proposal boards and open the existing actionable CITY REIGN cabinet.
+	# The interaction itself is strictly read-only. Only a subsequent actual
+	# invest button may call the original resource-debit transaction.
+	if not driving and city_reign_proposals != null:
+		var proposal_id: String = city_reign_proposals.closest_proposal(position_at,9.0)
+		if proposal_id != "":
+			var proposal: Dictionary = GameState.INITIATIVES.PROJECTS[proposal_id]
+			GameState.set_district(str(proposal["district"]))
+			if not hud.is_strategy_open():
+				hud.toggle_strategy()
+			hud.announce(_three("ГОРОДСКОЕ ПРЕДЛОЖЕНИЕ: ","CITY PROPOSAL: ","城市规划：") +
+				str(proposal.get(GameState.locale,proposal["ru"])) + " · %d кр." % int(proposal["cost"]))
+			return
 	# Distinct street discoveries create an on-foot exploration loop. Every
 	# reward is awarded once by GameState, never by a visual marker.
 	if not driving and not interiors.is_inside():
@@ -921,8 +980,14 @@ func _on_game_changed(reason: String) -> void:
 	if reason == "road_repair" or reason == "road_maintenance" or reason == "turn" or reason == "load" or reason == "reset":
 		_replan_traffic()
 		route_refresh = 100.0
-	landmarks.sync_projects(GameState.data.get("projects_done",[]))
+	landmarks.sync_projects(GameState.data.get("projects_done",[]), GameState.data.get("projects_active",{}))
 	landmarks.update_language(GameState.locale)
+	if city_reign_crisis != null:
+		city_reign_crisis.sync_state(GameState.data,GameState.locale)
+	if city_reign_proposals != null:
+		city_reign_proposals.sync_state(GameState.data,GameState.locale)
+	if city_reign_opening_director != null:
+		city_reign_opening_director.call("sync_state",GameState.data,GameState.locale)
 	world.update_language(GameState.locale)
 	_apply_weather()
 
