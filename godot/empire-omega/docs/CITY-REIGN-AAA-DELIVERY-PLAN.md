@@ -87,6 +87,14 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] True licensed/commissioned high-poly hero assets, target-device profiling and independent aesthetic art signoff.
 - Full design contract: `docs/CITY-REIGN-CINEMATIC-ART-DIRECTION.md`.
 
+## AAA A5 — Real-world traffic identity
+- [x] The existing 12 original traffic agents now have a deterministic 3/3/3/3 visual distribution: sedan, taxi, courier and executive. Original 40 mission identifiers, driving routes and physical city colliders remain authoritative.
+- [x] All three new classes have genuinely different original closed 3D body/cabin silhouettes, no screenshots. Extra body details are fused into the SAME original 2 per-car meshes; wheels, lamps and brakes unchanged. Patrol mesh remains original R126.
+- [x] New real render-quality gate: LOW returns to the precise R126 mesh allocations, standard/cinematic use a tiny shared cache of at most 6 new model-specific meshes; no per-frame geometry allocations or vehicle/game-state mutations.
+- [ ] New native exact-SHA `v114` must pass in original Godot and staged WebGL Chromium; NO engineering GO until confirmed.
+- [ ] Commission and license high-poly hero vehicles and record actual real-hardware FPS; current shapes are original stylized 3D art, not AAA photoreal approval.
+- Complete source and acceptance contract: `docs/CITY-REIGN-AUTOMOTIVE-ART-DIRECTION.md`.
+
 ## AAA A7 — source-real playable player car silhouettes
 - [x] All four original owned vehicle models (compact, courier, executive, utility) have distinct real 3D closed profile shapes and corrected glass rest transforms, not just car color.
 - [x] The original compact always keeps its exact original FlowBody and AerodynamicGreenhouse meshes and all existing wheel/brake/vehicle physics. Three other families share at most 6 new cached original Mesh resources.
