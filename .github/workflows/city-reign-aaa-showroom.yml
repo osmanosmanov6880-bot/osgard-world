@@ -1,0 +1,112 @@
+name: CITY REIGN AAA SOURCE SHOWROOM — true native Godot + no release
+on:
+  push:
+    branches:
+      - feat/city-reign-aaa-garage-showroom-20261028
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-showroom.yml'
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - feat/city-reign-aaa-garage-gallery-20261028
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-showroom.yml'
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-aaa-showroom-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-locked-godot-real-showroom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Pin exact original source and refuse synthetic art
+        shell: bash
+        env:
+          SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SHA"
+          test "${#SHA}" -eq 40
+          mkdir -p city-reign-showroom-evidence
+          printf '%s\n' "$SHA" > city-reign-showroom-evidence/sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Generate authentic game sound and enforce strict Godot import
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-showroom-evidence/strict-import.log
+      - name: Run actual Godot city, original cars, native buttons and independent source 3D proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          for testfile in \
+            v113_city_reign_cinematic_architecture \
+            v114_city_reign_aaa_vehicle_fleet \
+            v115_city_reign_aaa_player_garage \
+            v116_city_reign_aaa_premium_garage \
+            v117_city_reign_aaa_actual_showroom; do
+            log="city-reign-showroom-evidence/${testfile}.log"
+            timeout --signal=TERM --kill-after=6s 170s godot --headless \
+              --path godot/empire-omega --script "res://tests/${testfile}.gd" | tee "$log"
+            case "$testfile" in
+              v113*) marker="CITY REIGN AAA source-native art pass:" ;;
+              v114*) marker="CITY REIGN AAA sculpted original fleet:" ;;
+              v115*) marker="CITY REIGN AAA real player garage silhouettes:" ;;
+              v116*) marker="CITY REIGN AAA native premium garage cards:" ;;
+              v117*) marker="CITY REIGN AAA actual authored car showroom:" ;;
+            esac
+            grep -Fq "$marker" "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::Real source Godot showroom test failed: $testfile"; exit 1
+            fi
+          done
+      - name: Verify release contract was not weakened or bypassed
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-direct-publish.contract.test.mjs \
+            | tee city-reign-showroom-evidence/manual-approval.log
+      - name: Create SHA-256 origin proof and explicit AAA production HOLD
+        shell: bash
+        env:
+          SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,os
+          files=[
+            'godot/empire-omega/scripts/city_reign_hero_showroom.gd',
+            'godot/empire-omega/scripts/hud.gd',
+            'godot/empire-omega/tests/v117_city_reign_aaa_actual_showroom.gd']
+          output={'source_sha':os.environ['SHA'],
+            'SHA256':{f:hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in files},
+            'render':'authentic Godot original player-car 3D, single-frame demand-driven',
+            'human_aaa_approved':False,'physical_mobile_fps_approved':False,
+            'licensed_final_cars_approved':False,'production_release_approved':False}
+          Path('city-reign-showroom-evidence/manifest.json').write_text(
+            json.dumps(output,indent=2)+'\n')
+          PY
+      - name: Upload actual native engine and provenance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-aaa-showroom-${{ github.run_id }}
+          path: city-reign-showroom-evidence/
+          if-no-files-found: warn
+          retention-days: 14

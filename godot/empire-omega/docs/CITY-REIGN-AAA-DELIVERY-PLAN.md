@@ -110,3 +110,10 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] Exact-source original Godot `v116` plus v113/v115 and full Chrome/WebGL acceptance required before staging merge.
 - [ ] Physical phone screenshot inspection, art review and measured accessibility/contrast.
 - Full UI art contract: `docs/CITY-REIGN-AAA-GARAGE-UI.md`.
+
+## AAA A11 — actually interactive native 3D automotive showroom
+- [x] Actual source car art (original real HORIZON car with A7 body/greenhouse variants) shown within a single demand-rendered 3D Godot offscreen camera, no image generation or copyrighted car designs.
+- [x] Desktop original stage with two unshadowed key/fill studio lights, satin basalt turntable, vehicle-color styling, interactive 15-degree rotation and genuinely inspectable unowned cars (preview does NOT buy).
+- [x] Phone never allocates preview until explicit user inspection; LOW graphics forbids new GPU viewport; offscreen budget bounded to 620x282 desktop / 340x184 mobile and single `UPDATE_ONCE`.
+- [ ] Exact native original Godot v117, existing economy/physics regressions, actual WebGL Chromium and human art test must pass. Source acceptance isn't photoreal AAA quality approval.
+- Design and provenance: `docs/CITY-REIGN-AAA-REAL-3D-SHOWROOM.md`.
