@@ -2,6 +2,10 @@ extends Node3D
 ## IRON PULSE: BLACKOUT — real, player-controlled 3D vertical slice in Godot 4.4.1.
 ## Procedural artwork and generated UI; offline and self-contained.
 
+# Architectural shot design: on every fresh operation the real first-person
+# camera introduces the open reactor megastructure, not just a dead corridor.
+const REACTOR_REVEAL_YAW := -0.52
+const REACTOR_REVEAL_PITCH := 0.18
 const NIGHT := Color(0.020, 0.034, 0.060)
 const STEEL := Color(0.162, 0.217, 0.287)
 const METAL := Color(0.235, 0.300, 0.368)
@@ -468,10 +472,11 @@ func _make_complex() -> void:
     for index in 9:
         var z := -3.5 - float(index)*7.0
         _box(self,Vector3(-6.2,2.7,z),Vector3(0.20,4.8,0.34),polished)
-        _box(self,Vector3(6.2,2.7,z),Vector3(0.20,4.8,0.34),polished)
-        _box(self,Vector3(0,5.1,z),Vector3(13,0.23,0.22),polished)
         _box(self,Vector3(-6.1,2.7,z+0.5),Vector3(0.09,0.85,0.14),red)
-        _box(self,Vector3(6.1,2.7,z+0.5),Vector3(0.09,0.85,0.14),red)
+        if z < IPReactorAtrium.OPENING_Z_MIN or z > IPReactorAtrium.OPENING_Z_MAX:
+            _box(self,Vector3(6.2,2.7,z),Vector3(0.20,4.8,0.34),polished)
+            _box(self,Vector3(0,5.1,z),Vector3(13,0.23,0.22),polished)
+            _box(self,Vector3(6.1,2.7,z+0.5),Vector3(0.09,0.85,0.14),red)
     _build_reactor()
     _build_terminals()
     _build_rescue_relays()
@@ -620,6 +625,10 @@ func _make_player() -> void:
     flashlight.shadow_enabled = false
     flashlight.visible = false
     camera.add_child(flashlight)
+    yaw = REACTOR_REVEAL_YAW
+    pitch = REACTOR_REVEAL_PITCH
+    player.rotation.y = yaw
+    camera.rotation.x = pitch
 
 func _panel(parent: Control, location: Rect2, anchors: Rect2, bg: Color) -> PanelContainer:
     var panel := PanelContainer.new()
@@ -1203,10 +1212,10 @@ func _restart() -> void:
     exit_gate.position = Vector3(0,2.6,-58.9)
     walking_phase = 0.0
     camera.position = Vector3(0,0.62,0)
-    yaw = 0.0
-    pitch = 0.0
-    player.rotation.y = 0.0
-    camera.rotation.x = 0.0
+    yaw = REACTOR_REVEAL_YAW
+    pitch = REACTOR_REVEAL_PITCH
+    player.rotation.y = yaw
+    camera.rotation.x = pitch
     started = true
     paused = false
     end_panel.visible = false
