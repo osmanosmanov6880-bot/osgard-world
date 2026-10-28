@@ -315,7 +315,11 @@ func _publish_web_state() -> void:
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["story"] = story.diagnostic()
     state["relay_3d_terminals"] = relay_terminals.size()
-    state["relay_positions"] = [[p["id"],p["position"].x,p["position"].z] for p in relay_terminals]
+    var real_relays: Array = []
+    for relay_info in relay_terminals:
+        var spot: Vector3 = relay_info["position"]
+        real_relays.append([str(relay_info["id"]),spot.x,spot.z])
+    state["relay_positions"] = real_relays
     state["radio_visible"] = radio_panel.visible if radio_panel != null else false
     state["priority_visible"] = priority_panel.visible if priority_panel != null else false
     state["radio_speaker"] = radio_speaker.text if radio_speaker != null else ""
