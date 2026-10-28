@@ -905,6 +905,138 @@ func _layout_hud() -> void:
     radio_dialogue.add_theme_font_size_override("font_size",12 if narrow else 14)
     _refresh_radio_ui()
 
+func _refresh_radio_ui() -> void:
+    if radio_panel == null:
+        return
+    var line: Dictionary = story.latest(locale)
+    if not line.is_empty():
+        radio_speaker.text = str(line["speaker"]) + "   /   ACT " + str(line["act"])
+        radio_dialogue.text = str(line["text"])
+    radio_panel.visible = started and not paused and not journal_panel.visible and radio_ttl > 0.0
+    priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible
+    crew_priority_button.text = _copy("choice_crew")
+    core_priority_button.text = _copy("choice_core")
+    journal_text.text = story.journal_localized(locale)
+    if continue_button != null:
+        continue_button.text = _copy("continue")
+
+func _story_event(event_name: String) -> void:
+    if story.on_game_event(event_name,session.priority_id):
+        radio_ttl = 11.0
+    _refresh_radio_ui()
+
+func _choose_priority(choice: String) -> void:
+    if not started or paused or session.finished():
+        return
+    if session.choose_priority(choice):
+        previous_event = session.last_event
+        _story_event(session.last_event)
+        _announce(session.last_event)
+        _save_checkpoint()
+        _refresh_hud()
+
+func _toggle_journal() -> void:
+    if not started or session.finished():
+        return
+    if paused and not journal_panel.visible:
+        return
+    journal_panel.visible = not journal_panel.visible
+    paused = journal_panel.visible
+    pause_panel.visible = false
+    audio_director.set_active(not paused)
+    if DisplayServer.get_name() != "headless":
+        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED)
+    _refresh_radio_ui()
+
+func _save_checkpoint() -> bool:
+    # A headless CI test never writes the shared user checkpoint slot.
+    if DisplayServer.get_name() == "headless" or not started or session.finished():
+        return false
+    var payload: Dictionary = {
+        "schema":"IRON_PULSE_CAMPAIGN_V6",
+        "engine":session.checkpoint(),
+        "story":story.checkpoint(),
+        "scenario":selected_scenario,
+        "locale":locale,
+        "quality":quality_mode,
+        "reduced_motion":reduced_motion,
+        "player_position":[player.position.x,player.position.y,player.position.z],
+        "visited_sectors":visited_sectors.duplicate()
+    }
+    return checkpoint_store.save(payload)
+
+func _continue_checkpoint() -> bool:
+    var payload: Dictionary = checkpoint_store.load_checkpoint()
+    if payload.get("schema") != "IRON_PULSE_CAMPAIGN_V6":
+        return false
+    if not payload.get("engine",null) is Dictionary or not payload.get("story",null) is Dictionary:
+        return false
+    var restored_engine := IPCrisisEngine.new()
+    var restored_story := IPStoryDirector.new()
+    if not restored_engine.restore_checkpoint(payload["engine"]):
+        return false
+    if not restored_story.restore(payload["story"]):
+        return false
+    if restored_engine.finished() or restored_engine.scenario_id != restored_story.scenario:
+        return false
+    if payload.get("scenario") != restored_engine.scenario_id:
+        return false
+    var pos: Variant = payload.get("player_position",null)
+    if not pos is Array or pos.size() != 3:
+        return false
+    for index in 3:
+        if typeof(pos[index]) not in [TYPE_INT,TYPE_FLOAT]:
+            return false
+    var safe_pos := Vector3(float(pos[0]),float(pos[1]),float(pos[2]))
+    if absf(safe_pos.x) > 6.5 or safe_pos.y < -0.2 or safe_pos.y > 5.0 or safe_pos.z < -59.0 or safe_pos.z > 5.0:
+        return false
+    var saved_zones: Variant = payload.get("visited_sectors",null)
+    if not saved_zones is Array or saved_zones.size() > 3:
+        return false
+    var checked_zones: Array[String] = []
+    for zone in saved_zones:
+        if not zone is String or zone not in IPWorldSectors.SECTORS or checked_zones.has(zone):
+            return false
+        checked_zones.append(zone)
+    var saved_quality: String = str(payload.get("quality","hero"))
+    if saved_quality not in ["hero","eco"]:
+        return false
+    var saved_locale: String = str(payload.get("locale","ru"))
+    if saved_locale not in ["ru","en"] or typeof(payload.get("reduced_motion",null)) != TYPE_BOOL:
+        return false
+    # Now, after atomic validation, restore all gameplay and authored story state.
+    session = restored_engine
+    story = restored_story
+    selected_scenario = session.scenario_id
+    locale = saved_locale
+    quality_mode = saved_quality
+    reduced_motion = bool(payload["reduced_motion"])
+    player.position = safe_pos
+    player.velocity = Vector3.ZERO
+    active_sector = world_sectors.current_sector(player.global_position.z)
+    visited_sectors = checked_zones
+    if not visited_sectors.has(active_sector):
+        visited_sectors.append(active_sector)
+    art_stage.set_quality(quality_mode)
+    world_sectors.set_quality(quality_mode)
+    exit_gate.position.y = 6.2 if session.override_set else 2.6
+    for index in range(legacy_lamps.size()):
+        legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
+    previous_event = session.last_event
+    started = true
+    paused = false
+    intro_panel.visible = false
+    pause_panel.visible = false
+    end_panel.visible = false
+    radio_ttl = 11.0
+    _update_scenario_picker()
+    _refresh_hud()
+    _refresh_radio_ui()
+    audio_director.set_active(true)
+    if DisplayServer.get_name() != "headless":
+        Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+    return true
+
 func _update_scenario_picker() -> void:
     if scenario_brief == null:
         return
