@@ -61,7 +61,7 @@ main.osa-studio.osa-collab-page{background:#090b0d;color:#f4e9d9;min-height:100v
 .osa-collab-kpis strong{color:#e5c494;font:400 clamp(27px,3vw,47px)/1 Georgia,serif}
 .osa-collab-kpis>div:last-child strong{font:400 clamp(19px,2.4vw,32px) Georgia,serif;color:#efa88e}
 .osa-collab-kpis span{font:10px/1.6 monospace;color:#c2b29e}
-.osa-collab-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid #6b5136;background:#171919}
+.osa-collab-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid #6b5136;background:#171919}
 .osa-collab-tabs button{border:0;border-bottom:2px solid transparent;background:transparent;color:#bba68d;font:12px 'Segoe UI',sans-serif;cursor:pointer;min-height:57px}
 .osa-collab-tabs button[aria-selected=true]{color:#f4d09f;border-bottom-color:#e5b87c;background:#241f18}
 .osa-collab-tabpanel{padding:30px clamp(18px,3vw,43px) 42px}
@@ -105,3 +105,7 @@ main.osa-studio.osa-collab-page{background:#090b0d;color:#f4e9d9;min-height:100v
 @media(max-width:350px){.osa-collab-hero h1{font-size:39px}.osa-collab-workspace-head h3{font-size:27px}.osa-collab-selector>button strong{font-size:25px}.osa-collab-tabs button{font-size:11px}.osa-collab-kpis strong{font-size:29px}}
 @media(prefers-reduced-motion:reduce){.osa-collab-page *, .osa-collab-page *::before,.osa-collab-page *::after{animation:none!important;transition:none!important}}
 @media print{.osa-collab-page{background:white!important;color:black!important}.osa-collab-page header,.osa-collab-page footer,.osa-collab-new,.osa-collab-tabs,.osa-collab-task-form,.osa-collab-state-actions,.osa-collab-task-actions{display:none!important}.osa-collab-hero{min-height:0;background:white!important;padding:20px!important}.osa-collab-hero h1,.osa-collab-page h2,.osa-collab-page h3,.osa-collab-page h4{color:#111!important}.osa-collab-columns{display:block}.osa-collab-workspace{border:0}.osa-collab-task{break-inside:avoid}}
+
+/* V62 evidence tab adopts the native Core shell spacing without changing the initial bundle. */
+.osa-collab-evidence-container{padding:clamp(18px,2.5vw,35px)}
+@media(max-width:470px){.osa-collab-tabs button{font-size:10px;min-height:51px;padding:4px}.osa-collab-evidence-container{padding:14px}}
