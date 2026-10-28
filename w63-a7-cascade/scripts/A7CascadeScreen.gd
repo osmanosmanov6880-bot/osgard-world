@@ -53,6 +53,14 @@ const RU := {
     "sound_on": "ЗВУК / ВКЛ", "sound_off": "ЗВУК / ВЫКЛ",
     "cinema_on": "КИНОРЕЖИМ / ВКЛ", "cinema_off": "КИНОРЕЖИМ / ВЫКЛ",
     "focus_on": "ОПТИКА / ПРИБЛИЗИТЬ", "focus_off": "ОПТИКА / ОБЩИЙ ВИД",
+    "pilot_on": "ПЕРВОЕ ЛИЦО / ВОЙТИ", "pilot_off": "ПЕРВОЕ ЛИЦО / ВЫЙТИ",
+    "pilot_hint": "P — ОПЕРАТОР, WASD — ХОДЬБА, ПРАВАЯ КНОПКА МЫШИ — ВЗГЛЯД, E — ОСМОТР",
+    "pilot_inspect": "ОСМОТРЕТЬ / E",
+    "pilot_forward": "ВПЕРЁД", "pilot_left": "ВЛЕВО",
+    "pilot_back": "НАЗАД", "pilot_right": "ВПРАВО",
+    "pilot_core": "ОСМОТРЕН РЕАКТОР",
+    "pilot_relay": "ОСМОТРЕН РЕЛЕЙНЫЙ КОМПЛЕКС",
+    "pilot_far": "ПОДОЙДИТЕ БЛИЖЕ К ОБОРУДОВАНИЮ",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
@@ -93,6 +101,14 @@ const EN := {
     "sound_on": "SOUND / ON", "sound_off": "SOUND / OFF",
     "cinema_on": "CINEMA VIEW / ON", "cinema_off": "CINEMA VIEW / OFF",
     "focus_on": "OPTICS / ZOOM IN", "focus_off": "OPTICS / WIDE VIEW",
+    "pilot_on": "FIRST PERSON / ENTER", "pilot_off": "FIRST PERSON / EXIT",
+    "pilot_hint": "P — OPERATOR, WASD — WALK, RIGHT MOUSE — LOOK, E — INSPECT",
+    "pilot_inspect": "INSPECT / E",
+    "pilot_forward": "FORWARD", "pilot_left": "LEFT",
+    "pilot_back": "BACK", "pilot_right": "RIGHT",
+    "pilot_core": "REACTOR INSPECTED",
+    "pilot_relay": "POWER RELAY INSPECTED",
+    "pilot_far": "MOVE CLOSER TO THE MACHINERY",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
@@ -136,6 +152,12 @@ var sound_button: Button
 var focus_button: Button
 var cinema_button: Button
 var cinema_mode: bool = false
+var pilot_button: Button
+var pilot_rail: HFlowContainer
+var pilot_nudge_buttons: Dictionary = {}
+var pilot_inspect_button: Button
+var pilot_status_label: Label
+var _pilot_browser_elapsed: float = 0.0
 var narrative_title: Label
 var narrative_body: Label
 var forecast_label: Label
@@ -307,6 +329,8 @@ func _build() -> void:
     focus_button.custom_minimum_size = Vector2(167, 42)
     cinema_button = _button(cinema_controls, "", _toggle_cinema_mode)
     cinema_button.custom_minimum_size = Vector2(163, 42)
+    pilot_button = _button(cinema_controls, "", _toggle_pilot)
+    pilot_button.custom_minimum_size = Vector2(198, 42)
     # W67 real two-sector walk: native controls change only the camera
     # position along the modeled catwalk, never the six-cycle puzzle state.
     var route_rail := HFlowContainer.new()
@@ -328,6 +352,23 @@ func _build() -> void:
     walk_forward.custom_minimum_size = Vector2(112, 42)
     route_buttons.append(walk_forward)
     route_label = _label(cinema, "", 11, MUTED)
+    # W70 native accessible directional controls operate REAL CharacterBody3D
+    # physics, never teleport or inject fictional "completed" game actions.
+    pilot_rail = HFlowContainer.new()
+    pilot_rail.name = "RealFirstPersonMobileControlRail"
+    pilot_rail.add_theme_constant_override("h_separation", 8)
+    pilot_rail.add_theme_constant_override("v_separation", 6)
+    cinema.add_child(pilot_rail)
+    for keycode in [KEY_W, KEY_A, KEY_S, KEY_D]:
+        var button := _button(pilot_rail, "", _pilot_nudge.bind(keycode))
+        button.name = "PhysicalWalkKey%d" % keycode
+        button.custom_minimum_size = Vector2(93, 40)
+        pilot_nudge_buttons[keycode] = button
+    pilot_inspect_button = _button(pilot_rail, "", _pilot_inspect)
+    pilot_inspect_button.custom_minimum_size = Vector2(148, 40)
+    pilot_status_label = _label(cinema, "", 11, MINT)
+    pilot_rail.visible = false
+    pilot_status_label.visible = false
     subtitle = _label(body, "", 15, MINT)
     intro = _label(body, "", 15, MUTED)
 
@@ -489,6 +530,24 @@ func _step_route(direction: int) -> void:
         stage_3d.step_inspection_route(direction)
     _render(model.snapshot())
 
+func _toggle_pilot() -> void:
+    if stage_3d != null:
+        stage_3d.toggle_first_person()
+    _render(model.snapshot())
+
+func _pilot_nudge(keycode: int) -> void:
+    if stage_3d != null:
+        stage_3d.first_person_nudge(keycode)
+    call_deferred("_publish_web_accessibility")
+
+func _pilot_inspect() -> void:
+    if stage_3d == null:
+        return
+    var target: String = stage_3d.first_person_inspect()
+    pilot_status_label.text = _t("pilot_core") if target == "CORE" else (
+        _t("pilot_relay") if target == "RELAY" else _t("pilot_far"))
+    call_deferred("_publish_web_accessibility")
+
 func _toggle_inspection_focus() -> void:
     if stage_3d != null:
         stage_3d.toggle_inspection_focus()
@@ -558,11 +617,37 @@ func _toggle_locale() -> void:
     locale = "en" if locale == "ru" else "ru"
     _render(model.snapshot())
 
+func _unhandled_input(event: InputEvent) -> void:
+    # Right mouse drag rotates the actual first-person Camera3D when active.
+    if stage_3d == null or stage_3d.first_person == null:
+        return
+    if not stage_3d.first_person.piloting:
+        return
+    if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+        stage_3d.first_person.rotate_view((event as InputEventMouseMotion).relative)
+        get_viewport().set_input_as_handled()
+
 func _unhandled_key_input(event: InputEvent) -> void:
     if not (event is InputEventKey):
         return
     var key: InputEventKey = event as InputEventKey
+    if stage_3d != null and stage_3d.first_person != null and
+            stage_3d.first_person.piloting and
+            [KEY_W, KEY_A, KEY_S, KEY_D].has(key.keycode):
+        # Listen to both press AND release; physics must stop on keyup.
+        stage_3d.first_person_key(key.keycode, key.pressed)
+        call_deferred("_publish_web_accessibility")
+        get_viewport().set_input_as_handled()
+        return
     if not key.pressed or key.echo:
+        return
+    if key.keycode == KEY_P:
+        _toggle_pilot()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_E:
+        _pilot_inspect()
+        get_viewport().set_input_as_handled()
         return
     if key.keycode == KEY_R:
         _restart()
@@ -629,6 +714,21 @@ func _render(state: Dictionary) -> void:
     sound_button.text = _t("sound_off" if sound_bus != null and sound_bus.muted else "sound_on")
     cinema_button.text = _t("cinema_off" if cinema_mode else "cinema_on")
     focus_button.text = _t("focus_off" if stage_3d != null and stage_3d.inspection_focus else "focus_on")
+    var piloting: bool = stage_3d != null and stage_3d.first_person != null and stage_3d.first_person.piloting
+    pilot_button.text = _t("pilot_off" if piloting else "pilot_on")
+    pilot_rail.visible = piloting
+    pilot_status_label.visible = piloting
+    if piloting and pilot_status_label.text == "":
+        pilot_status_label.text = _t("pilot_hint")
+    elif not piloting:
+        pilot_status_label.text = ""
+    var pilot_strings: Dictionary = {
+        KEY_W: "pilot_forward", KEY_A: "pilot_left",
+        KEY_S: "pilot_back", KEY_D: "pilot_right",
+    }
+    for keycode in pilot_nudge_buttons.keys():
+        (pilot_nudge_buttons[keycode] as Button).text = _t(str(pilot_strings[keycode]))
+    pilot_inspect_button.text = _t("pilot_inspect")
     cycle_label.text = "%s %02d / 06" % [_t("round"), mini(6, int(state["shift"]) + 1)]
     actions_label.text = "%s: %d / 2" % [_t("actions"), int(state["actions_left"])]
     var result: String = str(state["status"])
@@ -706,6 +806,18 @@ func _create_web_accessibility() -> void:
         document.body.appendChild(node)
     _web_state_element = node
 
+# Browser QA is passive: it may observe an actual moving physics body but
+# cannot fabricate or move it. Limit DOM state updates while the player walks.
+func _process(delta: float) -> void:
+    if not OS.has_feature("web") or stage_3d == null or stage_3d.first_person == null:
+        return
+    if not stage_3d.first_person.piloting:
+        return
+    _pilot_browser_elapsed += delta
+    if _pilot_browser_elapsed >= 0.18:
+        _pilot_browser_elapsed = 0.0
+        _publish_web_accessibility()
+
 func _web_rect(node: Control) -> Array:
     if node == null:
         return [0, 0, 0, 0]
@@ -751,6 +863,15 @@ func _publish_web_accessibility() -> void:
         "w69_real_incident_shutters": int(stage_state.get("w69_real_hazard_shutters", 0)),
         "w69_visual_severity": float(stage_state.get("w69_visual_severity", 0.0)),
         "w69_real_action_reactions": int(stage_state.get("w69_cinema_actions", 0)),
+        "w70_physical_operator": bool(stage_state.get("w70_first_person_enabled", false)),
+        "w70_real_body_xyz": stage_state.get("w70_actual_player_position", []),
+        "w70_real_physical_distance": float(stage_state.get("w70_actual_walk_distance", 0.0)),
+        "w70_collision_shapes": int(stage_state.get("w70_real_collision_count", 0)),
+        "w70_real_physics_frames": int(stage_state.get("w70_physics_frames", 0)),
+        "w70_real_collisions": int(stage_state.get("w70_physics_contacts", 0)),
+        "w70_inspections": int(stage_state.get("w70_player_inspections", 0)),
+        "w70_last_inspected": str(stage_state.get("w70_last_machine_inspected", "")),
+        "w70_true_headlamp": bool(stage_state.get("w70_headlamp_real", false)),
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -782,6 +903,8 @@ func _publish_web_accessibility() -> void:
         "sound": _web_rect(sound_button),
         "cinema": _web_rect(cinema_button),
         "optics": _web_rect(focus_button),
+        "pilot": _web_rect(pilot_button),
+        "pilot_inspect": _web_rect(pilot_inspect_button),
         "walk_back": _web_rect(route_buttons[0]),
         "walk_forward": _web_rect(route_buttons[1]),
         "sector_0": _web_rect(sector_buttons[0]),
