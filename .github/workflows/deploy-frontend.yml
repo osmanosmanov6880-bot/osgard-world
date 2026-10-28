@@ -35,6 +35,7 @@ on:
       - "public/privacy/**"
       - "public/osa-library/**"
       - "public/osa-cinema/reference/**"
+      - "public/osa-cinema-studio/**"
       - "docs/OSA_MEDIA_RECOVERY_RUNBOOK.md"
       - "public/terms/**"
       - "public/tedes/**"
