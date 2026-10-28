@@ -160,13 +160,17 @@ static func display_position(goal: Dictionary) -> Vector3:
 		return site+Vector3(0,0,-19.0)
 	if id=="car":
 		return site+Vector3(0,0,0)
-	return site+Vector3(0,0,8.4)
+	return site+Vector3(0,0,10.0)
 
 func _ready() -> void:
 	name = "CityReignAuthenticOpeningStreetDirector"
 	marker = MeshInstance3D.new()
 	marker.name = "Original4DStreetCivicGate"
 	marker.mesh = _art()
+	# More legible original low-poly real bronze portal: enlarge actual
+	# metallic surfaces, not a Photoshop postprocess glow or UI overlay.
+	# The authored 3D asset keeps its original 792 vertices / 1 draw.
+	marker.scale = Vector3(1.22,1.25,1.22)
 	marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	paint = StandardMaterial3D.new()
 	paint.vertex_color_use_as_albedo = true
@@ -181,9 +185,9 @@ func _ready() -> void:
 	add_child(marker)
 	caption = Label3D.new()
 	caption.name = "LocalisedActualCivicObjective"
-	caption.position = Vector3(0,7.0,0)
-	caption.font_size = 42
-	caption.pixel_size = 0.007
+	caption.position = Vector3(0,8.65,0)
+	caption.font_size = 46
+	caption.pixel_size = 0.009
 	caption.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	caption.modulate = Color("e4d5b7")
 	caption.no_depth_test = false

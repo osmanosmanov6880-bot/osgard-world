@@ -81,6 +81,9 @@ func _run() -> void:
 		"one ORIGINAL source metal 3D mesh and one Label3D, no extra renderer")
 	var mesh: MeshInstance3D = guide.get("marker") as MeshInstance3D
 	var label: Label3D = guide.get("caption") as Label3D
+	check(mesh.scale==Vector3(1.22,1.25,1.22) and
+		(label as Label3D).font_size==46,
+		"actual grown 3D street gate and taller short localized label improve street readability")
 	check(mesh.mesh is ArrayMesh and
 		mesh.mesh.surface_get_array_len(0)==792,
 		"precisely 792 original 3D physical bevel+arch vertices, never screenshot")
@@ -91,7 +94,7 @@ func _run() -> void:
 	guide.call("set_view",Vector3(-120,1.3,-104),false,false)
 	check(guide.visible and guide.get("chosen")=="open_records" and
 		guide.get("last_position")==DIRECTOR.PROJECTS.POSITIONS["open_records"] and
-		guide.position==DIRECTOR.PROJECTS.POSITIONS["open_records"]+Vector3(0,0,8.4),
+		guide.position==DIRECTOR.PROJECTS.POSITIONS["open_records"]+Vector3(0,0,10.0),
 		"original gate stands at the real selected site but does not cover paid proposal board")
 	guide.call("set_quality","low")
 	check(not guide.visible and guide.get_child_count()==2,
