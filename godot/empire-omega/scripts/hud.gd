@@ -12,6 +12,7 @@ const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
 const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
 const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
+const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_premium_garage.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -986,6 +987,73 @@ func _do_vehicle(id: String) -> void:
 	else:
 		announce(t("need"))
 
+func _city_reign_garage_stat(parent: Node,code: String,value: float,lang: String) -> void:
+	var translations: Dictionary = CITY_REIGN_GARAGE.SPEC_LABELS[lang]
+	var stat_name: String = str(translations[code])
+	var text_row: Label = _label(parent,"%s  ·  ×%.2f" % [stat_name,value],13)
+	text_row.name = "CityReignGarageValue_"+code
+	var indicator := ProgressBar.new()
+	indicator.name = "CityReignGarageMeter_"+code
+	indicator.custom_minimum_size.y = 8
+	indicator.max_value = CITY_REIGN_GARAGE.MAX_COMPARE_FACTOR
+	indicator.value = clampf(value,0.0,CITY_REIGN_GARAGE.MAX_COMPARE_FACTOR)
+	indicator.show_percentage = false
+	indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bottom := StyleBoxFlat.new()
+	bottom.bg_color = Color("202b33")
+	bottom.set_corner_radius_all(2)
+	var foreground := StyleBoxFlat.new()
+	foreground.bg_color = R90_STYLE.GOLD
+	foreground.set_corner_radius_all(2)
+	indicator.add_theme_stylebox_override("background",bottom)
+	indicator.add_theme_stylebox_override("fill",foreground)
+	parent.add_child(indicator)
+
+func _draw_city_reign_premium_garage(d: Dictionary) -> void:
+	var locale: String = GameState.locale if CITY_REIGN_GARAGE.SPEC_LABELS.has(GameState.locale) else "ru"
+	var compact: bool = compact_hud or get_viewport().get_visible_rect().size.x < 1000.0
+	var grid := GridContainer.new()
+	grid.name = "CityReignAAAOriginalGarageGallery"
+	grid.columns = CITY_REIGN_GARAGE.columns_for(get_viewport().get_visible_rect().size.x,compact)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation",12)
+	grid.add_theme_constant_override("v_separation",12)
+	strategy_contents.add_child(grid)
+	for vehicle_id in GameState.VEHICLE_CATALOG.ORDER:
+		var actual: Dictionary = CITY_REIGN_GARAGE.details(d,vehicle_id,locale)
+		var frame := PanelContainer.new()
+		frame.name = "CityReignGarageCard_"+vehicle_id
+		frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		frame.add_theme_stylebox_override("panel",R90_STYLE.card_style(bool(actual["selected"])))
+		grid.add_child(frame)
+		var content := VBoxContainer.new()
+		content.add_theme_constant_override("separation",7)
+		frame.add_child(content)
+		var top := HBoxContainer.new()
+		top.add_theme_constant_override("separation",8)
+		content.add_child(top)
+		var heading: Label = _label(top,str(actual["title"]),18,true)
+		heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var badge: Label = _label(top,str(actual["status"]),11,true)
+		badge.name = "CityReignGarageStatus_"+vehicle_id
+		_label(content,str(actual["caption"]),14)
+		for key in ["speed","acceleration","handling"]:
+			_city_reign_garage_stat(content,key,float(actual[key]),locale)
+		_label(content,str(actual["labels"]["fuel"]) + " · ×%.2f" % float(actual["fuel"]),13)
+		if bool(actual["owned"]):
+			_label(content,str(actual["labels"]["condition"]) +
+				" · %d%%   ⛽ %d%%" % [roundi(float(actual["health"])),
+				roundi(float(actual["remaining_fuel"]))],13)
+		else:
+			_label(content,"%d кр.  ·  ★ %d" % [int(actual["price"]),
+				int(actual["reputation"])],15,true)
+		var action_label: String = str(actual["action"])
+		if not bool(actual["owned"]):
+			action_label += "  ·  %d кр." % int(actual["price"])
+		var action_button: Button = _button(content,action_label,
+			Callable(self,"_do_vehicle").bind(vehicle_id),bool(actual["disabled"]))
+		action_button.name = "CityReignGarageAction_"+vehicle_id
+
 func _redraw_strategy() -> void:
 	strategy_title.text = _v08("CITY REIGN · КОМАНДНЫЙ ЦЕНТР","CITY REIGN · OPERATIONS","CITY REIGN · 指挥中心")
 	strategy_close_button.text = _v08("ЗАКРЫТЬ ×","CLOSE ×","关闭 ×")
@@ -1169,21 +1237,9 @@ func _redraw_strategy() -> void:
 		_button(trade_row,_v08("Продать","Sell","卖出")+"  %d кр." % int(sell_quote["total"]),Callable(self,"_do_trade").bind(product,false),not bool(sell_quote["allowed"]))
 	_separator(strategy_contents)
 	_label(strategy_contents,_v08("АВТОПАРК · КУПИТЬ / ВЫБРАТЬ","GARAGE · BUY / SELECT","车库 · 购买 / 选择"),20,true)
-	for vehicle_id in GameState.VEHICLE_CATALOG.ORDER:
-		var profile: Dictionary = GameState.VEHICLE_CATALOG.VEHICLES[vehicle_id]
-		var owned: bool = bool(d["vehicle_owned"].get(vehicle_id,false))
-		var selected: bool = str(d["vehicle_selected"]) == vehicle_id
-		var vehicle_label: String = str(profile.get(GameState.locale,profile["ru"]))
-		if owned:
-			var condition: Dictionary = d.get("garage_status",{}).get(vehicle_id,{})
-			vehicle_label += "  ·  ⛽ %d%%  ·  ◆ %d%%" % [roundi(float(condition.get("fuel",100.0))),roundi(float(condition.get("health",100.0)))]
-		if selected:
-			vehicle_label += "  ✓"
-		elif owned:
-			vehicle_label += "  ·  " + _v08("ВЫБРАТЬ","SELECT","选择")
-		else:
-			vehicle_label += "  ·  %d кр.  /  ★ %d" % [int(profile["price"]),int(profile["reputation"])]
-		_button(strategy_contents,vehicle_label,Callable(self,"_do_vehicle").bind(vehicle_id),selected or (not owned and (int(d["wallet"]) < int(profile["price"]) or int(d["reputation"]) < int(profile["reputation"]))))
+	# A9 source-bound 2-column/phone single-column card gallery. No change
+	# to original purchase, save, garage fuel or car selection callback.
+	_draw_city_reign_premium_garage(d)
 	_separator(strategy_contents)
 	_mark_strategy_section("district")
 	_label(strategy_contents,t("district"),20,true)
