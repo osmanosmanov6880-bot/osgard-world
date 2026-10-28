@@ -85,7 +85,10 @@ void fragment() {
     vec3 white_hot = mix(vec3(0.73, 0.96, 1.0), vec3(1.0, 0.83, 0.55), thermal_bias);
     vec3 ion = mix(tone, white_hot, electric * 0.70);
     float light = 0.58 + vein * 0.75 + sweep * 0.62 + fresnel * 0.70;
-    ALBEDO = ion * 0.34;
+    // GL Compatibility/WebGL can under-expose procedural EMISSION.
+    // Bright local albedo filaments ensure the actual energy core is
+    // visible even without HDR tonemapping or a fake bloom overlay.
+    ALBEDO = mix(ion * 0.55, white_hot, electric * 0.78);
     EMISSION = ion * light * (2.12 + crisis * 1.30);
 }
 """
@@ -322,7 +325,10 @@ func _build_monumental_core_housing() -> void:
     for rotor_index in range(3):
         var rotor := Node3D.new()
         rotor.name = "MechanicalRotor_%d" % rotor_index
-        rotor.rotation_degrees = Vector3(0,0,15.0+float(rotor_index)*52.0)
+        # The old 15/67/119-degree Z roll made two giant rings edge-on to
+        # the A7 observation camera, creating the stubborn vertical cyan bar.
+        # Small interleaved Y/Z tilts preserve mechanical scale and depth.
+        rotor.rotation_degrees = Vector3(0.0,float(rotor_index)*12.0,-16.0+float(rotor_index)*16.0)
         shield_housing.add_child(rotor)
         _torus(rotor,"RotorGimbal",Vector3.ZERO,5.05+float(rotor_index)*0.3,_steel,Vector3(0,0,90))
         _torus(rotor,"RotorSafetyIllumination",Vector3.ZERO,5.25+float(rotor_index)*0.3,_warning,Vector3(0,0,90))
@@ -451,7 +457,15 @@ func update_alarm(scenario: String, heat: float, oxygen: float, elapsed: float, 
             _mechanical_rotors[i].rotation.x = elapsed*(0.055+float(i)*0.012)*(1.0+_hazard*0.65)*(1.0 if i%2 == 0 else -1.0)
 
 func readout() -> Dictionary:
+    var rotor_alignment: float = 1.0
+    if director_camera != null:
+        for rotor in _mechanical_rotors:
+            var rim: MeshInstance3D = rotor.get_node("RotorSafetyIllumination") as MeshInstance3D
+            var normal: Vector3 = (rim.global_transform.basis*Vector3.UP).normalized()
+            var eye: Vector3 = (director_camera.global_position-rim.global_position).normalized()
+            rotor_alignment = minf(rotor_alignment,absf(normal.dot(eye)))
     return {
+        "rotor_camera_alignment_min":rotor_alignment,
         "cinematic_vault":true,
         "security_director_camera":director_camera != null,
         "security_camera_position":[director_camera.global_position.x,director_camera.global_position.y,director_camera.global_position.z] if director_camera != null else [],

@@ -146,6 +146,20 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert hero.get("halo_camera_alignment",0.0)>=0.93, (
                             "Camera sees the original 3D containment halo edge-on as a huge cyan obstruction",hero)
                         report.setdefault("v8_4_hero_visual",{})[name]=hero
+                        # V8.6: inspect only source-bound Godot scene geometry.
+                        # Never fabricate environmental FX or alter gameplay state.
+                        containment = idle.get("containment_fx",{})
+                        assert containment.get("physical_vent_modules")==3 and containment.get("shutters_animated")==3, (
+                            "Physical A7 relief vent scene not attached to real exported game",containment)
+                        assert containment.get("steam_puffs_original")==18 and containment.get("thermal_spark_instances")==16, (
+                            "Procedural vapor or instanced emergency spark meshes missing",containment)
+                        assert containment.get("spark_instanced_draw_groups")==1, (
+                            "Emergency surge spark renderer must use one MultiMesh group",containment)
+                        assert containment.get("quality")==("eco" if mobile else "hero"), (
+                            "Low-end/mobile hardware budgets are ignored by real reactor FX",containment)
+                        assert containment.get("vapor_visible") is False and containment.get("spark_burst_visible") is False, (
+                            "False catastrophe effects appear on the idle scenario menu",containment)
+                        report.setdefault("v8_6_reactive_world",{})[name]=containment
                         assert bay.get("open_core_inspection") is True, (
                             "V8.3 reactor remains obscured by front armour despite successful render",bay)
                         assert bay.get("cinematic_vault") is True, (
@@ -162,6 +176,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "Original PBR assets or real physics guardrail missing",bay)
                         assert bay.get("moving_rotors")==3 and bay.get("diegetic_signs")==3, (
                             "Real moving containment rings and in-world signs missing",bay)
+                        assert bay.get("rotor_camera_alignment_min",0.0)>=0.80, (
+                            "One of three cinematic outer reactor rotors is still edge-on to the A7 camera",bay)
                         expected_quality = "eco" if mobile else "hero"
                         assert bay.get("quality")==expected_quality and bay.get("hero_visible") is (not mobile), (
                             "Phone/HERO performance budget did not affect new reactor",bay)
@@ -430,6 +446,11 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 if key=="g":
                                     assert state.get("reactor_atrium",{}).get("quality") == expected, (
                                         "G button did not switch actual V8 vaulted reactor geometry",state.get("reactor_atrium"))
+                                    assert state.get("containment_fx",{}).get("quality") == expected, (
+                                        "G button did not scale procedural pressure vents/steam",state.get("containment_fx"))
+                                    if expected=="eco":
+                                        assert state.get("containment_fx",{}).get("vapor_visible") is False, (
+                                            "ECO retained heavyweight vapor rendering",state.get("containment_fx"))
                             page.keyboard.press("g")
                             page.keyboard.press("m")
                             page.keyboard.press("v")
