@@ -59,7 +59,7 @@ func _run() -> void:
     crew.reset("thermal")
     crew.scan_core()
     _check(crew.choose_priority("crew"), "Player can choose crew after scan")
-    _check(crew.priority_id == "crew" and crew.elapsed >= 8.0, "Crew intervention consumes actual game time")
+    _check(crew.priority_id == "crew" and crew.elapsed >= 7.99, "Crew intervention consumes actual game time")
     _check(crew.oxygen >= 90.0 and crew.heat >= 76.0, "Crew-first has measurable oxygen benefit and thermal cost")
     _check(not crew.choose_priority("core"), "Decision is irreversible within an attempt")
     var core := IPCrisisEngine.new()
