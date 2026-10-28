@@ -138,7 +138,7 @@ func _make_petal(index: int) -> void:
     surface.mesh = _petal_mesh(index)
     surface.material_override = _shell
     pivot.add_child(surface)
-    _has_uvs = _has_uvs or surface.mesh.surface_get_format(0) & Mesh.ARRAY_FORMAT_TEX_UV != 0
+    _has_uvs = _has_uvs or ((surface.mesh.surface_get_format(0) & Mesh.ARRAY_FORMAT_TEX_UV) != 0)
     var offset: Vector3 = _point(0.0,angle,OUTER_RADIUS+0.19)
     var hinge := _cylinder(pivot,"MachinedRadialServo",offset,0.12,0.75,_metal(CERAMIC,0.91,0.25))
     hinge.rotation.x = PI*0.5-angle
@@ -169,7 +169,7 @@ func _make_fasteners() -> void:
     _bolts.instance_count = BOLTS
     for i in range(BOLTS):
         var index: int = i % PETAL_COUNT
-        var ring_number: int = i / PETAL_COUNT
+        var ring_number: int = floori(float(i)/float(PETAL_COUNT))
         var angle: float = TAU*float(index)/float(PETAL_COUNT)
         var radius: float = OUTER_RADIUS+0.34+0.09*float(ring_number)
         var transform := Transform3D(Basis(),_point(-0.17,angle,radius))
