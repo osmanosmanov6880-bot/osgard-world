@@ -60,8 +60,9 @@ func _run() -> void:
     _check(flow.apply_to_next(second), "Consequences apply to actual HEAT scenario")
     _check(second.heat < old_heat and second.crew_health >= old_crew,
         "Chosen rescue and crew priority have real carried-over resource changes")
-    _check(not flow.apply_to_next(second) or second.heat < old_heat,
-        "Applying modifier remains limited to untouched starting state")
+    var after_once: Dictionary = second.checkpoint()
+    _check(not flow.apply_to_next(second) and second.checkpoint() == after_once,
+        "Applying campaign modifier twice cannot multiply advantages")
     second.scan_core()
     second.choose_priority("core")
     second.emergency_repair()
