@@ -86,3 +86,11 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] Exact SHA native `v113_city_reign_cinematic_architecture.gd` and all E01 tests to execute in Godot. **Pending until CI PASS**.
 - [ ] True licensed/commissioned high-poly hero assets, target-device profiling and independent aesthetic art signoff.
 - Full design contract: `docs/CITY-REIGN-CINEMATIC-ART-DIRECTION.md`.
+
+## AAA A7 — source-real playable player car silhouettes
+- [x] All four original owned vehicle models (compact, courier, executive, utility) have distinct real 3D closed profile shapes and corrected glass rest transforms, not just car color.
+- [x] The original compact always keeps its exact original FlowBody and AerodynamicGreenhouse meshes and all existing wheel/brake/vehicle physics. Three other families share at most 6 new cached original Mesh resources.
+- [x] Native garage action `VehicleController.apply_variant` now also updates existing exact body/canopy 3D; original vehicle catalog prices, speed, fuel and save schema unchanged.
+- [ ] Original full-world `v115` and authentic v26/v21/v22/v113 Godot acceptance on exact branch head REQUIRED. No photoreal AAA acceptance.
+- [ ] Final hero GLB meshes, true skinning and PBR consistency, hardware GPU benchmark and independent aesthetic/driver testing.
+- Architecture and source-art contract: `docs/CITY-REIGN-HERO-GARAGE-AAA-DESIGN.md`.
