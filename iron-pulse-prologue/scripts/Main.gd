@@ -173,6 +173,8 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var campaign: IPCampaignFlow = IPCampaignFlow.new()
 var world_launch: Dictionary = IPWorldLaunch.parse("")
 var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
+var adaptive_performance: IPAdaptivePerformance = IPAdaptivePerformance.new()
+var adaptive_sampling_clock: float = 0.0
 var threat_radar: IPThreatRadar = IPThreatRadar.new()
 var after_action_review: IPAfterActionReview = IPAfterActionReview.new()
 var black_box_report: Dictionary = {}
@@ -223,6 +225,7 @@ var objective_label: Label
 var telemetry_label: Label
 var allocation_label: Label
 var threat_label: Label
+var quality_state_label: Label
 var feedback_label: Label
 var interaction_label: Label
 var footer_label: Label
@@ -259,6 +262,7 @@ var visited_sectors: Array[String] = []
 var pause_panel: PanelContainer
 var pause_title: Label
 var resume_button: Button
+var auto_quality_button: Button
 var end_panel: PanelContainer
 var end_title: Label
 var end_stats: Label
@@ -403,6 +407,9 @@ func _publish_web_state() -> void:
     state["scenario_button_rects"] = scenario_rects
     state["end_visible"] = end_panel.visible
     state["quality_mode"] = quality_mode
+    state["adaptive_quality"] = adaptive_performance.readout(quality_mode,performance_audit.telemetry())
+    state["adaptive_quality_label"] = quality_state_label.text if quality_state_label != null else ""
+    state["auto_quality_button_rect"] = _hud_rect(auto_quality_button) if auto_quality_button != null else []
     state["reduced_motion"] = reduced_motion
     state["audio_muted"] = muted_audio
     state["soundscape_ready"] = audio_director != null and audio_director.ambient != null
@@ -868,6 +875,8 @@ func _make_hud() -> void:
     allocation_label = _label(metrics,"",16,CYAN)
     threat_label = _label(metrics,"",11,AMBER)
     threat_label.name = "V16_LiveFictionalHazardStatus"
+    quality_state_label = _label(metrics,"",10,DIM)
+    quality_state_label.name = "V18_ActualLocalGraphicsMode"
     vitals_panel = _panel(hud_root,Rect2(-365,17,-17,276),Rect2(1,0,1,0),Color(0.014,0.029,0.048,0.92))
     var vitals := VBoxContainer.new()
     vitals.add_theme_constant_override("separation",4)
@@ -996,7 +1005,7 @@ func _make_overlays() -> void:
     start_box.add_child(archive_intro_button)
     continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
-    pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
+    pause_panel = _panel(hud_root,Rect2(-240,-150,240,150),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var pause_box := VBoxContainer.new()
     pause_box.add_theme_constant_override("separation",20)
@@ -1007,6 +1016,11 @@ func _make_overlays() -> void:
     resume_button.custom_minimum_size = Vector2(0,56)
     resume_button.pressed.connect(_resume)
     pause_box.add_child(resume_button)
+    auto_quality_button = Button.new()
+    auto_quality_button.name = "V18_OptInActualFrameAdaptiveGraphics"
+    auto_quality_button.custom_minimum_size = Vector2(0,52)
+    auto_quality_button.pressed.connect(_toggle_auto_quality)
+    pause_box.add_child(auto_quality_button)
     pause_panel.visible = false
     end_panel = _panel(hud_root,Rect2(-300,-220,300,220),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
     end_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1237,6 +1251,8 @@ func _layout_hud() -> void:
     telemetry_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     threat_label.add_theme_font_size_override("font_size",10 if narrow else 11)
+    quality_state_label.add_theme_font_size_override("font_size",10 if narrow else 11)
+    adaptive_performance.compact_device = narrow
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
@@ -1750,6 +1766,7 @@ func _toggle_language() -> void:
     _update_scenario_picker()
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
+    _refresh_auto_quality_ui()
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
     campaign_echoes.sync(campaign,locale)
@@ -2188,6 +2205,7 @@ func _refresh_hud() -> void:
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
         _copy("rescue_count").format({"used":session.relays_activated.size()})]
+    quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
     var risk: Dictionary = threat_radar.snapshot(session)
     threat_label.text = threat_radar.cockpit_text(risk,locale)
     var risk_color: Color = RED if str(risk["tier"]) in ["CRITICAL","FAILED"] else AMBER if str(risk["tier"]) == "WATCH" else CYAN
