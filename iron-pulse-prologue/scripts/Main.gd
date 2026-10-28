@@ -1395,6 +1395,8 @@ func _restart() -> void:
     camera.rotation.x = pitch
     started = true
     paused = false
+    intro_panel.visible = false
+    pause_panel.visible = false
     end_panel.visible = false
     _announce("shift_started")
     _refresh_radio_ui()
