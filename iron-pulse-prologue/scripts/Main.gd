@@ -505,10 +505,17 @@ func _build_reactor() -> void:
     frame.position = IPReactorAtrium.CORE_CENTER
     frame.scale = Vector3.ONE * 1.55
     add_child(frame)
-    _box(frame,Vector3(0,-2.3,0),Vector3(5.0,0.6,4.6),_metal(METAL))
+    # The prior solid plinth cut a heavy black bar across the actual plasma
+    # shot. Four narrow manufactured support piers leave the center open.
+    for side_x in [-1.0,1.0]:
+        for side_z in [-1.0,1.0]:
+            var pier := _box(frame,Vector3(side_x*2.35,-2.45,side_z*2.15),
+                Vector3(0.40,1.25,0.56),_metal(METAL))
+            pier.name = "OpenEnergySupport_%d_%d" % [int(side_x),int(side_z)]
     var core_mesh := SphereMesh.new()
-    core_mesh.radius = 1.02
-    core_mesh.height = 2.04
+    # A 20% larger original reactor sphere dominates the industrial rig.
+    core_mesh.radius = 1.23
+    core_mesh.height = 2.46
     reactor_core = MeshInstance3D.new()
     reactor_core.mesh = core_mesh
     reactor_core.material_override = _metal(Color(0.24,0.79,1.0),0.1,true)
@@ -519,12 +526,14 @@ func _build_reactor() -> void:
         frame.add_child(pivot)
         var ring := MeshInstance3D.new()
         var torus := TorusMesh.new()
-        torus.inner_radius = 1.65 + float(i)*0.44
+        # True thin containment filaments in Godot geometry; no giant cyan
+        # beam passing across the visible reactor center.
+        torus.inner_radius = 1.72 + float(i)*0.44
         torus.outer_radius = 1.78 + float(i)*0.44
         torus.rings = 32
         torus.ring_segments = 12
         ring.mesh = torus
-        ring.material_override = _metal(AMBER if i==1 else CYAN,0.35,true)
+        ring.material_override = _metal(AMBER if i==1 else Color(0.13,0.63,0.72),0.35,true)
         ring.rotation_degrees.x = 90.0
         pivot.add_child(ring)
         reactor_rings.append(pivot)
@@ -534,8 +543,8 @@ func _build_reactor() -> void:
         _box(frame,p,Vector3(0.35,0.3,0.55),_metal(METAL))
     var halo := OmniLight3D.new()
     halo.light_color = Color(0.23,0.65,0.78)
-    halo.light_energy = 2.15
-    halo.omni_range = 9.0
+    halo.light_energy = 2.85
+    halo.omni_range = 11.5
     frame.add_child(halo)
 
 func _build_terminals() -> void:
