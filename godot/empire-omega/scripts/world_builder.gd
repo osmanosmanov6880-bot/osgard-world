@@ -266,7 +266,7 @@ func _create_city() -> void:
 				var actual_building: Node3D = _box(
 					chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
 				var actual_body: MeshInstance3D = actual_building.get_node("VisualMesh") as MeshInstance3D
-				var building_finish: StandardMaterial3D = FACADE_PACK.facade(color,building_count)
+				var building_finish: StandardMaterial3D = R37_MATERIAL_PACK.facade(color,building_count)
 				actual_body.material_override = building_finish
 				city_reign_building_finishes.append(building_finish)
 				architecture_trim.call("record",pos,width,height)
