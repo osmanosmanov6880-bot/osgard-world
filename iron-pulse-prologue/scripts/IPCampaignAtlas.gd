@@ -76,8 +76,8 @@ func record_run(engine: IPCrisisEngine) -> bool:
     var grade: String = engine.grade()
     if not MEDALS.has(grade):
         return false
-    var candidate_time: float = clampf(engine.elapsed,0.0,MAX_ELAPSED)
-    var candidate_crew: float = clampf(engine.crew_health,0.0,100.0)
+    var candidate_time: float = snappedf(clampf(engine.elapsed,0.0,MAX_ELAPSED),0.01)
+    var candidate_crew: float = snappedf(clampf(engine.crew_health,0.0,100.0),0.01)
     var prior: Dictionary = records.get(id,{})
     if prior.is_empty():
         records[id] = {
@@ -192,7 +192,18 @@ func restore(payload: Dictionary) -> bool:
             "","standard","deep_stabilize","rapid_purge","full_seal","rapid_patch"
         ]:
             return false
-        checked_records[key] = entry.duplicate(true)
+        # Normalize JSON float/int representations to the same canonical
+        # offline profile shape used by a freshly completed real mission.
+        checked_records[key] = {
+            "wins":int(entry["wins"]),
+            "best_grade":str(entry["best_grade"]),
+            "best_time":float(entry["best_time"]),
+            "best_crew":float(entry["best_crew"]),
+            "best_faults":int(entry["best_faults"]),
+            "last_priority":str(entry["last_priority"]),
+            "best_method":str(entry["best_method"]),
+            "last_rescue_count":int(entry["last_rescue_count"])
+        }
     attempts = checked_attempts
     records = checked_records
     total_runs = int(trial_runs)
