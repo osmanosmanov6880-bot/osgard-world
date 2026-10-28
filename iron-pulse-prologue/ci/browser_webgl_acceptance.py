@@ -136,6 +136,14 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "New real in-engine observation camera or procedural plasma material missing",bay)
                         assert bay.get("open_core_inspection") is True, (
                             "Physical front armour still covers the live plasma reactor",bay)
+                        hero = idle.get("reactor_hero",{})
+                        assert hero.get("core_sphere_radius",0.0)>=1.20 and hero.get("support_piers")==4, (
+                            "Real WebGL sphere not enlarged or obstructing solid plinth still used",hero)
+                        assert len(hero.get("ring_profiles",[]))==3 and max(hero["ring_profiles"])<=0.061, (
+                            "Original 3D containment rings remained oversized neon strips",hero)
+                        assert hero.get("front_light_power",0.0)>2.0, (
+                            "No physical key light illuminates the reactor",hero)
+                        report.setdefault("v8_4_hero_visual",{})[name]=hero
                         assert bay.get("open_core_inspection") is True, (
                             "V8.3 reactor remains obscured by front armour despite successful render",bay)
                         assert bay.get("cinematic_vault") is True, (
