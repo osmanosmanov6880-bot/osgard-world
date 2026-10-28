@@ -1025,7 +1025,7 @@ func _make_touch_controls() -> void:
     touch_shot_button = _touch_button(touch_ui,"SHOT / P",216,-471,94)
     touch_shot_button.pressed.connect(_cycle_director_shot)
     touch_shot_button.visible = false
-    touch_forecast_button = _touch_button(touch_ui,"PLAN / T",216,-471,94)
+    touch_forecast_button = _touch_button(touch_ui,"PLAN / T",6,-299,94)
     touch_forecast_button.pressed.connect(_toggle_decision_forecast)
 
 func _make_radio_ui() -> void:
@@ -1535,6 +1535,7 @@ func _toggle_language() -> void:
         diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
     _announce("language")
     _refresh_hud()
+    _refresh_decision_forecast()
     _refresh_radio_ui()
 
 func _gamepad_axis(axis_id: int) -> float:
