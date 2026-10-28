@@ -99,9 +99,21 @@ def execute(webdir, images, sha):
             # Must physically move the original CharacterBody3D, NOT adjust
             # a DOM variable or script a fake 3D scene.
             page.keyboard.down("s")
-            page.wait_for_timeout(1450)
-            page.keyboard.up("s")
-            page.wait_for_timeout(450)
+            try:
+                page.wait_for_function("""() => {
+                    const node=document.getElementById('a7-cascade-native-state');
+                    if (!node) return false;
+                    try {
+                        const s=JSON.parse(node.getAttribute('data-state'));
+                        const p=s.w70_real_body_xyz;
+                        return s.w70_physical_operator &&
+                            s.w70_real_physical_distance>2.3 &&
+                            Math.hypot(p[0]-4.10,p[1]-1.20,p[2]-2.14)<3.05;
+                    }catch(e){return false;}
+                }""",timeout=35000)
+            finally:
+                page.keyboard.up("s")
+            page.wait_for_timeout(250)
             moved=snapshot(page)
             print("W72 REAL CHARACTERBODY POSITION",{
                 "xyz":moved["w70_real_body_xyz"],
