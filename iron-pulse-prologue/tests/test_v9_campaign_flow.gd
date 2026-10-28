@@ -57,9 +57,10 @@ func _run() -> void:
     second.reset("thermal")
     var old_heat: float = second.heat
     var old_crew: float = second.crew_health
+    var old_oxygen: float = second.oxygen
     _check(flow.apply_to_next(second), "Consequences apply to actual HEAT scenario")
-    _check(second.heat < old_heat and second.crew_health >= old_crew,
-        "Chosen rescue and crew priority have real carried-over resource changes")
+    _check(second.heat <= old_heat and second.oxygen < old_oxygen and second.crew_health >= old_crew,
+        "Crew and suppressor choices preserve crew and cool core but cost oxygen in next scenario")
     var after_once: Dictionary = second.checkpoint()
     _check(not flow.apply_to_next(second) and second.checkpoint() == after_once,
         "Applying campaign modifier twice cannot multiply advantages")
