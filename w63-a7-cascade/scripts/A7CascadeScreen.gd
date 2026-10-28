@@ -77,6 +77,8 @@ const RU := {
     "field_sync_c": "O  /  ИМПУЛЬС 3",
     "field_far": "ПОДОЙДИТЕ К АКТИВНОМУ ПУЛЬТУ И ВКЛЮЧИТЕ РЕЖИМ ОПЕРАТОРА (P).",
     "field_gate": "ЗАВЕРШИТЕ НАСТРОЙКУ ПУЛЬТА ПЕРЕД ОСМОТРОМ (E).",
+    "world_use": "G / ПРИМЕНИТЬ ИНСТРУМЕНТ",
+    "world_aim": "НАВЕДИТЕ ПРИЦЕЛ НА НАСТОЯЩИЙ УЗЕЛ",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
@@ -141,6 +143,8 @@ const EN := {
     "field_sync_c": "O  /  PULSE 3",
     "field_far": "MOVE NEAR THE ACTIVE CONSOLE AND ENTER OPERATOR MODE (P).",
     "field_gate": "COMPLETE THE STATION MECHANIC BEFORE INSPECTION (E).",
+    "world_use": "G / USE WORLD TOOL",
+    "world_aim": "AIM DIRECTLY AT THE REAL MACHINE",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
@@ -193,6 +197,10 @@ var field_valve_controls: HFlowContainer
 var field_relay_controls: HFlowContainer
 var field_sync_controls: HFlowContainer
 var field_buttons: Dictionary = {}
+var world_use_button: Button
+var world_reticle: Label
+var world_aim_hint: Label
+var world_aim_elapsed: float = 0.0
 var field_focused_devices: Dictionary = {}
 var field_focus_events: int = 0
 var mission_title: Label
@@ -343,6 +351,38 @@ func _build() -> void:
     visual_container.stretch_shrink = 1
     visual_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
     stage_shell.add_child(visual_container)
+    # Actual Godot controls on top of the live SubViewport, not a 2D proxy
+    # for machine-selection. The hit comes exclusively from a physics ray.
+    world_reticle = Label.new()
+    world_reticle.name = "W73RealGodot3DCrosshair"
+    world_reticle.text = "+"
+    world_reticle.add_theme_font_size_override("font_size",26)
+    world_reticle.add_theme_color_override("font_color", MINT)
+    world_reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    world_reticle.anchor_left = 0.5
+    world_reticle.anchor_right = 0.5
+    world_reticle.anchor_top = 0.5
+    world_reticle.anchor_bottom = 0.5
+    world_reticle.offset_left = -8
+    world_reticle.offset_right = 14
+    world_reticle.offset_top = -17
+    world_reticle.offset_bottom = 17
+    world_reticle.visible = false
+    stage_shell.add_child(world_reticle)
+    world_aim_hint = Label.new()
+    world_aim_hint.name = "W73SingleLowLoadNativeWorldRaycastHint"
+    world_aim_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    world_aim_hint.add_theme_font_size_override("font_size",13)
+    world_aim_hint.add_theme_color_override("font_color", GOLD)
+    world_aim_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    world_aim_hint.anchor_left = 0.08
+    world_aim_hint.anchor_right = 0.92
+    world_aim_hint.anchor_top = 1.0
+    world_aim_hint.anchor_bottom = 1.0
+    world_aim_hint.offset_top = -40
+    world_aim_hint.offset_bottom = -10
+    world_aim_hint.visible = false
+    stage_shell.add_child(world_aim_hint)
     sub_viewport = SubViewport.new()
     sub_viewport.name = "A7WorldRender"
     sub_viewport.own_world_3d = true
@@ -412,6 +452,10 @@ func _build() -> void:
         pilot_nudge_buttons[keycode] = button
     pilot_inspect_button = _button(pilot_rail, "", _pilot_inspect)
     pilot_inspect_button.custom_minimum_size = Vector2(148, 40)
+    world_use_button = _button(pilot_rail, "", _world_use)
+    world_use_button.name = "W73Actual3DAimedPhysicalTool"
+    world_use_button.custom_minimum_size = Vector2(230,40)
+    world_use_button.visible = false
     pilot_status_label = _label(cinema, "", 11, MINT)
     pilot_rail.visible = false
     pilot_status_label.visible = false
@@ -796,6 +840,47 @@ func _pilot_inspect() -> void:
         _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
 
+func _world_use() -> void:
+    if (stage_3d == null or stage_3d.world_interaction == null
+            or stage_3d.spatial_mission == null
+            or not stage_3d.spatial_mission.extended_mode):
+        return
+    var result: Dictionary = stage_3d.world_interaction.interact(model.snapshot())
+    if result.is_empty():
+        return
+    var kind: String = str(result["kind"])
+    if kind == "valve":
+        _focus_physical_field_device("thermal",
+            A7FieldOperations.CORE + Vector3(0,1.0,0))
+    elif kind == "relay":
+        _focus_physical_field_device("relay",
+            A7FieldOperations.RELAY + Vector3(0,0.93,0))
+    elif kind == "sync":
+        _focus_physical_field_device("sync",
+            A7FieldOperations.CORE + Vector3(1.02,1.45,0))
+    _refresh_mission_ui(model.snapshot())
+    _refresh_world_reticle()
+    call_deferred("_publish_web_accessibility")
+
+func _refresh_world_reticle() -> void:
+    if world_reticle == null or stage_3d == null:
+        return
+    var enabled: bool = (stage_3d.first_person != null
+        and stage_3d.first_person.piloting
+        and stage_3d.spatial_mission != null
+        and stage_3d.spatial_mission.extended_mode
+        and stage_3d.world_interaction != null)
+    world_reticle.visible = enabled
+    world_aim_hint.visible = enabled
+    world_use_button.visible = enabled
+    if not enabled:
+        return
+    var hit: Dictionary = stage_3d.world_interaction.look_at_active_target()
+    world_reticle.add_theme_color_override("font_color",MINT if not hit.is_empty() else MUTED)
+    world_aim_hint.text = stage_3d.world_interaction.hint(locale)
+    world_use_button.text = _t("world_use")
+    world_use_button.disabled = hit.is_empty()
+
 func _toggle_inspection_focus() -> void:
     if stage_3d != null:
         stage_3d.toggle_inspection_focus()
@@ -895,6 +980,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
         return
     var key: InputEventKey = event as InputEventKey
     if not key.pressed or key.echo:
+        return
+    if key.keycode == KEY_G:
+        _world_use()
+        get_viewport().set_input_as_handled()
         return
     if key.keycode == KEY_Y:
         _start_extended_mission()
@@ -1008,6 +1097,7 @@ func _render(state: Dictionary) -> void:
     for keycode in pilot_nudge_buttons.keys():
         (pilot_nudge_buttons[keycode] as Button).text = _t(str(pilot_strings[keycode]))
     pilot_inspect_button.text = _t("pilot_inspect")
+    _refresh_world_reticle()
     cycle_label.text = "%s %02d / 06" % [_t("round"), mini(6, int(state["shift"]) + 1)]
     actions_label.text = "%s: %d / 2" % [_t("actions"), int(state["actions_left"])]
     var result: String = str(state["status"])
@@ -1089,6 +1179,10 @@ func _create_web_accessibility() -> void:
 # Browser QA is passive: it may observe an actual moving physics body but
 # cannot fabricate or move it. Limit DOM state updates while the player walks.
 func _process(delta: float) -> void:
+    world_aim_elapsed += delta
+    if world_aim_elapsed >= 0.21:
+        world_aim_elapsed = 0.0
+        _refresh_world_reticle()
     if not OS.has_feature("web") or stage_3d == null or stage_3d.first_person == null:
         return
     if not stage_3d.first_person.piloting:
@@ -1179,6 +1273,11 @@ func _publish_web_accessibility() -> void:
         "w72_physically_rejected_actions": stage_3d.field_operations.rejected_far_uses if stage_3d.field_operations != null else 0,
         "w72_contextual_real_camera_focuses": field_focus_events,
         "w72_thermal_camera_focused": field_focused_devices.has("thermal"),
+        "w73_real_native_world_raycast": bool(stage_state.get("w73_true_eye_raycast", false)),
+        "w73_real_collider_target_count": int(stage_state.get("w73_real_ray_targets", 0)),
+        "w73_actual_world_ray_target": stage_3d.world_interaction.qa_readout()["actual_active_ray_target"] if stage_3d.world_interaction != null else "",
+        "w73_real_raycast_uses": stage_3d.world_interaction.accepted_world_uses if stage_3d.world_interaction != null else 0,
+        "w73_rejected_world_uses": stage_3d.world_interaction.rejected_world_uses if stage_3d.world_interaction != null else 0,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1215,6 +1314,8 @@ func _publish_web_accessibility() -> void:
         "mission_start": _web_rect(mission_button),
         "extended_start": _web_rect(field_start_button),
         "field_help": _web_rect(field_help),
+        "world_use": _web_rect(world_use_button),
+        "world_reticle": _web_rect(world_reticle),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),
         "walk_back": _web_rect(route_buttons[0]),
