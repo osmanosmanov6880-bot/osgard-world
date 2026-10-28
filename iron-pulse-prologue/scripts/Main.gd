@@ -1320,6 +1320,7 @@ func _restart() -> void:
     _apply_cinematic_view()
     session.reset(selected_scenario)
     if campaign.active and campaign.index > 0:
+        campaign.modifier_applied = false
         campaign.apply_to_next(session)
     story.reset(selected_scenario)
     radio_ttl = 12.0
