@@ -69,6 +69,8 @@ test('V59 private planning accepts no forged film release and safely rejects imp
   await expect(page).toHaveURL(/lang=en/)
   await expect(desk.getByRole('heading',{name:'PRODUCTION. WITH CLARITY.'})).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)
+  await page.setViewportSize({width:320,height:740})
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)
   await page.screenshot({path:info.outputPath('osa-cinema-v59-production-no-go.png'),fullPage:true,animations:'disabled'})
 })
 
@@ -79,5 +81,5 @@ test('V59 producer desk is linked from the real Zero Window film, not an invente
   await open.click()
   await expect(page.locator('main.osa-production-page')).toBeVisible()
   await expect(page).toHaveURL(/\/osa-cinema\/studio\/production\?lang=en/)
-  await expect(page.locator('.osa-studio-header a[href^="/osa-cinema/studio/films/zero-window"]')).toBeVisible().catch(()=>undefined)
+  await expect(page.locator('.osa-studio-header a[href^="/osa-cinema/studio/films/zero-window"]')).toHaveAttribute('href','/osa-cinema/studio/films/zero-window?lang=en')
 })
