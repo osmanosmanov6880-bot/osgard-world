@@ -687,6 +687,13 @@ func _on_action(action: String) -> void:
                 if stage_3d.field_feedback != null:
                     stage_3d.field_feedback.refresh_from_original_equipment()
             _refresh_mission_ui(after)
+            # W77: mission-accepted game event must immediately update the
+            # real bulkhead collider and contextual goal in the SAME frame.
+            # A delayed signal can leave a misleading "LOCKED" label after
+            # Godot has already begun to open the actual passage.
+            if stage_3d.sector_bulkhead != null:
+                stage_3d.sector_bulkhead.refresh_state()
+            _w76_update_goal()
     checkpoint.note("action", action, self)
     if sound_bus != null:
         var cue: String = "action"
