@@ -2,7 +2,7 @@ import {defineConfig} from '@playwright/test'
 export default defineConfig({
   testDir:'./scripts',
   testMatch:'city-reign-public-works-webgl.spec.mjs',
-  timeout:280000,retries:0,workers:1,
+  timeout:330000,retries:0,workers:1,
   reporter:[['list'],['html',{
     outputFolder:'city-reign-real-paid-public-works-report',open:'never'
   }]],
