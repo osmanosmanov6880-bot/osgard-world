@@ -136,8 +136,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         machine = idle.get("signal_sites",{})
                         assert signal.get("mission")=="SIGNAL_CHAIN" and signal.get("collected_count")==0 and signal.get("directive")=="", (
                             "New campaign must start unplayed with honest progress",signal)
-                        assert machine.get("real_signal_consoles")==4 and machine.get("hero_precision_fins")==20, (
-                            "Three true in-world signal sources plus final directive station are missing",machine)
+                        assert machine.get("real_signal_consoles")==4 and machine.get("hero_precision_fins")==20 and machine.get("actual_curved_receivers")==4, (
+                            "Three signal sources and final 3D machine with curved gyroscopes are missing",machine)
                         loc = machine.get("physical_sites",[])
                         assert [p[0] for p in loc] == ["resonance","atmosphere","transit","directive"], (
                             "Source-bound optional chapter locations differ from Godot scene",loc)
