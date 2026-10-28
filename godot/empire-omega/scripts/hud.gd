@@ -13,6 +13,8 @@ const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
 const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_premium_garage.gd")
+const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
+const DRIVER_SENSE = preload("res://scripts/city_reign_driver_awareness.gd")
 const CITY_REIGN_SHOWROOM = preload("res://scripts/city_reign_hero_showroom.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
@@ -842,7 +844,9 @@ func _restore_strategy_scroll(offset: int) -> void:
 	if open and strategy_scroll != null and is_instance_valid(strategy_scroll):
 		strategy_scroll.scroll_vertical = maxi(0,offset)
 
-func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true) -> void:
+func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true,
+        drive_nav: Dictionary = {}, drive_warning: Dictionary = {},
+        indicator_mode: String = "off") -> void:
 	if map != null:
 		map.player_world = player_at
 		map.vehicle_world = vehicle_at
@@ -871,6 +875,11 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		if not guide.is_empty():
 			mission_label.text = str(guide["title"])
 			mission_distance_label.text = str(guide["details"])
+		elif is_driving and goal_available and not drive_nav.is_empty():
+			mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),
+				int(GameState.data.get("mission",0)),compact_hud,
+				DisplayServer.is_touchscreen_available(),GameState.locale)
+			mission_distance_label.text = DRIVE_NAV.localized(drive_nav,GameState.locale,compact_hud)
 		else:
 			mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
 			if goal_available:
@@ -888,12 +897,23 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		else:
 			speed_label.text = "%d км/ч · %s" % [roundi(absf(speed)*3.6),gear]
 		if not compact_hud: speed_label.text += "\n%s %d%%  ·  %s %d%%" % [t("fuel"),roundi(fuel),t("condition"),roundi(condition)]
+		# R162: tell the player which actual lamp mode is currently selected.
+		# No extra HUD panel on a 390px phone, only one short native glyph.
+		if indicator_mode=="left": speed_label.text = "◀ " + speed_label.text
+		elif indicator_mode=="right": speed_label.text = "▶ " + speed_label.text
+		elif indicator_mode=="hazard": speed_label.text = "⚠ " + speed_label.text
 		if handbrake and not compact_hud: speed_label.text += " · " + t("handbrake")
 		if drift_score >= 12 and not compact_hud: speed_label.text += " · DRIFT %d" % drift_score
 		var assist_intensity: float = clampf(maxf(assist_power,assist_steering*3.0),0.0,1.0)
 		if assist_intensity >= 0.025 and not compact_hud:
 			speed_label.text += "\n" + _v08("ПОМОЩЬ СЦЕПЛЕНИЮ","GRIP ASSIST","抓地辅助") + " %d%%" % roundi(assist_intensity*100.0)
 		hint_label.text = _v08("ГАЗ · ТОРМ · РУЛЬ · АВТО","GAS · BRAKE · STEER · CAR","油门 · 刹车 · 转向 · 车辆") if compact_hud else _v08("W / S — газ и тормоз · A / D — руль · Пробел — ручник · E — выйти","W / S — drive and brake · A / D — steer · Space — handbrake · E — exit","W / S 油门刹车 · A / D 方向 · 空格 手刹 · E 下车")
+		if not drive_warning.is_empty():
+			# An actual risk overrides noncritical guidance, never mission
+			# authority or the gameplay inputs. Compact HUD has no help bar.
+			var caution: String = DRIVER_SENSE.localized(drive_warning,GameState.locale)
+			if compact_hud: mission_distance_label.text = caution
+			else: hint_label.text = caution
 	else:
 		speed_label.text = ""
 		hint_label.text = ((_v08("РЯДОМ: ","NEAR: ","附近: ")+nearest.left(24)) if nearest != "" else _v08("АВТО · ИДТИ · ДЕЙСТВИЯ","CAR · WALK · ACTIONS","车辆 · 行走 · 操作")) if compact_hud else (("F: "+nearest) if nearest != "" else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志"))
