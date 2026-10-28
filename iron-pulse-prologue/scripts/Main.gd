@@ -1242,18 +1242,52 @@ func _continue_checkpoint() -> bool:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
     return true
 
+func _persist_campaign_progress() -> bool:
+    if DisplayServer.get_name() == "headless":
+        return false
+    return checkpoint_store.save(campaign.checkpoint(),campaign_progress_path)
+
+func _toggle_campaign_mode() -> void:
+    if started:
+        return
+    if not campaign_enabled and campaign.finished():
+        # Explicitly labeled full replay, not an automatic progress reset.
+        campaign.reset()
+        _persist_campaign_progress()
+    campaign_enabled = not campaign_enabled
+    if campaign_enabled:
+        selected_scenario = campaign.next_scenario()
+        session.reset(selected_scenario)
+        campaign.apply_to_engine(session)
+        story.reset(selected_scenario)
+    else:
+        selected_scenario = "blackout"
+        session.reset(selected_scenario)
+        story.reset(selected_scenario)
+    _update_scenario_picker()
+    _refresh_hud()
+
 func _update_scenario_picker() -> void:
     if scenario_brief == null:
         return
-    intro_title.text = _copy("scenario_title_" + selected_scenario)
-    scenario_brief.text = _copy("brief_" + selected_scenario)
+    intro_title.text = "IRON PULSE / CAMPAIGN" if campaign_enabled else _copy("scenario_title_" + selected_scenario)
+    scenario_brief.text = (
+        campaign.summary(locale)+"\n"+_copy("brief_" + selected_scenario)
+        if campaign_enabled else _copy("brief_" + selected_scenario))
+    if campaign_button != null:
+        var campaign_label: String = "campaign_on" if campaign_enabled else "campaign_new" if campaign.finished() else "campaign_off"
+        campaign_button.text = _copy(campaign_label)
+        campaign_button.button_pressed = campaign_enabled
+    if intro_button != null:
+        intro_button.text = _copy("campaign_start" if campaign_enabled else "start")
     for mode_id in IPCrisisEngine.SCENARIOS:
         var button: Button = scenario_buttons[mode_id]
         button.text = _copy("scenario_" + mode_id)
         button.button_pressed = mode_id == selected_scenario
+        button.disabled = campaign_enabled
 
 func _select_scenario(next_scenario: String) -> void:
-    if started or not IPCrisisEngine.SCENARIOS.has(next_scenario):
+    if started or campaign_enabled or not IPCrisisEngine.SCENARIOS.has(next_scenario):
         return
     selected_scenario = next_scenario
     session.reset(next_scenario)
@@ -1267,6 +1301,12 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    if started or (campaign_enabled and campaign.finished()):
+        return
+    if campaign_enabled:
+        selected_scenario = campaign.next_scenario()
+        session.reset(selected_scenario)
+        campaign.apply_to_engine(session)
     cinematic_view = false
     _apply_cinematic_view()
     story.reset(selected_scenario)
@@ -1285,9 +1325,17 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    if campaign_enabled and session.won:
+        if campaign.finished():
+            # Final replay is a user-initiated explicit action.
+            campaign.reset()
+            _persist_campaign_progress()
+        selected_scenario = campaign.next_scenario()
     cinematic_view = false
     _apply_cinematic_view()
     session.reset(selected_scenario)
+    if campaign_enabled:
+        campaign.apply_to_engine(session)
     story.reset(selected_scenario)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
