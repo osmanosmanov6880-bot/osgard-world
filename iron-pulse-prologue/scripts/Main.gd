@@ -1591,11 +1591,48 @@ func _nearest_relay() -> Dictionary:
 func _physical_distance(point: Vector3) -> float:
     return Vector2(point.x,point.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
 
+func _nearest_cascade_station() -> Dictionary:
+    if player == null or cascade_world == null:
+        return {}
+    var nearest: float = 2.65
+    var found: Dictionary = {}
+    for station in cascade_world.stations:
+        var dist: float = _physical_distance(station["position"])
+        if dist < nearest:
+            nearest = dist
+            found = station
+    return found
+
+func _activate_cascade_terminal(station_id: String) -> void:
+    var result: bool = false
+    if station_id == "start":
+        result = session.begin_cascade()
+    else:
+        result = session.advance_cascade(station_id)
+    previous_event = session.last_event
+    if result or session.last_event == "cascade_failed":
+        _story_event(session.last_event)
+    _announce(session.last_event)
+    _save_checkpoint()
+    if session.finished():
+        _show_end()
+    _refresh_hud()
+
 func _interact(fast: bool = false) -> void:
     if not started or paused or session.finished():
         return
     var target: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
+    var cascade: Dictionary = _nearest_cascade_station()
+    # Use nearest actual world console; cascade must not hijack legacy repair,
+    # the 2-of-3 rescue network, or the optional quick Q action.
+    if not fast and not cascade.is_empty():
+        var main_dist: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
+        var rescue_dist: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+        var cascade_dist: float = _physical_distance(cascade["position"])
+        if cascade_dist < main_dist and cascade_dist < rescue_dist:
+            _activate_cascade_terminal(str(cascade["id"]))
+            return
     if not rescue.is_empty() and not fast:
         var main_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
         var rescue_distance: float = _physical_distance(rescue["position"])
@@ -1645,13 +1682,13 @@ func _announce(key: String) -> void:
     if audio_director == null or not started:
         return
     match key:
-        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired":
+        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired", "cascade_failed":
             audio_director.cue("surge")
         "crew_evacuated":
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink", "cascade_started", "cascade_bridge", "cascade_sync", "cascade_complete":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -1673,6 +1710,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    end_stats.text += "\n" + _copy("cascade_result").format({
+        "status":session.cascade_state.to_upper(),"step":session.cascade_phase})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
