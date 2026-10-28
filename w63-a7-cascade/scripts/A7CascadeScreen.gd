@@ -79,6 +79,12 @@ const RU := {
     "field_gate": "ЗАВЕРШИТЕ НАСТРОЙКУ ПУЛЬТА ПЕРЕД ОСМОТРОМ (E).",
     "world_use": "G / ПРИМЕНИТЬ ИНСТРУМЕНТ",
     "world_aim": "НАВЕДИТЕ ПРИЦЕЛ НА НАСТОЯЩИЙ УЗЕЛ",
+    "save_game": "СОХРАНИТЬ СМЕНУ / F5",
+    "load_game": "ВОССТАНОВИТЬ / F9",
+    "save_done": "СМЕНА СОХРАНЕНА ЛОКАЛЬНО",
+    "load_done": "СМЕНА ВОССТАНОВЛЕНА ПО ПРОВЕРЕННЫМ СОБЫТИЯМ",
+    "save_fail": "НЕ УДАЛОСЬ СОХРАНИТЬ",
+    "load_fail": "ФАЙЛ ПОВРЕЖДЕН ИЛИ СОБЫТИЯ НЕ ПРОХОДЯТ ПРОВЕРКУ",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
@@ -145,10 +151,20 @@ const EN := {
     "field_gate": "COMPLETE THE STATION MECHANIC BEFORE INSPECTION (E).",
     "world_use": "G / USE WORLD TOOL",
     "world_aim": "AIM DIRECTLY AT THE REAL MACHINE",
+    "save_game": "SAVE SHIFT / F5",
+    "load_game": "RESTORE SESSION / F9",
+    "save_done": "SHIFT SAVED LOCALLY",
+    "load_done": "SESSION RESTORED FROM VALIDATED REAL ACTIONS",
+    "save_fail": "LOCAL SAVE FAILED",
+    "load_fail": "CORRUPT FILE OR INVALID SESSION JOURNAL",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
 var model: A7CascadeCore = A7CascadeCore.new()
+var checkpoint: A7SessionCheckpoint = A7SessionCheckpoint.new()
+var save_button: Button
+var load_button: Button
+var checkpoint_status_label: Label
 var locale: String = "ru"
 var brand_label: Label
 var subtitle: Label
@@ -605,6 +621,11 @@ func _build() -> void:
     bottom.add_theme_constant_override("v_separation", 10)
     body.add_child(bottom)
     restart_button = _button(bottom, "", _restart)
+    save_button = _button(bottom, "", _save_checkpoint)
+    save_button.custom_minimum_size = Vector2(194,46)
+    load_button = _button(bottom, "", _load_checkpoint)
+    load_button.custom_minimum_size = Vector2(194,46)
+    checkpoint_status_label = _label(body, "", 11, GOLD)
     footnote = _label(body, "", 12, MUTED)
     _label(body, "A7 CASCADE / EXPERIMENTAL VERTICAL-SLICE MECHANIC / SOFTWARE-ONLY", 11, GOLD)
 
@@ -624,6 +645,7 @@ func _on_action(action: String) -> void:
                 stage_3d.field_operations.observe_phase(
                     stage_3d.spatial_mission.phase, after)
             _refresh_mission_ui(after)
+    checkpoint.note("action", action, self)
     if sound_bus != null:
         var cue: String = "action"
         if str(after["status"]) == "won":
@@ -637,6 +659,7 @@ func _on_action(action: String) -> void:
 
 func _restart() -> void:
     _previewed_action = ""
+    checkpoint.clear()
     field_focused_devices.clear()
     if stage_3d != null and stage_3d.spatial_mission != null:
         stage_3d.spatial_mission.reset()
@@ -646,6 +669,16 @@ func _restart() -> void:
     if stage_3d != null:
         stage_3d.recent_action = ""
         stage_3d.pulse = 0.0
+
+func _save_checkpoint() -> void:
+    var ok: bool = checkpoint.write_packet(self)
+    checkpoint_status_label.text = _t("save_done" if ok else "save_fail")
+    call_deferred("_publish_web_accessibility")
+
+func _load_checkpoint() -> void:
+    var ok: bool = checkpoint.restore_into(self)
+    checkpoint_status_label.text = _t("load_done" if ok else "load_fail")
+    call_deferred("_publish_web_accessibility")
 
 func _toggle_sound() -> void:
     if sound_bus != null:
@@ -694,7 +727,9 @@ func _start_spatial_mission() -> void:
     if stage_3d == null or stage_3d.spatial_mission == null:
         return
     var mission: A7SpatialMission = stage_3d.spatial_mission
-    if not mission.start(model.snapshot()):
+    if mission.start(model.snapshot()):
+        checkpoint.note("start_normal", 0, self)
+    else:
         mission_meta.text = _t("mission_wait")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -705,7 +740,9 @@ func _start_extended_mission() -> void:
         return
     var ok: bool = stage_3d.spatial_mission.start_extended(
         model.snapshot(), stage_3d.field_operations)
-    if not ok:
+    if ok:
+        checkpoint.note("start_extended", 0, self)
+    else:
         mission_meta.text = _t("mission_wait")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -747,6 +784,7 @@ func _field_valve(direction: int) -> void:
         direction, stage_3d.first_person)
     if ok:
         _focus_physical_field_device("thermal", A7FieldOperations.CORE + Vector3(0, 1.0, 0))
+        checkpoint.note("valve", direction, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -758,6 +796,7 @@ func _field_relay(index: int) -> void:
         index, stage_3d.first_person)
     if ok:
         _focus_physical_field_device("relay", A7FieldOperations.RELAY + Vector3(0, 0.93, 0))
+        checkpoint.note("relay", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -769,6 +808,7 @@ func _field_sync(index: int) -> void:
         index, stage_3d.first_person, model.snapshot())
     if ok:
         _focus_physical_field_device("sync", A7FieldOperations.CORE + Vector3(1.02, 1.45, 0))
+        checkpoint.note("sync", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -837,6 +877,8 @@ func _pilot_inspect() -> void:
         if stage_3d.field_operations != null:
             stage_3d.field_operations.observe_phase(
                 stage_3d.spatial_mission.phase, model.snapshot())
+        if target in ["CORE","RELAY"] and stage_3d.spatial_mission.active:
+            checkpoint.note("inspect", target, self)
         _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
 
@@ -858,6 +900,8 @@ func _world_use() -> void:
     elif kind == "sync":
         _focus_physical_field_device("sync",
             A7FieldOperations.CORE + Vector3(1.02,1.45,0))
+    checkpoint.note(kind if kind in ["relay","sync"] else "valve",
+        int(result["index"]) if kind in ["relay","sync"] else 1, self)
     _refresh_mission_ui(model.snapshot())
     _refresh_world_reticle()
     call_deferred("_publish_web_accessibility")
@@ -981,6 +1025,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
     var key: InputEventKey = event as InputEventKey
     if not key.pressed or key.echo:
         return
+    if key.keycode == KEY_F5:
+        _save_checkpoint()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_F9:
+        _load_checkpoint()
+        get_viewport().set_input_as_handled()
+        return
     if key.keycode == KEY_G:
         _world_use()
         get_viewport().set_input_as_handled()
@@ -1075,6 +1127,8 @@ func _render(state: Dictionary) -> void:
     intro.text = _t("intro")
     language_button.text = _t("language")
     restart_button.text = _t("reset")
+    save_button.text = _t("save_game")
+    load_button.text = _t("load_game")
     var story: Dictionary = A7IncidentDirector.describe(locale, state)
     narrative_title.text = str(story.get("title", ""))
     narrative_body.text = str(story.get("body", ""))
@@ -1278,6 +1332,11 @@ func _publish_web_accessibility() -> void:
         "w73_actual_world_ray_target": stage_3d.world_interaction.qa_readout()["actual_active_ray_target"] if stage_3d.world_interaction != null else "",
         "w73_real_raycast_uses": stage_3d.world_interaction.accepted_world_uses if stage_3d.world_interaction != null else 0,
         "w73_rejected_world_uses": stage_3d.world_interaction.rejected_world_uses if stage_3d.world_interaction != null else 0,
+        "w73_checkpoint_events": checkpoint.events.size(),
+        "w73_checkpoint_saves": checkpoint.saves,
+        "w73_checkpoint_restores": checkpoint.successful_restores,
+        "w73_checkpoint_rejected": checkpoint.rejected_loads,
+        "w73_checkpoint_status": checkpoint.last_status,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1316,6 +1375,8 @@ func _publish_web_accessibility() -> void:
         "field_help": _web_rect(field_help),
         "world_use": _web_rect(world_use_button),
         "world_reticle": _web_rect(world_reticle),
+        "checkpoint_save": _web_rect(save_button),
+        "checkpoint_load": _web_rect(load_button),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),
         "walk_back": _web_rect(route_buttons[0]),
