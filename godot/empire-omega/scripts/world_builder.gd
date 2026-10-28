@@ -51,6 +51,7 @@ var city_reign_street_architecture: Node3D
 var city_reign_squares: Node3D
 var city_reign_hero_architecture: Node3D
 var city_reign_purchased_skyline: Node3D
+var city_reign_public_works: Node3D
 var city_reign_building_finishes: Array[StandardMaterial3D] = []
 ## B49: one mesh LOD record per ORIGINAL colliding building; no extra draw nodes.
 var city_reign_tower_body_lods: Array[Dictionary] = []
@@ -89,6 +90,7 @@ const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_sky
 const CITY_REIGN_TOWER_BODY = preload("res://scripts/city_reign_tower_body_lod.gd")
 const CITY_REIGN_WINDOW_REVEAL = preload("res://scripts/city_reign_window_reveal_geometry.gd")
 const CITY_REIGN_TOWER_DISTANCE = preload("res://scripts/city_reign_tower_distance_lod.gd")
+const CITY_REIGN_PUBLIC_WORKS = preload("res://scripts/city_reign_civic_outcomes.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -148,6 +150,11 @@ func _ready() -> void:
 	city_root.add_child(city_reign_squares)
 	_create_waypoint_marker()
 	_create_project_visuals()
+	# B57: authentic saved civic choice physically changes the playable city.
+	# Actual public budget kiosk or earned pedestrian crosswalks; visual only.
+	city_reign_public_works = CITY_REIGN_PUBLIC_WORKS.new()
+	city_root.add_child(city_reign_public_works)
+	city_reign_public_works.call("sync_state",GameState.data,GameState.locale)
 	# B27: 12 original paid municipal 3D facades. The exact real 12
 	# existing StaticBody3D project colliders remain fully authoritative.
 	# Data locations come from _project_position, never invented plots.
@@ -705,6 +712,8 @@ func apply_visual_budget(mode: String) -> void:
 		city_reign_hero_architecture.call("set_quality",visual_budget)
 	if city_reign_purchased_skyline != null:
 		city_reign_purchased_skyline.call("set_quality",visual_budget)
+	if city_reign_public_works != null:
+		city_reign_public_works.call("set_quality",visual_budget)
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
 	if facade_balconies != null:
@@ -763,6 +772,8 @@ func _apply_lighting() -> void:
 		city_reign_squares.call("sync_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	if city_reign_hero_architecture != null:
 		city_reign_hero_architecture.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_public_works != null:
+		city_reign_public_works.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	# Authored golden-hour grade affects real Godot light only, never UI screenshots.
 	if weather_mode == "clear" and visual_budget == "cinematic":
 		var golden_hour: float = clampf(1.0-absf(ambience_time-18.0)/3.0,0.0,1.0)
@@ -820,6 +831,8 @@ func update_development() -> void:
 		city_reign_hero_architecture.call("sync_state",state)
 	if city_reign_purchased_skyline != null:
 		city_reign_purchased_skyline.call("sync_state",state)
+	if city_reign_public_works != null:
+		city_reign_public_works.call("sync_state",state,GameState.locale)
 
 func _update_property_visuals() -> void:
 	var owned: Dictionary = GameState.data.get("properties",{})
@@ -833,6 +846,8 @@ func _update_property_visuals() -> void:
 		orb.material_override = _material(Color("e5bd72") if level > 0 else Color("6e9db7"),0.2,0.25,true)
 
 func update_language(lang: String) -> void:
+	if city_reign_public_works != null:
+		city_reign_public_works.call("sync_state",GameState.data,lang)
 	if city_reign_squares != null:
 		city_reign_squares.call("sync_language",lang)
 	for id in markers:
