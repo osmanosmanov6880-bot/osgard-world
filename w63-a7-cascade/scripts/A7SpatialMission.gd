@@ -59,6 +59,8 @@ const DETAILS_EN := [
 ]
 
 var active: bool = false
+var extended_mode: bool = false
+var field_ops: A7FieldOperations
 var phase: int = 0
 var progress_events: int = 0
 var accepted_game_decisions: int = 0
@@ -170,12 +172,25 @@ func build() -> void:
     _draw_3d_status()
     set_process(true)
 
+# Existing W71 mission remains unchanged by default.
+# An explicit independent extended start opts into three physical puzzles.
+func start_extended(actual_game_state: Dictionary,
+        original_field_ops: A7FieldOperations) -> bool:
+    if original_field_ops == null or not start(actual_game_state):
+        return false
+    extended_mode = true
+    field_ops = original_field_ops
+    field_ops.start(actual_game_state)
+    return true
+
 func start(actual_game_state: Dictionary) -> bool:
     if (active or int(actual_game_state.get("shift", -1)) != 0
             or (actual_game_state.get("history", []) as Array).size() != 0
             or str(actual_game_state.get("status", "")) != "playing"):
         return false
     active = true
+    extended_mode = false
+    field_ops = null
     phase = 0
     started_ms = Time.get_ticks_msec()
     final_ms = 0
@@ -190,6 +205,10 @@ func start(actual_game_state: Dictionary) -> bool:
     return true
 
 func reset() -> void:
+    if field_ops != null:
+        field_ops.reset()
+    field_ops = null
+    extended_mode = false
     active = false
     phase = 0
     progress_events = 0
@@ -229,6 +248,10 @@ func inspect_physical(target: String, game_state: Dictionary,
         if target == "CORE" else operator.inspection_console_relay)
     var allowed_distance: float = 3.2 if target == "CORE" else 4.0
     if operator.body.position.distance_to(physical_target) >= allowed_distance:
+        return false
+    # W72 extended world interactions must be physically solved BEFORE E
+    # can certify a spatial objective. Legacy W71 (extended=false) is exact.
+    if extended_mode and (field_ops == null or not field_ops.gate(target, phase)):
         return false
     last_inspection = target
     real_inspections += 1
@@ -370,6 +393,8 @@ func qa_readout() -> Dictionary:
     return {
         "schema": "LAST_FRONTIER_W71_TRUE_SPATIAL_MISSION_V1",
         "active": active,
+        "extended_mode": extended_mode,
+        "world_mechanics_connected": field_ops != null,
         "phase_index": phase,
         "phase": str(PHASES[phase]),
         "completed": active and phase == 5,
