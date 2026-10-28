@@ -845,6 +845,7 @@ func _make_overlays() -> void:
         scenario_buttons[scenario_key] = choice
     campaign_button = Button.new()
     campaign_button.name = "ThreeActCampaignSwitch"
+    campaign_button.toggle_mode = true
     campaign_button.custom_minimum_size = Vector2(0,42)
     campaign_button.add_theme_font_size_override("font_size",15)
     campaign_button.pressed.connect(_toggle_campaign_mode)
