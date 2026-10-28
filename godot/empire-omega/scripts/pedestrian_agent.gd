@@ -79,13 +79,27 @@ func _process(delta: float) -> void:
 		if body_mesh != null:
 			body_mesh.mesh = STREET_ART.mesh_for(citizen_id,0)
 		return
+	# B67: original A* routes include their starting node and sometimes a
+	# second copy of that point. Consume consecutive already-reached nodes
+	# in the SAME movement tick: no visible one-frame stop at each duplicate
+	# and no invented shortcuts across city blocks or collision exceptions.
+	# This also fixes a genuine paid-park resident appearing to pause before
+	# beginning the new evening trip from an existing road-grid node.
+	while next_waypoint < route.size():
+		var point: Vector3 = route[next_waypoint]
+		var flat: Vector3 = point - global_position
+		flat.y = 0.0
+		if flat.length_squared() > 2.25:
+			break
+		next_waypoint += 1
+	if next_waypoint >= route.size():
+		planned_velocity = Vector3.ZERO
+		if body_mesh != null:
+			body_mesh.mesh = STREET_ART.mesh_for(citizen_id,0)
+		return
 	var at: Vector3 = route[next_waypoint]
 	var travel: Vector3 = at-global_position
 	travel.y = 0.0
-	if travel.length_squared() <= 2.25:
-		planned_velocity = Vector3.ZERO
-		next_waypoint += 1
-		return
 	var velocity: Vector3 = travel.normalized() * speed
 	planned_velocity = velocity
 	if _yield_to_vehicle(velocity):
