@@ -110,7 +110,7 @@ func nearest(world_position: Vector3,reach: float = 2.55) -> Dictionary:
             nearest_site = site
     return nearest_site
 
-func update_campaign(campaign: IPSignalCampaign) -> void:
+func update_campaign(campaign: IPSignalCampaign,core_scanned: bool = false) -> void:
     _active_count = campaign.collected.size()
     _directive_ready = campaign.route_unlocked()
     _directive_completed = campaign.completed()
@@ -119,7 +119,7 @@ func update_campaign(campaign: IPSignalCampaign) -> void:
         var light: MeshInstance3D = site["status"]
         var number: Label3D = site["number"]
         var completed: bool = campaign.collected.has(id) or (id == "directive" and campaign.completed())
-        var accessible: bool = campaign.route_unlocked() if id == "directive" else not completed and not campaign.completed()
+        var accessible: bool = campaign.route_unlocked() if id == "directive" else core_scanned and not completed and not campaign.completed()
         light.material_override = _done_mat if completed else _ready_mat if accessible else _locked_mat
         number.modulate = GREEN if completed else ICE if accessible else AMBER
 
