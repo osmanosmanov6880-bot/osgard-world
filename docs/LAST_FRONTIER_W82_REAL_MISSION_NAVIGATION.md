@@ -19,3 +19,6 @@ This is actual in-engine Godot source work, not a style render.
 
 ## Honest production hold
 This does not prove 60fps mobile consumer GPU, physical iPhone/Android multitouch/no-notch bugs, art production, five-phase human 10–15min first-time completion, licensed assets, title clearance or public commercial release. Those remain separate manual gates.
+
+## Native click-through correctness
+The root cockpit, panel, both layout containers **and all three actual Label controls** are explicitly MOUSE_FILTER_IGNORE. The source QA now checks real Label filters too; this prevents a text glyph from intercepting physical Godot ray interaction even when top-of-screen world rays overlap the compass. The original 3D physics and input handlers are unchanged.

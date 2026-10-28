@@ -70,18 +70,21 @@ func build(mission: A7SpatialMission, equipment: A7FieldOperations,
     vertical.add_theme_constant_override("separation",3)
     horizontal.add_child(vertical)
     title_label = Label.new()
+    title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     title_label.add_theme_color_override("font_color",COPPER)
     title_label.add_theme_font_size_override("font_size",14)
     title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
     title_label.clip_text = true
     vertical.add_child(title_label)
     status_label = Label.new()
+    status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     status_label.add_theme_color_override("font_color",MUTED)
     status_label.add_theme_font_size_override("font_size",12)
     status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
     status_label.clip_text = true
     vertical.add_child(status_label)
     bearing_label = Label.new()
+    bearing_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     bearing_label.custom_minimum_size = Vector2(37,35)
     bearing_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     bearing_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -215,7 +218,10 @@ func qa_readout() -> Dictionary:
         "label":title_label.text if title_label != null else "",
         "guidance":status_label.text if status_label != null else "",
         "native_mouse_ignores_real_world_inputs":mouse_filter==Control.MOUSE_FILTER_IGNORE
-            and frame != null and frame.mouse_filter==Control.MOUSE_FILTER_IGNORE,
+            and frame != null and frame.mouse_filter==Control.MOUSE_FILTER_IGNORE
+            and title_label != null and title_label.mouse_filter==Control.MOUSE_FILTER_IGNORE
+            and status_label != null and status_label.mouse_filter==Control.MOUSE_FILTER_IGNORE
+            and bearing_label != null and bearing_label.mouse_filter==Control.MOUSE_FILTER_IGNORE,
         "never_mutates_original_gameplay":true,
         "physical_phone_hardware_verified":false,
         "not_AAA_art_certified":true,
