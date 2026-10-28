@@ -1,0 +1,108 @@
+name: CITY REIGN WORLD EDITION - actual native 3-tier game frame and image profiling
+
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/scripts/city_reign_tower_body_lod.gd'
+      - 'godot/empire-omega/scripts/city_reign_window_reveal_geometry.gd'
+      - 'godot/empire-omega/scripts/city_reign_tower_distance_lod.gd'
+      - 'godot/empire-omega/scripts/city_reign_street_architecture.gd'
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/tests/v125_city_reign_original_game_render_profile.gd'
+      - '.github/workflows/city-reign-world-frame-profile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-game-software-gl-frame-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 29
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source and preserve release lock
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          grep -Fq 'run/main_scene="res://scenes/main.tscn"' godot/empire-omega/project.godot
+          mkdir -p city-reign-b53-render-evidence
+          printf '%s\n' "$HEAD_SHA" > city-reign-b53-render-evidence/source-head.sha
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strict true-original-game import and prepare physical OpenGL framebuffer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-b53-render-evidence/strict-native-import.log
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Measure ACTUAL original city frames and capture native GL 3-tier PNGs
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=7s 180s \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+            godot --path godot/empire-omega --rendering-method gl_compatibility \
+            --script res://tests/v125_city_reign_original_game_render_profile.gd \
+            2>&1 | tee city-reign-b53-render-evidence/native-original-frame-log.txt
+          grep -Fq 'CITY REIGN B53 measured REAL ORIGINAL live gameplay, native GL: 0 errors' \
+            city-reign-b53-render-evidence/native-original-frame-log.txt
+      - name: Validate nonblank actual PNG headers and truthful measured CPU timing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,struct,math
+          base=Path('city-reign-b53-render-evidence')
+          p=base/'CITY_REIGN_B53_REAL_FRAMES.json'
+          d=json.loads(p.read_text())
+          assert d['source_scene']=='res://scenes/main.tscn'
+          assert d['real_source_player_car'] and d['errors']==[]
+          seen=set()
+          for q in d['quality']:
+            k=q['graphics_tier']
+            seen.add(k)
+            assert q['frames']==90 and q['software_ci_only']
+            assert q['graphics_tier']==q['runtime_effective_graphics'], 'Native runtime silently overrode the requested tier'
+            assert q['original_city_tower_instances']>70
+            assert q['actual_source_street_batches']==4
+            assert sum(q['camera_tower_lods'].values())==q['original_city_tower_instances']
+            assert 0.02 < q['frame_brightness'] < 0.98
+            for metric in ('mean_frame_ms','median_frame_ms','p95_frame_ms','worst_frame_ms'):
+              assert math.isfinite(q[metric]) and q[metric]>0
+            png=base/q['capture']
+            assert png.is_file() and png.stat().st_size>10000
+            b=png.read_bytes()[:24]
+            assert b[:8]==bytes.fromhex('89504e470d0a1a0a')
+            assert struct.unpack('>II',b[16:24])==(1366,768)
+            print('REAL SOURCE',k,q['p95_frame_ms'],'ms p95 CI SOFTWARE, NOT user GPU')
+          assert seen=={'low','standard','cinematic'}
+          PY
+          sha256sum city-reign-b53-render-evidence/*.png \
+            > city-reign-b53-render-evidence/PNG-SHA256SUMS.txt
+      - name: Keep audit pixels, frame intervals and evidence under this PR only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-real-original-game-software-GL-frames-${{ github.run_id }}
+          path: city-reign-b53-render-evidence/
+          retention-days: 14
+          if-no-files-found: warn

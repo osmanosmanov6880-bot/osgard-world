@@ -1,0 +1,537 @@
+# CITY REIGN — WORLD EDITION / B41–B48 production ledger
+
+**Date:** 28 October 2026  
+**Repository:** `osmanosmanov6880-bot/osgard-world`  
+**Candidate branch:** `feat/city-reign-aaa-world-quality-gate-20261028`  
+**PR:** #627 (draft; no master/public deployment)  
+**Source engine:** Godot 4.4.1, GL Compatibility, real playable source.
+
+## The product — what "world-class" means here
+
+CITY REIGN is a player-driven open city: drive, talk to citizens, invest public
+treasury, build physical city projects, and see lasting effects on the world.
+The artistic north star is **The Matrix Awakens × GTA VI × Forza Horizon 5**:
+urban material and scale, living systems/narrative, and vehicle quality. These
+are **quality benchmarks only**. Do not copy proprietary models, maps, brands
+or copyrighted visual assets.
+
+An AAA goal is **not** reached by increasing version numbers or adding boxes.
+All release claims require a playable build with actual original 3D,
+representative footage, stable frame times, source-locked acceptance, and
+independent player testing. Screenshots alone never prove gameplay.
+
+## B41 — authored street-level 3D architecture [SOURCE IMPLEMENTED]
+
+**File:** `scripts/city_reign_street_architecture.gd`
+
+- One authored street-frontage instance for each of the **existing original**
+  generated buildings, at exactly the original road-facing door orientation.
+- Four district palettes and original stone/PBR facade texture reuse.
+- Physical 3D stone plinths, corner columns, entrance lintels and roofline
+  spandrels, plus real metal brackets, joinery and door handles.
+- Two planted box/soil systems per facade, each with native volumetric stems
+  and multiple double-sided 3D leaf surfaces.
+- Actual luminous metal shopfront bars, powered by the original
+  `GameState.data.energy` and the existing city daylight clock.
+- No arbitrary "new lots", new destination coordinates, fake shops, physics
+  bodies, road collisions, mission payouts or player-account changes.
+- Four shared source-native `ArrayMesh + MultiMesh` draw groups across at
+  most 128 building facades; no per-shop scene node explosion.
+
+**Important:** This is materially better procedurally authored street detail,
+but it is NOT imported photogrammetry, premium scanned assets or GTA-quality
+facade art yet. Licensed PBR asset production remains a separate art stage.
+
+## B42 — real quality and power budgets [SOURCE IMPLEMENTED]
+
+| Setting | Physical geometry | Lighting | Allocation policy |
+| --- | --- | --- | --- |
+| Low | Added street kit hidden | Off | Same source batches remain cached |
+| Standard | PBR stone and metal visible | Powered dusk/night fixtures | Foliage hidden |
+| Cinematic | Stone, metal, planted foliage | More vivid dusk/night fixtures | No extra dynamic omnidirectional lights |
+
+- Changes happen on the existing `WorldBuilder.apply_visual_budget()` path.
+- Dusk, electricity and weather route through real authoritative
+  `WorldBuilder._apply_lighting()` and `update_daynight()`.
+- Brownouts reduce material emission; an actual blackout makes the real
+  3D facade fixtures dark (not a fictitious HUD indicator).
+- Same original gameplay simulation and vehicle collision layout, with no
+  changes to authority, saving or localization.
+
+## B43 — source-native regression proof [SOURCE IMPLEMENTED]
+
+**Test:** `tests/v123_city_reign_street_world_integrity.gd`
+
+Validates in real Godot:
+1. Four representative lots and their original facade orientation/position.
+2. Genuine indexed/native 3D triangle surfaces with finite transforms.
+3. Shared PBR color/normal/roughness and live vertex shading.
+4. Four bounded instanced GPU groups, with no per-object collisions.
+5. Low, Standard and Cinematic actual render visibility.
+6. Daytime street lights disabled; night street lights enabled.
+7. Full municipal power outage and low-power brownout.
+8. Original full `WorldBuilder` creates a frontage for every original building.
+9. Original R90 skyline remains three roots; R91 windows/crowns two batches.
+10. Wet road and quality changes preserve bounded geometry.
+11. The original authoritative save/economy/campaign dictionary is unchanged.
+
+**CI:** `.github/workflows/city-reign-world-edition-native-qa.yml`.
+
+Source SHA locked (no synthetic merge checking), strict Godot import, new
+B41-B43 tests plus 11 native source tests covering original R90/R91 roof art,
+first chapter, real citizen reactions, 12 paid lots, 40-event story/save,
+and joined original gameplay. Raw console logs are uploaded as artifacts.
+CI must finish GREEN on the exact proposed source SHA before merge.
+
+**Not yet claimed:** no verified production build, physical-phone FPS, 30
+minutes of independent human playtime, finished 8K art, or finished trailer.
+
+## B44 — actual browser/WebGL and visual evidence [REQUIRED]
+
+- Use existing source-pinned Chromium/WebGL first-chapter and R90/R114
+  capture workflows on the exact same PR commit.
+- Preserve PNG attachments from the **real game canvas**, not visual mockups.
+- Compare fixed route start, market corner, nighttime, and post-construction
+  frame captures at the same camera/graphics settings.
+- Inspect sun/ambient, sidewalk materials, window depth, vehicular tire/road
+  geometry, newly visible stone/metal storefronts and no UI occlusion.
+- Fail release if WebGL shows black screen, lost context, error overlay,
+  flicker, invisible new kit or broken first chapter.
+- Pixel images do not establish game design quality or a consistent 60 FPS.
+
+## B45 — next full-block 3D environment art [NOT FINISHED]
+
+- Replace generic box-only hero buildings with individually modelled and
+  licensed PBR architecture, varied gables, recessed entrances and
+  believable window/door scale.
+- Build coherent interiors where gameplay actually requires entry.
+- Real material provenance manifest: source, creator, license, attribution,
+  model scale, LOD levels, mesh/material cost and embedded dependencies.
+- Treat original photographed/CC0 road textures as offline pinned assets;
+  never hotlink production assets or add unreviewed commercial models.
+- Fixed-angle before/after with identical world state, time and camera.
+
+## B46 — next vehicle production [NOT FINISHED]
+
+- High-quality vehicle exterior/interior with actual mesh LODs and
+  car paint, glass, rubber, metal and tire surfaces.
+- Physical driving and contact behavior validated on original game
+  controllers (not a stylized video demonstration).
+- Sound events for engine load, gear changes, grip, wet roads and
+  collision, all clamped for listener safety.
+- Real traffic, pedestrian crossing and camera occlusion regression.
+
+## B47 — 30-minute first-episode release candidate [NOT FINISHED]
+
+- A player starts on a visible street, takes a car, drives to the market,
+  learns city requests, funds a civic building with actual saved money,
+  waits for two real construction turns and witnesses a finished asset.
+- Include authored dialog, optional citizen consequences, a clear route
+  objective, sound, failure/recovery, save/reload and onboarding.
+- Independent human testers should finish, understand the economic
+  consequence and be able to find the next goal without developer help.
+- Formalize art reviews against actual route captures at 6 camera angles.
+
+## B48 — platform delivery, not just a running demo [NOT FINISHED]
+
+- Source-controlled native Windows/desktop and Web exports, checksums and
+  reproducible build receipts; asset licenses and legal approvals.
+- Desktop performance tiers with accurate **measured** 1% low/p95 frame time,
+  GPU memory/VRAM and CPU profiling at reproducible city viewpoints.
+- Android and iOS physical hardware capture, touch/portrait safe areas and
+  heat/battery budgets. No emulator = physical device proof substitution.
+- Localized UI and speech/subtitles appropriate for supported languages;
+  RU/EN/ZH scene labels and actual controls need complete player reviews.
+- Crash recovery, save migrations, rollback/publish controls and
+  staged opt-in distribution; master/public not mutated without gates.
+
+## Verified quality bar and stopping rules
+
+| Check | Required result |
+| --- | --- |
+| Engine import | Actual Godot 4.4.1, no parse errors |
+| Native regression | All required suites exit 0 and print 0 failures |
+| Runtime browser | No WebGL loss or browser errors, real render frames |
+| 3D instancing | 4 new batches, <=128 original buildings |
+| Source economy | Purchases/treasury/XP/mission state unchanged by visual-only code |
+| LOD and electricity | Player graphics choices and saved city power drive physical world |
+| Visual QA | Actual game screenshots at identical viewpoint, honest differences |
+| Performance | Profiled target devices and p95/1% low, no invented numbers |
+| Legal | Each commercial texture/model/audio file has verified origin and rights |
+| Release | Human test, product acceptance and deliberate owner authorization |
+
+### Exact native commands for independent verification
+
+```bash
+python3 godot/empire-omega/tools/generate_audio.py
+python3 godot/empire-omega/tools/generate_patrol_audio.py
+bash scripts/omega-strict-godot-import.sh godot/empire-omega
+godot --headless --path godot/empire-omega --script res://tests/v123_city_reign_street_world_integrity.gd
+godot --headless --path godot/empire-omega --script res://tests/v122_city_reign_cinematic_rooftop_lod.gd
+```
+
+**Marketing restriction:** describe only completed, source-proven milestones.
+Do not call CITY REIGN a finished world-class AAA game until that claim has
+independent, playable, artistic and hardware evidence. Do not merge a red PR.
+
+---
+
+## B49–B52 — native architectural city-body upgrade (candidate, awaiting exact-head CI)
+
+The first browser screenshots showed excessive repetition: most visible original
+`Building_###` bodies were plain rectangular boxes even when their storefront
+and roof ornamentation used genuine 3D. To address the most obvious visual
+bottleneck, B49 modifies the real source body's geometry *in place*.
+
+**Source:** `scripts/city_reign_tower_body_lod.gd` plus
+`scripts/world_builder.gd`. Only the original `VisualMesh.mesh` changes.
+
+- **B49 — source-authored closed building solids:** actual eight-edge
+  chamfered high-rise cores (not merely painting a box), real stone plinths
+  and top courses with correct outward face normals.
+- **B50 — four neighborhood art identities:** district-dependent chamfer
+  widths and surface tinting plus restrained facade piers, inter-floor
+  shadow lines and physical roof mechanical volumes. Original PBR texture
+  families remain shared (no external or uncleared model download).
+- **B51 — original resource-quality tiers:** original lightweight `BoxMesh`
+  remains resident for LOW; sculpted STANDARD and CINEMATIC `ArrayMesh`
+  alternatives swap *inside the same real building MeshInstance3D*, without
+  changing any collision body or adding a render node per building.
+- **B52 — true source/world verification:** native
+  `tests/v124_city_reign_tower_silhouette_lod.gd` checks mathematical
+  mesh bounds, finite normals, physical geometry outside the old cuboid,
+  all existing original building colliders, original window/material
+  bindings, all three LOD settings, wet-road/night changes and immutable
+  monetary/campaign state. CI runs the new suite alongside the genuine
+  prior mission/road/traffic tests.
+
+**Budgets** (engineering limits, not GPU profiling):
+up to 128 original towers; each STANDARD model ≤600 vertices,
+each CINEMATIC model ≤2400 vertices; same one mesh renderer per
+original colliding building. Low retains original 12-triangle BoxMesh.
+The original 52m road grid, real driving collision and source-pinned
+40-stage story are unaffected in code.
+
+**Evidence gate:** The source and native regression suite must be
+verified on the exact post-commit SHA. A green old head is not proof
+of this new candidate. Real screenshots at the same viewpoint must
+be inspected before visual benefit can be claimed. This improves
+procedural architecture only; it still does **not** reach the geometry,
+shading, crowds or photogrammetry quality of the AAA benchmarks.
+
+## Art and product decision after native QA
+
+Do not mistake source triangles for AAA photorealism. The visual
+reviewer must still explicitly compare the actual upgraded Godot
+frame against the earlier image in:
+- overall silhouette diversity, street-level architectural depth,
+  believable roofline and windows;
+- no z-fighting, window obstruction, geometry pop, sidewalk overlap
+  or vehicle collision regressions;
+- 720p/1080p desktop and constrained-phone hardware;
+- profiling and independent playtests (these remain open release gates).
+
+The project is a **playable city-game candidate**, not a finished
+world-class platform. Windows, Linux and WebGL candidate artifacts
+may be downloaded from source-locked CI; no production deployment
+has been authorized.
+
+---
+
+## B53–B55 — quantified 3D quality, true window metalwork, camera LOD
+
+### B53 — actual source-native 1366×768 GL frame profiling
+
+**Executable:** `tests/v125_city_reign_original_game_render_profile.gd`  
+**CI:** `.github/workflows/city-reign-world-frame-profile.yml`
+
+This launches `res://scenes/main.tscn` (the actual shipped source game),
+measures 90 genuine render-frame intervals per setting using a native
+OpenGL/Mesa framebuffer, and saves three actual game PNGs together with
+source SHA, full JSON timing and GPU-independent provenance. The 28 Oct
+2026 earlier source-head software profile before B55 adaptive distance
+culling passed without errors:
+
+| CI software GL mode | Mean ms/frame | P95 ms/frame | Important limitation |
+|---|---:|---:|---|
+| Low | 211.83 | 218.48 | Mesa software renderer, NOT player GPU |
+| Standard | 336.41 | 343.80 | Mesa software renderer, NOT player GPU |
+| Cinematic | 347.83 | 355.28 | Mesa software renderer, NOT player GPU |
+
+These figures are **not** an estimate of an actual gaming PC's frame rate
+or a phone's speed. They expose the need for graphics budgeting and
+real hardware tests. Future runs collect the same numbers with player
+focus-aware B55 mesh culling, so any improvement/regression is measurable.
+
+**Do not claim 60 FPS or 8K** from these tests. Independent GPU profiles
+on representative desktop and physical Android/iPhone devices are required.
+
+### B54 — real 3D metal window reveals, original glass [SOURCE VERIFIED]
+
+The original `WorldBuilder.facade_frames` reused one solid `BoxMesh`
+surface behind the real glass. A physically hollow source-authored
+`ArrayMesh` with four closed aluminium rails and a forward sill is
+now cached in `scripts/city_reign_window_reveal_geometry.gd`.
+
+- **Low:** original lightweight frame renderer disabled.
+- **Standard:** original lightweight BoxMesh, no extra triangles.
+- **Cinematic:** five real metal volumes, 180 vertices/60 triangles
+  per source frame instance; same existing transform, MultiMesh, material
+  and draw node as before.
+- Original glass, original 1.05 × 1.38m window placement, streetfront
+  doors and PBR day/night behavior remain authoritative.
+- `tests/v126_city_reign_real_window_reveal_lod.gd` checks actual
+  geometry/normal correctness, shared rendering and immutable saved
+  game state. Real Godot 4.4.1 on commit `2571f80b`: **34/34 PASS**.
+
+The cinematic variant increases per-window geometry cost. It must never
+be forced on low-end phones. It is not a substitute for detailed licensed
+character and building assets.
+
+### B55 — actual player-distance building LOD [SOURCE VERIFIED]
+
+**Files:** `scripts/city_reign_tower_distance_lod.gd` and
+`scripts/world_builder.gd`.
+
+The original gameplay already calls `WorldBuilder.update_chunks()`
+approximately every 1.1s. That exact callback now changes the original
+existing building `MeshInstance3D.mesh` resource for the player's
+actual position, with 11m hysteresis to prevent rapid swapping:
+
+| User setting | Near original towers | Mid distance | Far distance |
+|---|---|---|---|
+| Low | original 12-triangle BoxMesh | original | original |
+| Standard | true STANDARD chamfered architecture | original after ~142m | original |
+| Cinematic | true CINEMATIC multistory architecture near ~116m | STANDARD until ~204m | original |
+
+Thresholds have 11m state-based hysteresis; each building keeps
+one physical collider, one original visual node, original materials and
+original road data. The new LOD report exposes how many true building
+bodies currently occupy each tier, and B53's real game benchmark
+records those counts.
+
+- `tests/v127_city_reign_tower_distance_lod.gd`: finite road-plane
+  distances, boundary hysteresis, deterministic mesh selection,
+  camera jitter, three actual source-world quality modes, unchanged
+  original colliders and protected economics.
+- Real Godot 4.4.1 at commit `de2b14e6`:
+  **256/256 PASS, 0 FAIL**. The exact-head release candidate
+  is still independently gated by WebGL, desktop and GL screenshot jobs.
+
+### B56 — platform build and independent release gating
+
+Current private candidate artifact pipelines:
+- `city-reign-world-preview-build.yml`: actual Godot WebAssembly
+  original main scene, signed checksum manifest, source SHA and local
+  HTTP launch instructions.
+- `city-reign-world-desktop-preview.yml`: Windows x64 Compatibility,
+  Windows x64 Forward+ and Linux x64 Compatibility binaries, matching
+  PCKs, source-hash receipts and independent offline archives.
+- `city-reign-world-edition-webgl-qa.yml`: real original Godot
+  Chromium pixel captures across day, night, blackout and all 3 LODs,
+  without using fake website screenshot art.
+- `city-reign-world-frame-profile.yml`: native desktop GL screen
+  captures and source-aware 90-frame evidence per graphics mode.
+
+No branch has been automatically promoted to `master` or public
+production by these jobs. The PR remains DRAFT until **all** exact-head
+checks, production licenses, independent playtest acceptance and
+real-device targets have been satisfied.
+
+### Next independent AAA gates (open)
+
+1. Four custom detailed architectural hero meshes with documented legal
+   provenance, world UVs, PBR normal/metallic/roughness/occlusion and
+   physically credible interior/entrance transitions.
+2. Material response and environmental lighting at clear, dusk, rain,
+   storm and night from actual moving gameplay shots (no image substitute).
+3. Vehicles with calibrated tire contact and visible interiors, acoustic
+   load, suspension and cornering behavior on actual player input.
+4. Citizens, traffic intersection logic, dialog audio and 30 minutes of
+   human-playtested first-chapter route; no unverifiable "AAA" launch claim.
+5. GPU profiling on Windows 1080p native and real iOS/Android hardware.
+   Aim at player-defined performance targets; do not invent FPS numbers.
+6. Controlled release review, crash handling, rollback, privacy and asset
+   usage clearance before any public deployment.
+
+
+---
+
+## B57–B62 — genuine source-paid urban consequences and traffic response
+
+**Source-authoritative product change, not an invented simulation:** the
+existing `GameState.start_initiative()` / `GameState.advance_turn()` flows
+debit the exact saved treasury, stock of materials/goods and city-turn actions.
+A project must finish its real two construction turns before the environment
+changes. Buying a proposal, visiting a UI or taking a screenshot cannot cause
+an immediate building or reward. This preserves source gameplay and old saves.
+
+### B57 — two actual original street outcomes [CODE INTEGRATED]
+
+**`scripts/city_reign_civic_outcomes.gd`** is installed in the original
+`WorldBuilder`, receiving live original city state, time, power, language and
+graphics quality. There are no new physics bodies, invented road topology,
+cash rewards, mission IDs or save keys.
+
+| Original paid choice | Completed-only physical 3D consequences | Mobile/blackout behavior |
+|---|---|---|
+| `safe_crossings` | Four actual 10m-wide source road sites, 36 zebra strips in one MultiMesh, 40 roadside reflectors in another | Essential white safety road paint remains visible on LOW; optional reflector mesh off on LOW, emissive at powered night and dark at blackout |
+| `open_records` | Source-authored 3D stone/metal records pavilion adjacent to the ORIGINAL `open_records` investment site; readable current treasury and forum trust from the real save in RU/EN/ZH | Essential pavilion and honest budget board remain accessible on LOW; extra metal solar-sunshade canopy only in CINEMATIC |
+
+**Exclusivity is enforced:** building one project never fabricates the other's
+completion. Reset removes both; a valid original saved state reconstructs the
+corresponding finished physical infrastructure. Repeated UI/state refreshes
+must neither duplicate nodes nor issue new financial transactions.
+
+### B58–B60 — native saving, source economy and game-play integration [VERIFIED]
+
+Native test `tests/v128_city_reign_paid_public_works.gd` uses the **real**
+Godot 4.4.1 GameState. It performs the genuine debits, two city turns,
+construction transitions, physical outcomes, all three hardware tiers,
+blackout, three locales, filesystem save/reload and original economic
+invariants. Persistent numeric values are compared semantically across
+Godot JSON integer/float conversion rather than requiring byte-identical
+Variant representations. CI **49/49 PASS, 0 FAIL** on source commit
+`54f06f8f`. Exact newest B62 head must be independently accepted.
+
+### B61 — no-render-swap real WebGL screenshot provenance [CI GATE]
+
+The transient test-only scene
+`tests/city_reign_public_works_pixel_fixture.tscn` uses the original
+`WorldBuilder` and calls real `GameState.start_initiative` plus two genuine
+turns. `scripts/city-reign-public-works-webgl.spec.mjs` captures actual
+Chromium WebGL2 before/after PNG frames, nighttime, blackout and the
+alternate budget pavilion. Daylight loader/splash detection remains strict;
+the night/blackout frame is checked as a real sourced WebGL2 canvas **without**
+the false positive daytime brightness threshold. The original shipped
+`main.tscn` in GitHub is never replaced by the test camera.
+
+A web screenshot validates only a rendering difference. It does **not** prove
+an entire 30-minute AAA chapter, human player satisfaction or real mobile FPS.
+The dedicated WebGL source capture must finish successfully on the exact
+candidate commit before the visual gate may be declared complete.
+
+### B62 — financing safety changes real resident vehicle physics [SOURCE INTEGRATED]
+
+The original `traffic_agent.gd` retains original collision box, real route,
+traffic signal physics, predictive walker safety and all original cars. It now
+calls the bounded, read-only
+`scripts/city_reign_civic_traffic_safety.gd` speed governor. Only when the
+same **actual saved** `safe_crossings` project is in `projects_done`,
+ordinary residents' cars approaching the same four funded physical crossing
+coordinates limit to approximately 4.8 m/s (17.3 km/h) within 16m, gradually
+decelerating over the approach. Cars in unrelated lanes or moving away retain
+original speeds; emergency patrols keep their original response, and **the
+player's personal car controller is not touched**.
+
+All restrictions reuse existing scalar target speed in the original
+`TrafficAgent._physics_process`, downstream of established collision,
+pedestrian prediction, red lights, and turn handling. No hidden collision
+volume, new traffic scene, alternate lane path, payout or fake UI state.
+
+`tests/v129_city_reign_paid_crossing_traffic.gd` verifies original actual
+investment, two construction turns, deterministic near/mid/far speed policy,
+patrol exemption, off-road and reverse motion, existing pedestrian prediction,
+and a real original CharacterBody3D NPC deceleration/acceleration check. New
+native CI also requires existing R47 walking-predictor regression.
+
+### Release gates remaining [NOT APPROVED]
+
+1. Run exact-head native Godot campaign/state tests and WebGL before/after QA.
+2. Inspect true 3D crossing geometry for visibility at player eye height and
+   ensure white markings are not covered by the existing asphalt; only source
+   screenshots can confirm this.
+3. Measure real GPU performance and avoid shader overdraw on supported PCs and
+   real Android/iPhone hardware. Software Mesa timings are not user-device FPS.
+4. Test the entire first chapter with independent human players; validate
+   navigation, car feel, pedestrian crossings and 30-minute completion.
+5. Replace procedural cuboids with legally cleared professional city/vehicle
+   assets; sound, animation, cinematics, lighting and art direction are still
+   significantly below the Matrix/GTA/Forza benchmark.
+6. Keep PR #627 draft; **do not merge or deploy to master** until exact-head
+   native, WebGL, performance, art and player signoffs all pass.
+
+
+---
+
+## B63–B66 — a real paid community park, resident journeys, source 3D inspection
+
+**Physical world + actual behavior on the original playable CITY REIGN Godot scene.**
+Previously a finished community park created an original procedural project landmark
+but did not substantially alter daily walking destinations. Now all additions
+remain downstream of the genuine saved `GameState.projects_done` transaction.
+
+### B63 · Residents actually reroute after the purchased park
+
+- `city_reign_park_routine.gd` reads the same project ID and actual
+  `ProjectLandmarks.POSITIONS["community_park"] = Vector3(164,0,-91)`.
+- At genuine 17:00–21:00 leisure time, at most **9 of the existing 34
+  pedestrian agents** choose deterministic safe-sidewalk destinations in the
+  completed park. Unfunded and under-construction projects attract none.
+- `pedestrian_agent.gd` still calls the original `ROUTER.find_route()`,
+  `TRAJECTORY.should_yield()`, `R47_CROSSING.clearance()` indirectly through
+  source traffic agents, and reuses its existing walking meshes/gait. No
+  teleporting, fake crowd, replacement road graph, new physics bodies or
+  daily player-reward grant. It now detects change of **destination**, not
+  only change of daily activity, so a newly opened park can take effect
+  while a resident is already spending leisure time outside.
+
+### B64 · Completed-only original 3D street furniture
+
+- `city_reign_park_furniture.gd` draws **six original wood/steel benches**
+  and **eight real shared-mesh park lanterns**, all aligned with the real
+  residential block next to the existing project park sculpture. Each family
+  uses ONE bounded MultiMesh draw group. No colliders/shadows/state writes.
+- The existing `WorldBuilder` owns park art creation, saved-state refresh,
+  visual quality and powered day/night updates. There is no standalone fake
+  viewport. Essential benches persist on LOW; luxury lamps are omitted at
+  LOW. Only a completed paid park turns public furniture on. Blackout makes
+  its emissive lamps dark.
+
+### B65 · Player F: read-only on-foot inspection at REAL built sites
+
+- `city_reign_live_site_inspection.gd` checks player location against the
+  actual completed roadside crossings, original stone budget pavilion, or
+  commissioned public-park bench entrance. Vehicle/interior, distant and
+  unfunded encounters are ignored.
+- The shipping `main.gd` calls this from its real `_interact` F action only
+  **after** priority services, active deliveries, city decisions,
+  exploration and property purchases. The action displays the real
+  project title and the exact saved treasury/trust, 4 paid crossings/NPC
+  speed, or park time-of-day interpretation, localized RU/EN/ZH.
+- This F inspection **cannot** grant credits, missions, XP, teleport, build
+  projects or write a new save field. It never calls `GameState.start_initiative`.
+
+### B66 · Actual native + WebGL QA, plus original crisis handling
+
+- `v130_city_reign_community_park_live.gd`: genuine resource debit,
+  authentic **3 construction turns**, real city incident **resolved through
+  `GameState.resolve_incident(true)` with actual relief spending**, installed
+  3D benches/lanterns, actual resident A* route, 8:00 vs 18:00 behavior,
+  powered/blackout material, durable save/load and nonduplicating refresh.
+- `v131_city_reign_real_site_inspection.gd`: source player F proximity,
+  after-delivery-only status, 3-language actual finance, vehicle exclusion,
+  traffic safety, and unchanged saved campaign.
+- Original R123 walking gait and R47 predictive crossing tests remain in the
+  same native workflow. Stage-specific tests explicitly **reject fake
+  immediate construction** and fake resumption of an unresolved crisis.
+- Original Godot WebGL test-only camera now offers a third real scene
+  `show_park()`, finances real `community_park` for 3 valid city turns,
+  and captures original WebGL PNG BEFORE and AFTER; both committed core
+  `main.tscn` and all published build routes remain unchanged.
+- Original source-locked SHA browser evidence now checks crosswalk, budget
+  pavilion and park as 3 meaningfully different municipal developments.
+
+**Status:** B57–B62 exact source previously passed both native and Chromium
+source QA on commit `7ec5e04c`. New B63–B66 commits require their OWN
+exact-source Godot + browser verdict. The pull request stays DRAFT until
+the latest source passes them, hardware/performance, independent gameplay
+and professional reference-art gates.
+
+### Non-negotiable 8K/AAA honesty
+
+The player-visible game is still a procedural Godot prototype, not a
+photogrammetric 8K world or commercial GTA VI/Forza quality. Actual premium
+cars/city assets, character animation, sound/motion capture, cinematic
+lighting, gameplay pacing and real consumer GPU/phone benchmarks remain
+unfulfilled. No publication or release claim until those measurable gates.

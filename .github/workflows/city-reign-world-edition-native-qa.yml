@@ -1,0 +1,128 @@
+name: CITY REIGN WORLD EDITION B41-B44 - authentic playable Godot source acceptance
+
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/scripts/city_reign_street_architecture.gd'
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/tests/v123_city_reign_street_world_integrity.gd'
+      - 'godot/empire-omega/scripts/city_reign_tower_body_lod.gd'
+      - 'godot/empire-omega/tests/v124_city_reign_tower_silhouette_lod.gd'
+      - 'godot/empire-omega/scripts/city_reign_window_reveal_geometry.gd'
+      - 'godot/empire-omega/tests/v126_city_reign_real_window_reveal_lod.gd'
+      - 'godot/empire-omega/scripts/city_reign_tower_distance_lod.gd'
+      - 'godot/empire-omega/tests/v127_city_reign_tower_distance_lod.gd'
+      - 'godot/empire-omega/scripts/city_reign_civic_outcomes.gd'
+      - 'godot/empire-omega/tests/v128_city_reign_paid_public_works.gd'
+      - 'godot/empire-omega/scripts/city_reign_civic_traffic_safety.gd'
+      - 'godot/empire-omega/scripts/traffic_agent.gd'
+      - 'godot/empire-omega/tests/v129_city_reign_paid_crossing_traffic.gd'
+      - 'godot/empire-omega/scripts/city_reign_park_routine.gd'
+      - 'godot/empire-omega/scripts/city_reign_park_furniture.gd'
+      - 'godot/empire-omega/scripts/pedestrian_agent.gd'
+      - 'godot/empire-omega/tests/v130_city_reign_community_park_live.gd'
+      - 'godot/empire-omega/scripts/city_reign_live_site_inspection.gd'
+      - 'godot/empire-omega/scripts/main.gd'
+      - 'godot/empire-omega/tests/v131_city_reign_real_site_inspection.gd'
+      - 'godot/empire-omega/tests/v132_city_reign_pedestrian_waypoint_continuity.gd'
+      - 'godot/empire-omega/docs/CITY-REIGN-WORLD-EDITION-PRODUCTION-BLOCK.md'
+      - '.github/workflows/city-reign-world-edition-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Keep only the latest source candidate for this exact PR. Repeated 46-job
+# suites on superseded commits wasted GPU/CPU runners and blocked useful
+# playable acceptance. Never cancel an unrelated PR or a master build.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  world-native-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Lock the candidate to the actual tested source
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          echo "Actual checkout SHA: $actual"
+          test "$actual" = "$SOURCE_SHA"
+          test "${#actual}" -eq 40
+          mkdir -p city-reign-world-qa
+          printf '%s\n' "$actual" > city-reign-world-qa/source-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Regenerate original audios and strict Godot 4.4.1 import
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega 2>&1 \
+            | tee city-reign-world-qa/strict-import.log
+          grep -Fq 'R42 PASS: real Godot imported with no script errors' city-reign-world-qa/strict-import.log
+      - name: Execute original campaign and real new 3D street-world tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for fixture in \
+            v78_r90_reference_fidelity \
+            v79_r91_original_architecture \
+            v91_r114_pbr_roofline_luxury \
+            v93_r116_architectural_tower_body \
+            v122_city_reign_cinematic_rooftop_lod \
+            v123_city_reign_street_world_integrity \
+            v124_city_reign_tower_silhouette_lod \
+            v126_city_reign_real_window_reveal_lod \
+            v127_city_reign_tower_distance_lod \
+            v128_city_reign_paid_public_works \
+            v129_city_reign_paid_crossing_traffic \
+            v130_city_reign_community_park_live \
+            v131_city_reign_real_site_inspection \
+            v132_city_reign_pedestrian_waypoint_continuity \
+            v97_r123_real_pedestrian_body_gait \
+            v68_r47_predictive_crosswalk_traffic \
+            v110_city_reign_first_mandate \
+            v112_city_reign_resident_reactions \
+            v121_city_reign_first_promise_street_director \
+            v121_city_reign_twelve_paid_skyline \
+            v71_r52_real_joined_gameplay \
+            v72_r55_forty_mission_event_save; do
+            echo "TESTING LIVE SOURCE: ${fixture}"
+            log="city-reign-world-qa/${fixture}.log"
+            timeout --signal=TERM --kill-after=6s 145s godot --headless \
+              --path godot/empire-omega --script "res://tests/${fixture}.gd" \
+              2>&1 | tee "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|[1-9][0-9]* FAIL|ERROR:.*FAIL' "$log"; then
+              echo "::error::Native gameplay or 3D geometry regression in $fixture"
+              exit 1
+            fi
+            grep -Eqi '[0-9]+ (PASS|passed|pass).*0 (FAIL|failed|fail)' "$log" || {
+              echo "::error::Suite lacked authentic zero-failure marker: $fixture"
+              exit 1
+            }
+          done
+      - name: Preserve audit evidence, no deployments
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-world-b41-b44-source-native-evidence
+          path: city-reign-world-qa/
+          retention-days: 14
+          if-no-files-found: warn

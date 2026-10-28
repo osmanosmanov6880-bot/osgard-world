@@ -29,6 +29,7 @@ const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
 const CITY_REIGN_CRISIS = preload("res://scripts/city_reign_crisis_scene.gd")
 const CITY_REIGN_PROPOSALS = preload("res://scripts/city_reign_promise_markers.gd")
 const CITY_REIGN_OPENING_DIRECTOR = preload("res://scripts/city_reign_opening_director.gd")
+const CITY_REIGN_SITE_VISIT = preload("res://scripts/city_reign_live_site_inspection.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
 const TRIAL_MARKER_SCENE = preload("res://scripts/trial_marker.gd")
@@ -779,6 +780,23 @@ func _toggle_interior() -> void:
 func _three(ru: String, en: String, zh: String) -> String:
 	return ru if GameState.locale == "ru" else (en if GameState.locale == "en" else zh)
 
+func _inspect_completed_civic_site(position_at: Vector3) -> bool:
+	# B68: diegetic F inspection never authorizes a payment or mission.
+	# Original service, construction, supply and delivery interactions
+	# take priority in _interact; this only displays current saved facts.
+	if driving or interiors.is_inside():
+		return false
+	var finished_id: String = CITY_REIGN_SITE_VISIT.near_completed(
+		GameState.data,position_at,false,false)
+	if finished_id=="":
+		return false
+	var message: String = CITY_REIGN_SITE_VISIT.report(
+		GameState.data,finished_id,GameState.locale)
+	if message=="":
+		return false
+	hud.announce(message)
+	return true
+
 func _interact() -> void:
 	if interiors.is_inside():
 		if interiors.at_exit(player.global_position):
@@ -853,8 +871,13 @@ func _interact() -> void:
 		else:
 			hud.announce(hud.t("need"))
 		return
+	# B68: complete source transactions always outrank a read-only civic
+	# inspection. In particular, a crossing near the MARKET loading bay may
+	# overlap its 29m cargo interaction radius; never swallow actual delivery.
 	var nearest: String = world.closest_location(position_at,29.0)
 	if nearest == "":
+		if _inspect_completed_civic_site(position_at):
+			return
 		if not driving:
 			var nearby_citizen: int = _closest_citizen(position_at,4.0)
 			if nearby_citizen >= 0:
@@ -889,6 +912,10 @@ func _interact() -> void:
 		return
 	if contract_result == "travel_more":
 		hud.announce(_three("Груз ещё не перевезён: следуйте дорожным маршрутом", "Cargo not transported yet: drive your route", "尚未完成运输里程，请沿路线行驶"))
+		return
+	# Read-only site information becomes available AFTER all actual contract
+	# accepted/completed/travel-more/vehicle-required responses were checked.
+	if _inspect_completed_civic_site(position_at):
 		return
 	if nearest == "depot" and (not driving or absf(car.speed) < 1.5):
 		GameState.data["vehicle_health"] = car.health

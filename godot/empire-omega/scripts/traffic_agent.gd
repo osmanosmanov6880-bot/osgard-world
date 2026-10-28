@@ -3,6 +3,7 @@ extends CharacterBody3D
 ## braking, deterministic routes and visible brake lights. Arcade, not AAA AI.
 const SAFETY = preload("res://scripts/traffic_safety.gd")
 const R47_CROSSING = preload("res://scripts/horizon_r47_crosswalk_prediction.gd")
+const CIVIC_CROSSING = preload("res://scripts/city_reign_civic_traffic_safety.gd")
 const SEDAN_SURFACE = preload("res://scripts/horizon_traffic_sedan_surface.gd")
 const CAR_LENGTH := 4.1
 const DETECTION_RANGE := 27.0
@@ -194,6 +195,15 @@ func _physics_process(delta: float) -> void:
 	after_corner.y = 0.0
 	var bend_limit: float = SAFETY.corner_speed(heading,after_corner,displacement.length(),cruising_speed)
 	var goal: float = minf(bend_limit,SAFETY.desired_speed(cruising_speed,obstacle,signal_distance,wetness))
+	# B62: fund the real city's zebra crossings to actually calm ordinary
+	# resident traffic. One source-locked speed constraint, AFTER original
+	# pedestrian and signal safety. No change to physics, route or payout.
+	# Emergency patrols keep the original response behavior.
+	var real_city: Node = get_node_or_null("/root/GameState")
+	if real_city != null and not patrol_vehicle:
+		var saved_state: Dictionary = real_city.get("data")
+		goal = minf(goal,CIVIC_CROSSING.speed_cap(saved_state,
+			global_position,heading,cruising_speed,patrol_vehicle))
 	# A conservative full stop prevents perpetual low-speed creep into road barriers.
 	if obstacle <= SAFETY.MIN_GAP + 4.0: goal = 0.0
 	var previous_speed: float = speed

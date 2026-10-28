@@ -1,0 +1,64 @@
+name: CITY REIGN approved AAA rooftop LOD - real Godot native QA
+
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/scripts/city_reign_rooftop_geometry.gd'
+      - 'godot/empire-omega/scripts/horizon_r91_skyline_detail.gd'
+      - 'godot/empire-omega/scripts/horizon_r90_street_dressing.gd'
+      - 'godot/empire-omega/tests/v122_city_reign_cinematic_rooftop_lod.gd'
+      - '.github/workflows/city-reign-aaa-rooftop-source-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-source-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Import authentic Godot project without publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Original native suites and new true-geometry proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p city-reign-roof-evidence
+          for fixture in \
+            v78_r90_reference_fidelity \
+            v79_r91_original_architecture \
+            v91_r114_pbr_roofline_luxury \
+            v93_r116_architectural_tower_body \
+            v122_city_reign_cinematic_rooftop_lod; do
+            echo "Running REAL Godot: $fixture"
+            timeout --signal=TERM --kill-after=5s 125s godot --headless \
+              --path godot/empire-omega --script "res://tests/${fixture}.gd" \
+              2>&1 | tee "city-reign-roof-evidence/${fixture}.log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|[1-9][0-9]* FAIL' "city-reign-roof-evidence/${fixture}.log"; then
+              echo "::error::Source acceptance failed: $fixture"
+              exit 1
+            fi
+          done
+      - name: Preserve genuine native logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-native-rooftop-source-evidence
+          path: city-reign-roof-evidence/
+          if-no-files-found: warn
+          retention-days: 14

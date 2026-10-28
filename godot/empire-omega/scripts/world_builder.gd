@@ -42,13 +42,22 @@ var active_chunk_count := 0
 var window_points: Array[Transform3D] = []
 var facade_windows: MultiMeshInstance3D
 var facade_frames: MultiMeshInstance3D
+var city_reign_standard_window_frame_mesh: Mesh
+var city_reign_cinematic_window_frame_mesh: Mesh
 var architecture_trim: MultiMeshInstance3D
 var r98_facade_ribs: MultiMeshInstance3D
 var city_reign_facades: Node3D
+var city_reign_street_architecture: Node3D
 var city_reign_squares: Node3D
 var city_reign_hero_architecture: Node3D
 var city_reign_purchased_skyline: Node3D
+var city_reign_public_works: Node3D
+var city_reign_park_furniture: Node3D
 var city_reign_building_finishes: Array[StandardMaterial3D] = []
+## B49: one mesh LOD record per ORIGINAL colliding building; no extra draw nodes.
+var city_reign_tower_body_lods: Array[Dictionary] = []
+## B55: actual per-camera mesh LOD counts; gameplay authority unchanged.
+var city_reign_tower_lod_counts: Dictionary = {"low":0,"standard":0,"cinematic":0}
 var streetfront: Node3D
 var facade_balconies: Node3D
 var road_paint: Node3D
@@ -75,9 +84,15 @@ const R127_SHELTERS = preload("res://scripts/horizon_r127_street_shelters.gd")
 const R95_MASSING = preload("res://scripts/horizon_r95_city_massing.gd")
 const R98_FINS = preload("res://scripts/horizon_r98_architectural_fins.gd")
 const CITY_REIGN_FACADE = preload("res://scripts/city_reign_cinematic_facades.gd")
+const CITY_REIGN_STREET_ARCHITECTURE = preload("res://scripts/city_reign_street_architecture.gd")
 const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.gd")
 const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.gd")
 const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_skyline.gd")
+const CITY_REIGN_TOWER_BODY = preload("res://scripts/city_reign_tower_body_lod.gd")
+const CITY_REIGN_WINDOW_REVEAL = preload("res://scripts/city_reign_window_reveal_geometry.gd")
+const CITY_REIGN_TOWER_DISTANCE = preload("res://scripts/city_reign_tower_distance_lod.gd")
+const CITY_REIGN_PUBLIC_WORKS = preload("res://scripts/city_reign_civic_outcomes.gd")
+const CITY_REIGN_PARK_FURNITURE = preload("res://scripts/city_reign_park_furniture.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -108,6 +123,7 @@ func _ready() -> void:
 	architecture_trim = ARCHITECTURE_TRIM.new()
 	r98_facade_ribs = R98_FINS.new()
 	city_reign_facades = CITY_REIGN_FACADE.new()
+	city_reign_street_architecture = CITY_REIGN_STREET_ARCHITECTURE.new()
 	streetfront = STREETFRONT_SCENE.new()
 	facade_balconies = BALCONIES_SCENE.new()
 	_create_city()
@@ -117,6 +133,10 @@ func _ready() -> void:
 	city_root.add_child(r98_facade_ribs)
 	city_reign_facades.call("finalize")
 	city_root.add_child(city_reign_facades)
+	# B41: one genuine street-level 3D architectural kit across the existing
+	# building footprints. No gameplay colliders, random draws or fake assets.
+	city_reign_street_architecture.call("finalize")
+	city_root.add_child(city_reign_street_architecture)
 	streetfront.call("finalize")
 	city_root.add_child(streetfront)
 	facade_balconies.call("finalize")
@@ -132,6 +152,16 @@ func _ready() -> void:
 	city_root.add_child(city_reign_squares)
 	_create_waypoint_marker()
 	_create_project_visuals()
+	# B57: authentic saved civic choice physically changes the playable city.
+	# Actual public budget kiosk or earned pedestrian crosswalks; visual only.
+	city_reign_public_works = CITY_REIGN_PUBLIC_WORKS.new()
+	city_root.add_child(city_reign_public_works)
+	city_reign_public_works.call("sync_state",GameState.data,GameState.locale)
+	# B64: a genuine funded community park also changes the physical street.
+	# Existing civic park landmark remains the original project authority.
+	city_reign_park_furniture = CITY_REIGN_PARK_FURNITURE.new()
+	city_root.add_child(city_reign_park_furniture)
+	city_reign_park_furniture.call("sync_state",GameState.data)
 	# B27: 12 original paid municipal 3D facades. The exact real 12
 	# existing StaticBody3D project colliders remain fully authoritative.
 	# Data locations come from _project_position, never invented plots.
@@ -293,6 +323,21 @@ func _create_city() -> void:
 				var actual_body: MeshInstance3D = actual_building.get_node("VisualMesh") as MeshInstance3D
 				var building_finish: StandardMaterial3D = R37_MATERIAL_PACK.facade(color,building_count)
 				actual_body.material_override = building_finish
+				# B49: replace the visible cuboid mesh, never its original StaticBody3D,
+				# BoxShape3D, road collision mask, windows or saved game state.
+				var baseline: Mesh = actual_body.mesh
+				var district_standard: ArrayMesh = CITY_REIGN_TOWER_BODY.make_mesh(
+					width,height,id,building_count,false)
+				var district_cinematic: ArrayMesh = CITY_REIGN_TOWER_BODY.make_mesh(
+					width,height,id,building_count,true)
+				building_finish.vertex_color_use_as_albedo = true
+				city_reign_tower_body_lods.append({
+					"visual":actual_body, "original_mesh":baseline,
+					"standard":district_standard,"cinematic":district_cinematic,
+					"physical_body":actual_building,"width":width,"height":height,
+					"district":id,"current_lod":"standard"
+				})
+				actual_body.mesh = district_standard
 				city_reign_building_finishes.append(building_finish)
 				architecture_trim.call("record",pos,width,height)
 				r98_facade_ribs.call("record",pos,width,height,id)
@@ -302,11 +347,37 @@ func _create_city() -> void:
 					pos,ROAD_INTERVAL,(ix+iz+n)%2==0)
 				streetfront.call("record",pos,width,height,building_count,entrance_face)
 				city_reign_facades.call("record",pos,width,height,id,entrance_face)
+				city_reign_street_architecture.call("record",pos,width,height,id,entrance_face)
 				facade_balconies.call("record",pos,width,height,building_count,entrance_face)
 				_record_windows(pos,width,height,entrance_face)
 				building_count += 1
 				# Emissive parapet gives an evening skyline without external textures.
 				_box(chunk,"RoofLight",Vector3(width+0.35,0.27,width+0.35),Vector3(pos.x,height+0.15,pos.z),Color("69747d"),false,false)
+
+
+## B55: source-native distance LOD. This changes only the original materialized
+## MeshInstance3D.mesh resource, never physics, mission state or window count.
+## The original game already calls update_chunks once per ~1.1s, so per-frame
+## mesh swaps and memory reallocations are strictly avoided.
+func _apply_camera_tower_lod(focus: Vector3,tier: String) -> void:
+	if not focus.is_finite():
+		return
+	var counts: Dictionary = {"low":0,"standard":0,"cinematic":0}
+	for entry in city_reign_tower_body_lods:
+		var body: StaticBody3D = entry["physical_body"]
+		var visual: MeshInstance3D = entry["visual"]
+		var old: String = str(entry.get("current_lod","standard"))
+		var distance: float = CITY_REIGN_TOWER_DISTANCE.projected_distance(
+			focus,body.global_position)
+		var desired_level: String = CITY_REIGN_TOWER_DISTANCE.choose(
+			tier,distance,old)
+		var resource: Mesh = entry["original_mesh"] if desired_level=="low" else entry[desired_level]
+		if visual.mesh != resource:
+			visual.mesh = resource
+		entry["current_lod"] = desired_level
+		counts[desired_level] = int(counts[desired_level])+1
+	assert(CITY_REIGN_TOWER_DISTANCE.bounded_counts(city_reign_tower_body_lods.size(),counts))
+	city_reign_tower_lod_counts = counts
 
 func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 	# Grid-quarter visibility and physics activation. Unlike disk streaming,
@@ -330,6 +401,9 @@ func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 				if collision != null:
 					collision.set_deferred("disabled",not visible_now)
 		building_chunks[key] = entry
+	# Reuse the ORIGINAL 1.1s live-game chunk update tick. Cinematic art
+	# stays near the camera; distant meshes can keep the source cheap LOD.
+	_apply_camera_tower_lod(focus,quality)
 	# Update only when original world chunk culling runs, not every frame.
 	if focus.is_finite():
 		streetlight_focus = focus
@@ -383,6 +457,9 @@ func _create_window_batch() -> void:
 	# One draw batch, rather than a new draw call per window.
 	var frame_mesh := BoxMesh.new()
 	frame_mesh.size = Vector3(1.27,1.60,0.055)
+	# Preserve the true source window transform and shared original GPU batch.
+	city_reign_standard_window_frame_mesh = frame_mesh
+	city_reign_cinematic_window_frame_mesh = CITY_REIGN_WINDOW_REVEAL.cinematic_mesh()
 	var frame_grid := MultiMesh.new()
 	frame_grid.transform_format = MultiMesh.TRANSFORM_3D
 	frame_grid.mesh = frame_mesh
@@ -608,6 +685,16 @@ func apply_visual_budget(mode: String) -> void:
 	# Low and standard players retain the albedo, but skip normal-map cost.
 	for finish in city_reign_building_finishes:
 		finish.normal_enabled = visual_budget == "cinematic"
+	# Swap resources on the SAME original scene MeshInstance3D. LOW retains
+	# the untouched BoxMesh, STANDARD/CINEMATIC use closed sculpted shells.
+	for entry in city_reign_tower_body_lods:
+		var actual: MeshInstance3D = entry["visual"]
+		var desired: Mesh = entry["original_mesh"] if visual_budget=="low" else entry[visual_budget]
+		if actual.mesh != desired:
+			actual.mesh = desired
+		entry["current_lod"] = visual_budget
+	city_reign_tower_lod_counts = {"low":0,"standard":0,"cinematic":0}
+	city_reign_tower_lod_counts[visual_budget] = city_reign_tower_body_lods.size()
 	if weather_particles != null:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if r90_urban != null:
@@ -624,12 +711,18 @@ func apply_visual_budget(mode: String) -> void:
 		r98_facade_ribs.call("set_quality",visual_budget)
 	if city_reign_facades != null:
 		city_reign_facades.call("set_quality",visual_budget)
+	if city_reign_street_architecture != null:
+		city_reign_street_architecture.call("set_quality",visual_budget)
 	if city_reign_squares != null:
 		city_reign_squares.call("set_quality",visual_budget)
 	if city_reign_hero_architecture != null:
 		city_reign_hero_architecture.call("set_quality",visual_budget)
 	if city_reign_purchased_skyline != null:
 		city_reign_purchased_skyline.call("set_quality",visual_budget)
+	if city_reign_public_works != null:
+		city_reign_public_works.call("set_quality",visual_budget)
+	if city_reign_park_furniture != null:
+		city_reign_park_furniture.call("set_quality",visual_budget)
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
 	if facade_balconies != null:
@@ -640,6 +733,14 @@ func apply_visual_budget(mode: String) -> void:
 		cityhall_gateway.visible = visual_budget != "low"
 	if facade_frames != null:
 		facade_frames.visible = visual_budget != "low"
+		# B54: original 3D windows remain exactly one MultiMesh instance
+		# apiece. CINEMATIC gets a physically hollow cast-metal frame, while
+		# STANDARD/LOW retain the lightweight original BoxMesh.
+		var frame_mesh: Mesh = (
+			city_reign_cinematic_window_frame_mesh if visual_budget=="cinematic"
+			else city_reign_standard_window_frame_mesh)
+		if facade_frames.multimesh.mesh != frame_mesh:
+			facade_frames.multimesh.mesh = frame_mesh
 	# Quality tier changes update actual GPU material immediately, even if
 	# original night/district electricity state and cached window colors match.
 	_apply_window_shading(ambience_time)
@@ -674,10 +775,16 @@ func _apply_lighting() -> void:
 	LIGHT_GRADE.apply_night_overlay(sky_environment.environment,sun,atmosphere,ambience_time)
 	if city_reign_facades != null:
 		city_reign_facades.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_street_architecture != null:
+		city_reign_street_architecture.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	if city_reign_squares != null:
 		city_reign_squares.call("sync_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	if city_reign_hero_architecture != null:
 		city_reign_hero_architecture.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_public_works != null:
+		city_reign_public_works.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_park_furniture != null:
+		city_reign_park_furniture.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	# Authored golden-hour grade affects real Godot light only, never UI screenshots.
 	if weather_mode == "clear" and visual_budget == "cinematic":
 		var golden_hour: float = clampf(1.0-absf(ambience_time-18.0)/3.0,0.0,1.0)
@@ -735,6 +842,10 @@ func update_development() -> void:
 		city_reign_hero_architecture.call("sync_state",state)
 	if city_reign_purchased_skyline != null:
 		city_reign_purchased_skyline.call("sync_state",state)
+	if city_reign_public_works != null:
+		city_reign_public_works.call("sync_state",state,GameState.locale)
+	if city_reign_park_furniture != null:
+		city_reign_park_furniture.call("sync_state",state)
 
 func _update_property_visuals() -> void:
 	var owned: Dictionary = GameState.data.get("properties",{})
@@ -748,6 +859,8 @@ func _update_property_visuals() -> void:
 		orb.material_override = _material(Color("e5bd72") if level > 0 else Color("6e9db7"),0.2,0.25,true)
 
 func update_language(lang: String) -> void:
+	if city_reign_public_works != null:
+		city_reign_public_works.call("sync_state",GameState.data,lang)
 	if city_reign_squares != null:
 		city_reign_squares.call("sync_language",lang)
 	for id in markers:

@@ -1,0 +1,116 @@
+name: CITY REIGN WORLD EDITION - private playable source-locked WebGL game package
+
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/scripts/city_reign_street_architecture.gd'
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/scripts/horizon_r91_skyline_detail.gd'
+      - 'godot/empire-omega/tests/v123_city_reign_street_world_integrity.gd'
+      - '.github/workflows/city-reign-world-preview-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Keep only the latest source candidate for this exact PR. Repeated 46-job
+# suites on superseded commits wasted GPU/CPU runners and blocked useful
+# playable acceptance. Never cancel an unrelated PR or a master build.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  private-original-playable-webgl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify original unmodified gameplay main scene and exact source SHA
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          grep -Fq 'run/main_scene="res://scenes/main.tscn"' godot/empire-omega/project.godot
+          test -f godot/empire-omega/scenes/main.tscn
+          mkdir -p city-reign-world-web-preview
+          echo "$SOURCE_SHA" > city-reign-world-web-preview/EXACT-SOURCE-SHA.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build ORIGINAL gameplay scene - never replace with QA pixel fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            2>&1 | tee city-reign-world-web-preview/import-original.log
+          godot --headless --path godot/empire-omega --export-release Web \
+            "$GITHUB_WORKSPACE/city-reign-world-web-preview/index.html"
+          node scripts/localize-godot-web-export.mjs city-reign-world-web-preview
+          test -s city-reign-world-web-preview/index.html
+          test -s city-reign-world-web-preview/index.wasm
+          test -s city-reign-world-web-preview/index.pck
+      - name: Signed hashes, README and explicitly non-public candidate manifest
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os,hashlib,json
+          base=Path('city-reign-world-web-preview')
+          files=sorted(p for p in base.rglob('*') if p.is_file())
+          hashes={str(p.relative_to(base)): hashlib.sha256(p.read_bytes()).hexdigest()
+                  for p in files}
+          (base/'SHA256SUMS.json').write_text(
+            json.dumps(hashes,indent=2)+'\n',encoding='utf8')
+          receipt={
+            'exact_source_sha':os.environ['SOURCE_SHA'],
+            'engine':'Godot 4.4.1',
+            'main_scene':'res://scenes/main.tscn',
+            'artifact_kind':'PRIVATE_PLAYABLE_WEBGL_PREVIEW',
+            'compiled_from_original_gameplay':True,
+            'publicly_deployed':False,
+            'marketed_as_finished_aaa':False,
+            'physical_device_fps_verified':False,
+            'independent_30min_human_playtest_verified':False,
+            'asset_licenses_release_approved':False
+          }
+          (base/'PREVIEW-RECEIPT.json').write_text(
+            json.dumps(receipt,indent=2)+'\n',encoding='utf8')
+          (base/'HOW-TO-RUN.txt').write_text(
+            'CITY REIGN - ORIGINAL PLAYABLE GODOT WEBGL CANDIDATE\n'
+            'Source commit: '+receipt['exact_source_sha']+'\n'
+            'No production deployment. No fake rendered imagery.\n'
+            'Extract this entire artifact folder, then from INSIDE that folder run:\n'
+            'python3 -m http.server 8000\n'
+            'Open http://127.0.0.1:8000/index.html in a WebGL2 browser.\n'
+            'Do not open index.html using file:// because browser CORS may block WASM.\n'
+            'This is a testable candidate, not a finished photorealistic AAA release.\n',
+            encoding='utf8')
+          print('SOURCE-LOCKED ORIGINAL PLAYABLE PREVIEW:',receipt['exact_source_sha'])
+          PY
+      - name: Store private playable GAME HTML, WASM and PCK as a candidate only
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-world-original-playable-webgl-${{ github.run_id }}
+          path: city-reign-world-web-preview/
+          retention-days: 14
+          if-no-files-found: error
+          include-hidden-files: false
