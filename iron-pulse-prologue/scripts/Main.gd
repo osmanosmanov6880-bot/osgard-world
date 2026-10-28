@@ -39,7 +39,12 @@ const COPY := {
         "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "sector_reactor": "РЕАКТОРНАЯ ГАЛЕРЕЯ", "sector_service": "ТЕХНИЧЕСКИЙ СЕКТОР", "sector_evacuation": "ЭВАКУАЦИОННЫЙ ШЛЮЗ",
         "visited_sectors": "ИССЛЕДОВАНО СЕКТОРОВ: {count}/3",
-        "continue": "ПРОДОЛЖИТЬ СОХРАНЕНИЕ", "radio_journal": "РАДИОАРХИВ / J",
+        "continue": "ПРОДОЛЖИТЬ", "radio_journal": "РАДИОАРХИВ / J",
+        "operations":"КАРЬЕРА  /  O",
+        "operations_pause":"ИСТОРИЯ ОПЕРАЦИЙ",
+        "operations_end":"КАРЬЕРА И ДОСТИЖЕНИЯ",
+        "career_result":"КАРЬЕРА: {operations} операций / {victories} успешных",
+        "career_awards":"НОВЫЕ ДОСТИЖЕНИЯ: {awards}",
         "choice_crew": "1  /  ЛЮДИ", "choice_core": "2  /  ЯДРО",
         "story_choice": "МАРА ЖДЁТ ПРИКАЗА: 1 — ЭКИПАЖ / 2 — РЕАКТОР",
         "chapter_final": "АКТ {act} / РЕШЕНИЕ: {priority}",
@@ -106,7 +111,12 @@ const COPY := {
         "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "sector_reactor": "REACTOR GALLERY", "sector_service": "SERVICE SPINE", "sector_evacuation": "EVACUATION LOCK",
         "visited_sectors": "SECTORS EXPLORED: {count}/3",
-        "continue": "CONTINUE CHECKPOINT", "radio_journal": "RADIO ARCHIVE / J",
+        "continue": "CONTINUE", "radio_journal": "RADIO ARCHIVE / J",
+        "operations":"CAREER  /  O",
+        "operations_pause":"OPERATOR RECORD",
+        "operations_end":"CAREER & ACHIEVEMENTS",
+        "career_result":"CAREER: {operations} operations / {victories} extractions",
+        "career_awards":"NEW ACHIEVEMENTS: {awards}",
         "choice_crew": "1  /  CREW", "choice_core": "2  /  CORE",
         "story_choice": "MARA AWAITS YOUR ORDER: 1 — CREW / 2 — REACTOR",
         "chapter_final": "ACT {act} / PRIORITY: {priority}",
@@ -155,6 +165,9 @@ const COPY := {
 var session: IPCrisisEngine = IPCrisisEngine.new()
 var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
+var career: IPCareerProfile = IPCareerProfile.new()
+var career_path: String = IPCareerProfile.DEFAULT_PATH
+var career_recorded_run: bool = false
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
@@ -201,6 +214,11 @@ var intro_title: Label
 var intro_body: Label
 var intro_button: Button
 var continue_button: Button
+var operations_button: Button
+var operations_pause_button: Button
+var operations_end_button: Button
+var operations_panel: IPOperationsPanel
+var operations_auto_paused: bool = false
 var radio_panel: PanelContainer
 var radio_speaker: Label
 var radio_dialogue: Label
@@ -247,6 +265,13 @@ var _browser_css_size: Vector2i = Vector2i.ZERO
 var _last_web_resize_check: float = -99.0
 
 func _ready() -> void:
+    # Never write into the shared real profile during isolated headless QA.
+    if DisplayServer.get_name() != "headless":
+        career.load(career_path)
+    locale = str(career.preferences["language"])
+    quality_mode = str(career.preferences["graphics"])
+    reduced_motion = bool(career.preferences["reduced_motion"])
+    muted_audio = bool(career.preferences["muted"])
     session.reset()
     story.reset(session.scenario_id)
     _make_environment()
@@ -255,6 +280,14 @@ func _ready() -> void:
     add_child(world_sectors)
     audio_director = IPSoundscape.new()
     add_child(audio_director)
+    audio_director.set_muted(muted_audio)
+    if quality_mode=="eco":
+        art_stage.set_quality("eco")
+        world_sectors.set_quality("eco")
+        reactor_atrium.set_quality("eco")
+        containment_fx.set_quality("eco")
+        for i in range(legacy_lamps.size()):
+            legacy_lamps[i].visible = i % 3 == 0
     _make_player()
     _make_hud()
     _attach_web_state()
@@ -320,6 +353,20 @@ func _publish_web_state() -> void:
         scenario_rects[str(scenario_key)] = _hud_rect(scenario_buttons[scenario_key] as Control)
     state["scenario_button_rects"] = scenario_rects
     state["end_visible"] = end_panel.visible
+    state["operations_platform"] = {
+        "open":operations_panel.visible if operations_panel != null else false,
+        "total":career.operations,
+        "victories":career.victories,
+        "earned":career.achievements.size(),
+        "recommended":career.recommended_scenario(),
+        "mission_records":career.snapshot()["mission_records"],
+        "primary_button_rect":_hud_rect(operations_button) if operations_button != null else [],
+        "close_button_rect":_hud_rect(operations_panel.close_button) if operations_panel != null else [],
+        "panel_rect":_hud_rect(operations_panel) if operations_panel != null else [],
+        "launch_visible":operations_panel.launch_button.visible if operations_panel != null else false,
+        "heading":operations_panel._heading.text if operations_panel != null else "",
+        "history_count":career.recent.size()
+    }
     state["quality_mode"] = quality_mode
     state["reduced_motion"] = reduced_motion
     state["audio_muted"] = muted_audio
@@ -781,6 +828,7 @@ func _make_hud() -> void:
     _make_overlays()
     _make_touch_controls()
     _make_radio_ui()
+    _make_operations_ui()
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
 
@@ -842,8 +890,20 @@ func _make_overlays() -> void:
     continue_button.text = _copy("continue")
     continue_button.custom_minimum_size = Vector2(0,46)
     continue_button.pressed.connect(_continue_checkpoint)
-    start_box.add_child(continue_button)
+    var menu_row := HBoxContainer.new()
+    menu_row.name = "MainMenuActions"
+    menu_row.add_theme_constant_override("separation",8)
+    start_box.add_child(menu_row)
+    continue_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    menu_row.add_child(continue_button)
     continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
+    operations_button = Button.new()
+    operations_button.name = "OpenOperationsHub"
+    operations_button.text = _copy("operations")
+    operations_button.custom_minimum_size = Vector2(0,46)
+    operations_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    operations_button.pressed.connect(_open_operations)
+    menu_row.add_child(operations_button)
     _update_scenario_picker()
     pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -856,8 +916,14 @@ func _make_overlays() -> void:
     resume_button.custom_minimum_size = Vector2(0,56)
     resume_button.pressed.connect(_resume)
     pause_box.add_child(resume_button)
+    operations_pause_button = Button.new()
+    operations_pause_button.name = "PauseOperationsHub"
+    operations_pause_button.text = _copy("operations_pause")
+    operations_pause_button.custom_minimum_size.y = 46
+    operations_pause_button.pressed.connect(_open_operations)
+    pause_box.add_child(operations_pause_button)
     pause_panel.visible = false
-    end_panel = _panel(hud_root,Rect2(-300,-160,300,160),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
+    end_panel = _panel(hud_root,Rect2(-300,-230,300,230),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
     end_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var end_box := VBoxContainer.new()
     end_box.add_theme_constant_override("separation",22)
@@ -869,6 +935,12 @@ func _make_overlays() -> void:
     end_button.custom_minimum_size = Vector2(0,55)
     end_button.pressed.connect(_restart)
     end_box.add_child(end_button)
+    operations_end_button = Button.new()
+    operations_end_button.name = "EndOperationsHub"
+    operations_end_button.text = _copy("operations_end")
+    operations_end_button.custom_minimum_size.y = 46
+    operations_end_button.pressed.connect(_open_operations)
+    end_box.add_child(operations_end_button)
     end_panel.visible = false
 
 func _touch_button(parent: Control, text_value: String, x: float, y: float, width: float, move_key: String = "") -> Button:
@@ -1006,6 +1078,9 @@ func _layout_hud() -> void:
     prompt_panel.offset_top = -128.0
     prompt_panel.offset_bottom = -62.0
     intro_body.custom_minimum_size.x = minf(500.0,width-66.0)
+    if operations_panel != null:
+        var view_height: float = float(_browser_css_size.y) if _browser_css_size.y>0 else get_viewport().get_visible_rect().size.y
+        operations_panel.apply_layout(width,view_height)
     intro_title.add_theme_font_size_override("font_size",20 if narrow else 29)
     intro_body.add_theme_font_size_override("font_size",13 if narrow else 15)
     brand_label.add_theme_font_size_override("font_size",20 if narrow else 27)
@@ -1055,6 +1130,87 @@ func _layout_hud() -> void:
     radio_dialogue.add_theme_font_size_override("font_size",12 if narrow else 14)
     _refresh_radio_ui()
     _apply_cinematic_view()
+
+func _current_preferences() -> Dictionary:
+    return {
+        "language":locale,"graphics":quality_mode,
+        "reduced_motion":reduced_motion,"muted":muted_audio
+    }
+
+func _save_preferences() -> void:
+    var latest: Dictionary = _current_preferences()
+    for option in latest:
+        career.set_preference(str(option),latest[option])
+    if DisplayServer.get_name()!="headless" or career_path!=IPCareerProfile.DEFAULT_PATH:
+        career.save(career_path)
+
+func _change_operations_setting(option: String) -> void:
+    if operations_panel==null or not operations_panel.visible:
+        return
+    match option:
+        "language": _toggle_language()
+        "graphics": _toggle_quality()
+        "reduced_motion": _toggle_motion()
+        "muted": _toggle_audio()
+        _: return
+    operations_panel.set_view(career,locale,not started,_current_preferences())
+
+func _make_operations_ui() -> void:
+    operations_panel = IPOperationsPanel.new()
+    hud_root.add_child(operations_panel)
+    operations_panel.close_requested.connect(_close_operations)
+    operations_panel.launch_requested.connect(_launch_from_operations)
+    operations_panel.setting_requested.connect(_change_operations_setting)
+
+func _open_operations() -> void:
+    if operations_panel == null or operations_panel.visible:
+        return
+    if journal_panel.visible:
+        _toggle_journal()
+    if cinematic_view:
+        cinematic_view = false
+        _apply_cinematic_view()
+    operations_auto_paused = started and not paused and not session.finished()
+    if operations_auto_paused:
+        paused = true
+        audio_director.set_active(false)
+    pause_panel.visible = false
+    intro_panel.visible = false
+    end_panel.visible = false
+    operations_panel.set_view(career,locale,not started,_current_preferences())
+    var screen_width: float = float(_browser_css_size.x) if _browser_css_size.x>0 else get_viewport().get_visible_rect().size.x
+    var screen_height: float = float(_browser_css_size.y) if _browser_css_size.y>0 else get_viewport().get_visible_rect().size.y
+    operations_panel.apply_layout(screen_width,screen_height)
+    operations_panel.visible = true
+    operations_panel.close_button.grab_focus()
+    if DisplayServer.get_name()!="headless":
+        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+    _publish_web_state()
+
+func _close_operations() -> void:
+    if operations_panel == null or not operations_panel.visible:
+        return
+    operations_panel.visible = false
+    if not started:
+        intro_panel.visible = true
+    elif session.finished():
+        end_panel.visible = true
+    elif operations_auto_paused:
+        paused = false
+        audio_director.set_active(true)
+    else:
+        pause_panel.visible = paused
+    operations_auto_paused = false
+    if DisplayServer.get_name()!="headless":
+        Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if started and not paused and not session.finished() else Input.MOUSE_MODE_VISIBLE)
+    _refresh_hud()
+
+func _launch_from_operations(next_scenario: String) -> void:
+    if started or not IPCrisisEngine.SCENARIOS.has(next_scenario):
+        return
+    _close_operations()
+    _select_scenario(next_scenario)
+    start_run()
 
 func _apply_cinematic_view() -> void:
     # One-key playable environment inspection. No movement, game timers,
@@ -1208,6 +1364,7 @@ func _continue_checkpoint() -> bool:
     pause_panel.visible = false
     end_panel.visible = false
     radio_ttl = 11.0
+    career_recorded_run = false
     _update_scenario_picker()
     _refresh_hud()
     _refresh_radio_ui()
@@ -1241,6 +1398,7 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    career_recorded_run = false
     cinematic_view = false
     _apply_cinematic_view()
     story.reset(selected_scenario)
@@ -1259,6 +1417,7 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    career_recorded_run = false
     cinematic_view = false
     _apply_cinematic_view()
     session.reset(selected_scenario)
@@ -1304,6 +1463,29 @@ func _pause_toggle() -> void:
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED)
 
+func _toggle_audio() -> void:
+    muted_audio = not muted_audio
+    audio_director.set_muted(muted_audio)
+    _announce("audio_off" if muted_audio else "audio_on")
+    _save_preferences()
+
+func _toggle_motion() -> void:
+    reduced_motion = not reduced_motion
+    walking_phase = 0.0
+    _announce("motion_reduced" if reduced_motion else "motion_normal")
+    _save_preferences()
+
+func _toggle_quality() -> void:
+    quality_mode = "eco" if quality_mode=="hero" else "hero"
+    art_stage.set_quality(quality_mode)
+    world_sectors.set_quality(quality_mode)
+    reactor_atrium.set_quality(quality_mode)
+    containment_fx.set_quality(quality_mode)
+    for i in range(legacy_lamps.size()):
+        legacy_lamps[i].visible = quality_mode=="hero" or i%3==0
+    _announce("quality_eco" if quality_mode=="eco" else "quality_hero")
+    _save_preferences()
+
 func _toggle_language() -> void:
     locale = "en" if locale == "ru" else "ru"
     intro_body.text = _copy("intro")
@@ -1312,10 +1494,16 @@ func _toggle_language() -> void:
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
     end_button.text = _copy("restart")
+    operations_button.text = _copy("operations")
+    operations_pause_button.text = _copy("operations_pause")
+    operations_end_button.text = _copy("operations_end")
+    if operations_panel != null and operations_panel.visible:
+        operations_panel.set_view(career,locale,not started,_current_preferences())
     footer_label.text = _copy("footer")
     _announce("language")
     _refresh_hud()
     _refresh_radio_ui()
+    _save_preferences()
 
 func _gamepad_axis(axis_id: int) -> float:
     var joypads: Array[int] = Input.get_connected_joypads()
@@ -1325,6 +1513,9 @@ func _gamepad_axis(axis_id: int) -> float:
     return reading if absf(reading) >= 0.18 else 0.0
 
 func _gamepad_button(button_index: int) -> void:
+    if button_index == JOY_BUTTON_BACK:
+        _open_operations()
+        return
     # Hardware performance/compatibility still requires real controller QA.
     # This dispatch handles Godot's mapped standard gamepad button events.
     if button_index == JOY_BUTTON_START:
@@ -1356,6 +1547,18 @@ func _gamepad_button(button_index: int) -> void:
             _choose_priority("core")
 
 func _input(event: InputEvent) -> void:
+    if operations_panel != null and operations_panel.visible:
+        if event is InputEventKey and event.pressed and not event.echo:
+            if event.keycode in [KEY_ESCAPE,KEY_O,KEY_TAB]:
+                _close_operations()
+            elif event.keycode == KEY_L:
+                _toggle_language()
+        elif event is InputEventJoypadButton and event.pressed and event.button_index in [JOY_BUTTON_BACK,JOY_BUTTON_B,JOY_BUTTON_START]:
+            _close_operations()
+        return
+    if event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_O,KEY_TAB]:
+        _open_operations()
+        return
     if event is InputEventJoypadButton and event.pressed:
         _gamepad_button(event.button_index)
         return
@@ -1364,24 +1567,13 @@ func _input(event: InputEvent) -> void:
             _toggle_language()
             return
         if event.keycode == KEY_M:
-            muted_audio = not muted_audio
-            audio_director.set_muted(muted_audio)
-            _announce("audio_off" if muted_audio else "audio_on")
+            _toggle_audio()
             return
         if event.keycode == KEY_V:
-            reduced_motion = not reduced_motion
-            walking_phase = 0.0
-            _announce("motion_reduced" if reduced_motion else "motion_normal")
+            _toggle_motion()
             return
         if event.keycode == KEY_G:
-            quality_mode = "eco" if quality_mode == "hero" else "hero"
-            art_stage.set_quality(quality_mode)
-            world_sectors.set_quality(quality_mode)
-            reactor_atrium.set_quality(quality_mode)
-            containment_fx.set_quality(quality_mode)
-            for i in range(legacy_lamps.size()):
-                legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
-            _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
+            _toggle_quality()
             return
         if event.keycode == KEY_C and started and not paused and not session.finished():
             cinematic_view = not cinematic_view
@@ -1627,6 +1819,11 @@ func _show_end() -> void:
     _apply_cinematic_view()
     if end_panel.visible:
         return
+    if not career_recorded_run:
+        var recorded: Dictionary = career.record_finished(session,visited_sectors)
+        career_recorded_run = not recorded.is_empty()
+        if career_recorded_run and (DisplayServer.get_name()!="headless" or career_path!=IPCareerProfile.DEFAULT_PATH):
+            career.save(career_path)
     end_panel.visible = true
     if DisplayServer.get_name() != "headless":
         checkpoint_store.clear(checkpoint_path)
@@ -1641,6 +1838,12 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    end_stats.text += "\n" + _copy("career_result").format({"operations":career.operations,"victories":career.victories})
+    if not career.last_awards.is_empty():
+        var earned_names: Array[String] = []
+        for achievement_id in career.last_awards:
+            earned_names.append(career.achievement_title(achievement_id,locale))
+        end_stats.text += "\n" + _copy("career_awards").format({"awards":", ".join(earned_names)})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 

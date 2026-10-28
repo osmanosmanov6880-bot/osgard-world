@@ -245,6 +245,81 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                     real_width, real_height)
                                 assert rect[1] + rect[3] < cards["prompt"][1] - 1, (
                                     "Mobile touch target obstructed by prompt card",label,rect,cards["prompt"])
+                        # V9: the actual in-game Operations Center is a native
+                        # Godot Control opened by real keyboard/touch, NOT HTML.
+                        ops = idle.get("operations_platform",{})
+                        assert ops.get("open") is False and ops.get("total")==0 and ops.get("victories")==0, (
+                            "Fictional career history or unrequested account tracking on fresh load",ops)
+                        assert ops.get("earned")==0 and ops.get("recommended")=="blackout", (
+                            "Mission mastery recommendation not linked to clean local profile",ops)
+                        menu_rect=ops.get("primary_button_rect",[])
+                        assert len(menu_rect)==4 and menu_rect[2]>=75 and menu_rect[3]>=44, (
+                            "Main menu has no accessible real Godot career button",menu_rect)
+                        if mobile:
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            ox=bounds["x"]+(menu_rect[0]+menu_rect[2]/2)*bounds["width"]/idle["viewport"][0]
+                            oy=bounds["y"]+(menu_rect[1]+menu_rect[3]/2)*bounds["height"]/idle["viewport"][1]
+                            assert 0<=ox<=size["width"] and 0<=oy<=size["height"],(
+                                "Mobile career menu button offscreen",menu_rect,size)
+                            page.touchscreen.tap(ox,oy)
+                        else:
+                            page.keyboard.press("o")
+                        deadline=time.monotonic()+28
+                        current={}
+                        while time.monotonic()<deadline:
+                            current=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if current.get("operations_platform",{}).get("open") is True:
+                                break
+                            page.wait_for_timeout(200)
+                        operator_ui=current.get("operations_platform",{})
+                        assert operator_ui.get("open") is True and current.get("intro_visible") is False, (
+                            "Real operations control did not open and cover main menu",current)
+                        assert operator_ui.get("launch_visible") is True and operator_ui.get("history_count")==0, (
+                            "Empty account invented achievements or mission launch unavailable",operator_ui)
+                        assert "ИСТОРИЯ" in operator_ui.get("heading",""),(
+                            "Actual RU command center is not localized",operator_ui)
+                        ops_rect=operator_ui.get("panel_rect",[])
+                        assert len(ops_rect)==4 and ops_rect[0]>=0 and ops_rect[0]+ops_rect[2]<=size["width"]+3, (
+                            "Operations platform extends beyond real mobile/desktop canvas",ops_rect,size)
+                        assert ops_rect[1]>=0 and ops_rect[1]+ops_rect[3]<=size["height"]+3, (
+                            "Operations interface is vertically clipped",ops_rect,size)
+                        if mobile:
+                            assert ops_rect[2]>=335 and ops_rect[2]<=390,(
+                                "Mobile real career board too tiny to be readable",ops_rect)
+                        page.wait_for_timeout(250)
+                        operations_png=page.screenshot(timeout=60000,animations="disabled")
+                        operations_name="operations-"+name+".png"
+                        (output/operations_name).write_bytes(operations_png)
+                        report.setdefault("v9_real_operations_center",{})[name]={
+                            "image":operations_name,
+                            "real_godot_control":True,
+                            "opened_by":"native touchscreen tap" if mobile else "native keyboard O",
+                            "rect":ops_rect,
+                            "locale":"ru",
+                            "lifetime_operations":operator_ui["total"],
+                            "network_tracking":False
+                        }
+                        if mobile:
+                            close_rect=operator_ui.get("close_button_rect",[])
+                            assert len(close_rect)==4 and close_rect[3]>=44,close_rect
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            page.touchscreen.tap(
+                                bounds["x"]+(close_rect[0]+close_rect[2]/2)*bounds["width"]/current["viewport"][0],
+                                bounds["y"]+(close_rect[1]+close_rect[3]/2)*bounds["height"]/current["viewport"][1])
+                        else:
+                            page.keyboard.press("o")
+                        deadline=time.monotonic()+28
+                        while time.monotonic()<deadline:
+                            current=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if current.get("operations_platform",{}).get("open") is False and current.get("intro_visible") is True:
+                                break
+                            page.wait_for_timeout(200)
+                        assert current.get("operations_platform",{}).get("open") is False and current.get("intro_visible") is True, (
+                            "Operations center cannot return to original playable menu",current)
+                        assert current.get("scenario")=="blackout" and current.get("started") is False, (
+                            "Opening account portfolio modified real emergency state",current)
                         # Real Godot input: three different emergencies selected
                         # with genuine native Button clicks/taps, not state injection.
                         selector_rects = idle.get("scenario_button_rects", {})
