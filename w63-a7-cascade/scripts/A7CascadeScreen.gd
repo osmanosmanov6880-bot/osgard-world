@@ -218,6 +218,7 @@ var top_rail: HFlowContainer
 var w78_touch_overlay: A7TouchFieldControls
 var w79_mission_deck: A7MobileMissionDeck
 var w80_full_bleed: A7FullBleedViewport
+var w82_nav_cockpit: A7MissionNavCockpit
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -470,6 +471,13 @@ func _build() -> void:
     w79_mission_deck.save_requested.connect(_save_checkpoint)
     w79_mission_deck.load_requested.connect(_load_checkpoint)
     w79_mission_deck.restart_requested.connect(_restart)
+    # W82: new real source-only navigation in actual same full-bleed game.
+    # It receives no action signals and cannot override game state or physics.
+    w82_nav_cockpit = A7MissionNavCockpit.new()
+    stage_shell.add_child(w82_nav_cockpit)
+    w82_nav_cockpit.build(stage_3d.spatial_mission,
+        stage_3d.field_operations,stage_3d.first_person,
+        stage_3d.mission_wayfinder)
     cinema_readout = _label(cinema, "", 12, MINT)
     w76_objective_label = _label(cinema, "", 15, GOLD)
     w76_objective_label.name = "W76ActualMissionGoalAndPhysicalDistance"
@@ -1249,6 +1257,8 @@ func _layout_stage() -> void:
         w79_mission_deck.set_context(touch_context,w76_immersive,
             stage_3d.first_person.piloting,locale,size.x,model.snapshot())
         w79_mission_deck.configure_landscape(landscape_touch)
+    if w82_nav_cockpit != null:
+        w82_nav_cockpit.configure(size.x)
     if cinematic_hud != null:
         cinematic_hud.set_compact_mode(compact)
     for view in camera_buttons:
@@ -1445,6 +1455,9 @@ func _render(state: Dictionary) -> void:
     if w79_mission_deck != null and stage_3d != null:
         w79_mission_deck.set_context(_w81_touch_context(),w76_immersive,
             stage_3d.first_person.piloting,locale,size.x,state)
+    if w82_nav_cockpit != null and stage_3d != null:
+        w82_nav_cockpit.set_context(w76_immersive,
+            stage_3d.first_person.piloting,locale,state)
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
     load_button.text = _t("load_game")
@@ -1723,6 +1736,17 @@ func _publish_web_accessibility() -> void:
             w78_touch_overlay.visible and w79_mission_deck.visible)
             if w80_full_bleed != null and w78_touch_overlay != null and w79_mission_deck != null else false,
         "w81_real_phone_hardware_certified":false,
+        "w82_native_navigation_visible":w82_nav_cockpit.visible if w82_nav_cockpit != null else false,
+        "w82_source_phase":int(w82_nav_cockpit.qa_readout()["source_original_phase"]) if w82_nav_cockpit != null else -1,
+        "w82_source_target":str(w82_nav_cockpit.qa_readout()["source_target_kind"]) if w82_nav_cockpit != null else "none",
+        "w82_real_player_body_id":int(w82_nav_cockpit.qa_readout()["real_player_body_id"]) if w82_nav_cockpit != null else 0,
+        "w82_real_goal_distance_m":float(w82_nav_cockpit.qa_readout()["real_distance_m"]) if w82_nav_cockpit != null else -1.0,
+        "w82_real_device_proximity":bool(w82_nav_cockpit.qa_readout()["true_physical_device_near"]) if w82_nav_cockpit != null else false,
+        "w82_navigation_source_redraws":int(w82_nav_cockpit.qa_readout()["real_source_redraws"]) if w82_nav_cockpit != null else 0,
+        "w82_compass_source_label":str(w82_nav_cockpit.qa_readout()["label"]) if w82_nav_cockpit != null else "",
+        "w82_compass_source_guidance":str(w82_nav_cockpit.qa_readout()["guidance"]) if w82_nav_cockpit != null else "",
+        "w82_no_automatic_gameplay":true,
+        "w82_real_phone_hardware_certified":false,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1785,6 +1809,8 @@ func _publish_web_accessibility() -> void:
         "w80_touch_look_right":_web_rect(w78_touch_overlay.controls["look_right"] as Control) if w78_touch_overlay != null else [],
         "w80_native_touch_rail":_web_rect(w78_touch_overlay.rail) if w78_touch_overlay != null else [],
         "w80_native_mission_panel":_web_rect(w79_mission_deck.panel) if w79_mission_deck != null else [],
+        "w82_native_compass_hud":_web_rect(w82_nav_cockpit.frame) if w82_nav_cockpit != null else [],
+        "w82_nav_label":_web_rect(w82_nav_cockpit.title_label) if w82_nav_cockpit != null else [],
         "w80_true_native_menu":_web_rect(w80_full_bleed.exit_button) if w80_full_bleed != null else [],
         "w80_true_native_language":_web_rect(w80_full_bleed.language_button) if w80_full_bleed != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),
