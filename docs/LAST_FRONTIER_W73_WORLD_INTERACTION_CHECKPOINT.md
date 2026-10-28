@@ -14,6 +14,10 @@ W72 accepted source: `b3d25a5004a1a1b26e280094580090043e45f2d7`. Actual nine-sui
 - A centered lightweight single crosshair and one short RU/EN target hint appear only in extended first-person mode. No navigation clutter in default game, no static image imitating rendered game pixels.
 - The first accepted W72 mechanic still rotates the genuine camera toward equipment where necessary, without teleporting the actor; headless native and Chromium recheck real framebuffer and physics.
 
+## W73 true first-person optical QA correction
+
+The first actual W73 Chromium run correctly passed **all ten native suites (66 W73 assertions)** and reused the real W72 WebGL game (9 verified original frames), but then failed: the reticle was not physically over the valve after the W72-style automatic camera focus. Source-bound real screenshots and a new native repro at exact browser body pose `(6.4,0.706,3.4)` diagnosed the cause: a negative sign in the eye-camera pitch. Godot `Camera3D` looks along local **-Z**, so a machine ABOVE actual eye level requires **positive** X pitch. The previous `-atan2(delta.y,flat)` aimed down into the floor. W73 corrects this to `+atan2(delta.y,flat)`. The new native test recreates actual player pose and demands a real `RayCast3D` hit on the valve after in-game camera auto-focus; the browser QA also retains a real post-focus frame and source-bound ray/collider diagnostics. **No raycast success is invented, no target click is faked, and no QA is skipped.**
+
 ## Main milestone B — actual safe local session persistence
 
 **New original source** `A7SessionCheckpoint.gd`: explicit **F5 / Save Shift** and **F9 / Restore Session** plus actual on-screen native accessible controls.
