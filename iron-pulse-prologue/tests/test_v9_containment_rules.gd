@@ -129,6 +129,8 @@ func _run() -> void:
     _check(story.on_game_event("suit_failure","") and story.latest_key == "suit_failure",
         "Real operator loss has a proper authored third-act consequence")
     fields.queue_free()
+    restored.free()
+    collapse.free()
     await process_frame
     _finish()
 
