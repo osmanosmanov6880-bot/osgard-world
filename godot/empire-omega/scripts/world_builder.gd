@@ -22,6 +22,10 @@ const LOCATION_DATA = {
 var locations := {}
 var markers := {}
 var project_visuals := {}
+## B33: exact four paid original collider/box meshes shared on demand,
+## never recreated when the HQ refreshes the city without a new purchase.
+var project_visual_levels: Dictionary = {}
+var project_geometry_cache: Dictionary = {}
 var property_markers := {}
 var weather_particles: GPUParticles3D
 var weather_mode := "clear"
@@ -43,6 +47,7 @@ var r98_facade_ribs: MultiMeshInstance3D
 var city_reign_facades: Node3D
 var city_reign_squares: Node3D
 var city_reign_hero_architecture: Node3D
+var city_reign_purchased_skyline: Node3D
 var city_reign_building_finishes: Array[StandardMaterial3D] = []
 var streetfront: Node3D
 var facade_balconies: Node3D
@@ -72,6 +77,7 @@ const R98_FINS = preload("res://scripts/horizon_r98_architectural_fins.gd")
 const CITY_REIGN_FACADE = preload("res://scripts/city_reign_cinematic_facades.gd")
 const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.gd")
 const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.gd")
+const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_skyline.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -126,6 +132,18 @@ func _ready() -> void:
 	city_root.add_child(city_reign_squares)
 	_create_waypoint_marker()
 	_create_project_visuals()
+	# B27: 12 original paid municipal 3D facades. The exact real 12
+	# existing StaticBody3D project colliders remain fully authoritative.
+	# Data locations come from _project_position, never invented plots.
+	var original_purchased_plots: Dictionary = {}
+	for id in GameState.BUILDING_ORDER:
+		original_purchased_plots[id] = {
+			"position":_project_position(id),
+			"district":str(GameState.BUILDINGS[id]["district"])
+		}
+	city_reign_purchased_skyline = CITY_REIGN_PAID_SKYLINE.new()
+	city_reign_purchased_skyline.call("configure",original_purchased_plots)
+	city_root.add_child(city_reign_purchased_skyline)
 	_create_property_markers()
 	_create_weather_particles()
 	# Original individual 85 cuboid TreeCrown/TreeTrunk decorations removed.
@@ -503,6 +521,7 @@ func _create_project_visuals() -> void:
 		var holder := _box(city_root,"Project_" + id,Vector3(15,6,15),pos + Vector3(0,3,0),DISTRICT_COLORS[district].lightened(0.27),true)
 		var roof := _box(holder,"RoofNeon",Vector3(15.5,0.2,15.5),Vector3(0,3.3,0),Color("84c4c6"),false,true)
 		project_visuals[id] = {"root":holder,"roof":roof}
+		project_visual_levels[id] = -1
 		holder.visible = false
 
 func _create_property_markers() -> void:
@@ -609,6 +628,8 @@ func apply_visual_budget(mode: String) -> void:
 		city_reign_squares.call("set_quality",visual_budget)
 	if city_reign_hero_architecture != null:
 		city_reign_hero_architecture.call("set_quality",visual_budget)
+	if city_reign_purchased_skyline != null:
+		city_reign_purchased_skyline.call("set_quality",visual_budget)
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
 	if facade_balconies != null:
@@ -680,19 +701,30 @@ func update_development() -> void:
 		var nodes: Dictionary = project_visuals[id]
 		var root: Node3D = nodes["root"]
 		root.visible = level > 0
+		# Prior source allocated 12 NEW BoxMesh/BoxShape3D pairs EVERY time
+		# a citizen dialog/HQ/map refreshed development, even with no purchase.
+		# Only rebuild real original physics size on an ACTUAL changed level.
+		if int(project_visual_levels.get(id,-1)) == level:
+			continue
+		project_visual_levels[id] = level
 		var project_collider: CollisionShape3D = root.get_node("CollisionShape3D") as CollisionShape3D
 		project_collider.set_deferred("disabled",level == 0)
 		if level > 0:
 			var height: float = 6.0 + float(level) * 8.0
 			root.position = _project_position(id) + Vector3(0,height*0.5,0)
+			# FOUR shared source physical collider sizes (Lv1–Lv4),
+			# at most one BoxMesh and BoxShape3D allocation per distinct
+			# original level, not per building and redraw.
+			if not project_geometry_cache.has(level):
+				var cached_box := BoxMesh.new()
+				cached_box.size = Vector3(15,height,15)
+				var cached_shape := BoxShape3D.new()
+				cached_shape.size = Vector3(15,height,15)
+				project_geometry_cache[level] = {"mesh":cached_box,"shape":cached_shape}
+			var source_physics: Dictionary = project_geometry_cache[level]
 			var body: MeshInstance3D = root.get_node("VisualMesh") as MeshInstance3D
-			var box := BoxMesh.new()
-			box.size = Vector3(15,height,15)
-			body.mesh = box
-			var collision: CollisionShape3D = root.get_node("CollisionShape3D")
-			var shape := BoxShape3D.new()
-			shape.size = Vector3(15,height,15)
-			collision.shape = shape
+			body.mesh = source_physics["mesh"]
+			project_collider.shape = source_physics["shape"]
 			var roof: Node3D = nodes["roof"]
 			roof.position.y = height*0.5 + 0.15
 	_update_property_visuals()
@@ -701,6 +733,8 @@ func update_development() -> void:
 	# earned, not simulated by opening a menu or switching graphics.
 	if city_reign_hero_architecture != null:
 		city_reign_hero_architecture.call("sync_state",state)
+	if city_reign_purchased_skyline != null:
+		city_reign_purchased_skyline.call("sync_state",state)
 
 func _update_property_visuals() -> void:
 	var owned: Dictionary = GameState.data.get("properties",{})
