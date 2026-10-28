@@ -1157,7 +1157,9 @@ func _checkpoint_payload() -> Dictionary:
         "quality":quality_mode,
         "reduced_motion":reduced_motion,
         "player_position":[player.position.x,player.position.y,player.position.z],
-        "visited_sectors":visited_sectors.duplicate()
+        "visited_sectors":visited_sectors.duplicate(),
+        "campaign_enabled":campaign_enabled,
+        "campaign":campaign.checkpoint()
     }
 
 func _save_checkpoint() -> bool:
@@ -1174,6 +1176,16 @@ func _continue_checkpoint() -> bool:
         return false
     var restored_engine := IPCrisisEngine.new()
     var restored_story := IPStoryDirector.new()
+    # Old V6 checkpoints have no campaign fields: they remain independent,
+    # fully supported standalone missions without losing saved V9 progress.
+    var restored_campaign := IPCampaignDirector.new()
+    var restored_campaign_enabled: bool = false
+    if payload.has("campaign") or payload.has("campaign_enabled"):
+        if not payload.get("campaign",null) is Dictionary or typeof(payload.get("campaign_enabled",null)) != TYPE_BOOL:
+            return false
+        if not restored_campaign.restore(payload["campaign"]):
+            return false
+        restored_campaign_enabled = bool(payload["campaign_enabled"])
     if not restored_engine.restore_checkpoint(payload["engine"]):
         return false
     if not restored_story.restore(payload["story"]):
@@ -1181,6 +1193,9 @@ func _continue_checkpoint() -> bool:
     if restored_engine.finished() or restored_engine.scenario_id != restored_story.scenario:
         return false
     if payload.get("scenario") != restored_engine.scenario_id:
+        return false
+    if restored_campaign_enabled and (
+        restored_campaign.finished() or restored_campaign.next_scenario() != restored_engine.scenario_id):
         return false
     var pos: Variant = payload.get("player_position",null)
     if not pos is Array or pos.size() != 3:
@@ -1210,6 +1225,9 @@ func _continue_checkpoint() -> bool:
     _apply_cinematic_view()
     session = restored_engine
     story = restored_story
+    if payload.has("campaign"):
+        campaign = restored_campaign
+    campaign_enabled = restored_campaign_enabled
     selected_scenario = session.scenario_id
     locale = saved_locale
     quality_mode = saved_quality
@@ -1317,7 +1335,10 @@ func start_run() -> void:
     intro_panel.visible = false
     pause_panel.visible = false
     end_panel.visible = false
+    end_button.text = _copy("restart")
     _announce("shift_started")
+    _update_scenario_picker()
+    _refresh_hud()
     _refresh_radio_ui()
     _save_checkpoint()
     audio_director.set_active(true)
@@ -1355,7 +1376,10 @@ func _restart() -> void:
     started = true
     paused = false
     end_panel.visible = false
+    end_button.text = _copy("restart")
     _announce("shift_started")
+    _update_scenario_picker()
+    _refresh_hud()
     _refresh_radio_ui()
     _save_checkpoint()
     audio_director.set_active(true)
@@ -1701,6 +1725,9 @@ func _show_end() -> void:
     _apply_cinematic_view()
     if end_panel.visible:
         return
+    if campaign_enabled and session.won:
+        if campaign.record_victory(session):
+            _persist_campaign_progress()
     end_panel.visible = true
     if DisplayServer.get_name() != "headless":
         checkpoint_store.clear(checkpoint_path)
@@ -1715,6 +1742,21 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    end_button.text = _copy("restart")
+    end_panel.offset_top = -160.0
+    end_panel.offset_bottom = 160.0
+    if campaign_enabled:
+        end_stats.text += "\n" + campaign.summary(locale)
+        if session.won:
+            if campaign.finished():
+                end_stats.text += "\n" + campaign.ending_text(locale)
+                end_button.text = _copy("campaign_replay")
+                end_panel.offset_top = -230.0
+                end_panel.offset_bottom = 230.0
+            else:
+                end_button.text = _copy("campaign_next")
+        else:
+            end_button.text = _copy("restart")
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1731,6 +1773,8 @@ func _refresh_hud() -> void:
         display_key = "repair_" + session.scenario_id
     objective_label.text = _copy(display_key)
     subtitle_label.text = _copy("scenario_title_" + selected_scenario)
+    if campaign_enabled:
+        subtitle_label.text += "  /  %d/3" % mini(campaign.wins()+1,3)
     if started:
         subtitle_label.text += " / " + _copy("sector_" + active_sector)
     _update_guidance(objective_key)
