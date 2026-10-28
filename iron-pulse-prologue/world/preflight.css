@@ -1,0 +1,21 @@
+/* V14 — system preflight, restrained black titanium / cockpit display */
+.preflight{padding-block:clamp(88px,9vw,145px);border-top:1px solid var(--fine-line)}
+.preflight-lead{max-width:640px;color:var(--muted);font-size:15px;line-height:1.8}
+.preflight-console{border:1px solid #414a4e;background:linear-gradient(145deg,#1b2328,#0c1115 78%);margin-top:40px;padding:clamp(22px,3vw,42px);position:relative}
+.preflight-console:before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,#e66b3b,transparent 80%);pointer-events:none}
+.preflight-head{display:flex;align-items:start;justify-content:space-between;gap:20px;border-bottom:1px solid #394147;padding-bottom:24px}
+.preflight-head h3{font-size:clamp(22px,3vw,37px);font-weight:650;margin:0;letter-spacing:-.04em}
+.preflight-note{color:#b6c0c2;font-size:13px;line-height:1.7;max-width:640px}
+.preflight-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px;padding-block:14px}
+.preflight-check{display:flex;justify-content:space-between;align-items:center;gap:14px;min-height:67px;border-bottom:1px solid #333c40}
+.preflight-check-name{font-size:12px;font-weight:650;letter-spacing:.08em;color:#cbd4d4}
+.preflight-state{font-size:10px;letter-spacing:.13em;color:#9ba7aa;white-space:nowrap}
+.preflight-check[data-state="pass"] .preflight-state{color:#a6d3d9}
+.preflight-check[data-state="fail"] .preflight-state{color:#ffa479}
+.preflight-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:26px}
+.preflight-actions button:disabled{opacity:.48;cursor:not-allowed}
+.preflight-actions .button{min-height:50px}
+.preflight-commitline{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px;border-top:1px solid #333c40;padding-top:22px;font-size:11px;color:#9caaad}
+.preflight-commitline code{color:#f0f0ed;overflow-wrap:anywhere}
+.preflight-privacy{margin:16px 0 0;color:#aab5b7;line-height:1.7;font-size:12px}
+@media(max-width:680px){.preflight-checks{grid-template-columns:1fr}.preflight-head{flex-direction:column}.preflight-actions{flex-direction:column;align-items:stretch}.preflight-actions .button{width:100%}.preflight-check-name{font-size:11px}}
