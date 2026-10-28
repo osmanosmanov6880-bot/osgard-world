@@ -1157,8 +1157,14 @@ func _input(event: InputEvent) -> void:
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
             return
+        if event.keycode == KEY_J:
+            _toggle_journal()
+            return
         if event.keycode == KEY_ESCAPE:
-            _pause_toggle()
+            if journal_panel.visible:
+                _toggle_journal()
+            else:
+                _pause_toggle()
             return
         if not started and event.keycode in [KEY_1, KEY_2, KEY_3]:
             var choice_index: int = [KEY_1, KEY_2, KEY_3].find(event.keycode)
@@ -1172,6 +1178,9 @@ func _input(event: InputEvent) -> void:
         if session.finished():
             if event.keycode == KEY_R:
                 _restart()
+            return
+        if event.keycode == KEY_1 or event.keycode == KEY_2:
+            _choose_priority("crew" if event.keycode == KEY_1 else "core")
             return
         if event.keycode == KEY_E:
             _interact()
@@ -1218,6 +1227,7 @@ func _physics_process(delta: float) -> void:
     if session.last_event != previous_event:
         previous_event = session.last_event
         if session.last_event != "shift_started":
+            _story_event(session.last_event)
             _announce(session.last_event)
     if session.finished():
         _show_end()
@@ -1243,8 +1253,12 @@ func _process(delta: float) -> void:
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
             active_sector = sector
+            if story.enter_sector(sector):
+                radio_ttl = 11.0
+                _refresh_radio_ui()
         if not visited_sectors.has(sector):
             visited_sectors.append(sector)
+            _save_checkpoint()
     audio_director.set_tension(session.heat,session.oxygen)
     var heat_risk: float = clampf((session.heat-70.0)/30.0,0.0,1.0)
     var air_risk: float = clampf((45.0-session.oxygen)/45.0,0.0,1.0)
@@ -1259,6 +1273,13 @@ func _process(delta: float) -> void:
             exit_gate.position.y = lerpf(exit_gate.position.y,6.2,minf(delta*1.8,1.0))
     if notice_time > 0.0:
         notice_time -= delta
+    if radio_ttl > 0.0 and not paused:
+        radio_ttl = maxf(0.0,radio_ttl-delta)
+    if started and not paused and not session.finished():
+        checkpoint_clock += delta
+        if checkpoint_clock >= 18.0:
+            checkpoint_clock = 0.0
+            _save_checkpoint()
     hud_elapsed += delta
     if hud_elapsed > 0.12:
         hud_elapsed = 0.0
@@ -1305,7 +1326,9 @@ func _interact(fast: bool = false) -> void:
         "exit":
             session.escape()
     previous_event = session.last_event
+    _story_event(session.last_event)
     _announce(session.last_event)
+    _save_checkpoint()
     if session.finished():
         _show_end()
     _refresh_hud()
@@ -1329,6 +1352,8 @@ func _show_end() -> void:
     if end_panel.visible:
         return
     end_panel.visible = true
+    if DisplayServer.get_name() != "headless":
+        checkpoint_store.clear()
     end_title.text = _copy("victory") if session.won else _copy("failure")
     var template: String = _copy("stats")
     end_stats.text = template.format({"time":"%.0f" % session.elapsed,"switches":session.switches,"faults":session.faults,"grade":session.grade()})
@@ -1337,6 +1362,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("result_path").format({
         "method":method_name,"scenario":_copy("scenario_" + session.scenario_id)})
     end_stats.text += "\n" + _copy("visited_sectors").format({"count":visited_sectors.size()})
+    end_stats.text += "\n" + _copy("chapter_final").format({
+        "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1382,6 +1409,7 @@ func _refresh_hud() -> void:
         telemetry_label.add_theme_color_override("font_color",WHITE)
     # Keep operator telemetry visible in both RU and EN without font dependence.
     brand_label.text = "IRON PULSE"
+    _refresh_radio_ui()
     _publish_web_state()
 
 func _update_guidance(objective_key: String) -> void:
