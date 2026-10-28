@@ -145,6 +145,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "No physical key light illuminates the reactor",hero)
                         assert hero.get("halo_camera_alignment",0.0)>=0.93, (
                             "Camera sees the original 3D containment halo edge-on as a huge cyan obstruction",hero)
+                        assert hero.get("legacy_neon_over_open_bay",999)==0, (
+                            "The exported actual Godot level still draws a giant cyan roof beam through reactor aperture",hero)
                         report.setdefault("v8_4_hero_visual",{})[name]=hero
                         # V8.6: inspect only source-bound Godot scene geometry.
                         # Never fabricate environmental FX or alter gameplay state.
