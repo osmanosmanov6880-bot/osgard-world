@@ -44,7 +44,7 @@ test('V61 real Core: create film space, task, replay-safe server export, member 
  await root.getByRole('button',{name:'Create server workspace'}).click()
  await expect(root.getByRole('heading',{name:'Cinema V61 audit workspace'})).toBeVisible()
  await expect(root.locator('.osa-collab-kpis')).toContainText('NO-GO')
- await root.getByRole('textbox',{name:'Title'}).fill('Check actor call sheets')
+ await root.locator('.osa-collab-task-form').getByRole('textbox',{name:'Title',exact:true}).fill('Check actor call sheets')
  await root.getByRole('textbox',{name:'Planning notes, not filming evidence'}).fill('Draft document. Does not verify a filmed scene.')
  await root.getByRole('button',{name:'Save task to SQLite'}).click()
  const task=root.locator('.osa-collab-task',{hasText:'Check actor call sheets'})
