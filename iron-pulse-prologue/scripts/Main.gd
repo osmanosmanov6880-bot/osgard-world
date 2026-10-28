@@ -154,6 +154,7 @@ const COPY := {
 
 var session: IPCrisisEngine = IPCrisisEngine.new()
 var story: IPStoryDirector = IPStoryDirector.new()
+var campaign: IPCampaignDirector = IPCampaignDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
@@ -201,6 +202,7 @@ var intro_title: Label
 var intro_body: Label
 var intro_button: Button
 var continue_button: Button
+var campaign_button: Button
 var radio_panel: PanelContainer
 var radio_speaker: Label
 var radio_dialogue: Label
@@ -319,6 +321,8 @@ func _publish_web_state() -> void:
     for scenario_key in scenario_buttons:
         scenario_rects[str(scenario_key)] = _hud_rect(scenario_buttons[scenario_key] as Control)
     state["scenario_button_rects"] = scenario_rects
+    state["campaign_button_rect"] = _hud_rect(campaign_button) if campaign_button != null else []
+    state["campaign_button_visible"] = campaign_button.visible if campaign_button != null else false
     state["end_visible"] = end_panel.visible
     state["quality_mode"] = quality_mode
     state["reduced_motion"] = reduced_motion
@@ -360,6 +364,7 @@ func _publish_web_state() -> void:
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["story"] = story.diagnostic()
+    state["campaign_v9"] = campaign.diagnostic()
     state["relay_3d_terminals"] = relay_terminals.size()
     var real_relays: Array = []
     for relay_info in relay_terminals:
@@ -823,6 +828,13 @@ func _make_overlays() -> void:
         choice.pressed.connect(_select_scenario.bind(scenario_key))
         scenario_row.add_child(choice)
         scenario_buttons[scenario_key] = choice
+    campaign_button = Button.new()
+    campaign_button.name = "ThreeShiftsCampaignButton"
+    campaign_button.text = _copy("campaign_start")
+    campaign_button.custom_minimum_size = Vector2(0,40)
+    campaign_button.add_theme_font_size_override("font_size",15)
+    campaign_button.pressed.connect(_start_campaign)
+    start_box.add_child(campaign_button)
     scenario_brief = _label(start_box,"",12,AMBER)
     scenario_brief.custom_minimum_size = Vector2(0,44)
     var intro_scroll := ScrollContainer.new()
@@ -1121,11 +1133,24 @@ func _toggle_journal() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED)
     _refresh_radio_ui()
 
+func _start_campaign() -> void:
+    # Explicit opt-in. Single emergency modes and legacy saves remain intact.
+    if started:
+        return
+    campaign.begin()
+    if not campaign.start_current(session):
+        return
+    selected_scenario = session.scenario_id
+    story.reset(selected_scenario)
+    _update_scenario_picker()
+    start_run()
+
 func _checkpoint_payload() -> Dictionary:
     return {
         "schema":"IRON_PULSE_CAMPAIGN_V6",
         "engine":session.checkpoint(),
         "story":story.checkpoint(),
+        "campaign_v9":campaign.checkpoint(),
         "scenario":selected_scenario,
         "locale":locale,
         "quality":quality_mode,
@@ -1156,6 +1181,13 @@ func _continue_checkpoint() -> bool:
         return false
     if payload.get("scenario") != restored_engine.scenario_id:
         return false
+    var restored_campaign := IPCampaignDirector.new()
+    if payload.has("campaign_v9"):
+        if not payload["campaign_v9"] is Dictionary or not restored_campaign.restore_checkpoint(payload["campaign_v9"]):
+            return false
+        if restored_campaign.active and (
+            restored_campaign.complete() or restored_campaign.stage_scenario() != restored_engine.scenario_id):
+            return false
     var pos: Variant = payload.get("player_position",null)
     if not pos is Array or pos.size() != 3:
         return false
@@ -1184,6 +1216,7 @@ func _continue_checkpoint() -> bool:
     _apply_cinematic_view()
     session = restored_engine
     story = restored_story
+    campaign = restored_campaign
     selected_scenario = session.scenario_id
     locale = saved_locale
     quality_mode = saved_quality
@@ -1261,7 +1294,14 @@ func start_run() -> void:
 func _restart() -> void:
     cinematic_view = false
     _apply_cinematic_view()
-    session.reset(selected_scenario)
+    if campaign.active:
+        if campaign.complete():
+            campaign.begin()
+        if not campaign.start_current(session):
+            return
+        selected_scenario = session.scenario_id
+    else:
+        session.reset(selected_scenario)
     story.reset(selected_scenario)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
@@ -1308,6 +1348,7 @@ func _toggle_language() -> void:
     locale = "en" if locale == "ru" else "ru"
     intro_body.text = _copy("intro")
     intro_button.text = _copy("start")
+    campaign_button.text = _copy("campaign_start")
     _update_scenario_picker()
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
@@ -1627,6 +1668,8 @@ func _show_end() -> void:
     _apply_cinematic_view()
     if end_panel.visible:
         return
+    if campaign.active and session.won:
+        campaign.record_victory(session)
     end_panel.visible = true
     if DisplayServer.get_name() != "headless":
         checkpoint_store.clear(checkpoint_path)
@@ -1641,6 +1684,13 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    if campaign.active:
+        end_stats.text += "\n" + campaign.summary(locale)
+        end_button.text = _copy(
+            "campaign_replay" if campaign.complete() else
+            "campaign_next" if session.won else "campaign_retry")
+    else:
+        end_button.text = _copy("restart")
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1659,6 +1709,8 @@ func _refresh_hud() -> void:
     subtitle_label.text = _copy("scenario_title_" + selected_scenario)
     if started:
         subtitle_label.text += " / " + _copy("sector_" + active_sector)
+        if campaign.active:
+            subtitle_label.text += " / %d/3" % campaign.stage_number()
     _update_guidance(objective_key)
     _update_terminal_highlights(objective_key)
     telemetry_label.text = "%s  %d°C    |    %s  %d%%\n%s  %d%%    |    %s  %d%%    |    %s  %02d:%02d" % [
