@@ -7,6 +7,7 @@ on:
       - master
     paths:
       - 'godot/empire-omega/scripts/city_reign_tower_body_lod.gd'
+      - 'godot/empire-omega/scripts/city_reign_window_reveal_geometry.gd'
       - 'godot/empire-omega/scripts/city_reign_street_architecture.gd'
       - 'godot/empire-omega/scripts/world_builder.gd'
       - 'godot/empire-omega/tests/v125_city_reign_original_game_render_profile.gd'
