@@ -38,7 +38,9 @@ def actual_stage_crop(raw):
     width, height = image.size
     crop = (int(width * 0.18), int(height * 0.20),
             int(width * 0.84), int(height * 0.71))
-    return crop, max(ImageStat.Stat(image.crop(crop)).stddev)
+    stats = ImageStat.Stat(image.crop(crop))
+    readable_luma = 0.2126 * stats.mean[0] + 0.7152 * stats.mean[1] + 0.0722 * stats.mean[2]
+    return crop, max(stats.stddev), readable_luma
 
 
 def run(web, evidence, exact_sha):
@@ -82,9 +84,14 @@ def run(web, evidence, exact_sha):
             canvas.click(position={"x": 18, "y": 18})
             page.wait_for_timeout(550)
             core = page.screenshot(path=str(evidence / "w67-01-core-chamber-1366.png"))
-            crop, spread = actual_stage_crop(core)
+            crop, spread, luma = actual_stage_crop(core)
             require(spread > 6.0, "Core room rendered an unlit/blank image")
-            print("W67 FIRST FRAME VISUAL STDDEV", spread, "stage crop", crop, flush=True)
+            # W65 actual screenshot showed mean luma ~13.8 in the hero.
+            # Treat returning to almost-black rooms as a visual regression.
+            require(luma >= 21.0,
+                    "Visual regression: core became dark like the pre-W67 build")
+            print("W67 FIRST FRAME ART GATE", {"contrast":round(spread,2),
+                "mean_luma":round(luma,2), "stage_crop":crop}, flush=True)
 
             # N changes real Godot camera and reveals an actually MODELED
             # second industrial room, without changing deterministic gameplay.
@@ -102,8 +109,10 @@ def run(web, evidence, exact_sha):
                 path=str(evidence / "w67-02-relay-sector-1366.png"))
             require(diff_pixels(core, relay_png, crop) > 800,
                     "Second actual sector is not visually distinct from core")
-            _, relay_contrast = actual_stage_crop(relay_png)
+            _, relay_contrast, relay_luma = actual_stage_crop(relay_png)
             require(relay_contrast > 6.0, "Actual relay room is blank")
+            require(relay_luma >= 20.0,
+                    "Visual regression: secondary room is too dark to navigate")
 
             page.keyboard.press("a")
             page.wait_for_function("""() => {
