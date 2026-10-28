@@ -167,6 +167,13 @@ func refresh_state() -> void:
             real_open_events += 1
         if should_block:
             physics_gate_was_closed = true
+            # Never render an OPEN doorway with an already CLOSED real
+            # physics collider at mission start. Closing is instantaneous;
+            # opening after accepted decisions is the cinematic movement.
+            _aperture = 0.0
+            for index in range(panels.size()):
+                var side: float = -1.0 if index == 0 else 1.0
+                panels[index].position.x = side * CLOSED_OFFSET
     root_visuals.visible = eligible_mission
     if not eligible_mission:
         _aperture = 1.0
