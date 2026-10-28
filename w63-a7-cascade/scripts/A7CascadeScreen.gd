@@ -631,9 +631,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
     if not (event is InputEventKey):
         return
     var key: InputEventKey = event as InputEventKey
-    if stage_3d != null and stage_3d.first_person != null and
-            stage_3d.first_person.piloting and
-            [KEY_W, KEY_A, KEY_S, KEY_D].has(key.keycode):
+    if (stage_3d != null and stage_3d.first_person != null
+            and stage_3d.first_person.piloting
+            and [KEY_W, KEY_A, KEY_S, KEY_D].has(key.keycode)):
         # Listen to both press AND release; physics must stop on keyup.
         stage_3d.first_person_key(key.keycode, key.pressed)
         call_deferred("_publish_web_accessibility")
