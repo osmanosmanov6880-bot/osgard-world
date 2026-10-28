@@ -43,6 +43,13 @@ func _run() -> void:
         "Eight independently positionable curved armor petals and physical hinge servos")
     _assert(baseline["original_uv_mesh"] == true and baseline["real_steel_material"] == true,
         "Original curved and UV-wrapped steel is real custom authored 3D geometry")
+    _assert(baseline["actual_pbr_maps_bound"] == 3,
+        "All three original albedo, metal wear/roughness and surface-normal maps are bound to moving armor")
+    var first_steel: MeshInstance3D = iris.petals[0].get_node("CustomUV_CurvedArmor") as MeshInstance3D
+    var metal: StandardMaterial3D = first_steel.material_override as StandardMaterial3D
+    _assert(metal != null and metal.albedo_texture != null and metal.roughness_texture != null and
+        metal.normal_enabled and metal.normal_texture != null,
+        "The real Godot petal surfaces actually use original textured PBR, not flat color")
     _assert(baseline["gpu_bolt_groups"] == 1 and baseline["instanced_guide_bolts"] == 32,
         "32 industrial fasteners are a single real GPU draw group")
     _assert(baseline["quality"] == "hero" and baseline["detailed_guides_visible"],
