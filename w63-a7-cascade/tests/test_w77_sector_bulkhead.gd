@@ -145,6 +145,12 @@ func _run() -> void:
     await process_frame
     _check(not door.status_label.visible,
         "At 390px compact true world text hides without hiding the actual passage")
+    _check(ui.brand_label.custom_minimum_size.y <= 42 and
+        ui.brand_label.text.contains("A7"),
+        "Native RU/EN title is a compact one-row mobile brand, not a vertical word column")
+    _check(ui.w76_play_button.custom_minimum_size.y <= 42 and
+        ui.w76_focus_button.custom_minimum_size.y <= 42,
+        "Actual 390px mobile controls have short button geometry, not 400px stretched rows")
     _check(door.panels[0] is MeshInstance3D,
         "Mobile viewport retains true native opening game geometry")
 
