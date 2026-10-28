@@ -1,0 +1,20 @@
+{
+  "engine": "Godot 4.4.1",
+  "source_path": "godot/empire-omega",
+  "source_commit": "a49d2b6b5e26c1c0125b4a5ea45900573bc382d4",
+  "native_tests": "passed",
+  "artifact_kind": "native-Godot-HTML5-export",
+  "release_channel": "CITY_REIGN_PUBLIC_PREVIEW",
+  "published_path": "/games/city-reign-preview/",
+  "production_omega_unchanged": true,
+  "release_proof_run_id": 40748659428,
+  "files": {
+    "index.audio.position.worklet.js": "347b512529c5dca302093f7b9de6d184dd09d10e9a6fba62cbab098a891b2368",
+    "index.audio.worklet.js": "5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
+    "index.html": "75522fe67f1021454bc0328d03c4432d8af18cfd5225251ebd6ec3b214fbdaab",
+    "index.js": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31",
+    "index.pck": "7d50cfadc99f99d17de8bd92e83567a91a6243aba5a6f1e154508c55db022650",
+    "index.png": "3cb4495c0b98dfbe4b663cbf2b6836473572339beb66d902367893162a70be0e",
+    "index.wasm": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+  }
+}
