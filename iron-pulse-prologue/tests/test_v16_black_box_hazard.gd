@@ -198,6 +198,7 @@ func _finish() -> void:
     if failures.is_empty():
         print("IRON PULSE V16 BLACK BOX HAZARD PASS: %d real engine + UI checks" % assertions)
         quit(0)
+        return
     for issue in failures:
         push_error("V16 NATIVE FAIL: "+issue)
     quit(1)
