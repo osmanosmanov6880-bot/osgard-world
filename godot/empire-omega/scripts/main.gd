@@ -9,6 +9,7 @@ const HUD_SCENE = preload("res://scripts/hud.gd")
 const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
 const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
 const CITY_REIGN_CAMERA = preload("res://scripts/city_reign_camera_modes.gd")
+const CITY_REIGN_GUIDANCE = preload("res://scripts/city_reign_road_guidance.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
@@ -48,6 +49,7 @@ var city_case_marker
 var city_reign_crisis: Node3D
 var city_reign_proposals: Node3D
 var city_reign_opening_director: Node3D
+var road_guidance: MeshInstance3D
 var cargo_visual
 var current_weather_kind := "clear"
 var base_road_grip := 1.0
@@ -147,6 +149,8 @@ func _ready() -> void:
 	add_child(ground_spray)
 	_spawn_traffic()
 	_spawn_citizens()
+	road_guidance = CITY_REIGN_GUIDANCE.new()
+	add_child(road_guidance)
 	patrols = POLICE_SCENE.new()
 	add_child(patrols)
 	patrols.traffic_signals = traffic_signals
@@ -498,13 +502,21 @@ func _physics_process(delta: float) -> void:
 		lod_timer = 0.0
 		_update_agent_lod(protagonist)
 	route_refresh += delta
-	if not goal_visible and hud.map != null:
-		hud.map.route.clear()
-	if goal_visible and not interiors.is_inside() and (route_refresh >= 1.25 or last_route_goal.distance_to(goal) > 2.0):
+	# R161: share ONE closure-aware authoritative path with the 2D map and
+	# the physically grounded road guide. Never invent goals in non-spatial missions.
+	var route_allowed: bool = goal_visible and not interiors.is_inside()
+	if not route_allowed:
+		if hud.map != null: hud.map.route.clear()
+		if road_guidance != null: road_guidance.clear_route()
+	if route_allowed and (route_refresh >= 1.25 or last_route_goal.distance_to(goal) > 2.0):
 		route_refresh = 0.0
 		last_route_goal = goal
-		if hud.map != null:
-			hud.map.route = ROUTER.find_route(protagonist,goal,GameState.data)
+		var ground_route: Array[Vector3] = ROUTER.find_route(protagonist,goal,GameState.data)
+		if hud.map != null: hud.map.route = ground_route
+		if road_guidance != null:
+			road_guidance.sync_route(ground_route,protagonist,true,adaptive_graphics.effective_quality())
+	if road_guidance != null:
+		road_guidance.visible = route_allowed and not cabinet_open and road_guidance.mesh != null
 	if hud.map != null:
 		if patrols != null: hud.map.police_world = patrols.visible_positions()
 		var case_site: String = GameState.CITY_CASES.site(GameState.data)
@@ -622,12 +634,35 @@ func _input(event: InputEvent) -> void:
 		GameSettings.set_camera_mode(next_view)
 		hud.announce(CITY_REIGN_CAMERA.localized_mode(next_view,GameState.locale))
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("indicator_left") and driving and not hud.is_strategy_open():
+		_toggle_car_indicator("left")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("indicator_right") and driving and not hud.is_strategy_open():
+		_toggle_car_indicator("right")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("hazard_lights") and driving and not hud.is_strategy_open():
+		_toggle_car_indicator("hazard")
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("diagnostics"):
 		hud.toggle_diagnostics()
 	elif event.is_action_pressed("pay_traffic_fines"):
 		_pay_traffic_fines()
 	elif event.is_action_pressed("show_map"):
 		hud.toggle_map()
+
+func _toggle_car_indicator(side: String) -> void:
+	# Identical native InputMap action from keyboard, joypad and touch.
+	if not driving or car == null: return
+	var mode: String = car.toggle_indicator(side)
+	match mode:
+		"left":
+			hud.announce(_three("ПОВОРОТНИК · ЛЕВЫЙ","LEFT TURN SIGNAL","左转向灯"))
+		"right":
+			hud.announce(_three("ПОВОРОТНИК · ПРАВЫЙ","RIGHT TURN SIGNAL","右转向灯"))
+		"hazard":
+			hud.announce(_three("АВАРИЙНАЯ СИГНАЛИЗАЦИЯ","HAZARD LIGHTS","危险警示灯"))
+		_:
+			hud.announce(_three("СИГНАЛЫ ВЫКЛ.","SIGNALS OFF","转向灯已关闭"))
 
 func _pay_traffic_fines() -> void:
 	if driving or interiors.is_inside() or player.global_position.distance_to(world.locations["cityhall"]["position"])>35.0:
@@ -661,6 +696,7 @@ func _apply_visual_budget() -> void:
 		car.update_headlights(float(GameState.data.get("day_clock",12.0)),effective)
 	world.sun.shadow_enabled = effective != "low"
 	world.apply_visual_budget(effective)
+	if road_guidance != null: road_guidance.set_quality(effective)
 	# A17 real physical signal geometry: desktop 3-LED die-cast heads in
 	# nine shared GPU draws; LOW uses the EXACT original simple signals.
 	# No re-spawn, traffic AI update or shadow-map allocation on switches.
@@ -737,6 +773,7 @@ func _enter_or_exit_vehicle() -> void:
 			return
 		driving = false
 		car.driving = false
+		car.set_indicator_mode("off")
 		player.global_position = safe_exit
 		player.visible = true
 		player.active = true

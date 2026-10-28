@@ -14,13 +14,16 @@ const DEFAULT_KEYS = {
 	"advance_turn": KEY_N, "buy_business": KEY_B,
 	"show_map": KEY_M, "field_journal": KEY_H, "drive_trial": KEY_T, "enter_interior": KEY_I, "diagnostics": KEY_F3, "save_game": KEY_F5,
 	"load_game": KEY_F9, "language": KEY_L, "pay_traffic_fines": KEY_P,
-	"camera_cycle": KEY_V
+	"camera_cycle": KEY_V,
+	"indicator_left": KEY_Q, "indicator_right": KEY_Z, "hazard_lights": KEY_X
 }
 const PAD_BUTTONS = {
 	"jump": JOY_BUTTON_A, "sprint": JOY_BUTTON_LEFT_STICK,
 	"interact": JOY_BUTTON_X, "enter_vehicle": JOY_BUTTON_Y,
 	"governor": JOY_BUTTON_BACK, "pause_game": JOY_BUTTON_START,
-	"show_map": JOY_BUTTON_DPAD_UP, "camera_cycle": JOY_BUTTON_DPAD_RIGHT
+	"show_map": JOY_BUTTON_DPAD_UP, "camera_cycle": JOY_BUTTON_DPAD_RIGHT,
+	"indicator_left": JOY_BUTTON_DPAD_LEFT, "indicator_right": JOY_BUTTON_DPAD_DOWN,
+	"hazard_lights": JOY_BUTTON_RIGHT_STICK
 }
 const STICK_AXES = {
 	"move_forward": [JOY_AXIS_LEFT_Y, -1.0],

@@ -12,6 +12,7 @@ const DRIVER_ASSISTS = preload("res://scripts/horizon_driver_assists.gd")
 const YAW_INERTIA = preload("res://scripts/horizon_yaw_inertia.gd")
 const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
 const R46_LOAD_TRANSFER = preload("res://scripts/horizon_r46_load_transfer.gd")
+const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -30,6 +31,10 @@ var axle_grip_active := false
 var headlight_cones: Array[SpotLight3D] = []
 var wheel_nodes: Array[MeshInstance3D] = []
 var brake_lamp_nodes: Array[MeshInstance3D] = []
+var indicator_lamps: Dictionary = {"left":[],"right":[]}
+var indicator_mode: String = "off"
+var indicator_phase: float = 0.0
+var _indicator_lit: Dictionary = {"left":true,"right":true}
 var brake_lights_on := false
 var handbrake_on := false
 var steering_filter := 0.0
@@ -85,7 +90,50 @@ func _ready() -> void:
 			part.visible = false
 	brake_lights_on = true
 	_set_brake_lights(false)
+	_create_indicators()
 	_make_headlight_beams()
+
+func _create_indicators() -> void:
+	# Four small physical amber optics; never add dynamic lights or shadows.
+	# The original Horizon car body, wheels, collision and garage are untouched.
+	for side in [-1.0,1.0]:
+		var side_key: String = "left" if side<0.0 else "right"
+		for front in [true,false]:
+			var suffix: String = "Front" if front else "Rear"
+			var id: String = "R161Indicator"+side_key+suffix
+			_add_part(id,Vector3(0.25,0.14,0.065),
+				Vector3(side*1.22,-0.20,-2.67 if front else 2.67),Color("b97725"),true)
+			var lamp: MeshInstance3D = get_node(id) as MeshInstance3D
+			(indicator_lamps[side_key] as Array).append(lamp)
+	_sync_indicator_lamps()
+
+func set_indicator_mode(value: String) -> void:
+	indicator_mode = SIGNAL_LOGIC.normalized_mode(value)
+	indicator_phase = 0.0
+	_sync_indicator_lamps()
+
+func toggle_indicator(side: String) -> String:
+	indicator_mode = SIGNAL_LOGIC.toggle(indicator_mode,side)
+	indicator_phase = 0.0
+	_sync_indicator_lamps()
+	return indicator_mode
+
+func _tick_indicators(delta: float) -> void:
+	if indicator_mode!="off":
+		indicator_phase = SIGNAL_LOGIC.phase_after(indicator_phase,delta)
+	_sync_indicator_lamps()
+
+func _sync_indicator_lamps() -> void:
+	for side_name in ["left","right"]:
+		var active: bool = SIGNAL_LOGIC.side_on(indicator_mode,side_name,indicator_phase)
+		if bool(_indicator_lit[side_name])==active: continue
+		_indicator_lit[side_name] = active
+		for bulb in indicator_lamps[side_name]:
+			var lamp: MeshInstance3D = bulb as MeshInstance3D
+			var paint: StandardMaterial3D = lamp.material_override as StandardMaterial3D
+			paint.albedo_color = Color("ffb13c") if active else Color("795121")
+			paint.emission = Color("ffb13c") if active else Color("795121")
+			paint.emission_energy_multiplier = 2.8 if active else 0.16
 
 func _make_headlight_beams() -> void:
 	# Only two bounded unshadowed punctual lights; LOW quality disables them.
@@ -194,6 +242,7 @@ func _update_drift_score(delta: float) -> void:
 			drift_release_clock = 0.0
 
 func _physics_process(delta: float) -> void:
+	_tick_indicators(delta)
 	if not is_on_floor():
 		velocity.y -= 24.0 * delta
 	else:
