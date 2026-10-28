@@ -455,8 +455,6 @@ func _build() -> void:
     field_sync_controls = HFlowContainer.new()
     field_sync_controls.name = "ActualPhysicalContainmentSyncControls"
     mission_panel.add_child(field_sync_controls)
-    for control in field_valve_controls.get_children():
-        control.queue_free()
     for index in range(2):
         var id: String = "valve_minus" if index == 0 else "valve_plus"
         var direction: int = -1 if index == 0 else 1
@@ -655,8 +653,8 @@ func _start_spatial_mission() -> void:
     call_deferred("_publish_web_accessibility")
 
 func _start_extended_mission() -> void:
-    if stage_3d == null or stage_3d.spatial_mission == null or
-            stage_3d.field_operations == null:
+    if (stage_3d == null or stage_3d.spatial_mission == null
+            or stage_3d.field_operations == null):
         return
     var ok: bool = stage_3d.spatial_mission.start_extended(
         model.snapshot(), stage_3d.field_operations)
@@ -750,8 +748,8 @@ func _pilot_inspect() -> void:
     if stage_3d.spatial_mission != null and stage_3d.first_person != null:
         var did_advance: bool = stage_3d.spatial_mission.inspect_physical(
             target, model.snapshot(), stage_3d.first_person)
-        if not did_advance and target != "" and
-                stage_3d.spatial_mission.extended_mode:
+        if (not did_advance and target != ""
+                and stage_3d.spatial_mission.extended_mode):
             pilot_status_label.text = _t("field_gate")
         if stage_3d.field_operations != null:
             stage_3d.field_operations.observe_phase(
