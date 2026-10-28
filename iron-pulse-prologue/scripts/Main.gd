@@ -153,6 +153,7 @@ var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
+var reactor_atrium: IPReactorAtrium
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -318,6 +319,7 @@ func _publish_web_state() -> void:
     state["audio_muted"] = muted_audio
     state["soundscape_ready"] = audio_director != null and audio_director.ambient != null
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
+    state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["world_sector"] = active_sector
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
@@ -422,9 +424,15 @@ func _make_complex() -> void:
     var cyan := _metal(CYAN,0.12,true)
     var red := _metal(RED,0.12,true)
     _box(self,Vector3(0,-0.48,-28.0),Vector3(14,0.95,74),concrete,true)
-    _box(self,Vector3(0,6.2,-28.0),Vector3(14,0.55,74),steel,true)
+    # V8: keep a collision-safe mission corridor but open the ceiling around
+    # the reactor viewing bay. Both outer roof segments remain real colliders.
+    _box(self,Vector3(0,6.2,-48.0),Vector3(14,0.55,34.0),steel,true)
+    _box(self,Vector3(0,6.2,0.0),Vector3(14,0.55,18.0),steel,true)
     _box(self,Vector3(-7.0,2.8,-28.0),Vector3(0.70,6.3,74),steel,true)
-    _box(self,Vector3(7.0,2.8,-28.0),Vector3(0.70,6.3,74),steel,true)
+    # 22m opening at the right side shows an actually tall reactor hall,
+    # with its own physical guardrail preventing off-path movement.
+    _box(self,Vector3(7.0,2.8,-47.75),Vector3(0.70,6.3,34.5),steel,true)
+    _box(self,Vector3(7.0,2.8,0.0),Vector3(0.70,6.3,18.0),steel,true)
     _box(self,Vector3(0,2.8,-65.0),Vector3(14,6.3,0.7),steel,true)
     for index in 12:
         var depth := 2.0 - float(index) * 5.5
@@ -467,12 +475,18 @@ func _make_complex() -> void:
     _build_bulkhead()
     art_stage = IPCinematicStage.new()
     add_child(art_stage)
+    reactor_atrium = IPReactorAtrium.new()
+    add_child(reactor_atrium)
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
     _terminal_idle_material = _metal(Color(0.08,0.32,0.39),0.12,true)
 
 func _build_reactor() -> void:
     var frame := Node3D.new()
-    frame.position = Vector3(0,3.0,-20.5)
+    # The original moving core is now physically inside the open side atrium:
+    # same animated meshes and source-bound identifiers, new cinematic scale.
+    frame.name = "A7_OriginalAnimatedCore"
+    frame.position = IPReactorAtrium.CORE_CENTER
+    frame.scale = Vector3.ONE * 1.55
     add_child(frame)
     _box(frame,Vector3(0,-2.3,0),Vector3(5.0,0.6,4.6),_metal(METAL))
     var core_mesh := SphereMesh.new()
@@ -502,8 +516,8 @@ func _build_reactor() -> void:
         var p := Vector3(cos(angle)*3.0, sin(angle)*2.0, 0)
         _box(frame,p,Vector3(0.35,0.3,0.55),_metal(METAL))
     var halo := OmniLight3D.new()
-    halo.light_color = Color(0.11,0.7,0.9)
-    halo.light_energy = 3.5
+    halo.light_color = Color(0.23,0.65,0.78)
+    halo.light_energy = 2.15
     halo.omni_range = 9.0
     frame.add_child(halo)
 
@@ -909,6 +923,8 @@ func _layout_hud() -> void:
             legacy_lamps[i].visible = i % 3 == 0
         if world_sectors != null:
             world_sectors.set_quality("eco")
+        if reactor_atrium != null:
+            reactor_atrium.set_quality("eco")
     # Compact non-overlapping card hierarchy; the center is reserved for 3D.
     header_panel.offset_left = 17.0 if not narrow else 12.0
     header_panel.offset_right = minf(544.0,width-16.0)
@@ -1088,6 +1104,7 @@ func _continue_checkpoint() -> bool:
         visited_sectors.append(active_sector)
     art_stage.set_quality(quality_mode)
     world_sectors.set_quality(quality_mode)
+    reactor_atrium.set_quality(quality_mode)
     exit_gate.position.y = 6.2 if session.override_set else 2.6
     for index in range(legacy_lamps.size()):
         legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
@@ -1263,6 +1280,7 @@ func _input(event: InputEvent) -> void:
             quality_mode = "eco" if quality_mode == "hero" else "hero"
             art_stage.set_quality(quality_mode)
             world_sectors.set_quality(quality_mode)
+            reactor_atrium.set_quality(quality_mode)
             for i in range(legacy_lamps.size()):
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
@@ -1362,6 +1380,7 @@ func _process(delta: float) -> void:
         camera.fov = lerpf(camera.fov,fov_target,minf(delta*4.0,1.0))
     art_stage.update_danger(session.heat,session.oxygen,runtime_seconds,reduced_motion)
     world_sectors.update_hazard(session.scenario_id,session.heat,session.oxygen,reduced_motion)
+    reactor_atrium.update_alarm(session.scenario_id,session.heat,session.oxygen,runtime_seconds,reduced_motion)
     if started and not paused and not session.finished():
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
