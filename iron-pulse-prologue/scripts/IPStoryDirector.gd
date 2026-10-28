@@ -19,6 +19,9 @@ const SCRIPT := {
         "priority_crew":"МАРА: Приоритет людям. Кислород перенаправлен в жилой сектор, но ядро стало горячее.",
         "priority_core":"МАРА: Приоритет реактору. Температура падает, но часть ресурсов экипажа потеряна.",
         "priority_skip":"МАРА: Ты оставил приказ открытым. Решение всё равно отзовётся на итоговом отчёте.",
+        "carry_crew":"МАРА: Предыдущая смена спасла людей, но передала нам опасный перегрев. Ты несёшь последствия дальше.",
+        "carry_core":"МАРА: Реактор защищён ценой здоровья экипажа. В новой операции этот долг не исчезнет.",
+        "carry_unresolved":"МАРА: Наследие предыдущей смены неоднозначно. Ресурсы переходят вместе с последствиями.",
         "repair_standard":"МАРА: Контур восстановлен. Впереди две линии питания и три устройства. Выбери безопасную последовательность.",
         "repair_careful":"МАРА: Тщательный ремонт стоил времени, но люди выдержали. Не забывай об аварийном шлюзе.",
         "repair_fast":"МАРА: Быстро, но дорого. Я фиксирую потери экипажа; следующий выбор должен быть точным.",
@@ -45,6 +48,9 @@ const SCRIPT := {
         "priority_crew":"MARA: Crew first. Oxygen was redirected to the living quarters, but the reactor grew hotter.",
         "priority_core":"MARA: Reactor first. Temperature is dropping, but the crew sacrificed precious supplies.",
         "priority_skip":"MARA: You left the priority unresolved. That choice, too, will appear in the final report.",
+        "carry_crew":"MARA: Last shift saved the crew, but left us dangerous reactor heat. Your decisions are following us.",
+        "carry_core":"MARA: The reactor survived at the crew's expense. That cost will not disappear in the next emergency.",
+        "carry_unresolved":"MARA: The previous shift left a complicated legacy. Resources and consequences carry forward.",
         "repair_standard":"MARA: Cooling restored. Two power buses, three critical loads. Choose a safe sequence.",
         "repair_careful":"MARA: The careful repair took time, but the crew survived it. Don't forget the bulkhead.",
         "repair_fast":"MARA: Fast, but costly. I've recorded the crew losses; make your next choice count.",
@@ -66,6 +72,7 @@ const SCRIPT := {
 }
 const KEY_TO_ACT := {
     "scan":1,"priority_crew":1,"priority_core":1,"priority_skip":1,
+    "carry_crew":1,"carry_core":1,"carry_unresolved":1,
     "repair_standard":2,"repair_careful":2,"repair_fast":2,
     "relay_medbay":2,"relay_quench":2,"relay_uplink":2,"relay_budget":2,
     "surge":2,"thermal_pulse":2,"bus_switched":2,"sector_service":2,
@@ -133,6 +140,10 @@ func on_game_event(event_name: String, priority: String) -> bool:
     if SOURCE_EVENTS.has(event_name):
         return _transmit(str(SOURCE_EVENTS[event_name]))
     return false
+
+func on_campaign_carryover(previous_priority: String) -> bool:
+    var key: String = "carry_crew" if previous_priority == "crew" else "carry_core" if previous_priority == "core" else "carry_unresolved"
+    return _transmit(key)
 
 func enter_sector(sector_id: String) -> bool:
     if sector_id == "service" or sector_id == "evacuation":

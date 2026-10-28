@@ -18,7 +18,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора    P — следующий план    F3 — диагностика\nH — показать / скрыть 3D-цель\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -48,6 +48,13 @@ const COPY := {
         "rescue_medbay": "МЕДИЦИНСКИЙ УЗЕЛ", "rescue_quench": "ТЕПЛОВОЙ ГАСИТЕЛЬ", "rescue_uplink": "СВЯЗЬ И ЭВАКУАЦИЯ",
         "rescue_count": "СПАСАТЕЛЬНЫЕ СТАНЦИИ {used}/2",
         "rescue_final": "Станции спасения: {used}/2",
+        "campaign_start": "КАМПАНИЯ / ТРИ АВАРИИ",
+        "campaign_next": "СЛЕДУЮЩАЯ ОПЕРАЦИЯ",
+        "campaign_replay": "ПЕРЕИГРАТЬ КАМПАНИЮ",
+        "campaign_progress": "ОПЕРАЦИЯ {index}/3",
+        "campaign_carry": "НАСЛЕДИЕ РЕШЕНИЙ: ресурсы следующей операции изменены",
+        "wayfinder_on": "3D-НАВИГАЦИЯ: ВКЛ.",
+        "wayfinder_off": "3D-НАВИГАЦИЯ: ВЫКЛ.",
         "relay_medbay": "МЕДБЛОК: воздух и здоровье восстановлены.",
         "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
         "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
@@ -85,7 +92,7 @@ const COPY := {
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera    P — next shot    F3 — diagnostics\nH — show / hide 3D objective\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -115,6 +122,13 @@ const COPY := {
         "rescue_medbay": "MEDICAL BAY", "rescue_quench": "HEAT SUPPRESSOR", "rescue_uplink": "EVACUATION UPLINK",
         "rescue_count": "RESCUE NETWORK {used}/2",
         "rescue_final": "Rescue stations: {used}/2",
+        "campaign_start": "CAMPAIGN / THREE EMERGENCIES",
+        "campaign_next": "NEXT OPERATION",
+        "campaign_replay": "REPLAY CAMPAIGN",
+        "campaign_progress": "OPERATION {index}/3",
+        "campaign_carry": "PREVIOUS CHOICES: next operation resources have changed",
+        "wayfinder_on": "3D WAYFINDING: ON",
+        "wayfinder_off": "3D WAYFINDING: OFF",
         "relay_medbay": "MEDBAY: air and crew condition restored.",
         "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
         "relay_uplink": "UPLINK: additional evacuation time secured.",
@@ -156,9 +170,14 @@ var session: IPCrisisEngine = IPCrisisEngine.new()
 var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
+var campaign: IPCampaignFlow = IPCampaignFlow.new()
+var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
+const CAMPAIGN_RECORD_PATH: String = "user://iron_pulse_campaign_progress_v9.json"
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var wayfinder: IPWayfinding
+var campaign_echoes: IPCampaignEchoes
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -201,6 +220,7 @@ var intro_title: Label
 var intro_body: Label
 var intro_button: Button
 var continue_button: Button
+var campaign_button: Button
 var radio_panel: PanelContainer
 var radio_speaker: Label
 var radio_dialogue: Label
@@ -225,6 +245,9 @@ var end_title: Label
 var end_stats: Label
 var end_button: Button
 var touch_ui: Control
+var touch_shot_button: Button
+var diagnostic_panel: PanelContainer
+var diagnostic_label: Label
 var touch_moves: Dictionary = {"forward":false, "back":false, "left":false, "right":false}
 var started: bool = false
 var paused: bool = false
@@ -253,6 +276,12 @@ func _ready() -> void:
     _make_complex()
     world_sectors = IPWorldSectors.new()
     add_child(world_sectors)
+    wayfinder = IPWayfinding.new()
+    add_child(wayfinder)
+    wayfinder.configure(terminals)
+    campaign_echoes = IPCampaignEchoes.new()
+    add_child(campaign_echoes)
+    campaign_echoes.sync(campaign,locale)
     audio_director = IPSoundscape.new()
     add_child(audio_director)
     _make_player()
@@ -348,6 +377,10 @@ func _publish_web_state() -> void:
         "halo_camera_alignment":absf(normal_front.dot(director_eye))
     }
     state["cinematic_view"] = cinematic_view
+    state["director_shot_index"] = reactor_atrium.director_shot_index
+    state["performance_audit"] = performance_audit.telemetry()
+    state["release_gate"] = performance_audit.release_gate()
+    state["diagnostics_visible"] = diagnostic_panel != null and diagnostic_panel.visible
     state["cinematic_hud_hidden"] = cinematic_view and not header_panel.visible and not side_panel.visible and not prompt_panel.visible and not crosshair.visible
     var active_camera: Camera3D = get_viewport().get_camera_3d()
     state["active_camera"] = active_camera.name if active_camera != null else ""
@@ -360,6 +393,9 @@ func _publish_web_state() -> void:
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["story"] = story.diagnostic()
+    state["campaign"] = campaign.diagnostic()
+    state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
+    state["campaign_echoes"] = campaign_echoes.readout() if campaign_echoes != null else {}
     state["relay_3d_terminals"] = relay_terminals.size()
     var real_relays: Array = []
     for relay_info in relay_terminals:
@@ -781,6 +817,11 @@ func _make_hud() -> void:
     _make_overlays()
     _make_touch_controls()
     _make_radio_ui()
+    diagnostic_panel = _panel(hud_root,Rect2(-365,295,-15,485),Rect2(1,0,1,0),Color(0.015,0.027,0.045,0.94))
+    diagnostic_panel.name = "V12_RealFrameDiagnostics"
+    diagnostic_label = _label(diagnostic_panel,"",12,WHITE)
+    diagnostic_label.name = "ExactLocalFrameTelemetry"
+    diagnostic_panel.visible = false
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
 
@@ -843,6 +884,12 @@ func _make_overlays() -> void:
     continue_button.custom_minimum_size = Vector2(0,46)
     continue_button.pressed.connect(_continue_checkpoint)
     start_box.add_child(continue_button)
+    campaign_button = Button.new()
+    campaign_button.name = "CampaignThreeEmergencies"
+    campaign_button.text = _copy("campaign_start")
+    campaign_button.custom_minimum_size = Vector2(0,48)
+    campaign_button.pressed.connect(_start_campaign)
+    start_box.add_child(campaign_button)
     continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
     pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
@@ -867,7 +914,7 @@ func _make_overlays() -> void:
     end_button = Button.new()
     end_button.text = _copy("restart")
     end_button.custom_minimum_size = Vector2(0,55)
-    end_button.pressed.connect(_restart)
+    end_button.pressed.connect(_end_action)
     end_box.add_child(end_button)
     end_panel.visible = false
 
@@ -917,6 +964,11 @@ func _make_touch_controls() -> void:
     fast.pressed.connect(_fast_interact)
     var archive := _touch_button(touch_ui,"J / LOG",216,-357,94)
     archive.pressed.connect(_toggle_journal)
+    var camera_button := _touch_button(touch_ui,"CAM / C",216,-414,94)
+    camera_button.pressed.connect(_toggle_cinematic_view)
+    touch_shot_button = _touch_button(touch_ui,"SHOT / P",216,-471,94)
+    touch_shot_button.pressed.connect(_cycle_director_shot)
+    touch_shot_button.visible = false
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1074,9 +1126,23 @@ func _apply_cinematic_view() -> void:
         # Switch to a physical security camera overlooking the actual 3D
         # reactor. Preserve the player body, timer, mission and checkpoints.
         if reactor_atrium != null and reactor_atrium.director_camera != null:
-            reactor_atrium.director_camera.make_current()
+            reactor_atrium.reset_director_shots()
     elif camera != null:
         camera.make_current()
+    if touch_shot_button != null:
+        touch_shot_button.visible = cinematic_view and touch_ui.visible
+
+func _toggle_cinematic_view() -> void:
+    if not started or paused or session.finished():
+        return
+    cinematic_view = not cinematic_view
+    _apply_cinematic_view()
+    if not cinematic_view:
+        _refresh_radio_ui()
+
+func _cycle_director_shot() -> void:
+    if started and not paused and not session.finished() and cinematic_view:
+        reactor_atrium.cycle_director_shot()
 
 func _refresh_radio_ui() -> void:
     if radio_panel == null:
@@ -1131,7 +1197,9 @@ func _checkpoint_payload() -> Dictionary:
         "quality":quality_mode,
         "reduced_motion":reduced_motion,
         "player_position":[player.position.x,player.position.y,player.position.z],
-        "visited_sectors":visited_sectors.duplicate()
+        "visited_sectors":visited_sectors.duplicate(),
+        "campaign":campaign.checkpoint(),
+        "wayfinding_enabled":wayfinder.enabled
     }
 
 func _save_checkpoint() -> bool:
@@ -1179,11 +1247,28 @@ func _continue_checkpoint() -> bool:
     var saved_locale: String = str(payload.get("locale","ru"))
     if saved_locale not in ["ru","en"] or typeof(payload.get("reduced_motion",null)) != TYPE_BOOL:
         return false
+    # Validate the optional V9+ campaign atomically before any game mutation.
+    # Historical V6-V8.6 saves have no campaign field and must still load.
+    var saved_wayfinding: Variant = payload.get("wayfinding_enabled",true)
+    if typeof(saved_wayfinding) != TYPE_BOOL:
+        return false
+    var saved_campaign := IPCampaignFlow.new()
+    if payload.has("campaign"):
+        if not payload["campaign"] is Dictionary or not saved_campaign.restore(payload["campaign"]):
+            return false
+    if saved_campaign.active:
+        if saved_campaign.current_scenario() != restored_engine.scenario_id:
+            return false
+        if saved_campaign.records.size() != saved_campaign.index:
+            return false
     # Now, after atomic validation, restore all gameplay and authored story state.
     cinematic_view = false
     _apply_cinematic_view()
     session = restored_engine
     story = restored_story
+    campaign = saved_campaign
+    campaign_echoes.sync(campaign,saved_locale)
+    wayfinder.enabled = bool(saved_wayfinding)
     selected_scenario = session.scenario_id
     locale = saved_locale
     quality_mode = saved_quality
@@ -1237,6 +1322,30 @@ func _select_scenario(next_scenario: String) -> void:
     _update_scenario_picker()
     _refresh_hud()
 
+func _start_campaign() -> void:
+    if started:
+        return
+    campaign.begin()
+    selected_scenario = campaign.current_scenario()
+    _restart()
+
+func _end_action() -> void:
+    if not campaign.active or not session.won:
+        _restart()
+        return
+    if campaign.awaiting_advance():
+        if campaign.advance():
+            selected_scenario = campaign.current_scenario()
+            _restart()
+        return
+    # Three real victories produced the final campaign dossier.
+    if campaign.completed():
+        campaign.begin()
+        selected_scenario = campaign.current_scenario()
+        _restart()
+        return
+    _restart()
+
 func _fast_interact() -> void:
     _interact(true)
 
@@ -1262,7 +1371,13 @@ func _restart() -> void:
     cinematic_view = false
     _apply_cinematic_view()
     session.reset(selected_scenario)
+    if campaign.active and campaign.index > 0:
+        campaign.modifier_applied = false
+        campaign.apply_to_next(session)
     story.reset(selected_scenario)
+    if campaign.active and campaign.index > 0:
+        story.on_campaign_carryover(str(campaign.records[campaign.index-1]["priority"]))
+    campaign_echoes.sync(campaign,locale)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     if DisplayServer.get_name() != "headless":
@@ -1280,6 +1395,8 @@ func _restart() -> void:
     camera.rotation.x = pitch
     started = true
     paused = false
+    intro_panel.visible = false
+    pause_panel.visible = false
     end_panel.visible = false
     _announce("shift_started")
     _refresh_radio_ui()
@@ -1308,11 +1425,15 @@ func _toggle_language() -> void:
     locale = "en" if locale == "ru" else "ru"
     intro_body.text = _copy("intro")
     intro_button.text = _copy("start")
+    campaign_button.text = _copy("campaign_start")
     _update_scenario_picker()
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
-    end_button.text = _copy("restart")
+    end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
+    campaign_echoes.sync(campaign,locale)
+    if diagnostic_panel.visible:
+        diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
     _announce("language")
     _refresh_hud()
     _refresh_radio_ui()
@@ -1340,7 +1461,7 @@ func _gamepad_button(button_index: int) -> void:
         return
     if session.finished():
         if button_index == JOY_BUTTON_A:
-            _restart()
+            _end_action()
         return
     match button_index:
         JOY_BUTTON_A:
@@ -1354,6 +1475,8 @@ func _gamepad_button(button_index: int) -> void:
             _choose_priority("crew")
         JOY_BUTTON_DPAD_DOWN:
             _choose_priority("core")
+        JOY_BUTTON_DPAD_RIGHT:
+            _cycle_director_shot()
 
 func _input(event: InputEvent) -> void:
     if event is InputEventJoypadButton and event.pressed:
@@ -1373,6 +1496,16 @@ func _input(event: InputEvent) -> void:
             walking_phase = 0.0
             _announce("motion_reduced" if reduced_motion else "motion_normal")
             return
+        if event.keycode == KEY_F3:
+            diagnostic_panel.visible = not diagnostic_panel.visible
+            if diagnostic_panel.visible:
+                diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
+            return
+        if event.keycode == KEY_H and started and not paused and not session.finished():
+            _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
+            _save_checkpoint()
+            _refresh_hud()
+            return
         if event.keycode == KEY_G:
             quality_mode = "eco" if quality_mode == "hero" else "hero"
             art_stage.set_quality(quality_mode)
@@ -1384,10 +1517,10 @@ func _input(event: InputEvent) -> void:
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
             return
         if event.keycode == KEY_C and started and not paused and not session.finished():
-            cinematic_view = not cinematic_view
-            _apply_cinematic_view()
-            if not cinematic_view:
-                _refresh_radio_ui()
+            _toggle_cinematic_view()
+            return
+        if event.keycode == KEY_P and cinematic_view:
+            _cycle_director_shot()
             return
         if event.keycode == KEY_J:
             if cinematic_view:
@@ -1412,7 +1545,7 @@ func _input(event: InputEvent) -> void:
             return
         if session.finished():
             if event.keycode == KEY_R:
-                _restart()
+                _end_action()
             return
         if event.keycode == KEY_1 or event.keycode == KEY_2:
             _choose_priority("crew" if event.keycode == KEY_1 else "core")
@@ -1468,6 +1601,7 @@ func _physics_process(delta: float) -> void:
         _show_end()
 
 func _process(delta: float) -> void:
+    performance_audit.observe(delta,started and not paused,quality_mode)
     runtime_seconds += delta
     if OS.has_feature("web") and runtime_seconds - _last_web_resize_check >= 0.4:
         _last_web_resize_check = runtime_seconds
@@ -1502,6 +1636,10 @@ func _process(delta: float) -> void:
         if not visited_sectors.has(sector):
             visited_sectors.append(sector)
             _save_checkpoint()
+    wayfinder.update_goal(
+        session.objective_id(),player.global_position,runtime_seconds,
+        reduced_motion,quality_mode,locale,
+        started and not paused and not session.finished(),cinematic_view)
     audio_director.set_tension(session.heat,session.oxygen)
     var heat_risk: float = clampf((session.heat-70.0)/30.0,0.0,1.0)
     var air_risk: float = clampf((45.0-session.oxygen)/45.0,0.0,1.0)
@@ -1527,6 +1665,8 @@ func _process(delta: float) -> void:
     if hud_elapsed > 0.12:
         hud_elapsed = 0.0
         _refresh_hud()
+        if diagnostic_panel.visible:
+            diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
 
 func _nearest_terminal() -> Dictionary:
     if player == null:
@@ -1628,6 +1768,11 @@ func _show_end() -> void:
     if end_panel.visible:
         return
     end_panel.visible = true
+    if session.won and campaign.active:
+        if campaign.record_victory(session) and DisplayServer.get_name() != "headless":
+            checkpoint_store.save(campaign.checkpoint(),CAMPAIGN_RECORD_PATH)
+        campaign_echoes.sync(campaign,locale)
+    end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     if DisplayServer.get_name() != "headless":
         checkpoint_store.clear(checkpoint_path)
     end_title.text = _copy("victory") if session.won else _copy("failure")
@@ -1641,6 +1786,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    if campaign.active:
+        end_stats.text += "\n\n" + campaign.summary(locale)
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1659,6 +1806,8 @@ func _refresh_hud() -> void:
     subtitle_label.text = _copy("scenario_title_" + selected_scenario)
     if started:
         subtitle_label.text += " / " + _copy("sector_" + active_sector)
+    if campaign.active:
+        subtitle_label.text += " / " + _copy("campaign_progress").format({"index":campaign.index+1})
     _update_guidance(objective_key)
     _update_terminal_highlights(objective_key)
     telemetry_label.text = "%s  %d°C    |    %s  %d%%\n%s  %d%%    |    %s  %d%%    |    %s  %02d:%02d" % [

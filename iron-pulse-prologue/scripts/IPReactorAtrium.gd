@@ -18,6 +18,8 @@ var structure: Node3D
 var hero_details: Node3D
 var shield_housing: Node3D
 var director_camera: Camera3D
+var director_shots: Array[Camera3D] = []
+var director_shot_index: int = 0
 var core_plasma_material: ShaderMaterial
 var _plasma_phase: float = 0.0
 var _painted: StandardMaterial3D
@@ -110,6 +112,39 @@ func _build_director_camera() -> void:
     add_child(director_camera)
     director_camera.look_at(CORE_CENTER+Vector3(0.0,-0.15,0.0),Vector3.UP)
     director_camera.current = false
+    director_shots.append(director_camera)
+    # V12: three truly independent Godot cameras in the same real 3D world.
+    # No pre-rendered plates, animation files or gameplay teleports.
+    var side_view := Camera3D.new()
+    side_view.name = "A7_TurbineSideCamera"
+    side_view.position = Vector3(16.55,9.35,-12.1)
+    side_view.fov = 70.0
+    side_view.near = 0.08
+    add_child(side_view)
+    side_view.look_at(CORE_CENTER,Vector3.UP)
+    side_view.current = false
+    director_shots.append(side_view)
+    var high_view := Camera3D.new()
+    high_view.name = "A7_UpperCatwalkCamera"
+    high_view.position = Vector3(7.30,11.50,-27.5)
+    high_view.fov = 74.0
+    high_view.near = 0.08
+    add_child(high_view)
+    high_view.look_at(CORE_CENTER,Vector3.UP)
+    high_view.current = false
+    director_shots.append(high_view)
+
+func reset_director_shots() -> void:
+    director_shot_index = 0
+    if director_camera != null:
+        director_camera.make_current()
+
+func cycle_director_shot() -> String:
+    if director_shots.is_empty():
+        return ""
+    director_shot_index = (director_shot_index+1)%director_shots.size()
+    director_shots[director_shot_index].make_current()
+    return director_shots[director_shot_index].name
 
 func _procedural_pbr_maps() -> Dictionary:
     # One deterministic original paint/wear atlas: albedo grain, uneven
@@ -468,6 +503,8 @@ func readout() -> Dictionary:
         "rotor_camera_alignment_min":rotor_alignment,
         "cinematic_vault":true,
         "security_director_camera":director_camera != null,
+        "director_shot_count":director_shots.size(),
+        "director_shot_index":director_shot_index,
         "security_camera_position":[director_camera.global_position.x,director_camera.global_position.y,director_camera.global_position.z] if director_camera != null else [],
         "plasma_shader_live":core_plasma_material != null,
         "open_core_inspection":shield_housing != null and shield_housing.get_node_or_null("ReactorHeatShield_05") == null and shield_housing.get_node_or_null("CustomUV_ArmourCassette_06") == null,

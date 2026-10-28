@@ -191,6 +191,24 @@ jobs:
           timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_6_reactive_containment.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           grep -q '^IRON PULSE V8.6 REACTIVE CONTAINMENT PASS:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"; then exit 1; fi
+      - name: V9-V12 full story / in-world UX / cinematic / release-gate source regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          for entry in             'test_v9_campaign_flow.gd|IRON PULSE V9 CAMPAIGN PASS'             'test_v9_campaign_scene.gd|IRON PULSE V9 THREE-ACT SCENE PASS'             'test_v10_wayfinding.gd|IRON PULSE V10 WAYFINDING PASS'             'test_v11_campaign_echoes.gd|IRON PULSE V11 CONSEQUENCES PASS'             'test_v12_release_gate.gd|IRON PULSE V12 RELEASE GATE PASS'; do
+            script="${entry%%|*}"
+            proof="${entry#*|}"
+            output="$RUNNER_TEMP/iron-pulse-${script%.gd}.log"
+            echo "GODOT GATE: $script"
+            timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script "res://tests/$script" 2>&1 | tee "$output"
+            grep -q "^$proof:" "$output"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$output"; then exit 1; fi
+          done
+      - name: V12 source manifest, offline provenance and release HOLD check
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 iron-pulse-prologue/ci/verify_release_v12.py
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
