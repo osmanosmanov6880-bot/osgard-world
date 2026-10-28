@@ -108,6 +108,28 @@ jobs:
           xvfb-run -a -s '-screen 0 1920x1080x24' \
             npx playwright test --config playwright.city-reign-camera-release.config.mjs \
               --workers=1 --retries=0
+      - name: Verify full source-SHA runtime on localhost in independent real Chromium
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          CITY_REIGN_PUBLIC_BASE_URL: http://127.0.0.1:4173/
+          CITY_REIGN_EXPECTED_SHA: ${{ github.sha }}
+          CITY_REIGN_PUBLIC_EVIDENCE_DIR: city-reign-r162-private-browser
+        run: |
+          set -euo pipefail
+          node --check scripts/city-reign-public-live-qa.mjs
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            node scripts/city-reign-public-live-qa.mjs
+          python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path('city-reign-r162-private-browser')
+          data=json.loads((p/'PUBLIC-REAL-GODOT-ACCEPTANCE.json').read_text())
+          assert data['status']=='PASS'
+          assert data['source_sha']==os.environ['CITY_REIGN_EXPECTED_SHA']
+          assert data['public_url']=='http://127.0.0.1:4173/'
+          assert len(data['screens'])==2
+          print('PASS: EXACT local source R162 renders and accepts input on real Chromium')
+          PY
       - name: Preserve test logs and WebGL screenshots without public deployment
         if: always()
         uses: actions/upload-artifact@v4
@@ -117,5 +139,6 @@ jobs:
             r162-native-evidence/
             city-reign-camera-report/
             city-reign-camera-results/
+            city-reign-r162-private-browser/
           retention-days: 14
           if-no-files-found: warn
