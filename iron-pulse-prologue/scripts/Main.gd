@@ -1630,6 +1630,25 @@ func _interact(fast: bool = false) -> void:
         return
     var target: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
+    var field: Dictionary = containment_run.nearest(player.global_position)
+    if not field.is_empty() and not fast:
+        var field_dist: float = _physical_distance(field["position"])
+        var main_dist: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
+        var rescue_dist: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+        if field_dist < minf(main_dist,rescue_dist):
+            var sealed: bool = containment_run.activate_seal(str(field["id"]),session)
+            previous_event = session.last_event
+            if sealed:
+                _story_event(session.last_event)
+                _announce(session.last_event)
+            elif containment_run.seals.size() >= IPContainmentRun.MAX_SEALS:
+                _story_event("field_budget")
+                _announce("action_denied")
+            else:
+                _announce("action_denied")
+            _save_checkpoint()
+            _refresh_hud()
+            return
     if not rescue.is_empty() and not fast:
         var main_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
         var rescue_distance: float = _physical_distance(rescue["position"])
@@ -1749,10 +1768,24 @@ func _refresh_hud() -> void:
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
     var nearby: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
+    var field: Dictionary = containment_run.nearest(player.global_position)
+    var show_field: bool = started and not session.finished() and not field.is_empty()
     var show_rescue: bool = not rescue.is_empty()
     if show_rescue and not nearby.is_empty():
         show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
-    if started and not session.finished() and show_rescue:
+    if show_field:
+        var distance_to_field: float = _physical_distance(field["position"])
+        var distance_to_main: float = _physical_distance(nearby["position"]) if not nearby.is_empty() else 999.0
+        var distance_to_rescue: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+        show_field = distance_to_field < minf(distance_to_main,distance_to_rescue)
+    if show_field:
+        var field_id: String = str(field["id"])
+        var available: bool = session.core_scanned and not containment_run.seals.has(field_id) and containment_run.seals.size() < IPContainmentRun.MAX_SEALS
+        var label_key: String = "field_hint" if available else "field_closed"
+        interaction_label.text = _copy(label_key).format({
+            "name":_copy("field_" + field_id),
+            "distance":"%.1f" % _physical_distance(field["position"])})
+    elif started and not session.finished() and show_rescue:
         var relay_dist: float = _physical_distance(rescue["position"])
         var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
         var rescue_key: String = "rescue_hint" if available else "rescue_spent"
