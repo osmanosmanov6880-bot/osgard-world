@@ -151,14 +151,16 @@ class OriginalGodotPackaging(unittest.TestCase):
             self.assertGreater(len(content),100)
         self.assertIn("WORLD OPERATIONS",(ROOT/"index.html").read_text())
         self.assertIn("CACHE_GAME",(ROOT/"sw.js").read_text())
-        self.assertIn("RayCast3D",(ROOT/"README.txt").read_text() if "RayCast3D" in (ROOT/"README.txt").read_text() else "RayCast3D")
+        self.assertIn("G direct physics-ray interaction",(ROOT/"README.txt").read_text())
 
     def test_14_no_global network dependency_in_launcher(self):
         self.assertIn("--bind 127.0.0.1",(ROOT/"START_WINDOWS.bat").read_text())
         self.assertIn("--bind 127.0.0.1",(ROOT/"START_LINUX_MAC.sh").read_text())
         sw=(ROOT/"sw.js").read_text()
         self.assertIn("crypto.subtle.digest",sw)
-        self.assertIn("opt", "opt-in caching is required")
+        self.assertIn('event.data?.type!=="CACHE_GAME"',sw)
+        self.assertIn("await caches.delete(GAME)",sw)
+        self.assertIn('file.path',sw)
 
 
 if __name__=="__main__":
