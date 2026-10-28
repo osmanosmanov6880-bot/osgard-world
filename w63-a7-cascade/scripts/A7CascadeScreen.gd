@@ -949,6 +949,8 @@ func _field_valve(direction: int) -> void:
         checkpoint.note("valve", direction, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
+    if w79_mission_deck != null:
+        w79_mission_deck.report_real_physical_result(ok)
     call_deferred("_publish_web_accessibility")
 
 func _field_relay(index: int) -> void:
@@ -965,6 +967,8 @@ func _field_relay(index: int) -> void:
         checkpoint.note("relay", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
+    if w79_mission_deck != null:
+        w79_mission_deck.report_real_physical_result(ok)
     call_deferred("_publish_web_accessibility")
 
 func _field_sync(index: int) -> void:
@@ -981,6 +985,8 @@ func _field_sync(index: int) -> void:
         checkpoint.note("sync", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
+    if w79_mission_deck != null:
+        w79_mission_deck.report_real_physical_result(ok)
     call_deferred("_publish_web_accessibility")
 
 func _refresh_mission_ui(state: Dictionary) -> void:
