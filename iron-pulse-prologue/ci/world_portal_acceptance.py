@@ -25,7 +25,7 @@ def verify(root: Path, output: Path, sha: str) -> dict:
     assert len(sha) == 40 and all(x in "0123456789abcdef" for x in sha)
     root = root.resolve()
     for expected in (
-        "index.html", "styles.css", "app.js", "manifest.webmanifest",
+        "index.html", "styles.css", "app.js", "preflight.css", "preflight.js", "manifest.webmanifest",
         "sw.js", "assets/iron-pulse-mark.svg", "assets/gameplay-proof.png",
         "play/index.html", "play/index.js", "play/index.wasm", "play/index.pck"
     ):
@@ -70,6 +70,17 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 )
                 page.evaluate("window.scrollTo(0,0)")
                 assert page.locator(".mission-option").count() == 3
+                assert page.locator("#preflight-run").is_visible()
+                assert page.locator("#preflight-download").is_disabled()
+                page.locator("#preflight-run").click()
+                page.wait_for_function("window.IRON_PULSE_PREFLIGHT?.lastResult !== null",timeout=30000)
+                report = page.evaluate("window.IRON_PULSE_PREFLIGHT.lastResult")
+                assert report["schema"] == "IRON_PULSE_LOCAL_PREFLIGHT_V14"
+                assert report["checks"]["wasm"] == "pass"
+                assert report["checks"]["files"] == "pass"
+                assert report["checks"]["manifest"] == "pass"
+                assert report["source_sha"] == sha
+                assert page.locator("#preflight-download").is_enabled()
                 assert page.locator("#mission-play").get_attribute("href").endswith(
                     "?scenario=blackout&lang=ru"
                 ), "Original RU GRID launch link not real"
