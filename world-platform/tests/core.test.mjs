@@ -72,7 +72,7 @@ test("missing engine never invents reactor metrics or mission success",()=>{
   assert.equal(missionState(null,"ru").every(s=>s.status==="awaiting"),true);
 });
 test("actual game state reader rejects malformed, oversized or fake state",()=>{
-  const broken={contentDocument:{getElementById:()=>({getAttribute:()=>"{")})}};
+  const broken={contentDocument:{getElementById:()=>({getAttribute:()=> "{"})}};
   assert.equal(readGameState(broken),null);
   const dummy={contentDocument:{getElementById:()=>({getAttribute:()=>JSON.stringify(realShapedFixture())})}};
   assert.equal(readGameState(dummy).real_native_3d,true);
