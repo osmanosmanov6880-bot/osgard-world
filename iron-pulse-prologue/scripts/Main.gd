@@ -39,6 +39,11 @@ const COPY := {
         "choice_crew": "1  /  ЛЮДИ", "choice_core": "2  /  ЯДРО",
         "story_choice": "МАРА ЖДЁТ ПРИКАЗА: 1 — ЭКИПАЖ / 2 — РЕАКТОР",
         "chapter_final": "АКТ {act} / РЕШЕНИЕ: {priority}",
+        "rescue_hint": "СТАНЦИЯ {name}  {distance} м  /  [E] АКТИВИРОВАТЬ",
+        "rescue_spent": "СТАНЦИЯ {name}  /  РЕСУРС НЕДОСТУПЕН",
+        "rescue_medbay": "МЕДИЦИНСКИЙ УЗЕЛ", "rescue_quench": "ТЕПЛОВОЙ ГАСИТЕЛЬ", "rescue_uplink": "СВЯЗЬ И ЭВАКУАЦИЯ",
+        "rescue_count": "СПАСАТЕЛЬНЫЕ СТАНЦИИ {used}/2",
+        "rescue_final": "Станции спасения: {used}/2",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -97,6 +102,11 @@ const COPY := {
         "choice_crew": "1  /  CREW", "choice_core": "2  /  CORE",
         "story_choice": "MARA AWAITS YOUR ORDER: 1 — CREW / 2 — REACTOR",
         "chapter_final": "ACT {act} / PRIORITY: {priority}",
+        "rescue_hint": "RESCUE STATION {name}  {distance} m  /  [E] ACTIVATE",
+        "rescue_spent": "RESCUE STATION {name}  /  CAPACITY EXHAUSTED",
+        "rescue_medbay": "MEDICAL BAY", "rescue_quench": "HEAT SUPPRESSOR", "rescue_uplink": "EVACUATION UPLINK",
+        "rescue_count": "RESCUE NETWORK {used}/2",
+        "rescue_final": "Rescue stations: {used}/2",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -151,6 +161,9 @@ var reactor_core: MeshInstance3D
 var exit_gate: MeshInstance3D
 var reactor_rings: Array[Node3D] = []
 var terminals: Array[Dictionary] = []
+var relay_terminals: Array[Dictionary] = []
+var _relay_ready_material: StandardMaterial3D
+var _relay_done_material: StandardMaterial3D
 var hud_root: Control
 var brand_label: Label
 var subtitle_label: Label
@@ -301,6 +314,8 @@ func _publish_web_state() -> void:
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["story"] = story.diagnostic()
+    state["relay_3d_terminals"] = relay_terminals.size()
+    state["relay_positions"] = [[p["id"],p["position"].x,p["position"].z] for p in relay_terminals]
     state["radio_visible"] = radio_panel.visible if radio_panel != null else false
     state["priority_visible"] = priority_panel.visible if priority_panel != null else false
     state["radio_speaker"] = radio_speaker.text if radio_speaker != null else ""
@@ -436,6 +451,7 @@ func _make_complex() -> void:
         _box(self,Vector3(6.1,2.7,z+0.5),Vector3(0.09,0.85,0.14),red)
     _build_reactor()
     _build_terminals()
+    _build_rescue_relays()
     _build_bulkhead()
     art_stage = IPCinematicStage.new()
     add_child(art_stage)
@@ -507,6 +523,40 @@ func _build_terminals() -> void:
         label3d.modulate = WHITE
         terminal.add_child(label3d)
         terminals.append({"id":info["id"],"key":info["key"],"position":pos,"indicator":indicator,"label":label3d})
+
+func _build_rescue_relays() -> void:
+    # Physically optional second puzzle system in all three existing sectors.
+    # Three separate real terminal nodes, only two may actually be activated.
+    var positions: Array[Dictionary] = [
+        {"id":"medbay","key":"rescue_medbay","point":Vector3(-4.2,1.0,-23.0)},
+        {"id":"quench","key":"rescue_quench","point":Vector3(4.2,1.0,-39.5)},
+        {"id":"uplink","key":"rescue_uplink","point":Vector3(-4.2,1.0,-53.0)}
+    ]
+    _relay_ready_material = _metal(Color(0.97,0.66,0.30),0.13,true)
+    _relay_done_material = _metal(Color(0.16,0.74,0.52),0.12,true)
+    for info in positions:
+        var relay := Node3D.new()
+        relay.name = "RescueRelay_" + str(info["id"])
+        relay.position = info["point"]
+        add_child(relay)
+        _box(relay,Vector3.ZERO,Vector3(1.65,1.7,0.40),_metal(METAL))
+        var surface: MeshInstance3D = _box(relay,Vector3(0,0.05,0.25),Vector3(1.48,1.20,0.055),_metal(NIGHT,0.05))
+        surface.name = "RelayConsoleScreen"
+        var indicator: MeshInstance3D = _box(relay,Vector3(0,0.59,0.29),Vector3(1.43,0.13,0.07),_relay_ready_material)
+        indicator.name = "RelayStatusLight"
+        var marker := Label3D.new()
+        marker.name = "OptionalRelayName"
+        marker.text = str(info["id"]).to_upper()
+        marker.font_size = 42
+        marker.pixel_size = 0.0023
+        marker.position = Vector3(0,-0.02,0.38)
+        marker.modulate = WHITE
+        relay.add_child(marker)
+        relay_terminals.append({
+            "id":info["id"],"key":info["key"],
+            "position":info["point"],"indicator":indicator,
+            "node":relay
+        })
 
 func _build_bulkhead() -> void:
     _box(self,Vector3(-3.5,2.7,-59.0),Vector3(2.5,5.4,1.1),_metal(METAL))
