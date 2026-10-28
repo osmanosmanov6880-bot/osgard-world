@@ -110,6 +110,16 @@ def run(export, out, sha):
             page.keyboard.up("s")
             page.wait_for_timeout(350)
             walked=snapshot(page)
+            print("W71 ACTUAL S PHYSICS DEBUG",json.dumps({
+                "spawn_z":begin_z,
+                "actual_body":walked["w70_real_body_xyz"],
+                "actual_path_m":walked["w70_real_physical_distance"],
+                "physics_frames":walked["w70_real_physics_frames"],
+                "pilot_active":walked["w70_physical_operator"],
+                "mission_phase":walked["w71_mission_phase"],
+            }),flush=True)
+            require(walked["w70_physical_operator"],
+                    "Held S cannot exit real physical player mode")
             require(walked["w70_real_physical_distance"]>2.1,
                     "Actual S character walk did not move real physics body")
             require(walked["history_count"]==0 and walked["w71_mission_phase"]==0,
