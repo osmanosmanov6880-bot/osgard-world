@@ -114,3 +114,11 @@ test('Studio route shells are real generated pages and recognized React destinat
  assert.match(router,/\/osa-cinema\/studio/)
  assert.match(app,/!path\.startsWith\('\/osa-cinema\/studio\/films\/'\)/)
 })
+
+test('V57 removes inherited light OSGARD shell only for the cinematic studio',()=>{
+ const app=read('src/main.tsx')
+ const dark=read('src/osaCinemaFilm.css')
+ assert.match(app,/path\.startsWith\('\/osa-cinema\/studio'\) \? page : <BrandShell/)
+ assert.match(dark,/main\.osa-studio\.osa-film-page\{background:#090a0c;color:#f5eee3\}/)
+ assert.match(read('src/osaCinemaStudio.css'),/main\.osa-studio\{background-color:#070809;color:#f5eee3/)
+})

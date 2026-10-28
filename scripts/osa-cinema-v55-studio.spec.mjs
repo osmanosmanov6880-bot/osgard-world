@@ -7,6 +7,9 @@ test('V55 studio: real searchable bilingual collection, watchlist, keyboard-safe
  expect(response?.status()).toBe(200)
  const studio=page.locator('main.osa-studio:not(.osa-film-page)')
  await expect(studio).toBeVisible()
+ await expect(page.locator('.brand-system')).toHaveCount(0)
+ await expect(studio).toHaveCSS('background-color','rgb(7, 8, 9)')
+ await page.screenshot({path:info.outputPath('osa-studio-v57-landing-desktop.png'),fullPage:true,animations:'disabled'})
  await expect(studio.locator('.osa-studio-card')).toHaveCount(3)
  await expect(studio.getByRole('heading',{name:'Коллекция студии'})).toBeVisible()
  await studio.getByRole('button',{name:'Фильмы',exact:true}).click()
@@ -56,6 +59,9 @@ test('V55 mobile film dossier, RU/EN switch, release gates, missing-title 404',a
  expect(response?.status()).toBe(200)
  const project=page.locator('main.osa-film-page[data-project-id="zero-window"]')
  await expect(project).toBeVisible()
+ await expect(page.locator('.brand-system')).toHaveCount(0)
+ await expect(project).toHaveCSS('background-color','rgb(9, 10, 12)')
+ await expect(project.getByRole('heading',{name:'НУЛЕВОЕ ОКНО'})).toHaveCSS('color','rgb(246, 229, 206)')
  await expect(project.getByRole('heading',{name:'НУЛЕВОЕ ОКНО'})).toBeVisible()
  await expect(project.locator('.osa-film-gate')).toHaveCount(6)
  await expect(project).toHaveAttribute('data-public-video','blocked')
@@ -97,4 +103,16 @@ test('Studio resumes exactly the local interactive scene without pretending medi
  await resume.click()
  await expect(page.locator('main.osa-cinema')).toBeVisible()
  await expect(page).toHaveURL(/scene=4/)
+})
+
+test('V57 accessible film typography stays legible in the isolated obsidian shell',async ({page})=>{
+ await page.goto('/osa-cinema/studio/films/threshold?lang=en')
+ const pageRoot=page.locator('main.osa-studio.osa-film-page')
+ await expect(page.locator('.brand-system')).toHaveCount(0)
+ const palette=await pageRoot.evaluate(root=>{
+  const style=(selector)=>getComputedStyle(root.querySelector(selector))
+  return {background:getComputedStyle(root).backgroundColor,hero:style('.osa-film-hero h1').color,section:style('.osa-film-overview h2').color,release:style('.osa-film-release h2').color}
+ })
+ expect(palette).toEqual({background:'rgb(9, 10, 12)',hero:'rgb(246, 229, 206)',section:'rgb(245, 238, 227)',release:'rgb(245, 238, 227)'})
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)
 })
