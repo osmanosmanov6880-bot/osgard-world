@@ -1,0 +1,213 @@
+name: LAST FRONTIER W82 true 3D world navigation source-locked (DRAFT)
+
+on:
+  pull_request:
+    branches:
+      - game/last-frontier-w81-fused-real-mobile-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W82_REAL_MISSION_NAVIGATION.md'
+      - '.github/workflows/last-frontier-w82-real-navigation.yml'
+
+permissions:
+  contents: read
+concurrency:
+  group: last-frontier-w82-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  genuine-source:
+    name: Immutable original W63-W81 Godot physics and exact new read-only navigation files
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Assert exact immutable original engine and only six read-only navigation paths
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w82-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='c27eef7548ca0bf9489d2a5ad5b0b2681bda77d5'
+          head=os.environ['HEAD']
+          def git(*args): return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch(r'[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          allowed={
+              'w63-a7-cascade/scripts/A7MissionNavCockpit.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w82_real_navigation.gd',
+              'w63-a7-cascade/ci/w82_browser_real_navigation.py',
+              'docs/LAST_FRONTIER_W82_REAL_MISSION_NAVIGATION.md',
+              '.github/workflows/last-frontier-w82-real-navigation.yml',
+          }
+          assert changed==allowed,{'missing':sorted(allowed-changed),'unexpected':sorted(changed-allowed)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7SpatialMission.gd',
+              'w63-a7-cascade/scripts/A7FieldOperations.gd',
+              'w63-a7-cascade/scripts/A7MissionWayfinder.gd',
+              'w63-a7-cascade/scripts/A7WorldInteraction.gd',
+              'w63-a7-cascade/scripts/A7SessionCheckpoint.gd',
+              'w63-a7-cascade/scripts/A7SectorBulkhead.gd',
+              'w63-a7-cascade/scripts/A7TouchFieldControls.gd',
+              'w63-a7-cascade/scripts/A7MobileMissionDeck.gd',
+              'w63-a7-cascade/scripts/A7FullBleedViewport.gd',
+              'w63-a7-cascade/tests/test_w79_complete_mobile_mission.gd',
+              'w63-a7-cascade/tests/test_w80_full_bleed_game.gd',
+              'w63-a7-cascade/tests/test_w81_mobile_fullscreen.gd',
+              'w63-a7-cascade/ci/w81_browser_fused_mobile.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+          ]
+          hashes={}
+          for path in protected:
+              old=git('rev-parse',base+':'+path)
+              new=git('rev-parse',head+':'+path)
+              assert old==new,'Original physics/mission or previous game QA was modified: '+path
+              hashes[path]=new
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          cockpit=Path('w63-a7-cascade/scripts/A7MissionNavCockpit.gd').read_text()
+          screen=Path('w63-a7-cascade/scripts/A7CascadeScreen.gd').read_text()
+          for key in ['class_name A7MissionNavCockpit','body.position.distance_to(target)',
+                      'head_camera.global_transform.basis','original_mission.phase',
+                      'set_context','real_player_body_id']:
+              assert key in cockpit,key
+          for forbidden in ['model.choose','_on_action(','.reparent(','set_active(',
+                            'inspect_physical(','rotate_valve(','toggle_relay(',
+                            'sync_connector(','body.position =','body.global_position =']:
+              assert forbidden not in cockpit,'Read-only navigator tried to control gameplay: '+forbidden
+          for marker in ['w82_nav_cockpit.build','w82_native_navigation_visible',
+                         'w82_nav_cockpit.set_context']:
+              assert marker in screen,marker
+          report={'schema':'W82_SOURCE_PIN_REAL_GODOT_NAV_ONLY_V1',
+                  'result':'PASS','base_sha':base,'head_sha':head,
+                  'changed_files':sorted(changed),'protected_game_blobs':hashes,
+                  'original_decisions_and_physics_immutable':True,
+                  'commercial_AAA_certified':False}
+          Path('w82-evidence/W82_SOURCE_PIN.json').write_text(
+              json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          print('W82 exact SHA original game source read-only navigation PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w82-original-source-${{ github.event.pull_request.head.sha }}
+          path: w82-evidence/W82_SOURCE_PIN.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  native-and-real-web:
+    name: Eleven actual Godot native tests, authentic WebGL and 12 SHA-bound Chromium frames
+    runs-on: ubuntu-latest
+    needs: genuine-source
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Real source Godot import, zero parse/compile errors
+        run: |
+          set -euo pipefail
+          mkdir -p w82-evidence
+          timeout 320s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w82-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w82-evidence/import.log; then exit 1; fi
+      - name: Original W63-W81 native game regression plus real W82 HUD actions
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w72_field_operations test_w73_world_and_checkpoint test_w74_gamepad_feedback test_w76_immersive_level test_w77_sector_bulkhead test_w78_touch_gameplay test_w79_complete_mobile_mission test_w80_full_bleed_game test_w81_mobile_fullscreen test_w82_real_navigation; do
+            timeout 510s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w82-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w82-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W79 TRUE COMPLETE FIVE-PHASE MOBILE GODOT MISSION PASS:' w82-evidence/test_w79_complete_mobile_mission.log
+          grep -q 'LAST FRONTIER W80 TRUE ORIGINAL FULL-BLEED GODOT GAME PASS:' w82-evidence/test_w80_full_bleed_game.log
+          grep -q 'LAST FRONTIER W81 INTEGRATED FULLSCREEN RESPONSIVE MOBILE GAME PASS:' w82-evidence/test_w81_mobile_fullscreen.log
+          grep -q 'LAST FRONTIER W82 REAL WORLD MISSION COMPASS AND REACHABILITY PASS:' w82-evidence/test_w82_real_navigation.log
+      - name: Export real Godot 4.4.1 WASM/PCK from this exact source
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          cd w63-a7-cascade
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          cd ..
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install actual Chromium driver, no mock screenshots
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w82
+          /tmp/a7-w82/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w82/bin/python -m playwright install --with-deps chromium
+      - name: Real previous W81 and new W82 true mobile/landscape gameplay browser regressions
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout 1190s /tmp/a7-w82/bin/python w63-a7-cascade/ci/w81_browser_fused_mobile.py --export w63-a7-cascade/build/web --evidence w82-evidence/w81-regression --sha "$SHA" 2>&1 | tee w82-evidence/w81-browser.log
+          grep -q 'LAST FRONTIER W81 TRUE AAA-READABILITY GODOT MOBILE CHROMIUM PASS:' w82-evidence/w81-browser.log
+          timeout 1190s /tmp/a7-w82/bin/python w63-a7-cascade/ci/w82_browser_real_navigation.py --export w63-a7-cascade/build/web --evidence w82-evidence/w82-browser --sha "$SHA" 2>&1 | tee w82-evidence/w82-browser.log
+          grep -q 'LAST FRONTIER W82 REAL ORIGINAL GODOT PHYSICAL NAV CHROMIUM PASS:' w82-evidence/w82-browser.log
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          count=0
+          for folder,filename,sha_key,n in [
+              ('w81-regression','W81_FUSED_MOBILE_CHROMIUM.json','head_source_sha',7),
+              ('w82-browser','W82_TRUE_NAVIGATION_CHROMIUM.json','source_sha',5)]:
+              root=Path('w82-evidence')/folder
+              report=json.loads((root/filename).read_text())
+              assert report['result']=='PASS' and report[sha_key]==os.environ['SHA']
+              assert len(report['images'])==n
+              for img in report['images']:
+                  raw=(root/img['name']).read_bytes()
+                  assert len(raw)>12000 and len(raw)==img['bytes']
+                  assert hashlib.sha256(raw).hexdigest()==img['sha256']
+                  count+=1
+          assert count==12
+          print('W82 original live 3D screenshots verified: 12 actual Chromium source SHA256 frames')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w82-source-authenticated-Godot-WebGL-${{ github.event.pull_request.head.sha }}
+          path: |
+            w82-evidence/
+            w63-a7-cascade/build/web/
+          if-no-files-found: warn
+          retention-days: 45
+
+  software-not-retail:
+    name: W82 source/game/browser accepted only when genuine; no phone or AAA claims
+    runs-on: ubuntu-latest
+    needs: [genuine-source,native-and-real-web]
+    if: always()
+    steps:
+      - name: Require actual original source and real game engine browser PASS
+        env:
+          SOURCE: ${{ needs.genuine-source.result }}
+          GAME: ${{ needs.native-and-real-web.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$GAME" = success
+          echo 'W82 genuine original physics + real source-only compass SOFTWARE PASS.'
+          echo 'NO retail/publishing approval: physical Android/iPhone, consumer GPU, original AAA art and external human playtests still required.'
