@@ -81,17 +81,27 @@ test('CITY REIGN real treasury-built city hall adds physical 3D architecture in 
   })
   expect(builtDelta.meanMaxRgbDelta,'REAL paid civic build changes physical architectural pixels').toBeGreaterThan(0.04)
   expect(builtDelta.changedFraction).toBeGreaterThan(0.0006)
+  // Photograph actual original 3D city at NIGHT separately from daytime.
+  await page.keyboard.press('3')
+  await page.waitForTimeout(1500)
+  const night=(await captureAnimatedWebGLViewport(page)).png
+  const nightDelta=realPixelChange(funded,night)
+  await info.attach('source-real-funded-city-hall-night-cinematic.png',{
+    body:night,contentType:'image/png'
+  })
+  expect(nightDelta.meanMaxRgbDelta,'actual engine night lighting changes real source pixels').toBeGreaterThan(1.0)
+  expect(nightDelta.changedFraction).toBeGreaterThan(0.03)
   await page.keyboard.press('4')
   await page.waitForTimeout(1450)
   const low=(await captureAnimatedWebGLViewport(page)).png
-  const lowDelta=realPixelChange(funded,low)
+  const lowDelta=realPixelChange(night,low)
   await info.attach('source-original-city-hall-low-gpu-original-collider.png',{
     body:low,contentType:'image/png'
   })
   expect(lowDelta.meanMaxRgbDelta,'LOW physically removes new detailed architecture from original road').toBeGreaterThan(1.0)
   expect(lowDelta.changedFraction).toBeGreaterThan(0.03)
   await info.attach('real-city-civic-investment-pixels.json',{
-    body:Buffer.from(JSON.stringify({gl,baseline,builtDelta,lowDelta,errors},null,2)),
+    body:Buffer.from(JSON.stringify({gl,baseline,builtDelta,nightDelta,lowDelta,errors},null,2)),
     contentType:'application/json'
   })
   expect(errors).toEqual([])

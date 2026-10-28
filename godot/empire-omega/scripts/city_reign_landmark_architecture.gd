@@ -5,6 +5,7 @@ extends Node3D
 ## This art has ZERO collision geometry, zero economy writes, no foreign models,
 ## no hidden physics or always-running extra camera/shadow passes.
 const CIVIC = preload("res://scripts/civic_initiatives.gd")
+const GAME_SOURCE = preload("res://scripts/game_state.gd")
 const ORDER = ["cityhall","market","depot","power"]
 const SITE = {
 	"cityhall":{"position":Vector3(-130.0,0.0,-130.0),"height":24.0,"district":"forum",
@@ -175,9 +176,17 @@ func _ready() -> void:
 		_create_one(id)
 	# Source-authoritative player state is only READ; never mutate any
 	# saved mission, money, civic project, city turn or traffic system.
-	sync_state(GameState.data)
+	# Independent --script native test preloads this visual source BEFORE
+	# Godot has registered the GameState global singleton symbol. Resolve
+	# the exact real authoritative source node AFTER entering the scene.
+	var actual_game: Node = get_node_or_null("/root/GameState")
+	if actual_game != null:
+		var source_state: Dictionary = actual_game.get("data")
+		sync_state(source_state)
 	set_quality("standard")
-	update_ambience(float(GameState.data.get("day_clock",12.0)),int(GameState.data.get("energy",100)))
+	if actual_game != null:
+		var saved: Dictionary = actual_game.get("data")
+		update_ambience(float(saved.get("day_clock",12.0)),int(saved.get("energy",100)))
 
 func _create_one(id: String) -> void:
 	var info: Dictionary = SITE[id]
@@ -213,8 +222,8 @@ func sync_state(state: Dictionary) -> void:
 	for id in ORDER:
 		var district: String = str(SITE[id]["district"])
 		var built: int = 0
-		for key in GameState.BUILDING_ORDER:
-			if str(GameState.BUILDINGS[key]["district"])==district:
+		for key in GAME_SOURCE.BUILDING_ORDER:
+			if str(GAME_SOURCE.BUILDINGS[key]["district"])==district:
 				built+=clampi(int(buildings.get(key,0)),0,4)
 		var achievements: int = 0
 		for project_id in finished:

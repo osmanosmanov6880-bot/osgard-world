@@ -8,20 +8,20 @@ var city: Node3D
 func _ready() -> void:
 	name = "CityReignActualPaidUrbanArchitectureBrowserProof"
 	GameState.data = GameState.new_game()
-	GameState.data["day_clock"] = 22.0
+	GameState.data["day_clock"] = 16.0
 	GameState.data["energy"] = 95
 	city = REAL_CITY.new()
 	add_child(city)
-	city.call("update_daynight",22.0)
+	city.call("update_daynight",16.0)
 	city.call("apply_visual_budget","cinematic")
 	var camera := Camera3D.new()
 	camera.name = "ActualSourceCityHallFacadeStreetCamera"
-	camera.position = Vector3(-118.5,15.8,-166.5)
-	camera.fov = 48.0
+	camera.position = Vector3(-118.5,15.8,-172.5)
+	camera.fov = 55.0
 	camera.near = 0.10
 	camera.far = 550.0
 	add_child(camera)
-	camera.look_at(Vector3(-130.0,16.2,-130.0),Vector3.UP)
+	camera.look_at(Vector3(-130.0,13.6,-130.0),Vector3.UP)
 	camera.current = true
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -33,16 +33,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	match key.keycode:
 		KEY_1:
 			GameState.data = GameState.new_game()
-			GameState.data["day_clock"]=22.0
+			GameState.data["day_clock"]=16.0
 			GameState.data["energy"]=95
 			city.call("update_development")
-			city.call("update_daynight",22.0)
+			city.call("update_daynight",16.0)
 		KEY_2:
 			# Actual original treasury-funded state, not an art toggle.
 			GameState.build("council")
 			city.call("update_development")
 		KEY_3:
-			# Same original real resource used for the city night light.
+			# Genuine night of the SAME original full 3D city.
+			GameState.data["day_clock"]=22.0
+			city.call("update_daynight",22.0)
+		KEY_6:
+			# Actual city resource blackout, no fake visual weather toggle.
 			GameState.data["energy"]=0
 			city.call("update_daynight",22.0)
 		KEY_4: city.call("apply_visual_budget","low")
