@@ -83,3 +83,17 @@ test('both SSH paths share one trusted host lock, and frontend seals the candida
  assert.match(workflow,/cp scripts\/preserve-omega-native\.sh osgard-release\/preserve-omega-native\.sh/)
  assert.match(workflow,/node --test scripts\/omega-frontend-preservation\.test\.mjs/)
 })
+
+test('full frontend SSH activation preserves source-verified CITY REIGN independently of Omega R87',()=>{
+ const command='sh /tmp/osgard-gh-next/preserve-omega-native.sh /usr/share/nginx/html/games/city-reign-preview /tmp/osgard-gh-next/html/games/city-reign-preview'
+ const preview=frontend.indexOf(command)
+ const omega=frontend.indexOf('sh /tmp/osgard-gh-next/preserve-omega-native.sh /usr/share/nginx/html/games/omega-3d-preview /tmp/osgard-gh-next/html/games/omega-3d-preview')
+ const swap=frontend.indexOf('mv /usr/share/nginx/html /tmp/osgard-gh-previous')
+ const publicHash=frontend.indexOf('cd /usr/share/nginx/html/games/city-reign-preview && sha256sum -c SHA256SUMS.txt')
+ assert.ok(omega>0 && preview>omega && preview<swap,
+  'preview must be preserved under the same host activation lock and before the only full-site swap')
+ assert.ok(publicHash>swap,
+  'the copied actual preview must be reverified with SHA256 after the site root switches')
+ assert.match(frontend,/osgard-frontend-activation\.lock/)
+ assert.equal((frontend.match(/sh \/tmp\/osgard-gh-next\/preserve-omega-native\.sh \/usr\/share\/nginx\/html\/games\/city-reign-preview/g)||[]).length,1)
+})
