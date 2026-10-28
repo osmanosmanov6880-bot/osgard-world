@@ -64,6 +64,12 @@ func _actual_build(id: String) -> void:
 		push_error("Real original civic payment was rejected: "+id)
 		return
 	for i in range(int(GameState.INITIATIVES.PROJECTS[id]["turns"])):
+		# A third city turn requires real governor response to the original
+		# deterministic crisis. Pay 175 genuine credits; no forced state reset.
+		if str(GameState.data.get("incident",""))!="":
+			if not GameState.resolve_incident(true):
+				push_error("Real governor could not fund original city crisis")
+				return
 		if not GameState.advance_turn():
 			push_error("Real city turn was rejected: "+str(i))
 			return
