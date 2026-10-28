@@ -743,8 +743,15 @@ func _w76_update_goal() -> void:
     # a rendered frame, as verified by the native game accept test.
     if stage_3d.mission_wayfinder != null:
         stage_3d.mission_wayfinder._reconcile()
+    if stage_3d.sector_bulkhead != null:
+        stage_3d.sector_bulkhead.refresh_state()
     var label: String = mission.title(locale) if mission != null else ""
     var helper: String = stage_3d.mission_wayfinder.localized_hint(locale) if stage_3d.mission_wayfinder != null else ""
+    if mission != null and mission.active and mission.extended_mode and stage_3d.sector_bulkhead != null:
+        var gate_status: String = ("ЗАТВОР ЗАКРЫТ" if stage_3d.sector_bulkhead.physically_blocked else "ЗАТВОР ОТКРЫТ")
+        if locale == "en":
+            gate_status = "GATE LOCKED" if stage_3d.sector_bulkhead.physically_blocked else "GATE OPEN"
+        helper += "  ·  " + gate_status
     w76_objective_label.text = (label + "   /   " + helper) if mission != null and mission.active else ""
     w76_objective_label.visible = mission != null and mission.active
 
@@ -1529,6 +1536,11 @@ func _publish_web_accessibility() -> void:
         "w76_true_world_wayfinder_meshes":int(stage_state.get("w76_actual_mission_wayfinder_meshes",0)),
         "w76_actual_wayfinding_target":str(stage_state.get("w76_real_mission_target","none")),
         "w76_world_objective_meters":float(stage_state.get("w76_real_target_distance",-1.0)),
+        "w77_original_physical_sector_bulkhead":bool(stage_state.get("w77_true_physical_bulkhead",false)),
+        "w77_original_mission_gate_locked":bool(stage_state.get("w77_physically_restricted_sector",false)),
+        "w77_true_native_bulkhead_leaves":int(stage_state.get("w77_bulkhead_mesh_count",0)),
+        "w77_true_bulkhead_open_events":int(stage_state.get("w77_real_bulkhead_openings",0)),
+        "w77_native_door_open_ratio":float(stage_state.get("w77_real_door_open_ratio",0.0)),
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
