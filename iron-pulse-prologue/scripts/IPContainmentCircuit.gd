@@ -13,7 +13,7 @@ const COIL_IDS: Array[String] = ["alpha","beta","gamma"]
 
 var terminals: Array[Dictionary] = []
 var _inactive: StandardMaterial3D
-var _ready: StandardMaterial3D
+var _ready_material: StandardMaterial3D
 var _charged: StandardMaterial3D
 var _online: StandardMaterial3D
 var _industrial: StandardMaterial3D
@@ -58,7 +58,7 @@ func _make_materials() -> void:
     _industrial = _metal(Color(0.26,0.33,0.37),0.81,0.49)
     _dark = _metal(Color(0.055,0.079,0.092),0.49,0.72)
     _inactive = _lit(Color(0.15,0.33,0.39),0.25)
-    _ready = _lit(Color(0.98,0.53,0.22),0.88)
+    _ready_material = _lit(Color(0.98,0.53,0.22),0.88)
     _charged = _lit(Color(0.16,0.79,0.91),1.08)
     _online = _lit(Color(0.27,0.94,0.69),1.15)
 
@@ -137,7 +137,7 @@ func sync_engine(engine: IPCrisisEngine,time_seconds: float,reduced_motion: bool
         var done: bool = engine.containment_sequence.has(id)
         var next: bool = engine.core_scanned and not engine.containment_online and engine.next_containment_coil() == id
         var active: bool = engine.containment_online
-        var material: StandardMaterial3D = _online if active else _charged if done else _ready if next else _inactive
+        var material: StandardMaterial3D = _online if active else _charged if done else _ready_material if next else _inactive
         var indicator: MeshInstance3D = coil["indicator"]
         var actuator: MeshInstance3D = coil["actuator"]
         indicator.material_override = material
