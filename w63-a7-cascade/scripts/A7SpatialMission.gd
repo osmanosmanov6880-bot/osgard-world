@@ -171,9 +171,9 @@ func build() -> void:
     set_process(true)
 
 func start(actual_game_state: Dictionary) -> bool:
-    if active or int(actual_game_state.get("shift", -1)) != 0 or
-            (actual_game_state.get("history", []) as Array).size() != 0 or
-            str(actual_game_state.get("status", "")) != "playing":
+    if (active or int(actual_game_state.get("shift", -1)) != 0
+            or (actual_game_state.get("history", []) as Array).size() != 0
+            or str(actual_game_state.get("status", "")) != "playing"):
         return false
     active = true
     phase = 0
