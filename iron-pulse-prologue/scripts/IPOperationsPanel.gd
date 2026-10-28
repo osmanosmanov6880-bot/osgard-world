@@ -4,6 +4,7 @@ class_name IPOperationsPanel
 ## Genuine Godot UI, no HTML mockup, remote image, account, or API dependency.
 signal close_requested
 signal launch_requested(scenario: String)
+signal setting_requested(option: String)
 
 const INK := Color(0.025,0.039,0.055,0.99)
 const GUNMETAL := Color(0.070,0.098,0.116,0.98)
@@ -23,6 +24,10 @@ const LABELS := {
         "history":"ПОСЛЕДНИЕ ОПЕРАЦИИ","next":"РЕКОМЕНДУЕМЫЙ ВЫЗОВ",
         "launch":"НАЧАТЬ РЕКОМЕНДУЕМУЮ ОПЕРАЦИЮ",
         "locked":"ЕЩЁ НЕ ПОЛУЧЕНЫ","none":"История появится после первой операции.",
+        "settings":"УСТРОЙСТВО И ДОСТУПНОСТЬ",
+        "language":"ЯЗЫК","graphics":"ГРАФИКА",
+        "reduced_motion":"МЕНЬШЕ ДВИЖЕНИЯ","muted":"ЗВУК",
+        "enabled":"ВКЛ","disabled":"ВЫКЛ",
         "wins":"УСПЕХ","attempts":"ПОПЫТОК","best":"ЛУЧШАЯ ОЦЕНКА",
         "time":"ЛУЧШЕЕ ВРЕМЯ","win":"СПАСЕНЫ","loss":"ПОТЕРЯНЫ",
         "footer":"ЛОКАЛЬНО НА УСТРОЙСТВЕ  /  БЕЗ АККАУНТА И СЕТЕВОЙ ТЕЛЕМЕТРИИ",
@@ -38,6 +43,10 @@ const LABELS := {
         "history":"RECENT OPERATIONS","next":"RECOMMENDED CHALLENGE",
         "launch":"LAUNCH RECOMMENDED OPERATION",
         "locked":"STILL LOCKED","none":"Your record will appear after your first operation.",
+        "settings":"DEVICE & ACCESSIBILITY",
+        "language":"LANGUAGE","graphics":"GRAPHICS",
+        "reduced_motion":"REDUCED MOTION","muted":"AUDIO",
+        "enabled":"ON","disabled":"OFF",
         "wins":"SUCCESS","attempts":"ATTEMPTS","best":"BEST GRADE",
         "time":"BEST TIME","win":"EXTRACTED","loss":"LOST",
         "footer":"STORED LOCALLY  /  NO ACCOUNT OR NETWORK TELEMETRY",
@@ -57,6 +66,8 @@ var _metric_labels: Array[Label] = []
 var _metric_values: Array[Label] = []
 var _chapter_heading: Label
 var _chapter_labels: Dictionary = {}
+var _settings_heading: Label
+var _settings_buttons: Dictionary = {}
 var _rewards_heading: Label
 var _rewards_label: Label
 var _history_heading: Label
@@ -139,6 +150,20 @@ func _ready() -> void:
             _make_label(row,"",16,ICE),
             _make_label(row,"",12,MUTED)
         ]
+    _settings_heading = _make_label(content,"",15,COPPER)
+    var setting_grid := GridContainer.new()
+    setting_grid.name = "RealAccessibleSettings"
+    setting_grid.columns = 2
+    setting_grid.add_theme_constant_override("h_separation",8)
+    setting_grid.add_theme_constant_override("v_separation",8)
+    content.add_child(setting_grid)
+    for option in ["language","graphics","reduced_motion","muted"]:
+        var option_button := _button("",Vector2(140,50))
+        option_button.name = "Preference_"+option
+        option_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        option_button.pressed.connect(_request_setting.bind(option))
+        setting_grid.add_child(option_button)
+        _settings_buttons[option] = option_button
     _rewards_heading = _make_label(content,"",15,COPPER)
     var awards := _card(content)
     _rewards_label = _make_label(awards,"",13,ICE)
@@ -154,6 +179,9 @@ func _ready() -> void:
     _rule(vertical)
     _footer = _make_label(vertical,"",10,MUTED)
     _footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+func _request_setting(option: String) -> void:
+    setting_requested.emit(option)
 
 func _make_label(parent: Node,words: String,font_size: int,tint: Color) -> Label:
     var node := Label.new()
@@ -219,7 +247,7 @@ func apply_layout(width: float,height: float) -> void:
     for label in _metric_labels:
         label.add_theme_font_size_override("font_size",9 if narrow else 11)
 
-func set_view(profile: IPCareerProfile,language: String,can_launch: bool) -> void:
+func set_view(profile: IPCareerProfile,language: String,can_launch: bool,runtime_settings: Dictionary={}) -> void:
     _language = "en" if language=="en" else "ru"
     var t: Dictionary = LABELS[_language]
     _eyebrow.text = t["eyebrow"]
@@ -240,6 +268,22 @@ func set_view(profile: IPCareerProfile,language: String,can_launch: bool) -> voi
             t["attempts"],item["attempts"],t["wins"],item["wins"],
             t["best"],item["best_grade"],t["time"],time_label
         ]
+    _settings_heading.text = t["settings"]
+    var active_settings: Dictionary = profile.preferences.duplicate(true)
+    for option in runtime_settings:
+        active_settings[option] = runtime_settings[option]
+    for option in ["language","graphics","reduced_motion","muted"]:
+        var shown: String = ""
+        match option:
+            "language":
+                shown = "RU" if active_settings[option]=="ru" else "EN"
+            "graphics":
+                shown = str(active_settings[option]).to_upper()
+            "reduced_motion":
+                shown = t["enabled"] if bool(active_settings[option]) else t["disabled"]
+            "muted":
+                shown = t["disabled"] if bool(active_settings[option]) else t["enabled"]
+        (_settings_buttons[option] as Button).text = "%s: %s" % [t[option],shown]
     _rewards_heading.text = t["rewards"]
     var earned_lines: Array[String] = []
     for achievement_id in IPCareerProfile.ACHIEVEMENT_IDS:
