@@ -220,6 +220,7 @@ var w79_mission_deck: A7MobileMissionDeck
 var w80_full_bleed: A7FullBleedViewport
 var w82_nav_cockpit: A7MissionNavCockpit
 var w83_dual_touch: A7DualTouchLook
+var w84_studio: A7MobileControlStudio
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -282,6 +283,14 @@ func _ready() -> void:
         w78_touch_overlay,w79_mission_deck,w82_nav_cockpit,w80_full_bleed)
     w83_dual_touch.real_camera_drag_started.connect(
         _w77_cancel_guided_camera_on_manual_input)
+    # W84 genuine user control panel on the ORIGINAL W80 Godot world.
+    # Live changes only W83 original W70 camera gain/inversion and
+    # spatial ordering of the SAME eight W78 native physical buttons.
+    w84_studio = A7MobileControlStudio.new()
+    stage_shell.add_child(w84_studio)
+    w84_studio.build(stage_shell,w78_touch_overlay,w83_dual_touch)
+    w84_studio.opened_changed.connect(_w84_on_studio_opened)
+    w84_studio.profile_changed.connect(_w84_on_profile_changed)
     sound_bus = A7ProceduralAudio.new()
     add_child(sound_bus)
     _create_web_accessibility()
@@ -1272,6 +1281,10 @@ func _layout_stage() -> void:
     if w83_dual_touch != null:
         w83_dual_touch.set_context(touch_context and w76_immersive,
             locale,size)
+    if w84_studio != null and stage_3d != null:
+        w84_studio.set_context(touch_context and w76_immersive and
+            stage_3d.first_person.piloting,locale,size)
+        _w84_sync_modal_input()
     if w82_nav_cockpit != null:
         w82_nav_cockpit.configure(size.x)
     if cinematic_hud != null:
@@ -1282,6 +1295,36 @@ func _layout_stage() -> void:
         quality_button.custom_minimum_size.x = 136.0
         motion_button.custom_minimum_size.x = 136.0
     _w81_refresh_layout_chrome()
+    call_deferred("_publish_web_accessibility")
+
+func _w84_sync_modal_input() -> void:
+    if w84_studio == null:
+        return
+    var modal: bool = w84_studio.opened and w84_studio.visible
+    if w83_dual_touch != null:
+        w83_dual_touch.input_suspended = modal
+    if modal:
+        # No original machine/decision/held physical action while changing
+        # touch comfort options. Restored through native source context.
+        if w78_touch_overlay != null:
+            w78_touch_overlay.visible = false
+        if w79_mission_deck != null:
+            w79_mission_deck.visible = false
+
+func _w84_on_studio_opened(is_open: bool) -> void:
+    if is_open:
+        if w78_touch_overlay != null:
+            w78_touch_overlay.release_all()
+        if w83_dual_touch != null:
+            w83_dual_touch.cancel_capture()
+    else:
+        _layout_stage()
+        _render(model.snapshot())
+    _w84_sync_modal_input()
+    call_deferred("_publish_web_accessibility")
+
+func _w84_on_profile_changed() -> void:
+    _w84_sync_modal_input()
     call_deferred("_publish_web_accessibility")
 
 func _toggle_locale() -> void:
@@ -1494,6 +1537,10 @@ func _render(state: Dictionary) -> void:
     if w83_dual_touch != null:
         w83_dual_touch.set_context(_w81_touch_context() and w76_immersive,
             locale,size)
+    if w84_studio != null and stage_3d != null:
+        w84_studio.set_context(_w81_touch_context() and w76_immersive and
+            stage_3d.first_person.piloting,locale,size)
+        _w84_sync_modal_input()
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
     load_button.text = _t("load_game")
@@ -1802,6 +1849,18 @@ func _publish_web_accessibility() -> void:
         "w83_real_UI_touches_not_intercepted":w83_dual_touch.rejected_ui_starts if w83_dual_touch != null else 0,
         "w83_original_body_preserved":bool(w83_dual_touch.qa_readout()["original_source_characterbody_preserved"]) if w83_dual_touch != null else false,
         "w83_phone_hardware_approved":false,
+        "w84_native_touch_tune_visible":w84_studio.visible if w84_studio != null else false,
+        "w84_native_tune_open":w84_studio.opened if w84_studio != null else false,
+        "w84_look_sensitivity":float(w84_studio.qa_readout()["real_camera_sensitivity"]) if w84_studio != null else 0.0,
+        "w84_real_inverted_y":w84_studio.invert_y if w84_studio != null else false,
+        "w84_real_left_handed":w84_studio.left_handed if w84_studio != null else false,
+        "w84_source_first_button":str(w84_studio.qa_readout()["physical_first_button"]) if w84_studio != null else "",
+        "w84_native_saved_profiles":w84_studio.saved_profiles if w84_studio != null else 0,
+        "w84_native_loaded_profiles":w84_studio.loaded_profiles if w84_studio != null else 0,
+        "w84_native_profile_updates":w84_studio.native_profile_updates if w84_studio != null else 0,
+        "w84_modal_actually_suspends_touch":w83_dual_touch.input_suspended if w83_dual_touch != null else false,
+        "w84_original_core_actions_issued":w84_studio.original_game_commands_issued if w84_studio != null else -1,
+        "w84_no_phone_hardware_certification":true,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1867,6 +1926,13 @@ func _publish_web_accessibility() -> void:
         "w82_native_compass_hud":_web_rect(w82_nav_cockpit.frame) if w82_nav_cockpit != null else [],
         "w82_nav_label":_web_rect(w82_nav_cockpit.title_label) if w82_nav_cockpit != null else [],
         "w83_camera_swipe_hint":_web_rect(w83_dual_touch.hint_label) if w83_dual_touch != null else [],
+        "w84_tune_entry":_web_rect(w84_studio.settings_button) if w84_studio != null else [],
+        "w84_native_panel":_web_rect(w84_studio.panel) if w84_studio != null else [],
+        "w84_gain_button":_web_rect(w84_studio.sensitivity_button) if w84_studio != null else [],
+        "w84_invert_button":_web_rect(w84_studio.invert_button) if w84_studio != null else [],
+        "w84_hand_button":_web_rect(w84_studio.handed_button) if w84_studio != null else [],
+        "w84_reset_button":_web_rect(w84_studio.reset_button) if w84_studio != null else [],
+        "w84_done_button":_web_rect(w84_studio.done_button) if w84_studio != null else [],
         "w80_true_native_menu":_web_rect(w80_full_bleed.exit_button) if w80_full_bleed != null else [],
         "w80_true_native_language":_web_rect(w80_full_bleed.language_button) if w80_full_bleed != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),

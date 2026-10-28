@@ -48,6 +48,17 @@ var captured_pixels: float = 0.0
 var actual_screen_size: Vector2 = Vector2.ZERO
 var original_w70_actor_id: int = 0
 var localized_language: String = "ru"
+var input_suspended: bool = false
+var look_gain: float = LOOK_SENSITIVITY
+var invert_look_y: bool = false
+var actual_user_pref_tuning_events: int = 0
+
+func set_look_preferences(gain: float, inverse_y: bool) -> void:
+    # W84 configures the original W70 physical camera, not a canvas
+    # transformation. Bound all user input to safe nonzero aiming gains.
+    look_gain = clampf(gain,0.40,1.70)
+    invert_look_y = inverse_y
+    actual_user_pref_tuning_events += 1
 
 func build(original_live_stage: Control, original_actor: A7FirstPersonOperator,
         original_controls: A7TouchFieldControls,
@@ -173,7 +184,7 @@ func _on_ui(point: Vector2) -> bool:
     return false
 
 func can_capture_at(point: Vector2) -> bool:
-    if (not visible or stage == null or actor == null or
+    if (not visible or input_suspended or stage == null or actor == null or
             not actor.piloting or look_finger>=0):
         return false
     var rect: Rect2 = stage.get_global_rect()
@@ -193,6 +204,8 @@ func can_capture_at(point: Vector2) -> bool:
     return true
 
 func handle_screen_event(event: InputEvent) -> bool:
+    if input_suspended:
+        return false
     if event is InputEventScreenTouch:
         var touch: InputEventScreenTouch = event as InputEventScreenTouch
         if touch.pressed:
@@ -270,7 +283,9 @@ func handle_screen_event(event: InputEvent) -> bool:
             clamped_motion_frames += 1
         if delta.length_squared()>0.04:
             # Source original W70 method only: no player teleport/score edits.
-            actor.rotate_view(delta*LOOK_SENSITIVITY)
+            var adjusted := Vector2(delta.x*look_gain,
+                delta.y*(-look_gain if invert_look_y else look_gain))
+            actor.rotate_view(adjusted)
             real_camera_rotations += 1
             captured_pixels += delta.length()
             real_camera_drag_started.emit()
@@ -326,6 +341,10 @@ func qa_readout() -> Dictionary:
     return {
         "schema":"LAST_FRONTIER_W83_TRUE_GODOT_INDEXED_MULTITOUCH_V1",
         "enabled":visible,
+        "controls_suspended_for_real_modal":input_suspended,
+        "physical_camera_look_gain":look_gain,
+        "physical_camera_inverted_y":invert_look_y,
+        "native_tuning_applied_events":actual_user_pref_tuning_events,
         "original_source_characterbody_preserved":actor != null and
             actor.body != null and actor.body.get_instance_id()==original_w70_actor_id,
         "original_actor_id":original_w70_actor_id,
