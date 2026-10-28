@@ -38,6 +38,11 @@ func _run() -> void:
         return
     _check(fx.vents.size() == 3 and fx.readout()["physical_vent_modules"] == 3,
         "Three independent 3D pressure purge stations exist behind core")
+    var atrium: IPReactorAtrium = game.reactor_atrium
+    _check(atrium.readout()["rotor_camera_alignment_min"] >= 0.80,
+        "All giant containment rings face the REAL Godot camera instead of showing a cyan edge-on bar")
+    _check(atrium.core_plasma_material.shader.code.contains("mix(ion * 0.55"),
+        "Actual plasma ShaderMaterial exposes bright filaments on WebGL without relying on HDR glow")
     _check(fx.readout()["steam_puffs_original"] == 18,
         "18 authored original 3D vapor meshes are present")
     _check(fx.spark_cluster is MultiMeshInstance3D and fx.readout()["thermal_spark_instances"] == 16,
