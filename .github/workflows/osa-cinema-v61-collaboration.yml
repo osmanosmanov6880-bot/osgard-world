@@ -1,0 +1,113 @@
+name: OSA CINEMA V61 Authenticated Collaboration Core
+on:
+  pull_request:
+    branches: [master, feature/osa-cinema-v60-world-press-distribution-20261029]
+    paths:
+      - 'server/core_server.py'
+      - 'server/core_cinema.py'
+      - 'src/OSACinemaCollaboration.tsx'
+      - 'src/osaCinemaCollaboration.css'
+      - 'src/main.tsx'
+      - 'src/osgardRouting.ts'
+      - 'src/routeSeo.ts'
+      - 'src/OSACinemaStudio.tsx'
+      - 'src/OSACinemaFilm.tsx'
+      - 'src/OSACinemaProductionDesk.tsx'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/core-cinema-smoke.py'
+      - 'scripts/osa-cinema-v61-*.mjs'
+      - 'playwright.osa-cinema-v61.config.mjs'
+      - '.github/workflows/osa-cinema-v61-collaboration.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'server/core_server.py'
+      - 'server/core_cinema.py'
+      - 'src/OSACinemaCollaboration.tsx'
+      - 'src/osaCinemaCollaboration.css'
+      - 'src/main.tsx'
+      - 'src/osgardRouting.ts'
+      - 'src/routeSeo.ts'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/core-cinema-smoke.py'
+      - 'scripts/osa-cinema-v61-*.mjs'
+      - 'playwright.osa-cinema-v61.config.mjs'
+      - '.github/workflows/osa-cinema-v61-collaboration.yml'
+permissions:
+  contents: read
+jobs:
+  cinema-core-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile actual SQLite Core and cinema module
+        run: python3 -m compileall -q server/core_cinema.py server/core_server.py
+      - name: Authenticated HTTP/SQLite cinema and existing OSGARD Core tests
+        run: python3 scripts/core-cinema-smoke.py
+  cinema-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Previous V55-V60 film production and JSON invariants
+        run: |
+          node --test scripts/osa-cinema-v60-world-contract.test.mjs
+          node --test scripts/osa-cinema-v59-production-contract.test.mjs
+          node --test scripts/osa-cinema-v58-public-catalog.test.mjs
+          node --test scripts/osa-cinema-v58-watchlist.test.mjs
+          node --test scripts/osa-cinema-v55-studio-contract.test.mjs
+      - name: Strict TypeScript
+        run: npm run check
+      - name: Real Vite production build
+        run: npm run build
+      - name: Private Core collaboration shell and video release NO-GO
+        run: |
+          node scripts/osa-cinema-v61-build-preflight.mjs
+          node scripts/osa-cinema-v60-build-preflight.mjs
+          node scripts/osa-cinema-v59-build-preflight.mjs
+          node scripts/osa-cinema-v58-build-preflight.mjs
+          npm run qa:osa-media-release
+          npm run qa:redesign-build
+  cinema-browser:
+    needs: [cinema-core-http, cinema-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install Chromium for genuine server-browser acceptance
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Browser interaction with actual Core auth, owners, teams and SQLite
+        run: npx playwright test --config playwright.osa-cinema-v61.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v61-authenticated-browser-proof
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn
