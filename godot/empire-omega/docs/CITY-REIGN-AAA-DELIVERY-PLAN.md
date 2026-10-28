@@ -77,3 +77,12 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [x] E01 on-foot street interaction: near either board, the real F action opens the existing paid decision interface and preselects the correct district without spending money. The separate click on an investment button performs the sole resource transaction. `v111` verifies it in the full real city scene with 34 citizens and 12 traffic cars.
 
 - [x] E01 resident reaction dialogue: when the player approaches and speaks to any actual resident, the native dialogue now references the district's real current investment state (not started / building / completed). Completed Open Budget and Safe Crossings change residents' lines in three languages without changing rewards, council scores or the existing 40 mission stages. Tests `v112` cover all 4 districts, 3 languages, both projects and actual dialogue popups.
+
+## A1-A3 — Cinematic Metropolis original native art pass
+- [x] Per-original-building roof cornices, entrance fascia, 3D facade corner reveals and limited physical rooftop plants, **4 actual GPU batches**.
+- [x] Four distinct original solid 3D civic-square installations (Forum law portal, Market exchange, freight gantry, energy commons) at road-clear sites; 12 original GPU instanced wayfinding details.
+- [x] Three existing source-generated masonry PBR materials now actually cover all original colliding building walls, sharing only three cached 128px texture families; normals follow the cinematic quality tier and drop off on low phones.
+- [x] Real day/night power-controlled emission, independently visible RU/EN/ZH 3D site labels; original buildings, traffic, save schema unchanged.
+- [ ] Exact SHA native `v113_city_reign_cinematic_architecture.gd` and all E01 tests to execute in Godot. **Pending until CI PASS**.
+- [ ] True licensed/commissioned high-poly hero assets, target-device profiling and independent aesthetic art signoff.
+- Full design contract: `docs/CITY-REIGN-CINEMATIC-ART-DIRECTION.md`.
