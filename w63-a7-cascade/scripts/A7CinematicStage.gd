@@ -276,6 +276,7 @@ func set_camera(index: int) -> void:
         Vector3(0.0, 3.85, 8.30),
         Vector3(-5.7, 3.60, 7.10)]
     camera.position = spots[camera_index]
+    camera.fov = 52.0
     camera.look_at(Vector3(0.0, 2.40, -0.95), Vector3.UP)
     camera.current = true
 
@@ -306,12 +307,21 @@ func _apply_guide_pose() -> void:
     # Coordinate-based route lies between two REAL modeled locations:
     # core chamber (z~0) and power relay room (z~19).
     var start := Vector3(5.6, 4.25, 8.15)
-    var end := Vector3(8.0, 3.7, 24.15)
+    # Pull away from the power bus towers so the three capacitor stacks,
+    # rear bulkhead and actual depth of the relay hall fit in frame.
+    var end := Vector3(8.0, 5.1, 28.10)
     var look_start := Vector3(0, 2.4, -0.95)
-    var look_end := Vector3(8.0, 2.5, 16.5)
+    var look_end := Vector3(8.0, 3.45, 16.45)
     camera.position = start.lerp(end, guide_progress)
+    camera.fov = lerpf(52.0, 64.0, guide_progress)
     camera.look_at(look_start.lerp(look_end, guide_progress), Vector3.UP)
     camera.current = true
+
+func set_compact_view(enabled: bool) -> void:
+    if cathedral != null:
+        cathedral.set_compact_view(enabled)
+    if art_kit != null and art_kit.engraved_sign != null:
+        art_kit.engraved_sign.visible = not enabled
 
 func set_quality(new_mode: String) -> void:
     mode = "eco" if new_mode == "eco" else "hero"
@@ -403,6 +413,8 @@ func qa_readout() -> Dictionary:
         "inspection_sector": sector_index,
         "inspection_progress": guide_progress,
         "inspection_navigation_moves": guide_moves,
+        "relay_framed_fov": camera.fov if camera != null else 0.0,
+        "mobile_world_text_hidden": cathedral.compact_view if cathedral != null else false,
         "camera": camera_index, "quality": mode,
         "reduced_motion": reduced_motion, "snapshots": snapshot_count,
         "heat": heat, "pressure": pressure, "energy": energy,
