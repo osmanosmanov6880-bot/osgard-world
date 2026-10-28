@@ -42,6 +42,7 @@ var architecture_trim: MultiMeshInstance3D
 var r98_facade_ribs: MultiMeshInstance3D
 var city_reign_facades: Node3D
 var city_reign_squares: Node3D
+var city_reign_hero_architecture: Node3D
 var city_reign_building_finishes: Array[StandardMaterial3D] = []
 var streetfront: Node3D
 var facade_balconies: Node3D
@@ -70,6 +71,7 @@ const R95_MASSING = preload("res://scripts/horizon_r95_city_massing.gd")
 const R98_FINS = preload("res://scripts/horizon_r98_architectural_fins.gd")
 const CITY_REIGN_FACADE = preload("res://scripts/city_reign_cinematic_facades.gd")
 const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.gd")
+const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -115,6 +117,11 @@ func _ready() -> void:
 	city_root.add_child(facade_balconies)
 	_create_window_batch()
 	_create_landmarks()
+	# Real 4 physically-existing 25m city service buildings now get
+	# four original sculpted facades and 4 source-earned architectural
+	# upgrade crowns. The ORIGINAL static collider remains authoritative.
+	city_reign_hero_architecture = CITY_REIGN_HERO.new()
+	city_root.add_child(city_reign_hero_architecture)
 	city_reign_squares = CITY_REIGN_SQUARES.new()
 	city_root.add_child(city_reign_squares)
 	_create_waypoint_marker()
@@ -600,6 +607,8 @@ func apply_visual_budget(mode: String) -> void:
 		city_reign_facades.call("set_quality",visual_budget)
 	if city_reign_squares != null:
 		city_reign_squares.call("set_quality",visual_budget)
+	if city_reign_hero_architecture != null:
+		city_reign_hero_architecture.call("set_quality",visual_budget)
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
 	if facade_balconies != null:
@@ -646,6 +655,8 @@ func _apply_lighting() -> void:
 		city_reign_facades.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	if city_reign_squares != null:
 		city_reign_squares.call("sync_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_hero_architecture != null:
+		city_reign_hero_architecture.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	# Authored golden-hour grade affects real Godot light only, never UI screenshots.
 	if weather_mode == "clear" and visual_budget == "cinematic":
 		var golden_hour: float = clampf(1.0-absf(ambience_time-18.0)/3.0,0.0,1.0)
@@ -685,6 +696,11 @@ func update_development() -> void:
 			var roof: Node3D = nodes["roof"]
 			roof.position.y = height*0.5 + 0.15
 	_update_property_visuals()
+	# This is exactly the same real saved state used by all existing
+	# district building and 8 civic initiative workflows. An upgrade is
+	# earned, not simulated by opening a menu or switching graphics.
+	if city_reign_hero_architecture != null:
+		city_reign_hero_architecture.call("sync_state",state)
 
 func _update_property_visuals() -> void:
 	var owned: Dictionary = GameState.data.get("properties",{})
