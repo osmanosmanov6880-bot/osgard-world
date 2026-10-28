@@ -101,8 +101,21 @@ func _run() -> void:
 		"res://scripts/main.gd")
 	verify(actual_source.contains("CITY_REIGN_SITE_VISIT.near_completed(") and
 		actual_source.contains("CITY_REIGN_SITE_VISIT.report(") and
-		actual_source.contains("if not driving:"),
-		"source shipped main scene genuinely wires original F to physical site inspection")
+		actual_source.contains("if driving or interiors.is_inside():"),
+		"source shipped main scene genuinely wires on-foot F to physical site inspection")
+	# B68: a crossing next to the original market must not steal a real
+	# delivery/pickup F press. Native source order is part of interaction safety.
+	var cargo_index: int = actual_source.find(
+		"var contract_result: String = ContractManager.interact(nearest,driving,car.speed)")
+	var completion_index: int = actual_source.find('if contract_result == "travel_more":',cargo_index)
+	var civic_after_index: int = actual_source.find(
+		"if _inspect_completed_civic_site(position_at):",completion_index)
+	verify(cargo_index>0 and completion_index>cargo_index and
+		civic_after_index>completion_index,
+		"original paid delivery and every cargo result retain priority over optional site visit")
+	verify(actual_source.contains("if _inspect_completed_civic_site(position_at):") and
+		actual_source.contains("if nearest == \"\""),
+		"F read-only inspection stays accessible beyond original loading-bay radii")
 	var main_script: Script = load(MAIN_SCRIPT_PATH) as Script
 	verify(main_script != null and main_script.can_instantiate(),
 		"actual native main.tscn script still compiles with read-only F inspection")
