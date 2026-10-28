@@ -24,6 +24,7 @@ var spatial_mission: A7SpatialMission
 var field_operations: A7FieldOperations
 var world_interaction: A7WorldInteraction
 var field_feedback: A7DiegeticFeedback
+var mission_wayfinder: A7MissionWayfinder
 var inspection_focus: bool = false
 var focus_switches: int = 0
 var guide_progress: float = 0.0
@@ -93,6 +94,9 @@ func _ready() -> void:
     field_feedback = A7DiegeticFeedback.new()
     add_child(field_feedback)
     field_feedback.build(field_operations,first_person)
+    mission_wayfinder = A7MissionWayfinder.new()
+    add_child(mission_wayfinder)
+    mission_wayfinder.build(spatial_mission, first_person)
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -408,6 +412,8 @@ func set_compact_view(enabled: bool) -> void:
         field_operations.set_compact_view(enabled)
     if field_feedback != null:
         field_feedback.set_compact_view(enabled)
+    if mission_wayfinder != null:
+        mission_wayfinder.set_compact_view(enabled)
     if art_kit != null and art_kit.engraved_sign != null:
         art_kit.engraved_sign.visible = not enabled
 
@@ -432,6 +438,8 @@ func set_quality(new_mode: String) -> void:
         field_operations.set_quality(mode)
     if field_feedback != null:
         field_feedback.set_quality(mode)
+    if mission_wayfinder != null:
+        mission_wayfinder.set_quality(mode)
     if key_light != null:
         key_light.light_energy = 2.30 if mode == "hero" else 1.25
         fill_light.visible = mode == "hero"
@@ -448,6 +456,8 @@ func set_reduced_motion(enabled: bool) -> void:
         field_operations.set_reduced_motion(enabled)
     if field_feedback != null:
         field_feedback.set_reduced_motion(enabled)
+    if mission_wayfinder != null:
+        mission_wayfinder.set_reduced_motion(enabled)
 
 func trigger_action(action: String) -> void:
     if not ["PUMP", "VENT", "SEAL", "SCAN", "POWER"].has(action):
@@ -561,6 +571,9 @@ func qa_readout() -> Dictionary:
         "w73_true_eye_raycast": world_interaction.ray is RayCast3D if world_interaction != null else false,
         "w73_aimed_real_device": world_interaction.actual_aim.get("kind", "") if world_interaction != null else "",
         "w74_real_3d_feedback_meshes":field_feedback.actual_meshes if field_feedback != null else 0,
+        "w76_actual_mission_wayfinder_meshes":mission_wayfinder.native_meshes if mission_wayfinder != null else 0,
+        "w76_real_mission_target":mission_wayfinder.goal_kind if mission_wayfinder != null else "none",
+        "w76_real_target_distance":mission_wayfinder.real_distance if mission_wayfinder != null else -1.0,
         "w74_3d_mechanic_animations":field_feedback.accepted_3d_feedback if field_feedback != null else 0,
         "w74_native_controller_motion_events":first_person.controller_axis_inputs if first_person != null else 0,
         "w74_native_analog_player_movement_frames":first_person.actual_controller_motion_frames if first_person != null else 0,

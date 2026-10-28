@@ -1,0 +1,127 @@
+name: LAST FRONTIER W76 authentic immersive level and mission wayfinder (DRAFT)
+on:
+  pull_request:
+    branches:
+      - game/last-frontier-w74-inworld-feedback-and-gamepad-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W76_IMMERSIVE_GAME.md'
+      - '.github/workflows/last-frontier-w76-immersive.yml'
+permissions:
+  contents: read
+jobs:
+  actual-native-godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Protect original W74 physics and source and validate narrow change set
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess,os
+          base='73ef81b54cb42831cafd9ac8fa69c5807cd8dc8d'
+          head=os.environ['HEAD']
+          def git(*args): return subprocess.check_output(['git',*args],text=True).strip()
+          assert git('rev-parse','HEAD')==head and git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only',base,head).splitlines())
+          expected={
+            'w63-a7-cascade/scripts/A7MissionWayfinder.gd',
+            'w63-a7-cascade/scripts/A7CinematicStage.gd',
+            'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+            'w63-a7-cascade/tests/test_w76_immersive_level.gd',
+            'w63-a7-cascade/ci/w76_browser_immersive.py',
+            '.github/workflows/last-frontier-w76-immersive.yml',
+            'docs/LAST_FRONTIER_W76_IMMERSIVE_GAME.md',
+          }
+          assert changed==expected,{'changed':sorted(changed)}
+          for p in ['w63-a7-cascade/scripts/A7CascadeCore.gd',
+                    'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+                    'w63-a7-cascade/scripts/A7SpatialMission.gd',
+                    'w63-a7-cascade/scripts/A7FieldOperations.gd',
+                    'w63-a7-cascade/scripts/A7WorldInteraction.gd',
+                    'w63-a7-cascade/scripts/A7SessionCheckpoint.gd',
+                    'w63-a7-cascade/scripts/A7DiegeticFeedback.gd',
+                    'w63-a7-cascade/scripts/A7GamepadDirector.gd',
+                    'w63-a7-cascade/project.godot',
+                    'w63-a7-cascade/Main.tscn']:
+              assert git('rev-parse',base+':'+p)==git('rev-parse',head+':'+p),p
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          print('W76 true original A7/W70-W74 gameplay byte identity PASS')
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import exact original game and run native W76 + W73/74 regressions
+        run: |
+          set -euo pipefail
+          mkdir -p w76-evidence
+          timeout 260s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w76-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w76-evidence/import.log; then exit 1; fi
+          for test in test_w73_world_and_checkpoint test_w74_gamepad_feedback test_w76_immersive_level; do
+            timeout 480s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w76-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w76-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W73 TRUE WORLD RAYCAST AND TRANSACTIONAL CHECKPOINT PASS:' w76-evidence/test_w73_world_and_checkpoint.log
+          grep -q 'LAST FRONTIER W74 TRUE DIEGETIC PHYSICS GAMEPAD AND FRAME TELEMETRY PASS:' w76-evidence/test_w74_gamepad_feedback.log
+          grep -q 'LAST FRONTIER W76 REAL IMMERSIVE PHYSICAL LEVEL AND WORLD NAVIGATION PASS:' w76-evidence/test_w76_immersive_level.log
+      - name: Export real original WebGL WASM and native Godot game archive
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          cd w63-a7-cascade
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          cd ..
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install Chromium and Pillow for original Godot WebGL gameplay
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w76
+          /tmp/a7-w76/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w76/bin/python -m playwright install --with-deps chromium
+      - name: Original W74 and new W76 real Chromium human-input visual game regressions
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout 1150s /tmp/a7-w76/bin/python w63-a7-cascade/ci/w74_browser_feedback.py --export w63-a7-cascade/build/web --evidence w76-evidence/w74-source-regression --sha "$SHA" 2>&1 | tee w76-evidence/w74-chromium.log
+          grep -q 'LAST FRONTIER W74 TRUE NATIVE 3D FEEDBACK AND FRAME TELEMETRY CHROMIUM PASS:' w76-evidence/w74-chromium.log
+          timeout 1150s /tmp/a7-w76/bin/python w63-a7-cascade/ci/w76_browser_immersive.py --export w63-a7-cascade/build/web --evidence w76-evidence/w76-real-browser --sha "$SHA" 2>&1 | tee w76-evidence/w76-chromium.log
+          grep -q 'LAST FRONTIER W76 TRUE FIRST-PERSON IMMERSIVE WEBGL CHROMIUM PASS:' w76-evidence/w76-chromium.log
+          python3 - <<'PY'
+          import json,hashlib,os
+          from pathlib import Path
+          root=Path('w76-evidence/w76-real-browser')
+          record=json.loads((root/'W76_TRUE_GAME_CHROMIUM.json').read_text())
+          assert record['source_sha']==os.environ['SHA']
+          assert record['result']=='PASS'
+          assert len(record['screenshots'])==6
+          assert record['real_original_Godot_4_4_1_WebAssembly']
+          assert record['original_A7_gameplay_no_fake_win']
+          assert not record['consumer_gpu_60fps_certified']
+          assert not record['commercial_aaa_release_approved']
+          for item in record['screenshots']:
+              data=(root/item['name']).read_bytes()
+              assert len(data)>12000 and len(data)==item['bytes']
+              assert hashlib.sha256(data).hexdigest()==item['sha256']
+          print('W76 exactly 13 original W74/W76 unmodified Chromium screenshots source-bound PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w76-real-immersive-godot-${{ github.event.pull_request.head.sha }}
+          path: |
+            w76-evidence/
+            w63-a7-cascade/build/web/
+          if-no-files-found: warn
+          retention-days: 30
