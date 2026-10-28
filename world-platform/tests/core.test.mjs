@@ -93,7 +93,8 @@ test("all five real objectives follow original state only, never web page choice
   assert.deepEqual(active.map(x=>x.status),["done","done","active","later","later"]);
   const forged=missionState(realShapedFixture({w71_mission_active:true,w71_mission_phase:5,
     status:"failed",w71_mission_complete:false}),"en");
-  assert.equal(forged[4].status,"later"===forged[4].status?"later":"done");
+  assert.equal(forged[4].status,"active");
+  assert.equal(forged.every(x=>x.status==="done"),false);
   const won=missionState(realShapedFixture({w71_mission_active:true,w71_mission_phase:5,
     status:"won",w71_mission_complete:true}),"en");
   assert.equal(won.every(x=>x.status==="done"),true);
