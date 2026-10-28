@@ -376,9 +376,11 @@ func _build_diegetic_signs() -> void:
     # RU/EN objective text that is independent of these decorative plates.
     # Previously this sign slab physically intercepted the camera-to-core
     # ray. Raise it above the observation sightline instead.
-    _box(structure,"ObservationHeaderPanel",Vector3(6.61,6.55,-20.3),Vector3(0.08,0.72,6.8),_dark)
-    _sign("WarningMain","A7  /  CONTAINMENT",Vector3(6.52,6.58,-19.85),PLASMA,51)
-    _sign("HighVoltage","HIGH ENERGY CORE",Vector3(6.50,6.11,-19.85),CAUTION,35)
+    # Shift the sign board to the far retaining wall. Front-portal signage
+    # was covering the plasma sphere in actual Chromium art screenshots.
+    _box(structure,"ObservationHeaderPanel",Vector3(17.93,13.1,-20.3),Vector3(0.14,0.72,6.8),_dark)
+    _sign("WarningMain","A7  /  CONTAINMENT",Vector3(17.82,13.14,-19.85),PLASMA,51)
+    _sign("HighVoltage","HIGH ENERGY CORE",Vector3(17.80,12.65,-19.85),CAUTION,35)
     _box(structure,"VaultSerialPlate",Vector3(18.03,10.6,-20.0),Vector3(0.12,0.84,8.0),_painted)
     _sign("CoreSerial","A7  //  IRON PULSE",Vector3(17.92,10.55,-19.3),Color(0.78,0.87,0.88),57)
 

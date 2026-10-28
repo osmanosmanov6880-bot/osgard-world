@@ -118,12 +118,16 @@ func _reactor_gallery() -> void:
     var cyan := _mat(CYAN,true,0.12)
     # Distinct rotating-lab gallery silhouette, placed beside the central path.
     _cylinder(hero_details,Vector3(-5.8,2.8,-19.5),0.65,5.0,steel,"GalleryCoolantDrum_L")
-    _cylinder(hero_details,Vector3(5.8,2.8,-19.5),0.65,5.0,steel,"GalleryCoolantDrum_R")
+    # Original right vessel blocked the security camera's direct plasma-core
+    # line of sight. Relocate the *real mesh* to the far industrial service bay.
+    _cylinder(hero_details,Vector3(16.25,2.8,-12.5),0.65,5.0,steel,"GalleryCoolantDrum_R")
     for i in 3:
         _ring(hero_details,Vector3(-5.8,3.2,-19.5+float(i)*0.55),1.04,glossy,"GalleryContainmentRing_L_%d" % i)
-        _ring(hero_details,Vector3(5.8,3.2,-19.5+float(i)*0.55),1.04,glossy,"GalleryContainmentRing_R_%d" % i)
-    _box(hero_details,Vector3(0,5.05,-19.5),Vector3(10.7,0.27,0.45),steel,"GalleryCatwalkBeam")
-    _box(hero_details,Vector3(0,4.85,-19.5),Vector3(10.3,0.09,0.27),cyan,"GalleryObservationRibbon")
+        _ring(hero_details,Vector3(16.25,3.2,-12.5+float(i)*0.55),1.04,glossy,"GalleryContainmentRing_R_%d" % i)
+    # The old 10m-long bridge covered the cinematic view with an enormous
+    # flat foreground rectangle; keep the industrial structure on the left.
+    _box(hero_details,Vector3(-3.8,5.05,-19.5),Vector3(3.1,0.25,0.33),steel,"GalleryCatwalkBeam")
+    _box(hero_details,Vector3(-3.8,4.85,-19.5),Vector3(3.0,0.055,0.14),cyan,"GalleryObservationRibbon")
     _sector_sign(-9.7,"01 / REACTOR GALLERY",CYAN,"reactor")
 
 func _service_spine() -> void:
