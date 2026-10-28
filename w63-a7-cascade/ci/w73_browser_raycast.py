@@ -122,12 +122,19 @@ def execute(export,evidence,source_sha):
                 "history_count":0,
             })
             page.wait_for_timeout(600)
+            diag=snapshot(page)
+            print("W73 TRUE CAMERA RAY PHYSICS DIAG",json.dumps({
+                "body":diag["w70_real_body_xyz"],
+                "valve":diag["w72_valve_index"],
+                "focused":diag["w72_thermal_camera_focused"],
+                "actual_ray":diag["w73_actual_ray_physics_debug"],
+            }),flush=True)
+            d=capture(page,evidence,"w73-04-genuine-eye-raycast-on-physical-thermal-valve.png")
             aimed=wait_state(page,{
                 "w73_actual_world_ray_target":"valve",
                 "w73_real_native_world_raycast":True,
                 "w72_valve_index":1,
             })
-            d=capture(page,evidence,"w73-04-genuine-eye-raycast-on-physical-thermal-valve.png")
             check(changed(c,d)>130,
                   "Contextual target focus must visibly turn REAL 3D camera")
             page.keyboard.press("g")
