@@ -2,6 +2,7 @@ extends Node3D
 const SPRING = preload("res://scripts/horizon_chassis_spring.gd")
 const SCULPT = preload("res://scripts/horizon_coupe_sculpt.gd")
 const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
+const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_player_vehicle_profiles.gd")
 const R39_DETAIL = preload("res://scripts/horizon_r39_wheel_detail.gd")
 ## OSGARD HORIZON DRIVE: original PBR sports coupe assembled in Godot.
 ## These are editable original meshes, not meshes or assets from Forza.
@@ -21,6 +22,12 @@ var pitch_angle := 0.0
 var pitch_velocity := 0.0
 var ride_bob := 0.0
 var ride_bob_velocity := 0.0
+# Cache the exact original compact shapes and primary glass neutral
+# transforms so changing garages never modifies the actual physics car.
+var original_flow: Mesh
+var original_greenhouse: Mesh
+var original_window_poses: Dictionary = {}
+var current_visual_variant: String = "compact"
 
 func _ready() -> void:
 	name = "HorizonCoupe"
@@ -28,6 +35,10 @@ func _ready() -> void:
 	_create_wheels()
 	_attach_wheel_detail_packs()
 	_create_lighting()
+	var default_body: MeshInstance3D = get_node_or_null("FlowBody") as MeshInstance3D
+	var default_roof: MeshInstance3D = get_node_or_null("AerodynamicGreenhouse") as MeshInstance3D
+	original_flow = default_body.mesh if default_body != null else null
+	original_greenhouse = default_roof.mesh if default_roof != null else null
 	set_paint(body_paint)
 
 func _mat(color: Color, metal: float = 0.1, rough: float = 0.5, emission: bool = false) -> StandardMaterial3D:
@@ -150,6 +161,7 @@ func _glass_quad(id: String, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> 
 	add_child(visual)
 	body_parts.append(visual)
 	body_rest.append(visual.transform)
+	original_window_poses[id] = visual.transform
 
 func _create_body() -> void:
 	# Vehicle forward is -Z. Tapered upper surfaces visually reduce blockiness.
@@ -281,6 +293,39 @@ func _create_lighting() -> void:
 	_part("LeftLED",Vector3(0.78,0.13,0.045),Vector3(-.83,-.29,-2.43),Color("d9f2ff"),0.0,0.15,false,true)
 	_part("RightLED",Vector3(0.78,0.13,0.045),Vector3(.83,-.29,-2.43),Color("d9f2ff"),0.0,0.15,false,true)
 	brake_strip = _part("FullWidthRearLight",Vector3(2.25,0.10,0.055),Vector3(0,-0.24,2.52),Color("ff5861"),0.0,0.2,false,true)
+
+func set_visual_variant(id: String) -> void:
+	# Original player vehicle catalog already owns all garage prices, saved
+	# ownership, speed and collisions. Only the ORIGINAL two source meshes
+	# and four existing glass pane transforms are allowed to change here.
+	var kind: String = id if CITY_REIGN_GARAGE.STYLES.has(id) else "compact"
+	var shape: MeshInstance3D = get_node_or_null("FlowBody") as MeshInstance3D
+	var roof: MeshInstance3D = get_node_or_null("AerodynamicGreenhouse") as MeshInstance3D
+	if shape == null or roof == null or original_flow == null or original_greenhouse == null:
+		return
+	current_visual_variant = kind
+	shape.mesh = original_flow if kind == "compact" else CITY_REIGN_GARAGE.body_mesh(kind)
+	roof.mesh = original_greenhouse if kind == "compact" else CITY_REIGN_GARAGE.canopy_mesh(kind)
+	var glass_multiplier: float = 1.0
+	match kind:
+		"courier": glass_multiplier = 1.33
+		"executive": glass_multiplier = 0.91
+		"utility": glass_multiplier = 1.38
+	for i in range(body_parts.size()):
+		var piece: MeshInstance3D = body_parts[i]
+		if original_window_poses.has(piece.name):
+			var rest: Transform3D = original_window_poses[piece.name]
+			var rescaled: Transform3D = Transform3D(
+				rest.basis.scaled(Vector3(1.0,glass_multiplier,1.0)),rest.origin)
+			body_rest[i] = rescaled
+			piece.transform = rescaled
+		if piece.name in ["RearSpoiler","SpoilerBracket"]:
+			piece.visible = kind == "compact" or kind == "executive"
+		if piece.name == "RoofCentreRail":
+			piece.visible = kind != "courier" and kind != "utility"
+	var paint: StandardMaterial3D = shape.material_override as StandardMaterial3D
+	if paint != null:
+		paint.roughness = 0.34 if kind in ["courier","utility"] else (0.20 if kind=="executive" else 0.26)
 
 func set_paint(color: Color) -> void:
 	body_paint = color
