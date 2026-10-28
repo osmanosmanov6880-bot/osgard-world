@@ -1,0 +1,207 @@
+name: CITY REIGN B34-B36 AUTHENTIC OPENING DIRECTOR — PRIVATE R90 ONLY
+on:
+  push:
+    branches:
+      - feat/city-reign-first-promise-street-director-20261028
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-first-promise-director.yml'
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-first-promise-director.yml'
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-real-episode-director-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native-real-city-first-episode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Pin actual original Godot source SHA with NO production release
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          mkdir -p city-reign-first-episode-source-evidence
+          printf '%s\n' "$SOURCE_SHA" > city-reign-first-episode-source-evidence/source-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strict original native Godot import and source-only audio assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-first-episode-source-evidence/strict-godot.log
+      - name: Actual mission branch, 3D street decisions, residents, owned city, and new E01 world goal
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in \
+            v110_city_reign_first_mandate \
+            v111_city_reign_street_interaction \
+            v112_city_reign_resident_reactions \
+            v119_city_reign_aaa_street_signals \
+            v120_city_reign_aaa_hero_architecture \
+            v121_city_reign_first_promise_street_director; do
+            log="city-reign-first-episode-source-evidence/${suite}.log"
+            timeout --signal=TERM --kill-after=6s 180s godot --headless \
+              --path godot/empire-omega --script "res://tests/${suite}.gd" | tee "$log"
+            case "$suite" in
+              v110*) marker="CITY REIGN E01 real playable promise:" ;;
+              v111*) marker="CITY REIGN E01 real on-foot street choice:" ;;
+              v112*) marker="CITY REIGN E01 real resident reactions:" ;;
+              v119*) marker="CITY REIGN AAA real street signals:" ;;
+              v120*) marker="CITY REIGN AAA real 4 landmark upgrade architecture:" ;;
+              v121*) marker="CITY REIGN AAA actual first-chapter street direction:" ;;
+            esac
+            grep -Fq "$marker" "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::Real original CITY REIGN full playable first chapter failed: $suite"
+              exit 1
+            fi
+          done
+      - name: Protect approved production publishing contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-direct-publish.contract.test.mjs \
+            | tee city-reign-first-episode-source-evidence/no-release-contract.log
+      - name: Exact SHA source proof and uncompleted commercial quality gates
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os
+          paths=[
+            'godot/empire-omega/scripts/city_reign_opening_director.gd',
+            'godot/empire-omega/scripts/main.gd',
+            'godot/empire-omega/tests/v121_city_reign_first_promise_street_director.gd']
+          result={'source_commit':os.environ['SOURCE_SHA'],
+            'source_sha256':{p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths},
+            'real_living_human_playtest_passed':False,
+            'licensed_hero_actor_assets_finished':False,
+            'AAA_photoreal_cinematic_finished':False,
+            'production_publish_authorized':False}
+          Path('city-reign-first-episode-source-evidence/manifest.json').write_text(
+            json.dumps(result,indent=2)+'\n')
+          PY
+      - name: Archive real source-native Godot results and release-HOLD evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-e01-first-street-director-${{ github.run_id }}
+          path: city-reign-first-episode-source-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
+  actual-paid-first-promise-chromium-pixels:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Original first episode immutable source SHA
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          mkdir -p city-reign-original-episode-webgl-proof
+          printf '%s\n' "$SOURCE_SHA" > city-reign-original-episode-webgl-proof/source-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Strict native city import and temporarily select ONLY TEST entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-original-episode-webgl-proof/genuine-engine-import.log
+          python3 - <<'PY'
+          from pathlib import Path
+          f=Path('godot/empire-omega/project.godot')
+          s=f.read_text()
+          original='run/main_scene="res://scenes/main.tscn"'
+          assert s.count(original)==1,'Unexpected original game scene; do not mutate'
+          f.write_text(s.replace(original,
+            'run/main_scene="res://tests/city_reign_opening_live_pixel_fixture.tscn"'))
+          PY
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --import \
+            | tee city-reign-original-episode-webgl-proof/test-only-scene-import.log
+          godot --headless --path godot/empire-omega --export-release Web \
+            "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Actual Chromium software Mesa and PNG tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Host real game only on isolated CI localhost
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4184 --bind 127.0.0.1 \
+            --directory godot/empire-omega/.build-web \
+            > /tmp/city-reign-original-episode-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4184/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/city-reign-original-episode-http.log
+          exit 1
+      - name: Strict actual red/green chapter-screen source physical WebGL RGB deltas
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' npx playwright test \
+            --config playwright.city-reign-opening.config.mjs \
+            --workers=1 --retries=0
+      - name: Archive actual original civic investment street photos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-original-first-promise-pixels-${{ github.run_id }}
+          path: |
+            city-reign-original-episode-webgl-proof/
+            city-reign-episode01-real-visual-results/
+            city-reign-episode01-real-visual-report/
+          if-no-files-found: warn
+          retention-days: 14
