@@ -254,6 +254,9 @@ func restore_checkpoint(saved: Dictionary) -> bool:
     return true
 
 func diagnostic() -> Dictionary:
+    var played: Array[String] = []
+    for entry in history:
+        played.append(str(entry["scenario"]))
     return {
         "active":active,
         "chapter":stage_number(),
@@ -264,6 +267,6 @@ func diagnostic() -> Dictionary:
         "finished":complete(),
         "ending":ending,
         "score":total_score(),
-        "past_scenarios":[entry["scenario"] for entry in history],
+        "past_scenarios":played,
         "last_carryover":last_carryover.duplicate(true)
     }
