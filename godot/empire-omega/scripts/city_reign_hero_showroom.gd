@@ -76,8 +76,14 @@ func build(display_locale: String,compact: bool,preview_enabled: bool,selected_i
 	viewport_host.name = "CityReignReal3DShowroomHost"
 	viewport_host.stretch = true
 	viewport_host.visible = false
-	viewport_host.custom_minimum_size = Vector2(0,184 if compact else 282)
-	viewport_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# The viewport container must NEVER expand beyond the 620px offscreen
+	# GPU budget, even when the command center is extremely wide. A 320px
+	# phone reserves its margins rather than forcing a 340px horizontal scroll.
+	var outer_width: float = get_viewport().get_visible_rect().size.x
+	var target_width: float = 340.0 if compact else 620.0
+	var safe_width: float = maxf(220.0,minf(target_width,outer_width-(28.0 if compact else 80.0)))
+	viewport_host.custom_minimum_size = Vector2(safe_width,184 if compact else 282)
+	viewport_host.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(viewport_host)
 	var controls := HBoxContainer.new()
 	controls.name = "CityReignShowroomControls"
