@@ -527,11 +527,16 @@ func _layout_stage() -> void:
     elif size.x < 900.0:
         height = clampf(size.y * 0.50, 350.0, 470.0)
     if cinema_mode:
-        height = clampf(size.y * 0.78, 585.0, 760.0)
+        var cinema_target: float = clampf(size.y * 0.78, 585.0, 760.0)
         if size.x < 640.0:
-            height = clampf(size.x * 0.98, 325.0, 460.0)
+            cinema_target = clampf(size.x * 0.98, 325.0, 460.0)
         elif size.x < 900.0:
-            height = clampf(size.y * 0.70, 475.0, 620.0)
+            cinema_target = clampf(size.y * 0.70, 475.0, 620.0)
+        # The cinematic camera must genuinely gain screen area even if
+        # a nonstandard headless/window layout starts unusually tall.
+        height = maxf(height + 125.0, cinema_target)
+        if size.x < 640.0:
+            height = minf(height, 460.0)
     stage_shell.custom_minimum_size = Vector2(0, height)
     if cinematic_hud != null:
         cinematic_hud._relayout()
