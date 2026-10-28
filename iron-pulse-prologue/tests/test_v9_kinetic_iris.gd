@@ -38,6 +38,17 @@ func _run() -> void:
         return
     _assert(iris.is_inside_tree() and iris.position == IPKineticIris.IRIS_CENTER,
         "Iris is located in original 15m reactor vault, not in overlay")
+    _assert(game._count_obstructing_corridor_neon()==0,
+        "A legacy 12m bright ceiling strip still crosses the actual 22m opening and blocks cinematic reactor")
+    var original_closed_roof_lights: int = 0
+    for old_mesh in game.get_children():
+        if old_mesh is MeshInstance3D and old_mesh.name.begins_with("ClosedRoofPulse_"):
+            original_closed_roof_lights += 1
+            _assert(old_mesh.position.z < IPReactorAtrium.OPENING_Z_MIN or
+                old_mesh.position.z > IPReactorAtrium.OPENING_Z_MAX,
+                "Every retained original long roof pulse belongs to an ACTUAL closed corridor")
+    _assert(original_closed_roof_lights >= 6,
+        "At least six historic roof lights are preserved outside the viewing bay")
     var baseline: Dictionary = iris.readout()
     _assert(baseline["physical_curved_petals"] == 8 and baseline["physical_hinges"] == 8,
         "Eight independently positionable curved armor petals and physical hinge servos")
