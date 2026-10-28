@@ -13,7 +13,17 @@ assert.equal(data.games.filter(game=>game.coverKind==='concept-art').length,22)
 assert.equal(new Set(data.games.map(game=>game.cover)).size,22)
 assert.equal(new Set(data.games.map(game=>game.icon)).size,22)
 const blocks=[...html.matchAll(/<article\b[^>]*data-game="([^"]+)"[^>]*>[\s\S]*?<\/article>/g)]
-assert.equal(blocks.length,22,'Expected exactly 22 catalog article cards')
+// The 22 original artwork-reviewed worlds remain unchanged. The 23rd card
+// is a real newly SSH-published Godot preview; it must NOT pretend to own a
+// finished AAA concept-cover or invent a twenty-third art-review approval.
+assert.equal(blocks.length,23,'Expected 22 original game cards and one source-verified CITY REIGN public preview')
+const additional=blocks.find(x=>x[1]==='city-reign-preview')?.[0]
+assert.ok(additional,'Missing newly published native CITY REIGN preview')
+assert.ok(additional.includes('href="/games/city-reign-preview/"') &&
+  additional.includes('GODOT 4.4.1') &&
+  additional.includes('PUBLIC PREVIEW') &&
+  !additional.includes('class="game-cover-image"'),
+  'CITY REIGN must link to the actual Godot live game and must not fake a licensed AAA game screenshot')
 const hashes=[]
 for(const game of data.games){
   const card=blocks.find(match=>match[1]===game.id)?.[0]

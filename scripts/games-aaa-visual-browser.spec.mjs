@@ -1,19 +1,24 @@
 import { test, expect } from '@playwright/test'
 
 // Browser-level verification of actual /games/ composition — not only source text.
-test('OSGARD PLAY presents 22 distinct visual identities and a usable game window', async ({ page }, info) => {
+test('OSGARD PLAY presents 23 true game cards, 22 approved original art assets and one public Godot preview', async ({ page }, info) => {
   test.setTimeout(60_000)
   const failures=[]
   page.on('pageerror',error=>failures.push(error.message))
   const response=await page.goto('/games/',{waitUntil:'domcontentloaded'})
   expect(response?.status()).toBe(200)
   const cards=page.locator('#games-grid article.card[data-game]')
-  await expect(cards).toHaveCount(22)
+  await expect(cards).toHaveCount(23)
   await expect(page.locator('#games-grid .world-emblem')).toHaveCount(22)
   await expect(page.locator('#games-grid .game-cover-image')).toHaveCount(22)
   await expect(page.locator('#games-grid .cover-illustration-note')).toHaveCount(22)
   const ids=await cards.evaluateAll(nodes=>nodes.map(node=>node.dataset.game))
-  expect(new Set(ids).size).toBe(22)
+  expect(new Set(ids).size).toBe(23)
+  const latest=page.locator('#games-grid article.card[data-game="city-reign-preview"]')
+  await expect(latest).toHaveCount(1)
+  await expect(latest.locator('a.play-link')).toHaveAttribute('href','/games/city-reign-preview/')
+  await expect(latest).toContainText('PUBLIC PREVIEW')
+  await expect(latest.locator('.game-cover-image')).toHaveCount(0)
   const icons=await page.locator('#games-grid .world-emblem').evaluateAll(nodes=>nodes.map(node=>new URL(node.currentSrc||node.src).pathname))
   expect(new Set(icons).size).toBe(22)
   const covers=await page.locator('#games-grid .game-cover-image').evaluateAll(nodes=>nodes.map(node=>new URL(node.src).pathname))
