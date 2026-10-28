@@ -394,12 +394,14 @@ func _build_diegetic_signs() -> void:
     _sign("CoreSerial","A7  //  IRON PULSE",Vector3(17.92,10.55,-19.3),Color(0.78,0.87,0.88),57)
 
 func _build_lighting() -> void:
-    for spot in [Vector3(9.0,12.5,-12.0),Vector3(15.0,12.5,-20.5),Vector3(9.0,12.5,-29.0)]:
+    for spot in [Vector3(9.0,12.5,-12.0),Vector3(7.35,8.2,-20.5),Vector3(9.0,12.5,-29.0)]:
         var lamp := OmniLight3D.new()
         lamp.name = "AtriumNeutralAreaFill"
         lamp.position = spot
-        lamp.light_color = Color(0.68,0.77,0.83)
-        lamp.light_energy = 1.25
+        lamp.light_color = Color(0.66,0.79,0.86)
+        # The ECO-safe middle lamp actually illuminates the front reactor
+        # armour, rather than sitting hidden behind its silhouette.
+        lamp.light_energy = 2.05 if absf(spot.z+20.5)<0.1 else 1.20
         lamp.omni_range = 18.5
         lamp.shadow_enabled = false
         structure.add_child(lamp)
