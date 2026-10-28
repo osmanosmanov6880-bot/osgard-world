@@ -15,6 +15,10 @@ func _go() -> void:
         return
     var ui := scene.instantiate() as A7CascadeScreen
     root.add_child(ui)
+    # Headless Godot does not guarantee a 1366x900 root viewport.
+    # The real desktop cinematic acceptance must set its actual viewport
+    # explicitly, and the 320/390px mobile layout is exercised below.
+    ui.size = Vector2(1366,900)
     await process_frame
     await process_frame
     var stage: A7CinematicStage = ui.stage_3d
