@@ -23,3 +23,8 @@ Real original 16 intersections (x,z in -156,-52,52,156) have one thin pole with 
 - Independent physical-screen review, signal readability for night/weather, color-blind alternative cues, phone thermal/FPS, controller driving and licensed professional art still required for AAA acceptance.
 
 **Protected:** R90 staging only. No `master`/R87/public/SSH or storefront release.
+
+## Source-only real 3D browser optics gate
+`tests/city_reign_real_signal_pixel_fixture.gd` and `.tscn` are labelled TEST-ONLY, never the production game scene. CI temporarily selects this scene only in a disposable private checkout while exporting authentic Godot 4.4.1 WebGL. It inspects the real 16-junction `TrafficSignalGrid`, not a separate visualization code path. Chromium checks the actual visible RGB pixels of original full 3D red/green directional phase, 1.5s yellow warning and original low-quality fallback.
+
+Pixel assertions cover real rendered scene variety plus nontrivial source-native phase/warning/LOD changes; raw PNG/JSON and exact source SHA are saved to GitHub Actions. Physical GPU and accessibility signoff remain separate unproven gates. No source-engine screenshots are invented or sourced from the internet.
