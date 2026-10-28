@@ -1,0 +1,110 @@
+name: CITY REIGN AAA A23–A25 REAL 4 LANDMARKS — no deployment
+on:
+  push:
+    branches:
+      - feat/city-reign-aaa-real-landmark-architecture-20261028
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-real-landmarks.yml'
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-real-landmarks.yml'
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-original-landmarks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  original-godot-stateful-hero-architecture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Prove ORIGINAL source HEAD; never publish from art tests
+        shell: bash
+        env:
+          COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$COMMIT"
+          mkdir -p city-reign-native-landmark-evidence
+          printf '%s\n' "$COMMIT" > city-reign-native-landmark-evidence/sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Rebuild ONLY existing source game sounds and strict native import
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-native-landmark-evidence/strict-source-import.log
+      - name: Real playable full city, actual income costs and four 3D building identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            v108_city_reign_unique_landmarks \
+            v113_city_reign_cinematic_architecture \
+            v119_city_reign_aaa_street_signals \
+            v120_city_reign_aaa_hero_architecture; do
+            log="city-reign-native-landmark-evidence/${file}.log"
+            timeout --signal=TERM --kill-after=6s 170s godot --headless \
+              --path godot/empire-omega --script "res://tests/${file}.gd" | tee "$log"
+            case "$file" in
+              v108*) marker="CITY REIGN C3 distinct civic 3D:" ;;
+              v113*) marker="CITY REIGN AAA source-native art pass:" ;;
+              v119*) marker="CITY REIGN AAA real street signals:" ;;
+              v120*) marker="CITY REIGN AAA real 4 landmark upgrade architecture:" ;;
+            esac
+            grep -Fq "$marker" "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::Real authored CITY REIGN building/source QA failed: $file"
+              exit 1
+            fi
+          done
+      - name: Independent production release lock remains intact
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-direct-publish.contract.test.mjs \
+            | tee city-reign-native-landmark-evidence/release-HOLD-contract.log
+      - name: SHA256 authored source evidence and honest quality gates
+        shell: bash
+        env:
+          COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,os
+          files=[
+            'godot/empire-omega/scripts/city_reign_landmark_architecture.gd',
+            'godot/empire-omega/scripts/world_builder.gd',
+            'godot/empire-omega/tests/v120_city_reign_aaa_hero_architecture.gd']
+          result={'exact_original_sha':os.environ['COMMIT'],
+            'SHA256':{f:hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in files},
+            'photoreal_aaa_approved':False,
+            'physical_phone_fps_approved':False,'licensed_assets_approved':False,
+            'human_30_minute_playtest_approved':False,
+            'production_release_approved':False}
+          Path('city-reign-native-landmark-evidence/manifest.json').write_text(
+            json.dumps(result,indent=2)+'\n')
+          PY
+      - name: Upload genuine source-native engine test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-original-4-hero-landmarks-${{ github.run_id }}
+          path: city-reign-native-landmark-evidence/
+          if-no-files-found: warn
+          retention-days: 14

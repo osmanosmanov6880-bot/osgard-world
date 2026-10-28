@@ -135,3 +135,11 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] Original native `v119` and SHA-specific full original WebGL Chromium acceptance, actual road screenshot and real-color-blind/sign readability signoff. Only then staging merge.
 - [ ] Final hero street assets, PBR reference textures, original city performance benchmarks and physical-user test; blockbuster/production approval HOLD.
 - Art-direction contract: `docs/CITY-REIGN-REAL-TRAFFIC-SIGNALS.md`.
+
+## A23–A25 — FOUR original 3D civic hero buildings with real economy consequences
+- [x] New independent original Godot `scripts/city_reign_landmark_architecture.gd` wraps the four **existing actual colliding** source city service buildings with four geographically distinct, one-drawcall-per-building PBR architectural bodies and an extra original earned crown per site (8 extra draw nodes total). Original traffic roads and collisions never change.
+- [x] `WorldBuilder` installs exact real geometry for Forum / Housing / Lower / Aqueduct and updates crown visibility from real saved `GameState.BUILDINGS` + `projects_done`, then source real city energy/night controls physically lit materials. Rendering cannot buy or mint anything.
+- [x] Real LOW retains all existing game buildings and hides both authored detail nodes; STANDARD and CINEMATIC reveal true 3D source facades. Zero shadows, physics or additional original mission IDs.
+- [ ] New exact original Godot v120 actual paid city mutation/re-render and Chromium real source pixel QA **MUST PASS** before R90 merge. This checklist is implementation work, NOT verified finish.
+- **PBR and human AAA quality remain HOLD** until licensed hero models, independent playtests, physical device FPS and human art-direction signoff.
+- Complete source truth: `docs/CITY-REIGN-AAA-FOUR-HERO-BUILDINGS.md` and `docs/CITY-REIGN-AAA-BLOCKBUSTER-MASTER-ROADMAP.md`.
