@@ -45,6 +45,10 @@ def blank_manifest() -> dict[str, Any]:
             "source_verification_sha256": "",
             "webgl_export_manifest_file": "",
             "webgl_export_manifest_sha256": "",
+            "webgl_binary_file": "",
+            "webgl_binary_sha256": "",
+            "webgl_pck_file": "",
+            "webgl_pck_sha256": "",
         },
         "first_time_playtests": [],
         "physical_device_tests": [],
@@ -112,7 +116,7 @@ def _artifact(root: Path, name: Any, expected_hash: Any) -> bool:
         resolved = (physical_root / rel).resolve(strict=True)
         if not resolved.is_relative_to(physical_root):
             return False
-        if not resolved.is_file() or resolved.is_symlink():
+        if not resolved.is_file() or (physical_root / rel).is_symlink():
             return False
         size = resolved.stat().st_size
         if size <= 0 or size > MAX_SINGLE_ARTIFACT_BYTES:
@@ -124,6 +128,19 @@ def _artifact(root: Path, name: Any, expected_hash: Any) -> bool:
         return h.hexdigest() == digest
     except (ValueError, OSError, RuntimeError):
         return False
+
+
+def _json_artifact(root: Path, name: Any, digest: Any) -> dict[str, Any]:
+    if not _artifact(root, name, digest):
+        return {}
+    try:
+        f = (root.resolve(strict=True) / _string(name)).resolve(strict=True)
+        if f.stat().st_size > MAX_MANIFEST_BYTES:
+            return {}
+        data = json.loads(f.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError, UnicodeError):
+        return {}
 
 
 def evaluate(manifest: dict[str, Any], root: Path,
@@ -144,17 +161,55 @@ def evaluate(manifest: dict[str, Any], root: Path,
         _string(build.get("github_actions_url")) == W74_CI_URL and
         build.get("native_godot_suites_passed") == 11
     )
-    checks["local_source_audit_file_hash"] = _artifact(
+    source_audit = _json_artifact(
         root, build.get("source_verification_file"),
         build.get("source_verification_sha256"))
-    checks["local_native_webgl_manifest_hash"] = _artifact(
+    wasm_manifest = _json_artifact(
         root, build.get("webgl_export_manifest_file"),
         build.get("webgl_export_manifest_sha256"))
-    checks["build_evidence"] = (
-        checks["actual_accepted_ci_url"] and
-        checks["local_source_audit_file_hash"] and
-        checks["local_native_webgl_manifest_hash"]
+    checks["local_source_audit_file_hash"] = (
+        source_audit.get("schema") ==
+            "LAST_FRONTIER_W74_EXACT_ACCEPTED_W73_SOURCE_V1" and
+        source_audit.get("head_sha") == expected_sha and
+        source_audit.get("status") == "PASS" and
+        source_audit.get("original_A7_core_modified") is False and
+        isinstance(source_audit.get("protected_hashes"), dict) and
+        len(source_audit["protected_hashes"]) >= 30
     )
+    declared_files = wasm_manifest.get("files",[])
+    if not isinstance(declared_files,list):
+        declared_files = []
+    file_hashes = {}
+    for entry in declared_files:
+        if isinstance(entry,dict):
+            file_hashes[_string(entry.get("name"))] = _string(
+                entry.get("sha256")).lower()
+    checks["local_native_webgl_manifest_hash"] = (
+        wasm_manifest.get("schema") == "OSGARD_W33_GODOT_WEB_BYTES_V1" and
+        wasm_manifest.get("source_commit") == expected_sha and
+        wasm_manifest.get("godot_release") == "4.4.1" and
+        HEX_SHA.fullmatch(file_hashes.get("index.wasm","")) is not None and
+        HEX_SHA.fullmatch(file_hashes.get("index.pck","")) is not None
+    )
+    checks["actual_wasm_binary_sha"] = (
+        file_hashes.get("index.wasm") == _string(
+            build.get("webgl_binary_sha256")).lower() and
+        _artifact(root,build.get("webgl_binary_file"),
+                  build.get("webgl_binary_sha256"))
+    )
+    checks["actual_pck_binary_sha"] = (
+        file_hashes.get("index.pck") == _string(
+            build.get("webgl_pck_sha256")).lower() and
+        _artifact(root,build.get("webgl_pck_file"),
+                  build.get("webgl_pck_sha256"))
+    )
+    checks["build_evidence"] = all([
+        checks["actual_accepted_ci_url"],
+        checks["local_source_audit_file_hash"],
+        checks["local_native_webgl_manifest_hash"],
+        checks["actual_wasm_binary_sha"],
+        checks["actual_pck_binary_sha"],
+    ])
 
     privacy = manifest.get("privacy", {})
     if not isinstance(privacy, dict):
@@ -320,6 +375,7 @@ def evaluate(manifest: dict[str, Any], root: Path,
 
     missing = [k for k, ok in checks.items() if not ok and k not in {
         "local_source_audit_file_hash", "local_native_webgl_manifest_hash",
+        "actual_wasm_binary_sha", "actual_pck_binary_sha",
         "actual_accepted_ci_url", "enough_unique_real_observed_sessions",
         "enough_actual_completions", "median_duration_10_to_15_minutes",
         "observed_confusion_not_excessive", "privacy_protocol",
