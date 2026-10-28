@@ -263,8 +263,8 @@ func _create_city() -> void:
 				# CITY REIGN A3: real shared 128px three-family procedural PBR on
 				# existing physically colliding walls; geometry unchanged.
 				# The old grey single-color body is not a fake texture anymore.
-				var actual_building: Node3D = _box(
-					chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
+				var actual_building: Node3D = _box(chunk,"Building_%03d" % building_count,
+					Vector3(width,height,width),pos,color,true)
 				var actual_body: MeshInstance3D = actual_building.get_node("VisualMesh") as MeshInstance3D
 				var building_finish: StandardMaterial3D = R37_MATERIAL_PACK.facade(color,building_count)
 				actual_body.material_override = building_finish
