@@ -107,9 +107,25 @@ def run(export, out, sha):
             # script and can only change by authentic Godot physics.
             begin_z=float(snapshot(page)["w70_real_body_xyz"][2])
             page.keyboard.down("s")
-            page.wait_for_timeout(1430)
-            page.keyboard.up("s")
-            page.wait_for_timeout(350)
+            try:
+                # The real headless software GPU has variable frame pacing.
+                # Release S only after native CharacterBody physics actually
+                # reaches the REACTOR, not after an arbitrary fixed duration.
+                page.wait_for_function("""() => {
+                    const node=document.getElementById('a7-cascade-native-state');
+                    if (!node) return false;
+                    try {
+                        const s=JSON.parse(node.getAttribute('data-state'));
+                        const p=s.w70_real_body_xyz;
+                        const distance=Math.hypot(p[0]-4.10,p[1]-1.20,p[2]-2.14);
+                        return s.w70_physical_operator===true &&
+                            s.w70_real_physical_distance>2.3 &&
+                            distance<3.05;
+                    } catch(e) { return false; }
+                }""",timeout=35000)
+            finally:
+                page.keyboard.up("s")
+            page.wait_for_timeout(250)
             walked=snapshot(page)
             print("W71 ACTUAL S PHYSICS DEBUG",json.dumps({
                 "spawn_z":begin_z,
