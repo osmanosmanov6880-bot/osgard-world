@@ -35,6 +35,10 @@ const COPY := {
         "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "sector_reactor": "РЕАКТОРНАЯ ГАЛЕРЕЯ", "sector_service": "ТЕХНИЧЕСКИЙ СЕКТОР", "sector_evacuation": "ЭВАКУАЦИОННЫЙ ШЛЮЗ",
         "visited_sectors": "ИССЛЕДОВАНО СЕКТОРОВ: {count}/3",
+        "continue": "ПРОДОЛЖИТЬ СОХРАНЕНИЕ", "radio_journal": "РАДИОАРХИВ / J",
+        "choice_crew": "1  /  ЛЮДИ", "choice_core": "2  /  ЯДРО",
+        "story_choice": "МАРА ЖДЁТ ПРИКАЗА: 1 — ЭКИПАЖ / 2 — РЕАКТОР",
+        "chapter_final": "АКТ {act} / РЕШЕНИЕ: {priority}",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -89,6 +93,10 @@ const COPY := {
         "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "sector_reactor": "REACTOR GALLERY", "sector_service": "SERVICE SPINE", "sector_evacuation": "EVACUATION LOCK",
         "visited_sectors": "SECTORS EXPLORED: {count}/3",
+        "continue": "CONTINUE CHECKPOINT", "radio_journal": "RADIO ARCHIVE / J",
+        "choice_crew": "1  /  CREW", "choice_core": "2  /  CORE",
+        "story_choice": "MARA AWAITS YOUR ORDER: 1 — CREW / 2 — REACTOR",
+        "chapter_final": "ACT {act} / PRIORITY: {priority}",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -123,6 +131,8 @@ const COPY := {
 }
 
 var session: IPCrisisEngine = IPCrisisEngine.new()
+var story: IPStoryDirector = IPStoryDirector.new()
+var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var art_stage: IPCinematicStage
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
@@ -161,6 +171,18 @@ var intro_panel: PanelContainer
 var intro_title: Label
 var intro_body: Label
 var intro_button: Button
+var continue_button: Button
+var radio_panel: PanelContainer
+var radio_speaker: Label
+var radio_dialogue: Label
+var priority_panel: PanelContainer
+var crew_priority_button: Button
+var core_priority_button: Button
+var journal_panel: PanelContainer
+var journal_text: Label
+var journal_close_button: Button
+var radio_ttl: float = 0.0
+var checkpoint_clock: float = 0.0
 var scenario_buttons: Dictionary = {}
 var scenario_brief: Label
 var selected_scenario: String = "blackout"
@@ -197,6 +219,7 @@ var _last_web_resize_check: float = -99.0
 
 func _ready() -> void:
     session.reset()
+    story.reset(session.scenario_id)
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -276,6 +299,15 @@ func _publish_web_state() -> void:
     state["world_sector"] = active_sector
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
+    state["story"] = story.diagnostic()
+    state["radio_visible"] = radio_panel.visible if radio_panel != null else false
+    state["priority_visible"] = priority_panel.visible if priority_panel != null else false
+    state["radio_speaker"] = radio_speaker.text if radio_speaker != null else ""
+    state["radio_text"] = radio_dialogue.text if radio_dialogue != null else ""
+    state["priority"] = session.priority_id
+    state["journal_visible"] = journal_panel.visible if journal_panel != null else false
+    if continue_button != null:
+        state["continue_button_visible"] = continue_button.visible
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
     state["hud_rects"] = {
         "header": _hud_rect(header_panel),
