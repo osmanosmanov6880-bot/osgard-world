@@ -1,0 +1,238 @@
+name: LAST FRONTIER W70 genuine colliding first-person game (DRAFT HOLD)
+
+on:
+  pull_request:
+    branches:
+      - design/last-frontier-w69-incident-direction-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W70_FIRST_PERSON_ACCEPTANCE.md'
+      - '.github/workflows/last-frontier-w70-physical-operator.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w70-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-original-source:
+    name: Guard exact accepted W69 + untouched game rules and 3D art
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate only authorized original Godot input/physics additions
+        shell: bash
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w70-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='136824b34c764551b945fa476e7db4fd70172a9f'
+          head=os.environ['HEAD']
+          def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          expected={
+              'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w70_first_person_operator.gd',
+              'w63-a7-cascade/ci/w70_browser_operator.py',
+              '.github/workflows/last-frontier-w70-physical-operator.yml',
+              'docs/LAST_FRONTIER_W70_FIRST_PERSON_ACCEPTANCE.md',
+          }
+          assert changed==expected,{'unexpected':sorted(changed-expected),
+                                    'missing':sorted(expected-changed)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirector.gd',
+              'w63-a7-cascade/scripts/A7ProceduralAudio.gd',
+              'w63-a7-cascade/scripts/A7CinematicHud.gd',
+              'w63-a7-cascade/scripts/A7CinematicHeroSet.gd',
+              'w63-a7-cascade/scripts/A7CinematicMaterialLab.gd',
+              'w63-a7-cascade/scripts/A7ArchitecturalDetail.gd',
+              'w63-a7-cascade/scripts/A7IndustrialCathedral.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirection.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w64_real_3d_stage.gd',
+              'w63-a7-cascade/tests/test_w65_story_audio.gd',
+              'w63-a7-cascade/tests/test_w67_cinematic_sectors.gd',
+              'w63-a7-cascade/tests/test_w68_industrial_cinema.gd',
+              'w63-a7-cascade/tests/test_w69_incident_direction.gd',
+              'w63-a7-cascade/ci/w64_browser_acceptance.py',
+              'w63-a7-cascade/ci/w65_browser_story_audio.py',
+              'w63-a7-cascade/ci/w67_browser_sectors.py',
+              'w63-a7-cascade/ci/w68_browser_art.py',
+              'w63-a7-cascade/ci/w69_browser_incident.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+              '.github/workflows/last-frontier-w69-incident-cinema.yml',
+          ]
+          blobs={}
+          for file in protected:
+              old=git('rev-parse',base+':'+file)
+              current=git('rev-parse',head+':'+file)
+              assert old==current,'Unapproved original gameplay/3D change: '+file
+              blobs[file]=current
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          operator=Path('w63-a7-cascade/scripts/A7FirstPersonOperator.gd').read_text()
+          screen=Path('w63-a7-cascade/scripts/A7CascadeScreen.gd').read_text()
+          assert 'CharacterBody3D.new()' in operator
+          assert 'CollisionShape3D.new()' in operator
+          assert 'StaticBody3D.new()' in operator
+          assert 'body.move_and_slide()' in operator
+          assert 'KEY_P' in screen and 'KEY_W' in screen and 'KEY_E' in screen
+          for banned in ['HTTPClient','OS.execute','JavaScriptBridge','model.choose(']:
+              assert banned not in operator,'No external access/game authority in physics operator'
+          proof={
+              'schema':'LAST_FRONTIER_W70_EXACT_REAL_GODOT_PHYSICS_V1',
+              'status':'PASS','source_sha':head,'base_sha':base,
+              'changed_paths':sorted(changed),
+              'protected_original_blobs':blobs,
+              'gameplay_rules_changed':False,
+              'actor_physical_equipment_connected':False,
+              'consumer_gpu_certified':False,
+              'allow_merge_into_master':False,
+              'commercial_release_approved':False,
+          }
+          Path('w70-evidence/W70_EXACT_SOURCE.json').write_text(
+              json.dumps(proof,ensure_ascii=False,indent=2)+'\n')
+          print('W70 EXACT SOURCE PASS: 24 immutable original accepted W69 gameplay/art/test/export blobs')
+          PY
+      - name: Preserve immutable Git source attestation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w70-exact-source-${{ github.event.pull_request.head.sha }}
+          path: w70-evidence/W70_EXACT_SOURCE.json
+          retention-days: 45
+          if-no-files-found: warn
+
+  real-physics-and-browser:
+    name: True moving colliding Godot player, seven original engine test suites, real WASM and 13 source-bound frames
+    runs-on: ubuntu-latest
+    needs: exact-original-source
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import actual first-person Godot 4.4.1 GDScript/physics project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w70-evidence
+          timeout --signal=TERM --kill-after=5s 230s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w70-evidence/native-import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w70-evidence/native-import.log; then exit 1; fi
+      - name: Actual seven separate Godot suites (physics, 12-actions and prior features)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w64_real_3d_stage test_w65_story_audio test_w67_cinematic_sectors test_w68_industrial_cinema test_w69_incident_direction test_w70_first_person_operator; do
+            echo "TRUE GODOT ORIGINAL GAME AND PHYSICS TEST: $test"
+            timeout --signal=TERM --kill-after=5s 350s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w70-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w70-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w70-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W64 REAL NATIVE 3D CINEMATIC GAME PASS:' w70-evidence/test_w64_real_3d_stage.log
+          grep -q 'LAST FRONTIER W65 ORIGINAL GAME CAUSAL STORY + SYNTH AUDIO PASS:' w70-evidence/test_w65_story_audio.log
+          grep -q 'LAST FRONTIER W67 REAL TWO-ZONE INDUSTRIAL CINEMA PASS:' w70-evidence/test_w67_cinematic_sectors.log
+          grep -q 'LAST FRONTIER W68 REAL ORIGINAL PBR HERO AND COMPLETE GODOT GAME PASS:' w70-evidence/test_w68_industrial_cinema.log
+          grep -q 'LAST FRONTIER W69 TRUE CINEMATIC INCIDENT/OPTICS/WIN PASS:' w70-evidence/test_w69_incident_direction.log
+          grep -q 'LAST FRONTIER W70 REAL CHARACTERBODY FIRST PERSON PHYSICS PASS:' w70-evidence/test_w70_first_person_operator.log
+      - name: Export real playable Godot WebAssembly (not a static image)
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w70-evidence/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w70-evidence/web-export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SOURCE_SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install actual Chromium and PNG library
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w70
+          /tmp/a7-w70/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w70/bin/python -m playwright install --with-deps chromium
+      - name: Actual W69 original browser QA + W70 physically moving first-person desktop/mobile player
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 1150s /tmp/a7-w70/bin/python w63-a7-cascade/ci/w69_browser_incident.py --export w63-a7-cascade/build/web --evidence w70-evidence/w69-original-browser --sha "$SOURCE_SHA" 2>&1 | tee w70-evidence/w69-original-browser.log
+          grep -q 'LAST FRONTIER W69 ACTUAL GODOT CINEMA/FOCUS/INCIDENT WEBGL PASS:' w70-evidence/w69-original-browser.log
+          timeout --signal=TERM --kill-after=10s 1150s /tmp/a7-w70/bin/python w63-a7-cascade/ci/w70_browser_operator.py --export w63-a7-cascade/build/web --evidence w70-evidence/w70-real-player-browser --sha "$SOURCE_SHA" 2>&1 | tee w70-evidence/w70-browser.log
+          grep -q 'LAST FRONTIER W70 TRUE GODOT CHARACTERBODY PHYSICS CHROMIUM PASS:' w70-evidence/w70-browser.log
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          sha=os.environ['SOURCE_SHA']
+          root=Path('w70-evidence/w70-real-player-browser')
+          proof=json.loads((root/'W70_ACTUAL_PHYSICS_BROWSER_PROOF.json').read_text())
+          assert proof['status']=='PASS' and proof['exact_git_sha']==sha
+          assert proof['real_godot_webassembly']
+          assert proof['genuine_walking_changes_player_position']
+          assert proof['original_causal_puzzle_preserved']
+          assert len(proof['source_bound_images'])==7
+          for image in proof['source_bound_images']:
+              data=(root/image['filename']).read_bytes()
+              assert len(data)>12000
+              assert hashlib.sha256(data).hexdigest()==image['sha256']
+          assert not proof['hardware_gpu_performance_certified']
+          assert not proof['commercial_release_approved']
+          print('W70 actual moving player and original Godot Chromium PNG evidence PASS')
+          PY
+      - name: Preserve executable original WebGL, 13 authentic PNGs, physics/CI diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w70-actual-moving-player-webgl-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w70-evidence/
+          retention-days: 45
+          if-no-files-found: warn
+
+  no-release-approval:
+    name: W70 is software physics alpha, not consumer 3D AAA certification
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [exact-original-source, real-physics-and-browser]
+    steps:
+      - name: Require every source+physics+browser PASS while keeping production HOLD
+        shell: bash
+        env:
+          SOURCE: ${{ needs.exact-original-source.result }}
+          PHYSICS: ${{ needs.real-physics-and-browser.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$PHYSICS" = success
+          echo 'W70 FIRST PERSON PHYSICAL PLAYER/ORIGINAL 6-CYCLE GODOT SOFTWARE ACCEPTED'
+          echo 'PRODUCTION HOLD: no hardware FPS, no 12 player playtest, no real consumer certification, no trademark clearance, no commercial GO'
