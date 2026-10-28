@@ -1,0 +1,320 @@
+name: CITY REIGN — verified original Godot playable SSH release to OSgard World
+
+on:
+  push:
+    branches:
+      - feat/city-reign-osgard-ssh-playable-20261028
+    paths:
+      - '.github/workflows/city-reign-direct-ssh-preview.yml'
+      - 'scripts/deploy-city-reign-ssh-remote.sh'
+      - 'scripts/city-reign-build-release.py'
+      - 'godot/empire-omega/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Prevent two different source revisions from simultaneously changing the
+# same isolated game directory. Latest source gate rejects superseded builds.
+concurrency:
+  group: city-reign-preview-osgard-world-ssh
+  cancel-in-progress: false
+
+jobs:
+  original-native-game:
+    name: Source-locked Godot build, playable WebGL and original campaign tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 48
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - name: Reject modified source, wrong engine, spoofed fixture or preview-only scene
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "${#EXPECTED_SHA}" -eq 40
+          grep -Fq 'run/main_scene="res://scenes/main.tscn"' godot/empire-omega/project.godot
+          test -f godot/empire-omega/scenes/main.tscn
+          test -f godot/empire-omega/scripts/main.gd
+          mkdir -p city-reign-ssh-qa-evidence
+          echo "$EXPECTED_SHA" > city-reign-ssh-qa-evidence/TESTED_SOURCE_SHA.txt
+          python3 scripts/city-reign-build-release.py --self-test
+          python3 scripts/omega-live-integrity.py --self-test
+          python3 scripts/omega-native-space-budget.py --self-test
+          bash -n scripts/deploy-city-reign-ssh-remote.sh
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Generate actual original audio and import the entire playable Godot source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            2>&1 | tee city-reign-ssh-qa-evidence/import-godot-4.4.1.log
+          grep -Fq 'R42 PASS: real Godot imported with no script errors' \
+            city-reign-ssh-qa-evidence/import-godot-4.4.1.log
+      - name: Verify actual driving, economic authority, citizen roads and original save
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in \
+            v123_city_reign_street_world_integrity \
+            v124_city_reign_tower_silhouette_lod \
+            v126_city_reign_real_window_reveal_lod \
+            v127_city_reign_tower_distance_lod \
+            v128_city_reign_paid_public_works \
+            v129_city_reign_paid_crossing_traffic \
+            v130_city_reign_community_park_live \
+            v131_city_reign_real_site_inspection \
+            v132_city_reign_pedestrian_waypoint_continuity \
+            v97_r123_real_pedestrian_body_gait \
+            v68_r47_predictive_crosswalk_traffic \
+            v110_city_reign_first_mandate \
+            v121_city_reign_first_promise_street_director \
+            v72_r55_forty_mission_event_save; do
+            echo "Testing real original Godot scene: $suite"
+            log="city-reign-ssh-qa-evidence/$suite.log"
+            timeout --signal=TERM --kill-after=6s 150s godot --headless \
+              --path godot/empire-omega --script "res://tests/$suite.gd" \
+              2>&1 | tee "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|[1-9][0-9]* FAIL|ERROR:.*FAIL' "$log"; then
+              echo "::error::Native original-city regression: $suite"
+              exit 1
+            fi
+            grep -Eqi '[0-9]+ (PASS|passed|pass).*0 (FAIL|failed|fail)' "$log" || {
+              echo "::error::Native test lacked a real zero-failure result: $suite"
+              exit 1
+            }
+          done
+      - name: Export ORIGINAL playable game, not temporary pixel/QA fixture
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p city-reign-verified-webgl
+          godot --headless --path godot/empire-omega --export-release Web \
+            "$GITHUB_WORKSPACE/city-reign-verified-webgl/index.html"
+          node scripts/localize-godot-web-export.mjs city-reign-verified-webgl
+          python3 scripts/city-reign-build-release.py \
+            --directory city-reign-verified-webgl --source "$SOURCE_SHA"
+          (cd city-reign-verified-webgl && sha256sum -c SHA256SUMS.txt)
+          test -s city-reign-verified-webgl/release.json
+      - name: Install authentic Chromium WebGL runtime for actual source game proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Serve private source-only build on loopback; no SSH yet
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 \
+            --directory city-reign-verified-webgl \
+            >/tmp/city-reign-preview-source-http.log 2>&1 &
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/city-reign-preview-source-http.log
+          exit 1
+      - name: Prove ACTUAL source driving world and original TAB command UI in Chromium
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          OMEGA_CI_GL_BACKEND: 'mesa'
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-r90.config.mjs \
+              --workers=1 --retries=0
+      - name: Retain complete original-commit evidence even on CI failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-original-native-release-evidence-${{ github.run_id }}
+          path: |
+            city-reign-ssh-qa-evidence/
+            omega-r90-results/
+            omega-r90-report/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Store exact playable engine bytes for a SEPARATE SSH release job
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-original-playable-${{ github.sha }}
+          path: city-reign-verified-webgl/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-city-reign-on-osgard:
+    name: Isolated atomic SSH upload to existing OSgard World Nginx
+    needs: original-native-game
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - uses: actions/download-artifact@v4
+        with:
+          name: city-reign-original-playable-${{ github.sha }}
+          path: city-reign-verified-webgl/
+      - name: Reject a superseded branch, stale artifact, invalid SHA or switched source
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          actual="$(git ls-remote origin refs/heads/feat/city-reign-osgard-ssh-playable-20261028 | awk '{print $1}')"
+          test "$actual" = "$SOURCE_SHA" || {
+            echo "::error::A newer game candidate exists; NEVER deploy stale source."
+            exit 3
+          }
+          python3 - <<'PY'
+          import json,os,pathlib
+          root=pathlib.Path('city-reign-verified-webgl')
+          m=json.loads((root/'release.json').read_text())
+          assert m['source_commit']==os.environ['SOURCE_SHA']
+          assert m['channel']=='city-reign-preview'
+          assert m['main_scene']=='res://scenes/main.tscn'
+          assert m['native_tests']=='passed'
+          assert m['artifact_kind']=='native-Godot-HTML5-export'
+          assert not m['aaa_art_quality_certified']
+          assert set(['index.html','index.js','index.wasm','index.pck']).issubset(m['files'])
+          PY
+          (cd city-reign-verified-webgl && sha256sum -c SHA256SUMS.txt)
+          mkdir -p "$RUNNER_TEMP/city-reign-transport"
+          tar -czf "$RUNNER_TEMP/city-reign-transport/game.tgz" \
+            -C city-reign-verified-webgl .
+          python3 scripts/omega-native-space-budget.py \
+            --archive "$RUNNER_TEMP/city-reign-transport/game.tgz" \
+            --game-dir city-reign-verified-webgl > "$RUNNER_TEMP/city-reign-transport/space-budget.txt"
+      - name: Configure protected SSH transport to existing OSGARD VPS
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+          PINNED_HOSTS: ${{ secrets.OSGARD_DEPLOY_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY" || {
+            echo "::error::Existing OSGARD SSH credentials are not configured."
+            exit 2
+          }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/city_reign_preview_key
+          chmod 600 ~/.ssh/city_reign_preview_key
+          if [ -n "$PINNED_HOSTS" ]; then
+            printf '%s\n' "$PINNED_HOSTS" > ~/.ssh/known_hosts
+          else
+            # Compatibility with the pre-existing official SSH workflow.
+            # A pinned OSGARD_DEPLOY_KNOWN_HOSTS secret is preferable.
+            ssh-keyscan -T 10 -H "$DEPLOY_HOST" > ~/.ssh/known_hosts
+            echo "::warning::Using existing scan-based host verification; configure pinned OSGARD_DEPLOY_KNOWN_HOSTS for strict authentication."
+          fi
+          test -s ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Verify actual VPS free disk space BEFORE transport
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          space="$(cat "$RUNNER_TEMP/city-reign-transport/space-budget.txt")"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/city_reign_preview_key "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- '$space'" < scripts/omega-native-remote-free-space.sh
+      - name: Upload ORIGINAL playable Godot game over SSH and activate isolated route
+        id: activate
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git ls-remote origin refs/heads/feat/city-reign-osgard-ssh-playable-20261028 | awk '{print $1}')"
+          test "$actual" = "$SOURCE_SHA" || {
+            echo "::error::Stale commit immediately before SSH; deployment blocked."
+            exit 3
+          }
+          remote="/tmp/osgard-city-reign-$RUN_ID"
+          ssh -o BatchMode=yes -i ~/.ssh/city_reign_preview_key \
+            "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$remote'"
+          scp -o BatchMode=yes -i ~/.ssh/city_reign_preview_key \
+            "$RUNNER_TEMP/city-reign-transport/game.tgz" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$remote/game.tgz"
+          # Do not upload/deploy unverified website frontend files or overwrite
+          # the original Omega preview or any other OSgard app route.
+          ssh -o BatchMode=yes -i ~/.ssh/city_reign_preview_key \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- activate '$RUN_ID' '$SOURCE_SHA'" \
+            < scripts/deploy-city-reign-ssh-remote.sh
+          echo "activated=true" >> "$GITHUB_OUTPUT"
+      - name: Verify EVERY PUBLIC HTML, JS, WASM and PCK byte against the exact source
+        if: steps.activate.outputs.activated == 'true'
+        env:
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-live-integrity.py \
+            --expected city-reign-verified-webgl/release.json \
+            --base https://osgard.world/games/city-reign \
+            --nonce "city-reign-$RUN_ID"
+          curl --fail --show-error --location --silent \
+            'https://osgard.world/games/city-reign/index.html' \
+            --output /tmp/osgard-city-reign-live-index.html
+          test -s /tmp/osgard-city-reign-live-index.html
+          grep -Fq 'canvas' /tmp/osgard-city-reign-live-index.html
+          echo "PASS: https://osgard.world/games/city-reign/ serves EXACT original Godot SHA"
+      - name: Roll back ONLY city-reign if public verification fails
+        if: failure() && steps.activate.outputs.activated == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          RUN_ID: ${{ github.run_id }}
+          SOURCE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -i ~/.ssh/city_reign_preview_key \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- rollback '$RUN_ID' '$SOURCE_SHA'" \
+            < scripts/deploy-city-reign-ssh-remote.sh
+          echo "RESTORED: existing OSgard World and older Omega game were untouched."
+      - name: Remove only this transfer's staging files after public integrity passes
+        if: success() && steps.activate.outputs.activated == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          RUN_ID: ${{ github.run_id }}
+          SOURCE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -i ~/.ssh/city_reign_preview_key \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- cleanup '$RUN_ID' '$SOURCE_SHA'" \
+            < scripts/deploy-city-reign-ssh-remote.sh
