@@ -89,6 +89,8 @@ func _run() -> void:
 	}
 	for quality in ["low","standard","cinematic"]:
 		world.call("apply_visual_budget",quality)
+		# Measure actual player-focused meshes, not an artificial global mode.
+		world.call("update_chunks",car.global_position,quality)
 		for i in range(WARMUP_FRAMES):
 			await RenderingServer.frame_post_draw
 		var samples: Array[float] = []
@@ -120,6 +122,7 @@ func _run() -> void:
 		stats["capture"] = screenshot.get_file()
 		stats["actual_source_street_batches"] = detail.get_child_count()
 		stats["original_city_tower_instances"] = towers.size()
+		stats["camera_tower_lods"] = (world.get("city_reign_tower_lod_counts") as Dictionary).duplicate(true)
 		stats["measurement_kind"] = "GL software CI interval, NOT device FPS"
 		(results["quality"] as Array).append(stats)
 		print("CITY REIGN REAL SOFTWARE GL %s %s" % [quality,JSON.stringify(stats)])
