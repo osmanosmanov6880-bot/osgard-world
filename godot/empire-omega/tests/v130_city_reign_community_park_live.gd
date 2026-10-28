@@ -5,7 +5,7 @@ const PARK = preload("res://scripts/city_reign_park_furniture.gd")
 const PLANNER = preload("res://scripts/city_reign_park_routine.gd")
 const CITIZEN = preload("res://scripts/pedestrian_agent.gd")
 const ROUTINE = preload("res://scripts/citizen_routine.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
+# Load WorldBuilder AFTER SceneTree has installed the actual GameState autoload.
 const SAVE = "user://city-reign-b64-park-save.dat"
 const STAGED = "user://city-reign-b64-park-save.pending"
 const BACKUP = "user://city-reign-b64-park-save.bak"
@@ -40,7 +40,13 @@ func _run() -> void:
 		if FileAccess.file_exists(file):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(file))
 	sim.set("data",sim.call("new_game"))
-	var world: Node3D = WORLD.new()
+	var world_script: Script = load("res://scripts/world_builder.gd") as Script
+	verify(world_script != null and world_script.can_instantiate(),
+		"original WorldBuilder compiles after true GameState singleton registration")
+	if world_script == null or not world_script.can_instantiate():
+		quit(2)
+		return
+	var world: Node3D = world_script.new()
 	root.add_child(world)
 	var park: Node3D = world.get("city_reign_park_furniture")
 	verify(park!=null and park.is_inside_tree(),
