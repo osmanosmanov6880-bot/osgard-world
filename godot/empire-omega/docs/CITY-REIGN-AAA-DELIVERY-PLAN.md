@@ -121,3 +121,9 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 ### A11 pixel reality gate
 - [x] Add separately exported TEST-ONLY source-original Godot WebGL fixture and pinned real Chromium pixel assertions for body switch and 15° render rotation. Never change the production entrypoint in Git.
 - [ ] Actual software GPU real screenshot artifacts, pixel deltas and browser error-free evidence must pass on exact PR head before human review. No fake AAA art claims.
+
+## A14–A15 — REAL original automotive atelier lighting and architectural depth
+- [x] One original bounded physical 504-vertex circular metal inlay, 7 real GPU-instanced architectural louvres, 1 original background masonry panel; all no-collider, no-shadow, optional on mobile.
+- [x] PBR metal reflects original procedural studio sky within Godot Compatibility, while a new accessible original day/night toggle changes two actual lights and stage illumination.
+- [ ] Source-locked Godot `v118` and actual rendered night/day *RGB pixel delta* CI to pass on exact head; original proprietary/licensed hero car art and independent physical-performance/art director approval missing.
+- Detailed visual art contract: `docs/CITY-REIGN-AAA-REAL-3D-SHOWROOM.md`.

@@ -59,7 +59,8 @@ jobs:
             v114_city_reign_aaa_vehicle_fleet \
             v115_city_reign_aaa_player_garage \
             v116_city_reign_aaa_premium_garage \
-            v117_city_reign_aaa_actual_showroom; do
+            v117_city_reign_aaa_actual_showroom \
+            v118_city_reign_aaa_native_studio; do
             log="city-reign-showroom-evidence/${testfile}.log"
             timeout --signal=TERM --kill-after=6s 170s godot --headless \
               --path godot/empire-omega --script "res://tests/${testfile}.gd" | tee "$log"
@@ -69,6 +70,7 @@ jobs:
               v115*) marker="CITY REIGN AAA real player garage silhouettes:" ;;
               v116*) marker="CITY REIGN AAA native premium garage cards:" ;;
               v117*) marker="CITY REIGN AAA actual authored car showroom:" ;;
+              v118*) marker="CITY REIGN AAA native architectural studio:" ;;
             esac
             grep -Fq "$marker" "$log"
             if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then

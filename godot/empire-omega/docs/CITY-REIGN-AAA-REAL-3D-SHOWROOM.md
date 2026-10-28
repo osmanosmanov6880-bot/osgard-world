@@ -23,3 +23,11 @@ The playable R90 city operations cabinet presents four source-real ownership/veh
 - Accept actual rendered car PBR pixel variation, then switch compact → utility by real key input and demand a meaningful real RGB pixel difference, then rotate the real turntable by exactly 15 degrees and demand a different real frame.
 - Upload actual raw WebGL/Chromium PNGs and measured JSON diagnostics. Never accept an unchanged screenshot, missing graphics, static HTML mock or image-generation substitute.
 - This proves a software-Mesa-browser scene rendering, **not** physical desktop GPU/mobile FPS or a human AAA art signoff.
+
+## A14–A15 — source-native architecture / physically based reflective studio
+- **Real solid stage**, not a screenshot: 72 machined annular sectors and 12 gold tick marks in one real original 504-vertex ArrayMesh, one original satin-black backdrop mesh, and 7 individually positioned metal louvres in one GPU MultiMesh batch. Existing actual physical podium stays. All three additional draws are shadow-free and collision-free.
+- **Real metallic reflections**: use one fully procedural Godot `ProceduralSkyMaterial` as a `Sky` reflection source against the original charcoal environment. No licensed .hdr download, GL-incompatible SSR or second cubemap import; no claim of ray tracing.
+- **Interactive cinematic lighting**: separate native RU/EN/ZH touch/keyboard-accessible DAY/NIGHT controls; physically changes studio key/fill DirectionalLight3D colors/energy, ambient intensity, original brass stage emission and requests one GPU frame. No autoplay, no blinking or time-based workload.
+- **Real mobile optimization**: no GPU studio until a phone user inspects; low tier disables preview; compact hides both architectural backdrop meshes and only retains real 3D car + inlaid stage ring.
+- QA: `v118_city_reign_aaa_native_studio.gd` source-native unit and runtime assertions, plus standalone real Chromium WebGL compact/utility/turntable/**night illumination pixel delta** with source screenshots and no fake render substitution.
+- Commercial photoreal AAA quality, artistic approval, physical phone and desktop GPU fps and licensed production car art remain **HOLD**.
