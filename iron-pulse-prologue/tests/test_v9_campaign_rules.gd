@@ -12,8 +12,9 @@ func _check(ok: bool,label: String) -> void:
     if not ok:
         errors.append(label)
 
-func _win(real_engine: IPCrisisEngine,scenario: String,order: String = "crew") -> bool:
-    real_engine.reset(scenario)
+func _win(real_engine: IPCrisisEngine,scenario: String,order: String = "crew",reset_first: bool = true) -> bool:
+    if reset_first:
+        real_engine.reset(scenario)
     if not real_engine.scan_core():
         return false
     if not real_engine.activate_relay("medbay"):
@@ -59,7 +60,7 @@ func _run() -> void:
         "HEAT starts as authentic new chapter with inherited resources, not cheating objective")
     _check(second.oxygen<=float(c1["oxygen"])+0.001 and second.crew_health<=float(c1["crew"])+0.001,
         "Transferred crew/oxygen really modify next stage IPCrisisEngine")
-    _check(_win(second,"thermal"), "Stage 2: actual precision thermal repair, power and exit are passable")
+    _check(_win(second,"thermal","crew",false), "Stage 2: actual precision thermal repair, power and exit are passable")
     _check(director.record_victory(second), "Second successful operation unlocks only AIR")
     _check(director.wins()==2 and director.next_scenario()=="breach",
         "Chapter order is fixed GRID→HEAT→AIR")
@@ -69,7 +70,7 @@ func _run() -> void:
     var before_air_crew: float = third.crew_health
     _check(before_air_crew<92.0 or director.carryover()["crew"]>=92.0,
         "AIR crew resource uses real capped carryover, never a synthetic full reset")
-    _check(_win(third,"breach"), "Stage 3: true AIR seal and evacuation function with carryover")
+    _check(_win(third,"breach","crew",false), "Stage 3: true AIR seal and evacuation function with carryover")
     _check(director.record_victory(third), "Third actual victory completes full three-chapter campaign")
     _check(director.finished() and director.wins()==3 and director.next_scenario()=="",
         "Campaign concludes only after actual GRID, HEAT and AIR")
