@@ -113,3 +113,18 @@ test('Production desk uses private SPA route, no-index shell and real user-state
  assert.doesNotMatch(ui,/<video|\.mp4|checkout|publicationAuthorized:true/i)
  assert.match(read('src/osaCinemaProductionDesk.css'),/@media\(max-width:600px\)/)
 })
+
+test('V59 portable backups enforce real UTF-8 byte budgets and ISO timestamps',()=>{
+ assert.equal(m.MAX_PRODUCTION_IMPORT_BYTES,65536)
+ assert.ok(m.MAX_PRODUCTION_STORE_BYTES<m.MAX_PRODUCTION_IMPORT_BYTES)
+ const tooLarge=Array.from({length:100},(_,i)=>({
+  ...good,id:'t-v59unit-multibyte-'+String(i).padStart(4,'0'),
+  notes:'Ж'.repeat(600)
+ }))
+ assert.ok(m.validateProductionPlan(tooLarge))
+ assert.throws(()=>m.exportProductionBackup(tooLarge,now),/size/)
+ assert.equal(m.parseProductionBackup(m.exportProductionBackup([good],now).replace('"generatedAt": "2026-10-28T19:00:00.000Z"','"generatedAt": "2026-10-28T19:00:00"')),null)
+ assert.equal(m.validateProductionPlan([{...good,updatedAt:'2026-10-28T19:00:00'}]),null)
+ const note='🚀'.repeat(600)
+ assert.equal(m.validateProductionPlan([{...good,notes:note}]),null)
+})
