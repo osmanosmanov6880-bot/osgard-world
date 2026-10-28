@@ -179,6 +179,7 @@ var black_box_report: Dictionary = {}
 var run_archive: IPRunArchive = IPRunArchive.new()
 var archive_last_save_ok: bool = false
 var archive_erase_armed: bool = false
+var archive_erase_failed: bool = false
 var decision_forecaster: IPDecisionForecast = IPDecisionForecast.new()
 var forecast_report: Dictionary = {}
 var forecast_update_clock: float = 0.0
@@ -1394,8 +1395,11 @@ func _refresh_run_archive_locale() -> void:
     archive_end_button.text = archive_intro_button.text
     archive_title.text = "A7 / LOCAL OPERATOR RECORDS" if english else "A7 / ЛОКАЛЬНЫЙ АРХИВ"
     archive_label.text = run_archive.summary(locale)
+    if archive_erase_failed:
+        archive_label.text += "
+" + ("ERASE FAILED: original file preserved." if english else "ОШИБКА УДАЛЕНИЯ: оригинальный файл сохранён.")
     archive_close_button.text = "CLOSE RECORDS / ESC" if english else "ЗАКРЫТЬ АРХИВ / ESC"
-    archive_erase_button.disabled = run_archive.entries.is_empty()
+    archive_erase_button.disabled = run_archive.entries.is_empty() and not run_archive.is_corrupt
     if archive_erase_armed:
         archive_erase_button.text = "CONFIRM DELETE ALL LOCAL RUNS" if english else "ПОДТВЕРДИТЕ УДАЛЕНИЕ ЗАПИСЕЙ"
     else:
@@ -1407,6 +1411,7 @@ func _toggle_run_archive() -> void:
         return
     archive_panel.visible = not archive_panel.visible
     archive_erase_armed = false
+    archive_erase_failed = false
     if archive_panel.visible:
         if debrief_panel != null:
             debrief_panel.visible = false
@@ -1416,7 +1421,7 @@ func _toggle_run_archive() -> void:
     _publish_web_state()
 
 func _request_archive_erase() -> void:
-    if archive_panel == null or not archive_panel.visible or run_archive.entries.is_empty():
+    if archive_panel == null or not archive_panel.visible or (run_archive.entries.is_empty() and not run_archive.is_corrupt):
         return
     if not archive_erase_armed:
         archive_erase_armed = true
@@ -1425,12 +1430,14 @@ func _request_archive_erase() -> void:
     # Erase is explicit and scoped ONLY to V17 archive; campaign saves remain.
     if run_archive.erase():
         archive_erase_armed = false
+        archive_erase_failed = false
         archive_last_save_ok = false
         _refresh_run_archive_locale()
     # If the storage operation fails, retain loaded data and require an
     # explicit extra click before any retry; never claim successful erasure.
     else:
         archive_erase_armed = false
+        archive_erase_failed = true
         _refresh_run_archive_locale()
     _publish_web_state()
 
@@ -2149,6 +2156,12 @@ func _show_end() -> void:
     # Native CI sets a separate temporary path when it tests persistence.
     if DisplayServer.get_name() != "headless" or run_archive.archive_path != IPRunArchive.PATH:
         archive_last_save_ok = run_archive.record_finished(session,campaign)
+        end_stats.text += ("
+LOCAL RUN SAVED" if locale=="en" else "
+ЛОКАЛЬНЫЙ ПРОХОД СОХРАНЁН") if archive_last_save_ok else (
+            "
+LOCAL HISTORY NOT SAVED: CHECK STORAGE" if locale=="en" else "
+АРХИВ НЕ СОХРАНЁН: ПРОВЕРЬТЕ ХРАНИЛИЩЕ")
     _refresh_after_action_locale()
     _refresh_run_archive_locale()
     if DisplayServer.get_name() != "headless":
