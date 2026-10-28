@@ -1,7 +1,9 @@
 name: OSGARD Omega stale export protection native Git QA
 on:
   pull_request:
-    branches: [master]
+    branches:
+      - master
+      - feat/omega-r90-aaa-reference-first-slice-20261026
     paths:
       - 'scripts/omega-build-freshness.py'
       - '.github/workflows/omega-godot-web.yml'
@@ -37,20 +39,33 @@ jobs:
           git fetch --no-tags --depth=1 origin "$source_sha"
           python3 scripts/omega-build-freshness.py "$source_sha" origin/master
           echo 'PASS: actual latest Godot runtime equals exported binary source, ignoring only docs Markdown'
-      - name: Verify a source-guard fix triggers fresh protected SSH deployment
+      - name: Verify source guard remains fail-closed under R138 MANUAL-ONLY release
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
+          import re
           from pathlib import Path
           deploy=Path('.github/workflows/omega-web-direct-deploy.yml').read_text()
+          exporter=Path('.github/workflows/omega-godot-web.yml').read_text()
           src=Path('scripts/omega-build-freshness.py').read_text()
-          assert '- "scripts/omega-build-freshness.py"' in deploy, 'no auto-trigger after guard correction'
+          # R138 deliberately removed workflow_run->SSH. Do not restore an
+          # old auto-trigger merely to make a legacy assertion green.
+          for name,content,role in [('SSH',deploy,'deploy'),('Godot exporter',exporter,'build')]:
+              trigger=re.search(r'^on:\s*\n([\s\S]*?)^permissions:',content,re.M)
+              assert trigger, name+': missing explicit workflow triggers'
+              assert re.search(r'^  workflow_dispatch:',trigger.group(1),re.M), name+': no manual trigger'
+              assert not re.search(r'^  (?:push|pull_request|workflow_run|schedule):',trigger.group(1),re.M), name+': automatic production trigger forbidden'
+              assert 'scripts/omega-r138-manual-release-guard.py' in content, name+': missing independent review guard'
+              assert '--role '+role in content, name+': guard applies to wrong release stage'
+              for flag in ('--requested-sha','--approved-sha','--enabled','--confirm','--ticket',
+                           '--admin-ticket','--art','--gameplay','--physical','--rollback'):
+                  assert flag in content, name+': missing release control '+flag
           assert 'runtime_fingerprint' in src
           assert 'relative_path.startswith(b"docs/")' in src
           assert 'relative_path.lower().endswith(b".md")' in src
           assert 'exit 3' in deploy, 'stale source must fail closed'
-          print('PASS: guard-only change reactivates honest fail-closed release gate')
+          print('PASS: R138 manual-only production and honest fail-closed Git source gate')
           PY
       - name: Verify the release job calls the source-tree gate before restaging
         run: |

@@ -64,3 +64,16 @@ A player gains influence through street-level action, and their money/policies v
 
 ## Current no-bluff status
 ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance checks passed. Subsequent C2/C3 must pass their own new exact-SHA runs; no manual source review, real GPU target-device proof or independent player validation yet. AAA art, commercial release and blockbuster performance remain **HOLD**. Only real evidence changes the status.
+
+## Gate B1 - actual first-player promise loop (new Episode 01 candidate)
+- [x] A true **optional civic priority selection**: CITY REIGN starts with existing enter-car, market delivery, first-business and city-turn missions, then prompts the player to compare **Open Budget (Forum)** vs **Safe Crossings (Residential)** as a first civic promise; neither choice rewrites the existing 40 career missions.
+- [x] Both actions spend the exact established city treasury/materials/goods/action through `GameState.start_initiative`; neither can be claimed without paying, building, and advancing two real turns.
+- [x] Original 3D proposal boards in each real district are present before investment, disappear when the real construction scaffold starts and stay gone after completion. Three-language street labels, no collision/traffic interference.
+- [x] Journal and real interactive command center derive onboarding stage, real resource availability, construction remaining and fulfilled-project job effect **only from existing saved state**; no new save keys or fabricated side quests. Both investments remain available; the episode celebrates the first delivered promise.
+- [x] Source-authoritative automated test `v110_city_reign_first_mandate.gd` with real clickable buttons, 3D geometry, finances, saved restore and alternate district; must actually PASS Godot 4.4.1 on exact candidate SHA.
+- [ ] Independent human **30-minute game session**. This code creates a coherent path but no claim of player enjoyment or 30-minute playtime until measured.
+- [ ] Story cinematics, dialogue choice that changes how residents respond, unique licensed assets and original voice acting are still not implemented.
+
+- [x] E01 on-foot street interaction: near either board, the real F action opens the existing paid decision interface and preselects the correct district without spending money. The separate click on an investment button performs the sole resource transaction. `v111` verifies it in the full real city scene with 34 citizens and 12 traffic cars.
+
+- [x] E01 resident reaction dialogue: when the player approaches and speaks to any actual resident, the native dialogue now references the district's real current investment state (not started / building / completed). Completed Open Budget and Safe Crossings change residents' lines in three languages without changing rewards, council scores or the existing 40 mission stages. Tests `v112` cover all 4 districts, 3 languages, both projects and actual dialogue popups.
