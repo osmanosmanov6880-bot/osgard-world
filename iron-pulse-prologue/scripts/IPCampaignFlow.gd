@@ -137,7 +137,11 @@ func restore(data: Dictionary) -> bool:
     var applied: Variant = data.get("modifier_applied",false)
     if typeof(applied) != TYPE_BOOL or (bool(applied) and (int(ix) <= 0 or not bool(data["active"]))):
         return false
-    if typeof(ix) != TYPE_INT or not source is Array:
+    # Godot JSON.parse_string materializes whole-number JSON fields as floats.
+    # Accept 0.0/1.0 from genuine V6 disk saves, but reject fractional values.
+    if typeof(ix) not in [TYPE_INT,TYPE_FLOAT] or not source is Array:
+        return false
+    if not is_finite(float(ix)) or float(ix) != float(int(ix)):
         return false
     if int(ix) < 0 or int(ix) >= MAX_RECORDS or source.size() > MAX_RECORDS:
         return false
@@ -169,7 +173,9 @@ func restore(data: Dictionary) -> bool:
                 return false
         for key in ["switches","faults"]:
             var number: Variant = item.get(key,null)
-            if typeof(number) != TYPE_INT or int(number) < 0 or int(number) > 10000:
+            if typeof(number) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(number)):
+                return false
+            if float(number) != float(int(number)) or int(number) < 0 or int(number) > 10000:
                 return false
         var repair: Variant = item.get("repair",null)
         if not repair is String or repair.length() > 40:
