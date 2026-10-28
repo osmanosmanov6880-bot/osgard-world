@@ -41,6 +41,7 @@ var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
 var r98_facade_ribs: MultiMeshInstance3D
 var city_reign_facades: Node3D
+var city_reign_squares: Node3D
 var streetfront: Node3D
 var facade_balconies: Node3D
 var road_paint: Node3D
@@ -67,6 +68,7 @@ const R127_SHELTERS = preload("res://scripts/horizon_r127_street_shelters.gd")
 const R95_MASSING = preload("res://scripts/horizon_r95_city_massing.gd")
 const R98_FINS = preload("res://scripts/horizon_r98_architectural_fins.gd")
 const CITY_REIGN_FACADE = preload("res://scripts/city_reign_cinematic_facades.gd")
+const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -112,6 +114,8 @@ func _ready() -> void:
 	city_root.add_child(facade_balconies)
 	_create_window_batch()
 	_create_landmarks()
+	city_reign_squares = CITY_REIGN_SQUARES.new()
+	city_root.add_child(city_reign_squares)
 	_create_waypoint_marker()
 	_create_project_visuals()
 	_create_property_markers()
@@ -580,6 +584,8 @@ func apply_visual_budget(mode: String) -> void:
 		r98_facade_ribs.call("set_quality",visual_budget)
 	if city_reign_facades != null:
 		city_reign_facades.call("set_quality",visual_budget)
+	if city_reign_squares != null:
+		city_reign_squares.call("set_quality",visual_budget)
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
 	if facade_balconies != null:
@@ -624,6 +630,8 @@ func _apply_lighting() -> void:
 	LIGHT_GRADE.apply_night_overlay(sky_environment.environment,sun,atmosphere,ambience_time)
 	if city_reign_facades != null:
 		city_reign_facades.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_squares != null:
+		city_reign_squares.call("sync_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	# Authored golden-hour grade affects real Godot light only, never UI screenshots.
 	if weather_mode == "clear" and visual_budget == "cinematic":
 		var golden_hour: float = clampf(1.0-absf(ambience_time-18.0)/3.0,0.0,1.0)
@@ -676,6 +684,8 @@ func _update_property_visuals() -> void:
 		orb.material_override = _material(Color("e5bd72") if level > 0 else Color("6e9db7"),0.2,0.25,true)
 
 func update_language(lang: String) -> void:
+	if city_reign_squares != null:
+		city_reign_squares.call("sync_language",lang)
 	for id in markers:
 		var marker: Node3D = markers[id]
 		var label: Label3D = marker.get_child(0)
