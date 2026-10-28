@@ -147,19 +147,19 @@ func _create_original_3d_scene() -> void:
 	room.background_color = Color("0a121b")
 	room.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	room.ambient_light_color = Color("c2d0d7")
-	room.ambient_light_energy = 0.78
+	room.ambient_light_energy = 0.97
 	environment.environment = room
 	scene.add_child(environment)
 	var key := DirectionalLight3D.new()
 	key.name = "CityReignStudioKeyNoShadows"
 	key.rotation_degrees = Vector3(-38.0,39.0,0)
-	key.light_energy = 1.35
+	key.light_energy = 1.55
 	key.shadow_enabled = false
 	scene.add_child(key)
 	var fill := DirectionalLight3D.new()
 	fill.name = "CityReignStudioFillNoShadows"
 	fill.rotation_degrees = Vector3(-26.0,-71.0,0)
-	fill.light_energy = 0.46
+	fill.light_energy = 0.58
 	fill.shadow_enabled = false
 	scene.add_child(fill)
 	var platform := MeshInstance3D.new()
@@ -186,12 +186,12 @@ func _create_original_3d_scene() -> void:
 	original_car.call("set_detail_quality","standard")
 	var camera := Camera3D.new()
 	camera.name = "CityReignStudioCamera"
-	camera.position = Vector3(6.8,3.25,-8.8)
-	camera.fov = 43.0
+	camera.position = Vector3(4.2,2.35,-5.1)
+	camera.fov = 36.0
 	camera.near = 0.1
 	camera.far = 48.0
 	scene.add_child(camera)
-	camera.look_at(Vector3(0.0,-0.12,0.0),Vector3.UP)
+	camera.look_at(Vector3(0.0,-0.15,0.0),Vector3.UP)
 	camera.current = true
 
 func _apply_source_car() -> void:

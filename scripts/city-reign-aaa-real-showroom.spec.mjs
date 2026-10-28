@@ -5,7 +5,7 @@ import {captureAnimatedWebGLViewport} from './omega-browser-evidence.mjs'
 // Source-only fixture runs actual original Godot 4.4.1 WebAssembly / WebGL2
 // with the same live HORIZON_BODY model and showroom UI as the playable city.
 // The CI runner temporarily switches ONLY its private checkout entry scene.
-const ROI = {x0:0.055,x1:0.56,y0:0.18,y1:0.67}
+const ROI = {x0:0.055,x1:0.445,y0:0.18,y1:0.505}
 
 function sample(png,fx,fy){
   const x=Math.max(0,Math.min(png.width-1,Math.floor(fx*png.width)))
