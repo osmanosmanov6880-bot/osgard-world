@@ -7,6 +7,15 @@ const SYSTEMS: Array[String] = ["coolant", "life", "door"]
 const SCENARIOS: Array[String] = ["blackout", "thermal", "breach"]
 const RELAYS: Array[String] = ["medbay","quench","uplink"]
 const MAX_RELAYS: int = 2
+# V9: Optional three-coil live containment matrix. Unique route for each
+# emergency creates a replayable 3-sector task, not a decorative button.
+const CONTAINMENT_COILS: Array[String] = ["alpha","beta","gamma"]
+const CONTAINMENT_ROUTES := {
+    "blackout":["alpha","gamma","beta"],
+    "thermal":["beta","alpha","gamma"],
+    "breach":["gamma","beta","alpha"]
+}
+const CONTAINMENT_WINDOW: float = 85.0
 const MAX_TIME: float = 330.0
 const CHARGE_REQUIRED: float = 95.0
 const LOG_LIMIT: int = 32
@@ -16,6 +25,9 @@ var repair_method: String = ""
 var priority_id: String = ""
 var relays_activated: Array[String] = []
 var thermal_shield: bool = false
+var containment_sequence: Array[String] = []
+var containment_online: bool = false
+var containment_deadline: float = 0.0
 var time_left: float = MAX_TIME
 var heat: float = 48.0
 var oxygen: float = 93.0
@@ -65,6 +77,9 @@ func reset(next_scenario: String = "blackout") -> void:
     priority_id = ""
     relays_activated.clear()
     thermal_shield = false
+    containment_sequence.clear()
+    containment_online = false
+    containment_deadline = 0.0
     won = false
     lost = false
     elapsed = 0.0
@@ -98,13 +113,21 @@ func tick(delta: float) -> void:
 func _integrate_step(dt: float) -> void:
     time_left -= dt
     elapsed += dt
+    # A real limited route window. Expiry removes unfinished progress but
+    # never changes successful repairs or previously verified evacuation path.
+    if not containment_online and not containment_sequence.is_empty() and elapsed >= containment_deadline:
+        containment_sequence.clear()
+        containment_deadline = 0.0
+        _record("containment_expired")
     if powered("coolant"):
         var cool_rate: float = -0.52 if coolant_repaired else 0.25
         if coolant_repaired and scenario_id == "thermal" and repair_method == "deep_stabilize":
             cool_rate = -0.82
+        if coolant_repaired and containment_online:
+            cool_rate -= 0.24
         heat += cool_rate * dt
     else:
-        heat += 1.55 * dt
+        heat += (1.37 if containment_online else 1.55) * dt
     if powered("life"):
         oxygen += 0.14 * dt
         crew_health += 0.06 * dt
@@ -137,7 +160,7 @@ func _integrate_step(dt: float) -> void:
         thermal_pulses += 1
         next_pulse_at += 55.0
         var pulse: float = 12.0 if thermal_pulses == 1 else 7.0
-        heat += pulse * (0.55 if thermal_shield else 1.0)
+        heat += pulse * (0.55 if thermal_shield else 1.0) * (0.82 if containment_online else 1.0)
         _record("thermal_pulse")
     if heat >= 100.0:
         lost = true
@@ -248,6 +271,45 @@ func activate_relay(relay_id: String) -> bool:
     _record("relay_" + relay_id)
     return true
 
+func next_containment_coil() -> String:
+    if containment_online:
+        return ""
+    var route: Array = CONTAINMENT_ROUTES[scenario_id]
+    return str(route[containment_sequence.size()])
+
+func operate_containment_coil(coil_id: String) -> bool:
+    # Optional but consequential 3-sector route under live danger/time.
+    # Wrong order resets sequence and imposes penalties; correct order
+    # stabilizes the core without changing mandatory V1-V8 objective paths.
+    if finished() or not core_scanned or override_set or containment_online or not CONTAINMENT_COILS.has(coil_id):
+        return _reject()
+    tick(5.0)
+    if finished():
+        return false
+    if coil_id != next_containment_coil():
+        heat = minf(110.0,heat+6.0)
+        oxygen = maxf(0.0,oxygen-4.0)
+        faults += 1
+        containment_sequence.clear()
+        containment_deadline = 0.0
+        _record("containment_misroute")
+        if heat >= 100.0 or oxygen <= 0.0:
+            tick(0.1)
+        return false
+    if containment_sequence.is_empty():
+        containment_deadline = elapsed + CONTAINMENT_WINDOW
+    containment_sequence.append(coil_id)
+    if containment_sequence.size() == CONTAINMENT_COILS.size():
+        containment_online = true
+        containment_deadline = 0.0
+        heat = maxf(0.0,heat-16.0)
+        oxygen = minf(100.0,oxygen+9.0)
+        door_charge = minf(100.0,door_charge+12.0)
+        _record("containment_online")
+    else:
+        _record("containment_stage")
+    return true
+
 func cycle_bus(bus_index: int) -> bool:
     if finished() or not coolant_repaired or (bus_index != 0 and bus_index != 1):
         return _reject()
@@ -314,6 +376,11 @@ func diagnostic_snapshot() -> Dictionary:
         "priority":priority_id,
         "relays":relays_activated.duplicate(),"relay_count":relays_activated.size(),
         "thermal_shield":thermal_shield,
+        "containment_sequence":containment_sequence.duplicate(),
+        "containment_step":containment_sequence.size(),
+        "containment_next":next_containment_coil(),
+        "containment_online":containment_online,
+        "containment_deadline":containment_deadline,
         "thermal_pulses": thermal_pulses, "next_pulse": next_pulse_at,
         "leak_active": scenario_id == "breach" and (not coolant_repaired or repair_method == "rapid_patch"),
         "objective": objective_id(), "time_left": time_left, "heat": heat,
@@ -335,6 +402,9 @@ func checkpoint() -> Dictionary:
         "priority":priority_id,
         "relays_activated":relays_activated.duplicate(),
         "thermal_shield":thermal_shield,
+        "containment_sequence":containment_sequence.duplicate(),
+        "containment_online":containment_online,
+        "containment_deadline":containment_deadline,
         "time_left":time_left, "heat":heat, "oxygen":oxygen,
         "crew_health":crew_health, "door_charge":door_charge,
         "bus_a":bus_a, "bus_b":bus_b,
@@ -382,6 +452,28 @@ func restore_checkpoint(data: Dictionary) -> bool:
     var stored_shield: Variant = data.get("thermal_shield",false)
     if typeof(stored_shield) != TYPE_BOOL or (bool(stored_shield) and not checked_relays.has("quench")):
         return false
+    # V9 fields are OPTIONAL to preserve every V6/V7/V8 real checkpoint.
+    # Every supplied partial route is validated atomically before mutation.
+    var raw_coils: Variant = data.get("containment_sequence",[])
+    if not raw_coils is Array or raw_coils.size() > CONTAINMENT_COILS.size():
+        return false
+    var validated_coils: Array[String] = []
+    var allowed_route: Array = CONTAINMENT_ROUTES[saved_scenario]
+    for i in range(raw_coils.size()):
+        if not raw_coils[i] is String or str(raw_coils[i]) != str(allowed_route[i]):
+            return false
+        validated_coils.append(str(raw_coils[i]))
+    var saved_containment: Variant = data.get("containment_online",false)
+    var saved_deadline: Variant = data.get("containment_deadline",0.0)
+    if typeof(saved_containment) != TYPE_BOOL or not _valid_number(saved_deadline,0.0,1000.0):
+        return false
+    if bool(saved_containment) != (validated_coils.size() == CONTAINMENT_COILS.size()):
+        return false
+    if bool(saved_containment) or validated_coils.is_empty():
+        if float(saved_deadline) != 0.0:
+            return false
+    elif float(saved_deadline) <= 0.0:
+        return false
     for key in ["time_left","heat","oxygen","crew_health","door_charge","elapsed","next_pulse_at"]:
         var max_value: float = 1000.0
         if key == "heat":
@@ -409,6 +501,10 @@ func restore_checkpoint(data: Dictionary) -> bool:
         return false
     if saved_priority != "" and not scanned:
         return false
+    if not validated_coils.is_empty() and not scanned:
+        return false
+    if not bool(saved_containment) and not validated_coils.is_empty() and float(saved_deadline) <= float(data["elapsed"]):
+        return false
     if data["won"] and (not overridden or data["lost"]):
         return false
     var events: Variant = data.get("event_log",null)
@@ -427,6 +523,9 @@ func restore_checkpoint(data: Dictionary) -> bool:
     priority_id = saved_priority
     relays_activated = checked_relays
     thermal_shield = bool(stored_shield)
+    containment_sequence = validated_coils
+    containment_online = bool(saved_containment)
+    containment_deadline = float(saved_deadline)
     time_left = float(data["time_left"])
     heat = float(data["heat"])
     oxygen = float(data["oxygen"])
