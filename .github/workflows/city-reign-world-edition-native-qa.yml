@@ -20,6 +20,10 @@ on:
       - 'godot/empire-omega/scripts/city_reign_civic_traffic_safety.gd'
       - 'godot/empire-omega/scripts/traffic_agent.gd'
       - 'godot/empire-omega/tests/v129_city_reign_paid_crossing_traffic.gd'
+      - 'godot/empire-omega/scripts/city_reign_park_routine.gd'
+      - 'godot/empire-omega/scripts/city_reign_park_furniture.gd'
+      - 'godot/empire-omega/scripts/pedestrian_agent.gd'
+      - 'godot/empire-omega/tests/v130_city_reign_community_park_live.gd'
       - 'godot/empire-omega/docs/CITY-REIGN-WORLD-EDITION-PRODUCTION-BLOCK.md'
       - '.github/workflows/city-reign-world-edition-native-qa.yml'
   workflow_dispatch:
@@ -78,6 +82,8 @@ jobs:
             v127_city_reign_tower_distance_lod \
             v128_city_reign_paid_public_works \
             v129_city_reign_paid_crossing_traffic \
+            v130_city_reign_community_park_live \
+            v97_r123_real_pedestrian_body_gait \
             v68_r47_predictive_crosswalk_traffic \
             v110_city_reign_first_mandate \
             v112_city_reign_resident_reactions \
