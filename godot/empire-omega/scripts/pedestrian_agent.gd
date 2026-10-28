@@ -4,11 +4,15 @@ extends Node3D
 
 const ROUTER = preload("res://scripts/street_router.gd")
 const ROUTINE = preload("res://scripts/citizen_routine.gd")
+const PARK_VISITORS = preload("res://scripts/city_reign_park_routine.gd")
 const TRAJECTORY = preload("res://scripts/horizon_pedestrian_yield.gd")
 const STREET_ART = preload("res://scripts/horizon_street_citizen_mesh.gd")
 var citizen_id := 0
 var speed := 2.15
 var activity := ""
+# B63: a new genuinely funded community park can change an evening trip
+# without changing the old "leisure" activity type. Replan on destination.
+var last_destination: Vector3 = Vector3(1000000.0,1000000.0,1000000.0)
 var route: Array[Vector3] = []
 var next_waypoint := 0
 var schedule_timer := 0.0
@@ -38,9 +42,14 @@ func _refresh_schedule() -> void:
 	if simulation == null: return
 	var day_clock: float = float(simulation.data.get("day_clock",8.0))
 	var plan: Dictionary = ROUTINE.plan(citizen_id,day_clock,int(simulation.data.get("unemployment",40)),int(simulation.data["stability"]))
-	if activity == str(plan["activity"]): return
-	activity = str(plan["activity"])
+	# REAL paid civic choice changes an actual lightweight city NPC journey;
+	# source route solver still owns all closures and traffic safety.
+	plan = PARK_VISITORS.choose(plan,citizen_id,simulation.data)
 	var target: Vector3 = plan["destination"]
+	if activity == str(plan["activity"]) and last_destination.distance_squared_to(target)<0.01:
+		return
+	activity = str(plan["activity"])
+	last_destination = target
 	route = ROUTER.find_route(global_position,target,simulation.data)
 	next_waypoint = 1 if route.size() > 1 else 0
 
