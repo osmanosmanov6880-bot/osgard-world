@@ -193,6 +193,45 @@ func _build_guardrail() -> void:
     _box(structure,"GuardrailToeplate",Vector3(6.40,0.20,-20.1),Vector3(0.23,0.32,22.0),_painted)
     _box(structure,"GuardrailCautionStripe",Vector3(6.29,0.10,-20.1),Vector3(0.04,0.08,22.0),_warning)
 
+func _tapered_armor_panel(panel_index: int) -> void:
+    # Bespoke curved, UV-mapped armour: this is an authored mesh, not a box
+    # scaled to imitate a cinematic 12m reactor module.
+    var plate := SurfaceTool.new()
+    plate.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var slice_count: int = 8
+    var center_angle: float = TAU*float(panel_index)/12.0
+    var half_arc: float = 0.205
+    var lower: float = -4.5 + 0.14*float(panel_index%3)
+    var upper: float = 4.4 - 0.16*float(panel_index%2)
+    var rad: float = 4.57
+    for slice in range(slice_count):
+        var a0: float = center_angle-half_arc+2.0*half_arc*float(slice)/float(slice_count)
+        var a1: float = center_angle-half_arc+2.0*half_arc*float(slice+1)/float(slice_count)
+        var front0 := Vector3(cos(a0)*rad,lower,sin(a0)*rad)
+        var front1 := Vector3(cos(a0)*rad,upper,sin(a0)*rad)
+        var front2 := Vector3(cos(a1)*rad,lower,sin(a1)*rad)
+        var front3 := Vector3(cos(a1)*rad,upper,sin(a1)*rad)
+        var u0: float = float(slice)/float(slice_count)
+        var u1: float = float(slice+1)/float(slice_count)
+        for vertex in [
+            [front0,Vector2(u0,0.0)],
+            [front1,Vector2(u0,3.0)],
+            [front2,Vector2(u1,0.0)],
+            [front2,Vector2(u1,0.0)],
+            [front1,Vector2(u0,3.0)],
+            [front3,Vector2(u1,3.0)]
+        ]:
+            plate.set_uv(vertex[1])
+            plate.add_vertex(vertex[0])
+    plate.generate_normals()
+    var mesh: ArrayMesh = plate.commit()
+    var shell := MeshInstance3D.new()
+    shell.name = "CustomUV_ArmourCassette_%02d" % panel_index
+    shell.mesh = mesh
+    shell.material_override = _painted
+    shield_housing.add_child(shell)
+    _mesh_count += 1
+
 func _build_monumental_core_housing() -> void:
     shield_housing = Node3D.new()
     shield_housing.name = "TwelveMeterContainmentAssembly"
@@ -200,6 +239,11 @@ func _build_monumental_core_housing() -> void:
     structure.add_child(shield_housing)
     _column(shield_housing,"CoreFoundation",Vector3(0,-6.1,0),3.9,1.2,_steel)
     _column(shield_housing,"UpperReactorCap",Vector3(0,6.1,0),3.4,1.0,_painted)
+    # Eight open-work faceted panels create a readable massive manufactured
+    # silhouette while leaving direct sightlines to the animated plasma core.
+    for panel_index in range(12):
+        if panel_index % 3 != 1:
+            _tapered_armor_panel(panel_index)
     for index in range(10):
         var angle: float = TAU*float(index)/10.0
         var radius: float = 4.15
