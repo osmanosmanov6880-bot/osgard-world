@@ -6,15 +6,19 @@ extends VBoxContainer
 const CAR_VISUAL = preload("res://scripts/horizon_vehicle_art.gd")
 const CAR_CATALOG = preload("res://scripts/vehicle_catalog.gd")
 const REFERENCE = preload("res://scripts/horizon_r90_reference_style.gd")
+const ARCH = preload("res://scripts/city_reign_studio_architecture.gd")
 const LANG = {
 	"ru":{"title":"АТЕЛЬЕ АВТОМОБИЛЕЙ","hint":"Оригинальная 3D-модель · проверка перед выбором",
 		"open":"ОСМОТРЕТЬ В 3D","left":"ВЛЕВО","right":"ВПРАВО",
+		"night":"НОЧНОЙ СВЕТ","day":"ДНЕВНОЙ СВЕТ",
 		"low":"3D-предпросмотр отключён в режиме низкой графики"},
 	"en":{"title":"AUTOMOTIVE ATELIER","hint":"Original playable 3D model · inspect before choosing",
 		"open":"INSPECT IN 3D","left":"ROTATE LEFT","right":"ROTATE RIGHT",
+		"night":"NIGHT LIGHT","day":"DAY LIGHT",
 		"low":"3D preview is disabled in low-graphics mode"},
 	"zh":{"title":"车辆设计展厅","hint":"真实游戏3D模型 · 选择前查看",
 		"open":"查看3D模型","left":"向左转","right":"向右转",
+		"night":"夜景照明","day":"日间照明",
 		"low":"低画质模式下禁用3D预览"}
 }
 const ROTATE_STEP: float = PI / 12.0
@@ -33,6 +37,12 @@ var viewport_host: SubViewportContainer
 var start_button: Button
 var turn_left: Button
 var turn_right: Button
+var light_button: Button
+var studio_stage: Node3D
+var studio_environment: WorldEnvironment
+var studio_key: DirectionalLight3D
+var studio_fill: DirectionalLight3D
+var studio_night: bool = false
 
 func _ui_label(parent: Node, words: String, size: int, accent: bool) -> Label:
 	var label := Label.new()
@@ -101,6 +111,14 @@ func build(display_locale: String,compact: bool,preview_enabled: bool,selected_i
 		Callable(self,"rotate_model").bind(1),true)
 	turn_right.name = "CityReignShowroomRotateRight"
 	turn_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Real mobile 320px should not squeeze three wide controls in one row.
+	var lighting_row := HBoxContainer.new()
+	lighting_row.name = "CityReignStudioLightingControls"
+	column.add_child(lighting_row)
+	light_button = _ui_button(lighting_row,str(LANG[locale]["night"]),
+		Callable(self,"toggle_lighting"),true)
+	light_button.name = "CityReignShowroomLightingToggle"
+	light_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_update_label()
 	if not enabled:
 		_ui_label(column,str(LANG[locale]["low"]),12,false)
@@ -123,6 +141,7 @@ func _activate() -> void:
 		start_button.visible = false
 		turn_left.disabled = false
 		turn_right.disabled = false
+		light_button.disabled = false
 		_apply_source_car()
 
 func _create_original_3d_scene() -> void:
@@ -148,20 +167,35 @@ func _create_original_3d_scene() -> void:
 	room.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	room.ambient_light_color = Color("c2d0d7")
 	room.ambient_light_energy = 0.97
+	# Own procedural studio sky, not an unlicensed HDRI. The background
+	# remains midnight-blue but PBR metal reflects original sky radiance.
+	# Do not enable screen-space reflections: unsupported in GL Compatibility.
+	var sky := Sky.new()
+	var sky_surface := ProceduralSkyMaterial.new()
+	sky_surface.sky_top_color = Color("253746")
+	sky_surface.sky_horizon_color = Color("94a1a9")
+	sky_surface.ground_horizon_color = Color("6f655b")
+	sky_surface.ground_bottom_color = Color("181d22")
+	sky.sky_material = sky_surface
+	room.sky = sky
+	room.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	environment.environment = room
 	scene.add_child(environment)
+	studio_environment = environment
 	var key := DirectionalLight3D.new()
 	key.name = "CityReignStudioKeyNoShadows"
 	key.rotation_degrees = Vector3(-38.0,39.0,0)
 	key.light_energy = 1.55
 	key.shadow_enabled = false
 	scene.add_child(key)
+	studio_key = key
 	var fill := DirectionalLight3D.new()
 	fill.name = "CityReignStudioFillNoShadows"
 	fill.rotation_degrees = Vector3(-26.0,-71.0,0)
 	fill.light_energy = 0.58
 	fill.shadow_enabled = false
 	scene.add_child(fill)
+	studio_fill = fill
 	var platform := MeshInstance3D.new()
 	platform.name = "CityReignTurntablePodium"
 	var disk := CylinderMesh.new()
@@ -177,6 +211,9 @@ func _create_original_3d_scene() -> void:
 	basalt.roughness = 0.44
 	platform.material_override = basalt
 	scene.add_child(platform)
+	studio_stage = ARCH.new()
+	scene.add_child(studio_stage)
+	studio_stage.call("set_compact",mobile)
 	spin = Node3D.new()
 	spin.name = "CityReignOriginalCarTurntable"
 	spin.rotation.y = deg_to_rad(26.0)
@@ -202,6 +239,27 @@ func _apply_source_car() -> void:
 	original_car.call("set_paint",Color(str(spec["paint"])))
 	original_car.call("set_visual_variant",current_vehicle)
 	renderer.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+func set_studio_lighting(is_night: bool) -> void:
+	if renderer==null or studio_environment==null or studio_key==null or studio_fill==null:
+		return
+	studio_night = is_night
+	var environment: Environment = studio_environment.environment
+	environment.ambient_light_energy = 0.52 if is_night else 0.97
+	studio_key.light_energy = 0.92 if is_night else 1.55
+	studio_fill.light_energy = 0.34 if is_night else 0.58
+	studio_key.light_color = Color("e6c394") if is_night else Color.WHITE
+	studio_fill.light_color = Color("8cbcd6") if is_night else Color.WHITE
+	if studio_stage!=null:
+		studio_stage.call("set_night",is_night)
+	if light_button!=null:
+		light_button.text = str(LANG[locale]["day" if is_night else "night"])
+	renderer.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+func toggle_lighting() -> void:
+	if renderer==null or not enabled:
+		return
+	set_studio_lighting(not studio_night)
 
 func preview_vehicle(id: String) -> bool:
 	if not CAR_CATALOG.available(id):
@@ -231,6 +289,8 @@ func graphics_are_bounded() -> bool:
 	if renderer.get_world_3d()==null:
 		return false
 	if original_car==null or spin==null:
+		return false
+	if studio_stage==null or not bool(studio_stage.call("geometry_is_bounded")):
 		return false
 	if not original_car.find_children("*","CollisionShape3D",true,false).is_empty():
 		return false
