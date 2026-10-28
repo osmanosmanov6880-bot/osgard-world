@@ -160,6 +160,22 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert containment.get("vapor_visible") is False and containment.get("spark_burst_visible") is False, (
                             "False catastrophe effects appear on the idle scenario menu",containment)
                         report.setdefault("v8_6_reactive_world",{})[name]=containment
+                        # V9: exact-source real Godot iris is 3D, UV-machined
+                        # and physically located between player camera and core.
+                        iris = idle.get("kinetic_iris",{})
+                        assert iris.get("physical_curved_petals")==8 and iris.get("physical_hinges")==8, (
+                            "Real eight-petal sliding reactor iris not imported into WebGL",iris)
+                        assert iris.get("original_uv_mesh") is True and iris.get("real_steel_material") is True, (
+                            "Iris is flat presentation geometry, not original UV-mapped machinery",iris)
+                        assert iris.get("gpu_bolt_groups")==1 and iris.get("instanced_guide_bolts")==32, (
+                            "Original mechanical bolt detail is not GPU-instanced",iris)
+                        assert abs(float(iris.get("aperture_radius_m",0.0))-2.23)<0.02, (
+                            "Actual calm reactor opening incorrectly blocks existing plasma",iris)
+                        assert iris.get("quality")==("eco" if mobile else "hero"), (
+                            "Iris failed to respect phone vs desktop geometry budget",iris)
+                        assert iris.get("detailed_guides_visible") is (not mobile), (
+                            "Performance profile did not hide extra guidework on phones",iris)
+                        report.setdefault("v9_original_kinetic_reactor",{})[name]=iris
                         assert bay.get("open_core_inspection") is True, (
                             "V8.3 reactor remains obscured by front armour despite successful render",bay)
                         assert bay.get("cinematic_vault") is True, (
@@ -443,11 +459,16 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                         break
                                     page.wait_for_timeout(200)
                                 assert state.get(property_name) == expected,(key,property_name,state)
+                                if key=="v":
+                                    assert state.get("kinetic_iris",{}).get("motion_reduced") is True, (
+                                        "Actual player V option does not reach kinetic reactor V9",state.get("kinetic_iris"))
                                 if key=="g":
                                     assert state.get("reactor_atrium",{}).get("quality") == expected, (
                                         "G button did not switch actual V8 vaulted reactor geometry",state.get("reactor_atrium"))
                                     assert state.get("containment_fx",{}).get("quality") == expected, (
                                         "G button did not scale procedural pressure vents/steam",state.get("containment_fx"))
+                                    assert state.get("kinetic_iris",{}).get("quality") == expected, (
+                                        "G key did not toggle real V9 industrial iris detail",state.get("kinetic_iris"))
                                     if expected=="eco":
                                         assert state.get("containment_fx",{}).get("vapor_visible") is False, (
                                             "ECO retained heavyweight vapor rendering",state.get("containment_fx"))
