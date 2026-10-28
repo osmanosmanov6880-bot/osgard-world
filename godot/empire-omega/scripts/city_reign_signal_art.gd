@@ -158,9 +158,13 @@ func _ready() -> void:
 	var solid: ArrayMesh = support_mesh()
 	var box: ArrayMesh = housing_mesh()
 	var glass: ArrayMesh = convex_lens_mesh()
-	_make_batch("post",solid,posts,_finish(Color("a6b4b8"),0.77,0.38))
-	_make_batch("x_body",box,xheads,_finish(Color.WHITE,0.26,0.48))
-	_make_batch("z_body",box,zheads,_finish(Color.WHITE,0.26,0.48))
+	var steel: StandardMaterial3D = _finish(Color.WHITE,0.77,0.38)
+	steel.vertex_color_use_as_albedo = true
+	var die_cast: StandardMaterial3D = _finish(Color.WHITE,0.26,0.48)
+	die_cast.vertex_color_use_as_albedo = true
+	_make_batch("post",solid,posts,steel)
+	_make_batch("x_body",box,xheads,die_cast)
+	_make_batch("z_body",box,zheads,die_cast)
 	for axis in DIRECTIONS:
 		for color_id in COLOURS:
 			var material: StandardMaterial3D = _finish(DARK[color_id],0.03,0.23)
