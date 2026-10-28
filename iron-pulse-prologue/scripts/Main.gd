@@ -1396,8 +1396,7 @@ func _refresh_run_archive_locale() -> void:
     archive_title.text = "A7 / LOCAL OPERATOR RECORDS" if english else "A7 / ЛОКАЛЬНЫЙ АРХИВ"
     archive_label.text = run_archive.summary(locale)
     if archive_erase_failed:
-        archive_label.text += "
-" + ("ERASE FAILED: original file preserved." if english else "ОШИБКА УДАЛЕНИЯ: оригинальный файл сохранён.")
+        archive_label.text += "\n" + ("ERASE FAILED: original file preserved." if english else "ОШИБКА УДАЛЕНИЯ: оригинальный файл сохранён.")
     archive_close_button.text = "CLOSE RECORDS / ESC" if english else "ЗАКРЫТЬ АРХИВ / ESC"
     archive_erase_button.disabled = run_archive.entries.is_empty() and not run_archive.is_corrupt
     if archive_erase_armed:
@@ -2156,12 +2155,8 @@ func _show_end() -> void:
     # Native CI sets a separate temporary path when it tests persistence.
     if DisplayServer.get_name() != "headless" or run_archive.archive_path != IPRunArchive.PATH:
         archive_last_save_ok = run_archive.record_finished(session,campaign)
-        end_stats.text += ("
-LOCAL RUN SAVED" if locale=="en" else "
-ЛОКАЛЬНЫЙ ПРОХОД СОХРАНЁН") if archive_last_save_ok else (
-            "
-LOCAL HISTORY NOT SAVED: CHECK STORAGE" if locale=="en" else "
-АРХИВ НЕ СОХРАНЁН: ПРОВЕРЬТЕ ХРАНИЛИЩЕ")
+        end_stats.text += ("\nLOCAL RUN SAVED" if locale=="en" else "\nЛОКАЛЬНЫЙ ПРОХОД СОХРАНЁН") if archive_last_save_ok else (
+            "\nLOCAL HISTORY NOT SAVED: CHECK STORAGE" if locale=="en" else "\nАРХИВ НЕ СОХРАНЁН: ПРОВЕРЬТЕ ХРАНИЛИЩЕ")
     _refresh_after_action_locale()
     _refresh_run_archive_locale()
     if DisplayServer.get_name() != "headless":
