@@ -2,7 +2,7 @@ extends SceneTree
 ## CITY REIGN B65-B66: LIVE real-game on-foot F inspection of genuinely
 ## bought infrastructure, no pretend mission, no forged finance snapshots.
 const VISIT = preload("res://scripts/city_reign_live_site_inspection.gd")
-const MAIN = preload("res://scripts/main.gd")
+const MAIN_SCRIPT_PATH = "res://scripts/main.gd"
 const WORKS = preload("res://scripts/city_reign_civic_outcomes.gd")
 const PARK = preload("res://scripts/city_reign_park_furniture.gd")
 var ok: int = 0
@@ -97,7 +97,8 @@ func _run() -> void:
 		actual_source.contains("CITY_REIGN_SITE_VISIT.report(") and
 		actual_source.contains("if not driving:"),
 		"source shipped main scene genuinely wires original F to physical site inspection")
-	verify(MAIN is Script and MAIN.can_instantiate(),
+	var main_script: Script = load(MAIN_SCRIPT_PATH) as Script
+	verify(main_script != null and main_script.can_instantiate(),
 		"actual native main.tscn script still compiles with read-only F inspection")
 	verify(int(state_before["treasury"])>0 and
 		sim.get("data")["projects_done"].size()==1,
