@@ -1002,7 +1002,8 @@ func _apply_cinematic_view() -> void:
     prompt_panel.visible = not cinematic_view
     crosshair.visible = not cinematic_view
     footer_label.visible = not cinematic_view
-    vitals_panel.visible = not cinematic_view and get_viewport().get_visible_rect().size.x >= 1000.0
+    var display_width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
+    vitals_panel.visible = not cinematic_view and display_width >= 1000.0
     if cinematic_view:
         radio_panel.visible = false
         priority_panel.visible = false
