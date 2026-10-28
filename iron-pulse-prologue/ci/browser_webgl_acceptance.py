@@ -176,6 +176,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "Original PBR assets or real physics guardrail missing",bay)
                         assert bay.get("moving_rotors")==3 and bay.get("diegetic_signs")==3, (
                             "Real moving containment rings and in-world signs missing",bay)
+                        assert bay.get("rotor_camera_alignment_min",0.0)>=0.80, (
+                            "One of three cinematic outer reactor rotors is still edge-on to the A7 camera",bay)
                         expected_quality = "eco" if mobile else "hero"
                         assert bay.get("quality")==expected_quality and bay.get("hero_visible") is (not mobile), (
                             "Phone/HERO performance budget did not affect new reactor",bay)
