@@ -11,6 +11,7 @@ const LOG_LIMIT: int = 32
 
 var scenario_id: String = "blackout"
 var repair_method: String = ""
+var priority_id: String = ""
 var time_left: float = MAX_TIME
 var heat: float = 48.0
 var oxygen: float = 93.0
@@ -57,6 +58,7 @@ func reset(next_scenario: String = "blackout") -> void:
     thermal_pulses = 0
     next_pulse_at = 45.0
     repair_method = ""
+    priority_id = ""
     won = false
     lost = false
     elapsed = 0.0
@@ -194,6 +196,26 @@ func emergency_repair() -> bool:
     coolant_repaired = true
     return true
 
+func choose_priority(choice: String) -> bool:
+    # A new, one-time moral/mechanical choice after scanning the real core.
+    if finished() or not core_scanned or override_set or priority_id != "" or choice not in ["crew","core"]:
+        return _reject()
+    # Both alternatives take equal time; the costs are not decorative.
+    tick(8.0)
+    if finished():
+        return false
+    priority_id = choice
+    if choice == "crew":
+        oxygen = minf(100.0,oxygen+9.0)
+        crew_health = minf(100.0,crew_health+8.0)
+        heat = minf(110.0,heat+4.0)
+    else:
+        heat = maxf(0.0,heat-13.0)
+        oxygen = maxf(0.0,oxygen-7.0)
+        crew_health = maxf(0.0,crew_health-4.0)
+    _record("priority_" + choice)
+    return true
+
 func cycle_bus(bus_index: int) -> bool:
     if finished() or not coolant_repaired or (bus_index != 0 and bus_index != 1):
         return _reject()
@@ -257,6 +279,7 @@ func grade() -> String:
 func diagnostic_snapshot() -> Dictionary:
     return {
         "scenario": scenario_id, "repair_method": repair_method,
+        "priority":priority_id,
         "thermal_pulses": thermal_pulses, "next_pulse": next_pulse_at,
         "leak_active": scenario_id == "breach" and (not coolant_repaired or repair_method == "rapid_patch"),
         "objective": objective_id(), "time_left": time_left, "heat": heat,
@@ -267,3 +290,110 @@ func diagnostic_snapshot() -> Dictionary:
         "switches": switches, "faults": faults, "elapsed": elapsed,
         "last_event": last_event
     }
+
+
+func checkpoint() -> Dictionary:
+    # Serialize only the gameplay state needed to resume the real simulation.
+    # No engine internals, scripts, executable instructions or private data.
+    return {
+        "schema":"IRON_PULSE_ENGINE_V6",
+        "scenario":scenario_id, "repair_method":repair_method,
+        "priority":priority_id,
+        "time_left":time_left, "heat":heat, "oxygen":oxygen,
+        "crew_health":crew_health, "door_charge":door_charge,
+        "bus_a":bus_a, "bus_b":bus_b,
+        "core_scanned":core_scanned, "coolant_repaired":coolant_repaired,
+        "override_set":override_set, "surge_triggered":surge_triggered,
+        "thermal_pulses":thermal_pulses, "next_pulse_at":next_pulse_at,
+        "won":won, "lost":lost, "elapsed":elapsed,
+        "switches":switches, "faults":faults,
+        "event_log":event_log.duplicate(), "last_event":last_event
+    }
+
+func _valid_number(input: Variant, low: float, high: float) -> bool:
+    if typeof(input) != TYPE_FLOAT and typeof(input) != TYPE_INT:
+        return false
+    var n: float = float(input)
+    return n == n and n >= low and n <= high
+
+func restore_checkpoint(data: Dictionary) -> bool:
+    # Validate the entire save before mutating *any* gameplay field.
+    if data.get("schema") != "IRON_PULSE_ENGINE_V6":
+        return false
+    var saved_scenario: String = str(data.get("scenario",""))
+    if not SCENARIOS.has(saved_scenario):
+        return false
+    var saved_repair: String = str(data.get("repair_method",""))
+    var valid_methods: Array[String] = ["","standard","deep_stabilize","rapid_purge","full_seal","rapid_patch"]
+    if not valid_methods.has(saved_repair):
+        return false
+    if saved_repair != "":
+        if (saved_scenario == "blackout" and saved_repair != "standard") or (saved_scenario == "thermal" and saved_repair not in ["deep_stabilize","rapid_purge"]) or (saved_scenario == "breach" and saved_repair not in ["full_seal","rapid_patch"]):
+            return false
+    var saved_priority: String = str(data.get("priority",""))
+    if saved_priority not in ["","crew","core"]:
+        return false
+    for key in ["time_left","heat","oxygen","crew_health","door_charge","elapsed","next_pulse_at"]:
+        var max_value: float = 1000.0
+        if key == "heat":
+            max_value = 110.0
+        elif key == "oxygen" or key == "crew_health" or key == "door_charge":
+            max_value = 100.0
+        elif key == "time_left":
+            max_value = MAX_TIME
+        if not _valid_number(data.get(key,null),0.0,max_value):
+            return false
+    for key in ["switches","faults","thermal_pulses"]:
+        if not _valid_number(data.get(key,null),0.0,1000.0):
+            return false
+    for key in ["core_scanned","coolant_repaired","override_set","surge_triggered","won","lost"]:
+        if typeof(data.get(key,null)) != TYPE_BOOL:
+            return false
+    var saved_bus_a: String = str(data.get("bus_a",""))
+    var saved_bus_b: String = str(data.get("bus_b",""))
+    if not SYSTEMS.has(saved_bus_a) or not SYSTEMS.has(saved_bus_b):
+        return false
+    var scanned: bool = bool(data["core_scanned"])
+    var repaired: bool = bool(data["coolant_repaired"])
+    var overridden: bool = bool(data["override_set"])
+    if (repaired and not scanned) or (overridden and not repaired) or (saved_repair != "" and not repaired):
+        return false
+    if saved_priority != "" and not scanned:
+        return false
+    if data["won"] and (not overridden or data["lost"]):
+        return false
+    var events: Variant = data.get("event_log",null)
+    if not events is Array or events.size() > LOG_LIMIT:
+        return false
+    var checked_events: Array[String] = []
+    for value in events:
+        if not value is String or value.length() > 64:
+            return false
+        checked_events.append(str(value))
+    var most_recent: String = str(data.get("last_event",""))
+    if most_recent.length() > 64:
+        return false
+    scenario_id = saved_scenario
+    repair_method = saved_repair
+    priority_id = saved_priority
+    time_left = float(data["time_left"])
+    heat = float(data["heat"])
+    oxygen = float(data["oxygen"])
+    crew_health = float(data["crew_health"])
+    door_charge = float(data["door_charge"])
+    bus_a = saved_bus_a
+    bus_b = saved_bus_b
+    core_scanned = scanned
+    coolant_repaired = repaired
+    override_set = overridden
+    surge_triggered = bool(data["surge_triggered"])
+    won = bool(data["won"])
+    lost = bool(data["lost"])
+    elapsed = float(data["elapsed"])
+    thermal_pulses = int(data["thermal_pulses"])
+    next_pulse_at = float(data["next_pulse_at"])
+    switches = int(data["switches"])
+    faults = int(data["faults"])
+    event_log = checked_events
+    last_event = most_recent
+    return true

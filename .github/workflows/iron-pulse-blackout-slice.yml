@@ -107,6 +107,20 @@ jobs:
           timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_v5_world_sectors.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v5-world.log"
           grep -q '^IRON PULSE V5 THREE WORLD SECTORS PASS:' "$RUNNER_TEMP/iron-pulse-v5-world.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v5-world.log"; then exit 1; fi
+      - name: V6 narrative branches, crew/core ethics and encrypted-free atomic offline checkpoint integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_v6_story_checkpoint.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v6-story.log"
+          grep -q '^IRON PULSE V6 STORY CHECKPOINT PASS:' "$RUNNER_TEMP/iron-pulse-v6-story.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v6-story.log"; then exit 1; fi
+      - name: V6 physical scanner radio controls, bilingual transcript and real Continue save recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_v6_campaign_scene.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v6-scene.log"
+          grep -q '^IRON PULSE V6 REAL CAMPAIGN PASS:' "$RUNNER_TEMP/iron-pulse-v6-scene.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v6-scene.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |

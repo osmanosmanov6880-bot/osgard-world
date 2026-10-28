@@ -35,6 +35,10 @@ const COPY := {
         "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "sector_reactor": "РЕАКТОРНАЯ ГАЛЕРЕЯ", "sector_service": "ТЕХНИЧЕСКИЙ СЕКТОР", "sector_evacuation": "ЭВАКУАЦИОННЫЙ ШЛЮЗ",
         "visited_sectors": "ИССЛЕДОВАНО СЕКТОРОВ: {count}/3",
+        "continue": "ПРОДОЛЖИТЬ СОХРАНЕНИЕ", "radio_journal": "РАДИОАРХИВ / J",
+        "choice_crew": "1  /  ЛЮДИ", "choice_core": "2  /  ЯДРО",
+        "story_choice": "МАРА ЖДЁТ ПРИКАЗА: 1 — ЭКИПАЖ / 2 — РЕАКТОР",
+        "chapter_final": "АКТ {act} / РЕШЕНИЕ: {priority}",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -89,6 +93,10 @@ const COPY := {
         "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "sector_reactor": "REACTOR GALLERY", "sector_service": "SERVICE SPINE", "sector_evacuation": "EVACUATION LOCK",
         "visited_sectors": "SECTORS EXPLORED: {count}/3",
+        "continue": "CONTINUE CHECKPOINT", "radio_journal": "RADIO ARCHIVE / J",
+        "choice_crew": "1  /  CREW", "choice_core": "2  /  CORE",
+        "story_choice": "MARA AWAITS YOUR ORDER: 1 — CREW / 2 — REACTOR",
+        "chapter_final": "ACT {act} / PRIORITY: {priority}",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -123,6 +131,9 @@ const COPY := {
 }
 
 var session: IPCrisisEngine = IPCrisisEngine.new()
+var story: IPStoryDirector = IPStoryDirector.new()
+var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
+var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
@@ -161,6 +172,18 @@ var intro_panel: PanelContainer
 var intro_title: Label
 var intro_body: Label
 var intro_button: Button
+var continue_button: Button
+var radio_panel: PanelContainer
+var radio_speaker: Label
+var radio_dialogue: Label
+var priority_panel: PanelContainer
+var crew_priority_button: Button
+var core_priority_button: Button
+var journal_panel: PanelContainer
+var journal_text: Label
+var journal_close_button: Button
+var radio_ttl: float = 0.0
+var checkpoint_clock: float = 0.0
 var scenario_buttons: Dictionary = {}
 var scenario_brief: Label
 var selected_scenario: String = "blackout"
@@ -197,6 +220,7 @@ var _last_web_resize_check: float = -99.0
 
 func _ready() -> void:
     session.reset()
+    story.reset(session.scenario_id)
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -276,6 +300,17 @@ func _publish_web_state() -> void:
     state["world_sector"] = active_sector
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
+    state["story"] = story.diagnostic()
+    state["radio_visible"] = radio_panel.visible if radio_panel != null else false
+    state["priority_visible"] = priority_panel.visible if priority_panel != null else false
+    state["radio_speaker"] = radio_speaker.text if radio_speaker != null else ""
+    state["radio_text"] = radio_dialogue.text if radio_dialogue != null else ""
+    state["priority"] = session.priority_id
+    state["journal_visible"] = journal_panel.visible if journal_panel != null else false
+    if journal_close_button != null:
+        state["journal_close_rect"] = _hud_rect(journal_close_button)
+    if continue_button != null:
+        state["continue_button_visible"] = continue_button.visible
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
     state["hud_rects"] = {
         "header": _hud_rect(header_panel),
@@ -604,6 +639,7 @@ func _make_hud() -> void:
     crosshair.offset_bottom = 30
     _make_overlays()
     _make_touch_controls()
+    _make_radio_ui()
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
 
@@ -660,6 +696,13 @@ func _make_overlays() -> void:
     intro_button.custom_minimum_size = Vector2(0,50)
     intro_button.pressed.connect(start_run)
     start_box.add_child(intro_button)
+    continue_button = Button.new()
+    continue_button.name = "ContinueCheckpoint"
+    continue_button.text = _copy("continue")
+    continue_button.custom_minimum_size = Vector2(0,46)
+    continue_button.pressed.connect(_continue_checkpoint)
+    start_box.add_child(continue_button)
+    continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
     pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -731,6 +774,60 @@ func _make_touch_controls() -> void:
     look.pressed.connect(_toggle_language)
     var fast := _touch_button(touch_ui,"FAST / Q",216,-299,94)
     fast.pressed.connect(_fast_interact)
+    var archive := _touch_button(touch_ui,"J / LOG",216,-357,94)
+    archive.pressed.connect(_toggle_journal)
+
+func _make_radio_ui() -> void:
+    radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
+    radio_panel.name = "MaraLiveRadio"
+    var radio_box := VBoxContainer.new()
+    radio_box.add_theme_constant_override("separation",4)
+    radio_panel.add_child(radio_box)
+    radio_speaker = _label(radio_box,"MARA / CONTROL",12,CYAN)
+    radio_dialogue = _label(radio_box,"",14,WHITE)
+    radio_dialogue.custom_minimum_size = Vector2(0,70)
+    radio_panel.visible = false
+
+    priority_panel = _panel(hud_root,Rect2(-420,-282,-18,-218),Rect2(1,1,1,1),Color(0.065,0.046,0.035,0.96))
+    priority_panel.name = "StoryPriorityDecision"
+    var priority_row := HBoxContainer.new()
+    priority_row.add_theme_constant_override("separation",8)
+    priority_panel.add_child(priority_row)
+    crew_priority_button = Button.new()
+    crew_priority_button.name = "ProtectCrew"
+    crew_priority_button.text = _copy("choice_crew")
+    crew_priority_button.custom_minimum_size = Vector2(0,46)
+    crew_priority_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    crew_priority_button.pressed.connect(_choose_priority.bind("crew"))
+    priority_row.add_child(crew_priority_button)
+    core_priority_button = Button.new()
+    core_priority_button.name = "StabilizeCore"
+    core_priority_button.text = _copy("choice_core")
+    core_priority_button.custom_minimum_size = Vector2(0,46)
+    core_priority_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    core_priority_button.pressed.connect(_choose_priority.bind("core"))
+    priority_row.add_child(core_priority_button)
+    priority_panel.visible = false
+
+    journal_panel = _panel(hud_root,Rect2(-300,-243,300,243),Rect2(0.5,0.5,0.5,0.5),Color(0.008,0.019,0.035,0.985))
+    journal_panel.name = "RadioJournal"
+    journal_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+    var journal_box := VBoxContainer.new()
+    journal_box.add_theme_constant_override("separation",12)
+    journal_panel.add_child(journal_box)
+    _label(journal_box,_copy("radio_journal"),24,CYAN)
+    var scroll := ScrollContainer.new()
+    scroll.custom_minimum_size = Vector2(0,310)
+    scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    journal_box.add_child(scroll)
+    journal_text = _label(scroll,"",14,WHITE)
+    journal_text.custom_minimum_size.x = 510.0
+    journal_close_button = Button.new()
+    journal_close_button.text = "J / ESC"
+    journal_close_button.custom_minimum_size = Vector2(0,48)
+    journal_close_button.pressed.connect(_toggle_journal)
+    journal_box.add_child(journal_close_button)
+    journal_panel.visible = false
 
 func _layout_hud() -> void:
     if hud_root == null:
@@ -779,6 +876,173 @@ func _layout_hud() -> void:
     end_panel.offset_left = -minf(300.0,width*0.45)
     end_panel.offset_right = minf(300.0,width*0.45)
     objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    if radio_panel == null:
+        return
+    # Bottom right on desktop; card stack after telemetry on narrow screens.
+    var radio_anchor: float = 0.0 if narrow else 1.0
+    for overlay in [radio_panel,priority_panel]:
+        overlay.anchor_left = radio_anchor
+        overlay.anchor_right = radio_anchor
+        overlay.anchor_top = radio_anchor
+        overlay.anchor_bottom = radio_anchor
+    if narrow:
+        radio_panel.offset_left = 12.0
+        radio_panel.offset_right = width-12.0
+        radio_panel.offset_top = 295.0
+        radio_panel.offset_bottom = 390.0
+        priority_panel.offset_left = 12.0
+        priority_panel.offset_right = width-12.0
+        priority_panel.offset_top = 401.0
+        priority_panel.offset_bottom = 464.0
+    else:
+        radio_panel.offset_left = -420.0
+        radio_panel.offset_right = -18.0
+        radio_panel.offset_top = -207.0
+        radio_panel.offset_bottom = -78.0
+        priority_panel.offset_left = -420.0
+        priority_panel.offset_right = -18.0
+        priority_panel.offset_top = -282.0
+        priority_panel.offset_bottom = -218.0
+    var journal_half_width: float = minf(300.0,width*0.46)
+    journal_panel.offset_left = -journal_half_width
+    journal_panel.offset_right = journal_half_width
+    journal_text.custom_minimum_size.x = journal_half_width*2.0-58.0
+    radio_dialogue.add_theme_font_size_override("font_size",12 if narrow else 14)
+    _refresh_radio_ui()
+
+func _refresh_radio_ui() -> void:
+    if radio_panel == null:
+        return
+    var line: Dictionary = story.latest(locale)
+    if not line.is_empty():
+        radio_speaker.text = str(line["speaker"]) + "   /   ACT " + str(line["act"])
+        radio_dialogue.text = str(line["text"])
+    radio_panel.visible = started and not paused and not journal_panel.visible and radio_ttl > 0.0
+    priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible
+    crew_priority_button.text = _copy("choice_crew")
+    core_priority_button.text = _copy("choice_core")
+    journal_text.text = story.journal_localized(locale)
+    if continue_button != null:
+        continue_button.text = _copy("continue")
+
+func _story_event(event_name: String) -> void:
+    if story.on_game_event(event_name,session.priority_id):
+        radio_ttl = 11.0
+    _refresh_radio_ui()
+
+func _choose_priority(choice: String) -> void:
+    if not started or paused or session.finished():
+        return
+    if session.choose_priority(choice):
+        previous_event = session.last_event
+        _story_event(session.last_event)
+        _announce(session.last_event)
+        _save_checkpoint()
+        _refresh_hud()
+
+func _toggle_journal() -> void:
+    if not started or session.finished():
+        return
+    if paused and not journal_panel.visible:
+        return
+    journal_panel.visible = not journal_panel.visible
+    paused = journal_panel.visible
+    pause_panel.visible = false
+    audio_director.set_active(not paused)
+    if DisplayServer.get_name() != "headless":
+        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED)
+    _refresh_radio_ui()
+
+func _checkpoint_payload() -> Dictionary:
+    return {
+        "schema":"IRON_PULSE_CAMPAIGN_V6",
+        "engine":session.checkpoint(),
+        "story":story.checkpoint(),
+        "scenario":selected_scenario,
+        "locale":locale,
+        "quality":quality_mode,
+        "reduced_motion":reduced_motion,
+        "player_position":[player.position.x,player.position.y,player.position.z],
+        "visited_sectors":visited_sectors.duplicate()
+    }
+
+func _save_checkpoint() -> bool:
+    # A headless CI test never writes the shared user checkpoint slot.
+    if DisplayServer.get_name() == "headless" or not started or session.finished():
+        return false
+    return checkpoint_store.save(_checkpoint_payload(),checkpoint_path)
+
+func _continue_checkpoint() -> bool:
+    var payload: Dictionary = checkpoint_store.load_checkpoint(checkpoint_path)
+    if payload.get("schema") != "IRON_PULSE_CAMPAIGN_V6":
+        return false
+    if not payload.get("engine",null) is Dictionary or not payload.get("story",null) is Dictionary:
+        return false
+    var restored_engine := IPCrisisEngine.new()
+    var restored_story := IPStoryDirector.new()
+    if not restored_engine.restore_checkpoint(payload["engine"]):
+        return false
+    if not restored_story.restore(payload["story"]):
+        return false
+    if restored_engine.finished() or restored_engine.scenario_id != restored_story.scenario:
+        return false
+    if payload.get("scenario") != restored_engine.scenario_id:
+        return false
+    var pos: Variant = payload.get("player_position",null)
+    if not pos is Array or pos.size() != 3:
+        return false
+    for index in 3:
+        if typeof(pos[index]) not in [TYPE_INT,TYPE_FLOAT]:
+            return false
+    var safe_pos := Vector3(float(pos[0]),float(pos[1]),float(pos[2]))
+    if absf(safe_pos.x) > 6.5 or safe_pos.y < -0.2 or safe_pos.y > 5.0 or safe_pos.z < -59.0 or safe_pos.z > 5.0:
+        return false
+    var saved_zones: Variant = payload.get("visited_sectors",null)
+    if not saved_zones is Array or saved_zones.size() > 3:
+        return false
+    var checked_zones: Array[String] = []
+    for zone in saved_zones:
+        if not zone is String or zone not in IPWorldSectors.SECTORS or checked_zones.has(zone):
+            return false
+        checked_zones.append(zone)
+    var saved_quality: String = str(payload.get("quality","hero"))
+    if saved_quality not in ["hero","eco"]:
+        return false
+    var saved_locale: String = str(payload.get("locale","ru"))
+    if saved_locale not in ["ru","en"] or typeof(payload.get("reduced_motion",null)) != TYPE_BOOL:
+        return false
+    # Now, after atomic validation, restore all gameplay and authored story state.
+    session = restored_engine
+    story = restored_story
+    selected_scenario = session.scenario_id
+    locale = saved_locale
+    quality_mode = saved_quality
+    reduced_motion = bool(payload["reduced_motion"])
+    player.position = safe_pos
+    player.velocity = Vector3.ZERO
+    active_sector = world_sectors.current_sector(player.global_position.z)
+    visited_sectors = checked_zones
+    if not visited_sectors.has(active_sector):
+        visited_sectors.append(active_sector)
+    art_stage.set_quality(quality_mode)
+    world_sectors.set_quality(quality_mode)
+    exit_gate.position.y = 6.2 if session.override_set else 2.6
+    for index in range(legacy_lamps.size()):
+        legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
+    previous_event = session.last_event
+    started = true
+    paused = false
+    intro_panel.visible = false
+    pause_panel.visible = false
+    end_panel.visible = false
+    radio_ttl = 11.0
+    _update_scenario_picker()
+    _refresh_hud()
+    _refresh_radio_ui()
+    audio_director.set_active(true)
+    if DisplayServer.get_name() != "headless":
+        Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+    return true
 
 func _update_scenario_picker() -> void:
     if scenario_brief == null:
@@ -795,6 +1059,8 @@ func _select_scenario(next_scenario: String) -> void:
         return
     selected_scenario = next_scenario
     session.reset(next_scenario)
+    story.reset(next_scenario)
+    radio_ttl = 0.0
     notice_time = 0.0
     _update_scenario_picker()
     _refresh_hud()
@@ -803,18 +1069,28 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    story.reset(selected_scenario)
+    radio_ttl = 12.0
+    checkpoint_clock = 0.0
     started = true
     paused = false
     intro_panel.visible = false
     pause_panel.visible = false
     end_panel.visible = false
     _announce("shift_started")
+    _refresh_radio_ui()
+    _save_checkpoint()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
     session.reset(selected_scenario)
+    story.reset(selected_scenario)
+    radio_ttl = 12.0
+    checkpoint_clock = 0.0
+    if DisplayServer.get_name() != "headless":
+        checkpoint_store.clear(checkpoint_path)
     visited_sectors.clear()
     active_sector = "reactor"
     player.position = Vector3(0,1.1,2.0)
@@ -830,6 +1106,8 @@ func _restart() -> void:
     paused = false
     end_panel.visible = false
     _announce("shift_started")
+    _refresh_radio_ui()
+    _save_checkpoint()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -861,6 +1139,7 @@ func _toggle_language() -> void:
     footer_label.text = _copy("footer")
     _announce("language")
     _refresh_hud()
+    _refresh_radio_ui()
 
 func _input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:
@@ -885,8 +1164,14 @@ func _input(event: InputEvent) -> void:
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
             return
+        if event.keycode == KEY_J:
+            _toggle_journal()
+            return
         if event.keycode == KEY_ESCAPE:
-            _pause_toggle()
+            if journal_panel.visible:
+                _toggle_journal()
+            else:
+                _pause_toggle()
             return
         if not started and event.keycode in [KEY_1, KEY_2, KEY_3]:
             var choice_index: int = [KEY_1, KEY_2, KEY_3].find(event.keycode)
@@ -900,6 +1185,9 @@ func _input(event: InputEvent) -> void:
         if session.finished():
             if event.keycode == KEY_R:
                 _restart()
+            return
+        if event.keycode == KEY_1 or event.keycode == KEY_2:
+            _choose_priority("crew" if event.keycode == KEY_1 else "core")
             return
         if event.keycode == KEY_E:
             _interact()
@@ -946,6 +1234,7 @@ func _physics_process(delta: float) -> void:
     if session.last_event != previous_event:
         previous_event = session.last_event
         if session.last_event != "shift_started":
+            _story_event(session.last_event)
             _announce(session.last_event)
     if session.finished():
         _show_end()
@@ -971,8 +1260,12 @@ func _process(delta: float) -> void:
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
             active_sector = sector
+            if story.enter_sector(sector):
+                radio_ttl = 11.0
+                _refresh_radio_ui()
         if not visited_sectors.has(sector):
             visited_sectors.append(sector)
+            _save_checkpoint()
     audio_director.set_tension(session.heat,session.oxygen)
     var heat_risk: float = clampf((session.heat-70.0)/30.0,0.0,1.0)
     var air_risk: float = clampf((45.0-session.oxygen)/45.0,0.0,1.0)
@@ -987,6 +1280,13 @@ func _process(delta: float) -> void:
             exit_gate.position.y = lerpf(exit_gate.position.y,6.2,minf(delta*1.8,1.0))
     if notice_time > 0.0:
         notice_time -= delta
+    if radio_ttl > 0.0 and not paused:
+        radio_ttl = maxf(0.0,radio_ttl-delta)
+    if started and not paused and not session.finished():
+        checkpoint_clock += delta
+        if checkpoint_clock >= 18.0:
+            checkpoint_clock = 0.0
+            _save_checkpoint()
     hud_elapsed += delta
     if hud_elapsed > 0.12:
         hud_elapsed = 0.0
@@ -1033,7 +1333,9 @@ func _interact(fast: bool = false) -> void:
         "exit":
             session.escape()
     previous_event = session.last_event
+    _story_event(session.last_event)
     _announce(session.last_event)
+    _save_checkpoint()
     if session.finished():
         _show_end()
     _refresh_hud()
@@ -1057,6 +1359,8 @@ func _show_end() -> void:
     if end_panel.visible:
         return
     end_panel.visible = true
+    if DisplayServer.get_name() != "headless":
+        checkpoint_store.clear(checkpoint_path)
     end_title.text = _copy("victory") if session.won else _copy("failure")
     var template: String = _copy("stats")
     end_stats.text = template.format({"time":"%.0f" % session.elapsed,"switches":session.switches,"faults":session.faults,"grade":session.grade()})
@@ -1065,6 +1369,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("result_path").format({
         "method":method_name,"scenario":_copy("scenario_" + session.scenario_id)})
     end_stats.text += "\n" + _copy("visited_sectors").format({"count":visited_sectors.size()})
+    end_stats.text += "\n" + _copy("chapter_final").format({
+        "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1110,6 +1416,7 @@ func _refresh_hud() -> void:
         telemetry_label.add_theme_color_override("font_color",WHITE)
     # Keep operator telemetry visible in both RU and EN without font dependence.
     brand_label.text = "IRON PULSE"
+    _refresh_radio_ui()
     _publish_web_state()
 
 func _update_guidance(objective_key: String) -> void:
