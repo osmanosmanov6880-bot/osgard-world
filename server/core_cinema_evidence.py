@@ -114,7 +114,7 @@ def listing(db,space_id,actor):
     for item in db.execute('''
          SELECT e.*,u.username AS author FROM cinema_evidence e
          JOIN users u ON u.id=e.author_id
-         WHERE e.space_id=? ORDER BY e.updated_at DESC,e.id DESC
+         WHERE e.space_id=? ORDER BY e.updated_at DESC,e.rowid DESC
          LIMIT 80''',(space_id,)):
         row=dict(
            id=item['id'],sceneId=item['scene_id'],category=item['category'],
@@ -127,7 +127,7 @@ def listing(db,space_id,actor):
         rows=db.execute('''
           SELECT r.id,r.verdict,r.note,r.item_version,r.created_at,u.username AS reviewer
           FROM cinema_evidence_reviews r JOIN users u ON u.id=r.reviewer_id
-          WHERE r.evidence_id=? AND r.space_id=? ORDER BY r.created_at DESC,r.id DESC
+          WHERE r.evidence_id=? AND r.space_id=? ORDER BY r.created_at DESC,r.rowid DESC
           LIMIT 30''',(item['id'],space_id)).fetchall()
         row['reviews']=[dict(id=r['id'],verdict=r['verdict'],note=r['note'],
                     itemVersion=r['item_version'],reviewer=r['reviewer'],createdAt=r['created_at']) for r in rows]
