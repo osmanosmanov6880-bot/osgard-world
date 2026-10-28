@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /
+# Experimental reviewer-only package. No live public marketing is authorized.

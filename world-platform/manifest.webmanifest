@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "LAST FRONTIER / WORLD OPERATIONS",
+  "short_name": "LAST FRONTIER",
+  "description": "Private Godot game control station, review build. Software only.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#060b11",
+  "theme_color": "#070d13",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
