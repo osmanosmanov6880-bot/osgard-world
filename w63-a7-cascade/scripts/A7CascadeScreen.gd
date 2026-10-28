@@ -61,6 +61,10 @@ const RU := {
     "pilot_core": "ОСМОТРЕН РЕАКТОР",
     "pilot_relay": "ОСМОТРЕН РЕЛЕЙНЫЙ КОМПЛЕКС",
     "pilot_far": "ПОДОЙДИТЕ БЛИЖЕ К ОБОРУДОВАНИЮ",
+    "mission_start": "НАЧАТЬ ПРОСТРАНСТВЕННУЮ МИССИЮ / T",
+    "mission_active": "МИССИЯ A7 / АКТИВНА",
+    "mission_wait": "МИССИЯ ДОСТУПНА ТОЛЬКО В НАЧАЛЕ НОВОЙ СМЕНЫ",
+    "mission_proximity": "ФИЗИЧЕСКИЙ ОСМОТР: ТОЛЬКО В РЕЖИМЕ ОПЕРАТОРА",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
@@ -109,6 +113,10 @@ const EN := {
     "pilot_core": "REACTOR INSPECTED",
     "pilot_relay": "POWER RELAY INSPECTED",
     "pilot_far": "MOVE CLOSER TO THE MACHINERY",
+    "mission_start": "START SPATIAL MISSION / T",
+    "mission_active": "MISSION A7 / ACTIVE",
+    "mission_wait": "MISSION AVAILABLE ONLY BEFORE THE FIRST SHIFT DECISION",
+    "mission_proximity": "PHYSICAL INSPECTION: ENTER FIRST PERSON MODE",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
@@ -153,6 +161,11 @@ var focus_button: Button
 var cinema_button: Button
 var cinema_mode: bool = false
 var pilot_button: Button
+var mission_button: Button
+var mission_title: Label
+var mission_briefing: Label
+var mission_meta: Label
+var mission_pips: Array[ColorRect] = []
 var pilot_rail: HFlowContainer
 var pilot_nudge_buttons: Dictionary = {}
 var pilot_inspect_button: Button
@@ -371,6 +384,33 @@ func _build() -> void:
     pilot_status_label.visible = false
     subtitle = _label(body, "", 15, MINT)
     intro = _label(body, "", 15, MUTED)
+    # W71: actual connected physical storyline, not another decorative HUD.
+    var mission_panel := _panel(body)
+    mission_panel.name = "W71TrueConnectedSpatialMissionPanel"
+    mission_panel.add_theme_constant_override("separation", 10)
+    var mission_row := HFlowContainer.new()
+    mission_row.name = "W71MissionProgressAndActivation"
+    mission_row.add_theme_constant_override("h_separation", 12)
+    mission_row.add_theme_constant_override("v_separation", 8)
+    mission_panel.add_child(mission_row)
+    mission_button = _button(mission_row, "", _start_spatial_mission)
+    mission_button.custom_minimum_size = Vector2(245, 42)
+    mission_title = _label(mission_row, "", 17, GOLD)
+    var mission_strip := HBoxContainer.new()
+    mission_strip.name = "RealSpatialObjectivePips"
+    mission_strip.add_theme_constant_override("separation", 8)
+    mission_panel.add_child(mission_strip)
+    for step in range(5):
+        var progress_pip := ColorRect.new()
+        progress_pip.name = "ActualStationObjective%02d" % (step + 1)
+        progress_pip.color = BORDER
+        progress_pip.custom_minimum_size = Vector2(28, 6)
+        progress_pip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        progress_pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        mission_strip.add_child(progress_pip)
+        mission_pips.append(progress_pip)
+    mission_briefing = _label(mission_panel, "", 13, WHITE)
+    mission_meta = _label(mission_panel, "", 11, MUTED)
 
     # Original story beats are generated from actual game shift/status;
     # never play fake cutscenes that are independent of the player's choices.
@@ -467,6 +507,9 @@ func _on_action(action: String) -> void:
     var after: Dictionary = model.snapshot()
     if stage_3d != null:
         stage_3d.trigger_action(action)
+        if stage_3d.spatial_mission != null:
+            stage_3d.spatial_mission.accepted_game_action(action, before, after)
+            _refresh_mission_ui(after)
     if sound_bus != null:
         var cue: String = "action"
         if str(after["status"]) == "won":
@@ -480,6 +523,8 @@ func _on_action(action: String) -> void:
 
 func _restart() -> void:
     _previewed_action = ""
+    if stage_3d != null and stage_3d.spatial_mission != null:
+        stage_3d.spatial_mission.reset()
     model.reset()
     if sound_bus != null:
         sound_bus.cue("restart")
@@ -530,6 +575,33 @@ func _step_route(direction: int) -> void:
         stage_3d.step_inspection_route(direction)
     _render(model.snapshot())
 
+func _start_spatial_mission() -> void:
+    if stage_3d == null or stage_3d.spatial_mission == null:
+        return
+    var mission: A7SpatialMission = stage_3d.spatial_mission
+    if not mission.start(model.snapshot()):
+        mission_meta.text = _t("mission_wait")
+    _refresh_mission_ui(model.snapshot())
+    call_deferred("_publish_web_accessibility")
+
+func _refresh_mission_ui(state: Dictionary) -> void:
+    if stage_3d == null or stage_3d.spatial_mission == null or mission_button == null:
+        return
+    var mission: A7SpatialMission = stage_3d.spatial_mission
+    mission_title.text = mission.title(locale)
+    mission_briefing.text = mission.briefing(locale)
+    mission_button.text = _t("mission_active" if mission.active else "mission_start")
+    mission_button.disabled = mission.active or str(state.get("status", "")) != "playing" or (
+        (state.get("history", []) as Array).size() > 0)
+    mission_meta.text = ("0 / 5" if not mission.active else "%d / 5" % mini(5, mission.phase))
+    if mission.active and mission.phase == 6:
+        mission_meta.text = "FAILED / 5"
+    for index in range(mission_pips.size()):
+        var pip: ColorRect = mission_pips[index]
+        pip.color = (RED if mission.phase == 6 else MINT) if (
+            mission.active and (mission.phase == 5 or index < mission.phase)) else (
+            ORANGE if mission.active and index == mission.phase else BORDER)
+
 func _toggle_pilot() -> void:
     if stage_3d != null:
         stage_3d.toggle_first_person()
@@ -546,6 +618,10 @@ func _pilot_inspect() -> void:
     var target: String = stage_3d.first_person_inspect()
     pilot_status_label.text = _t("pilot_core") if target == "CORE" else (
         _t("pilot_relay") if target == "RELAY" else _t("pilot_far"))
+    if stage_3d.spatial_mission != null and stage_3d.first_person != null:
+        stage_3d.spatial_mission.inspect_physical(
+            target, model.snapshot(), stage_3d.first_person)
+        _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
 
 func _toggle_inspection_focus() -> void:
@@ -627,19 +703,30 @@ func _unhandled_input(event: InputEvent) -> void:
         stage_3d.first_person.rotate_view((event as InputEventMouseMotion).relative)
         get_viewport().set_input_as_handled()
 
-func _unhandled_key_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
+    # W71 actual-browser correction: raw player motion must be captured before
+    # scroll containers or focused buttons consume a WASD key. Both keydown and
+    # keyup reach real CharacterBody3D physics; all normal shortcuts continue
+    # through _unhandled_key_input when not in operator mode.
     if not (event is InputEventKey):
         return
     var key: InputEventKey = event as InputEventKey
     if (stage_3d != null and stage_3d.first_person != null
             and stage_3d.first_person.piloting
             and [KEY_W, KEY_A, KEY_S, KEY_D].has(key.keycode)):
-        # Listen to both press AND release; physics must stop on keyup.
         stage_3d.first_person_key(key.keycode, key.pressed)
-        call_deferred("_publish_web_accessibility")
         get_viewport().set_input_as_handled()
+        call_deferred("_publish_web_accessibility")
+
+func _unhandled_key_input(event: InputEvent) -> void:
+    if not (event is InputEventKey):
         return
+    var key: InputEventKey = event as InputEventKey
     if not key.pressed or key.echo:
+        return
+    if key.keycode == KEY_T:
+        _start_spatial_mission()
+        get_viewport().set_input_as_handled()
         return
     if key.keycode == KEY_P:
         _toggle_pilot()
@@ -764,6 +851,7 @@ func _render(state: Dictionary) -> void:
         var effect: Label = holder.get_node("Effect_" + action) as Label
         effect.text = _t(action + "_d")
     objective_label.text = _t("objective")
+    _refresh_mission_ui(state)
     footnote.text = _t("disclaimer") + "\n" + _t("keys")
     if cinematic_hud != null:
         cinematic_hud.present(state, locale)
@@ -875,6 +963,14 @@ func _publish_web_accessibility() -> void:
         "w70_true_industrial_bridge_meshes": int(stage_state.get("w70_true_3d_catwalk_meshes", 0)),
         "w70_real_practical_bay_lights": int(stage_state.get("w70_actual_walkway_lights", 0)),
         "w70_native_bridge_collision": bool(stage_state.get("w70_real_walkable_deck_collider", false)),
+        "w71_mission_active": stage_3d.spatial_mission.active if stage_3d.spatial_mission != null else false,
+        "w71_mission_phase": stage_3d.spatial_mission.phase if stage_3d.spatial_mission != null else -1,
+        "w71_mission_complete": stage_3d.spatial_mission.qa_readout()["completed"] if stage_3d.spatial_mission != null else false,
+        "w71_mission_failure": stage_3d.spatial_mission.qa_readout()["failed"] if stage_3d.spatial_mission != null else false,
+        "w71_real_3d_mission": bool(stage_state.get("w71_real_objective_meshes", false)),
+        "w71_mission_events": stage_3d.spatial_mission.progress_events if stage_3d.spatial_mission != null else 0,
+        "w71_mission_physical_inspections": stage_3d.spatial_mission.real_inspections if stage_3d.spatial_mission != null else 0,
+        "w71_mission_actions": stage_3d.spatial_mission.accepted_game_decisions if stage_3d.spatial_mission != null else 0,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -908,6 +1004,9 @@ func _publish_web_accessibility() -> void:
         "optics": _web_rect(focus_button),
         "pilot": _web_rect(pilot_button),
         "pilot_inspect": _web_rect(pilot_inspect_button),
+        "mission_start": _web_rect(mission_button),
+        "mission_title": _web_rect(mission_title),
+        "mission_briefing": _web_rect(mission_briefing),
         "walk_back": _web_rect(route_buttons[0]),
         "walk_forward": _web_rect(route_buttons[1]),
         "sector_0": _web_rect(sector_buttons[0]),

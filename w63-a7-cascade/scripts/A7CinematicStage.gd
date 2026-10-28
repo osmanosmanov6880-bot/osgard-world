@@ -20,6 +20,7 @@ var cathedral: A7IndustrialCathedral
 var hero_art: A7CinematicHeroSet
 var incident_cinema: A7IncidentDirection
 var first_person: A7FirstPersonOperator
+var spatial_mission: A7SpatialMission
 var inspection_focus: bool = false
 var focus_switches: int = 0
 var guide_progress: float = 0.0
@@ -77,6 +78,9 @@ func _ready() -> void:
     first_person = A7FirstPersonOperator.new()
     add_child(first_person)
     first_person.build(hero_art.surface_lab)
+    spatial_mission = A7SpatialMission.new()
+    add_child(spatial_mission)
+    spatial_mission.build()
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -386,6 +390,8 @@ func set_compact_view(enabled: bool) -> void:
         incident_cinema.set_compact_view(enabled)
     if first_person != null:
         first_person.set_compact_view(enabled)
+    if spatial_mission != null:
+        spatial_mission.set_compact_view(enabled)
     if art_kit != null and art_kit.engraved_sign != null:
         art_kit.engraved_sign.visible = not enabled
 
@@ -404,6 +410,8 @@ func set_quality(new_mode: String) -> void:
         incident_cinema.set_quality(mode)
     if first_person != null:
         first_person.set_quality(mode)
+    if spatial_mission != null:
+        spatial_mission.set_quality(mode)
     if key_light != null:
         key_light.light_energy = 2.30 if mode == "hero" else 1.25
         fill_light.visible = mode == "hero"
@@ -414,6 +422,8 @@ func set_reduced_motion(enabled: bool) -> void:
         incident_cinema.set_reduced_motion(enabled)
     if first_person != null:
         first_person.set_reduced_motion(enabled)
+    if spatial_mission != null:
+        spatial_mission.set_reduced_motion(enabled)
 
 func trigger_action(action: String) -> void:
     if not ["PUMP", "VENT", "SEAL", "SCAN", "POWER"].has(action):
@@ -466,6 +476,8 @@ func apply_snapshot(state: Dictionary) -> void:
         hero_art.present(state)
     if incident_cinema != null:
         incident_cinema.present(state)
+    if spatial_mission != null:
+        spatial_mission.observe_game_state(state)
     snapshot_count += 1
 
 func _process(delta: float) -> void:
@@ -515,6 +527,8 @@ func qa_readout() -> Dictionary:
         "w70_true_3d_catwalk_meshes": first_person.walkway_visual_meshes if first_person != null else 0,
         "w70_actual_walkway_lights": first_person.safety_lights.size() if first_person != null else 0,
         "w70_real_walkable_deck_collider": first_person.bridge_collision is StaticBody3D if first_person != null else false,
+        "w71_mission_attached": spatial_mission != null,
+        "w71_real_objective_meshes": spatial_mission.core_beacon is MeshInstance3D and spatial_mission.relay_beacon is MeshInstance3D if spatial_mission != null else false,
         "cathedral_two_real_sectors": cathedral != null and cathedral.relay_terminals == 3,
         "inspection_sector": sector_index,
         "inspection_progress": guide_progress,

@@ -1,0 +1,240 @@
+name: LAST FRONTIER W71 real five-stage spatial game (REVIEW HOLD)
+
+on:
+  pull_request:
+    branches:
+      - game/last-frontier-w70-first-person-operator-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W71_SPATIAL_MISSION.md'
+      - '.github/workflows/last-frontier-w71-spatial-mission.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w71-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-source-safety:
+    name: Exact accepted W70.1 ancestry, original deterministic 6-cycle game and physical player unchanged
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Immutable original Godot rules, hardware-disabled inspection and only allowed paths
+        shell: bash
+        env:
+          W71_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w71-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='0fea3572b6ce75d3aab144ff678eb181b1713aac'
+          head=os.environ['W71_SHA']
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          expected={
+              'w63-a7-cascade/scripts/A7SpatialMission.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w71_spatial_mission.gd',
+              'w63-a7-cascade/ci/w71_browser_mission.py',
+              '.github/workflows/last-frontier-w71-spatial-mission.yml',
+              'docs/LAST_FRONTIER_W71_SPATIAL_MISSION.md',
+          }
+          assert changed==expected,{'unexpected':sorted(changed-expected),'missing':sorted(expected-changed)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirector.gd',
+              'w63-a7-cascade/scripts/A7ProceduralAudio.gd',
+              'w63-a7-cascade/scripts/A7CinematicHud.gd',
+              'w63-a7-cascade/scripts/A7CinematicHeroSet.gd',
+              'w63-a7-cascade/scripts/A7CinematicMaterialLab.gd',
+              'w63-a7-cascade/scripts/A7ArchitecturalDetail.gd',
+              'w63-a7-cascade/scripts/A7IndustrialCathedral.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirection.gd',
+              'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w64_real_3d_stage.gd',
+              'w63-a7-cascade/tests/test_w65_story_audio.gd',
+              'w63-a7-cascade/tests/test_w67_cinematic_sectors.gd',
+              'w63-a7-cascade/tests/test_w68_industrial_cinema.gd',
+              'w63-a7-cascade/tests/test_w69_incident_direction.gd',
+              'w63-a7-cascade/tests/test_w70_first_person_operator.gd',
+              'w63-a7-cascade/ci/w64_browser_acceptance.py',
+              'w63-a7-cascade/ci/w65_browser_story_audio.py',
+              'w63-a7-cascade/ci/w67_browser_sectors.py',
+              'w63-a7-cascade/ci/w68_browser_art.py',
+              'w63-a7-cascade/ci/w69_browser_incident.py',
+              'w63-a7-cascade/ci/w70_browser_operator.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+              '.github/workflows/last-frontier-w70-physical-operator.yml',
+          ]
+          pinned={}
+          for path in protected:
+              old=git('rev-parse',base+':'+path)
+              new=git('rev-parse',head+':'+path)
+              assert old==new,'Protected original game/physics/3D blob changed: '+path
+              pinned[path]=new
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          mission=Path('w63-a7-cascade/scripts/A7SpatialMission.gd').read_text()
+          assert 'class_name A7SpatialMission' in mission
+          assert 'operator.body.position.distance_to' in mission
+          assert 'PHASES' in mission and 'inspect_relay' in mission
+          assert 'MeshInstance3D.new()' in mission
+          assert 'TorusMesh.new()' in mission
+          for bad in ['HTTPClient','OS.execute','JavaScriptBridge','model.choose(']:
+              assert bad not in mission,'Story cannot operate network/engine directly: '+bad
+          attestation={
+              'schema':'LAST_FRONTIER_W71_EXACT_SPATIAL_STORY_SOURCE_V1',
+              'source_sha':head,'base_sha':base,'status':'PASS',
+              'changed_paths':sorted(changed),'immutable_original_blobs':pinned,
+              'original_A7_gameplay_changed':False,
+              'original_physics_changed':False,
+              'external_art_downloaded':False,
+              'signed_commercial_release':False,
+              'physically_measured_15_minutes':False,
+          }
+          Path('w71-evidence/W71_PINNED_SOURCE.json').write_text(
+              json.dumps(attestation,ensure_ascii=False,indent=2)+'\n')
+          print('W71 exact source PASS; all 27 protected W70.1 original blobs identical')
+          PY
+      - name: Keep source-bound original stage and true Git blob attestation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w71-original-source-${{ github.event.pull_request.head.sha }}
+          path: w71-evidence/W71_PINNED_SOURCE.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  actual-mission-engine-and-browser:
+    name: Eight real Godot suites + physical 5-stage win/loss + exported first-person 14 Chromium frames
+    needs: exact-source-safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import actual original Godot 4.4.1 spatial mission without GDScript errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w71-evidence
+          timeout --signal=TERM --kill-after=5s 260s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w71-evidence/native-import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w71-evidence/native-import.log; then exit 1; fi
+      - name: W63-W71 native Godot eight suites including authentic spatial victory and failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w64_real_3d_stage test_w65_story_audio test_w67_cinematic_sectors test_w68_industrial_cinema test_w69_incident_direction test_w70_first_person_operator test_w71_spatial_mission; do
+            echo "W71 native real Godot suite: $test"
+            timeout --signal=TERM --kill-after=5s 390s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w71-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w71-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w71-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W64 REAL NATIVE 3D CINEMATIC GAME PASS:' w71-evidence/test_w64_real_3d_stage.log
+          grep -q 'LAST FRONTIER W65 ORIGINAL GAME CAUSAL STORY + SYNTH AUDIO PASS:' w71-evidence/test_w65_story_audio.log
+          grep -q 'LAST FRONTIER W67 REAL TWO-ZONE INDUSTRIAL CINEMA PASS:' w71-evidence/test_w67_cinematic_sectors.log
+          grep -q 'LAST FRONTIER W68 REAL ORIGINAL PBR HERO AND COMPLETE GODOT GAME PASS:' w71-evidence/test_w68_industrial_cinema.log
+          grep -q 'LAST FRONTIER W69 TRUE CINEMATIC INCIDENT/OPTICS/WIN PASS:' w71-evidence/test_w69_incident_direction.log
+          grep -q 'LAST FRONTIER W70 REAL CHARACTERBODY FIRST PERSON PHYSICS PASS:' w71-evidence/test_w70_first_person_operator.log
+          grep -q 'LAST FRONTIER W71 TRUE SPATIAL FIVE-OBJECTIVE GODOT GAME PASS:' w71-evidence/test_w71_spatial_mission.log
+      - name: Export real playable W71 Godot WebGL WASM / PCK rather than static screenshots
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w71-evidence/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w71-evidence/web-export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$HEAD_SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install real Chromium and pixels library for genuine game interaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w71
+          /tmp/a7-w71/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w71/bin/python -m playwright install --with-deps chromium
+      - name: Original W70 physics browser and new W71 actual physical E/T/1/4 spatial mission
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 1180s /tmp/a7-w71/bin/python w63-a7-cascade/ci/w70_browser_operator.py --export w63-a7-cascade/build/web --evidence w71-evidence/w70-regression --sha "$HEAD_SHA" 2>&1 | tee w71-evidence/w70-browser.log
+          grep -q 'LAST FRONTIER W70 TRUE GODOT CHARACTERBODY PHYSICS CHROMIUM PASS:' w71-evidence/w70-browser.log
+          timeout --signal=TERM --kill-after=10s 1180s /tmp/a7-w71/bin/python w63-a7-cascade/ci/w71_browser_mission.py --export w63-a7-cascade/build/web --evidence w71-evidence/new-mission-browser --sha "$HEAD_SHA" 2>&1 | tee w71-evidence/w71-browser.log
+          grep -q 'LAST FRONTIER W71 GENUINE GODOT SPATIAL MISSION CHROMIUM PASS:' w71-evidence/w71-browser.log
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          sha=os.environ['HEAD_SHA']
+          root=Path('w71-evidence/new-mission-browser')
+          proof=json.loads((root/'W71_ACTUAL_SPATIAL_BROWSER_PROOF.json').read_text())
+          assert proof['status']=='PASS' and proof['source_sha']==sha
+          assert proof['real_exported_godot_webassembly']
+          assert proof['near_reactor_E_advances']
+          assert proof['far_E_does_not_progress']
+          assert len(proof['real_browser_screenshots'])==7
+          for item in proof['real_browser_screenshots']:
+              data=(root/item['file']).read_bytes()
+              assert len(data)>12000
+              assert hashlib.sha256(data).hexdigest()==item['sha256']
+          assert not proof['claimed_measured_15_min_gameplay']
+          assert not proof['production_approved']
+          print('W71 real Godot first-person five-stage chain source-bound Chromium PASS')
+          PY
+      - name: Retain actual executable game plus 14 real 3D source-bound screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w71-true-spatial-mission-webgl-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w71-evidence/
+          if-no-files-found: warn
+          retention-days: 45
+
+  no-production-go:
+    name: W71 mission prototype is NOT certified AAA, real 15 minute campaign or store release
+    needs: [exact-source-safety, actual-mission-engine-and-browser]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require full native/real WASM proofs and keep PR a protected software prototype
+        shell: bash
+        env:
+          SOURCE: ${{ needs.exact-source-safety.result }}
+          GAME: ${{ needs.actual-mission-engine-and-browser.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$GAME" = success
+          echo 'W71 actual core/relay physical mission + original six-cycle game SOFTWARE PASS'
+          echo 'RELEASE HOLD: 10-15min human timing, production assets, hardware GPU FPS, player evaluation, trademark, signed GO absent'
