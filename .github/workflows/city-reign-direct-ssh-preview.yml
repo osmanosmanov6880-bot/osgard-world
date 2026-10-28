@@ -88,6 +88,8 @@ jobs:
             v138_city_reign_traffic_following \
             v139_city_reign_signal_auto_cancel \
             v140_city_reign_real_road_chevron \
+            v141_city_reign_cockpit_camera \
+            v142_city_reign_cockpit_render_budget \
             v97_r123_real_pedestrian_body_gait \
             v68_r47_predictive_crosswalk_traffic \
             v110_city_reign_first_mandate \
