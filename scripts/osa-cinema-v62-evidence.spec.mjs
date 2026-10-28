@@ -52,6 +52,7 @@ test('V62 real metadata: 2-person review with role isolation, no false legal cle
  await root.getByRole('tab',{name:'Team'}).click()
  await root.getByRole('textbox',{name:'Existing account username'}).fill(peer.username)
  await root.getByRole('button',{name:'Save server-side role'}).click()
+ await expect(root.locator('.osa-collab-people')).toContainText(peer.username)
  await root.getByRole('textbox',{name:'Existing account username'}).fill(viewer.username)
  await root.getByRole('combobox',{name:'Role'}).selectOption('viewer')
  await root.getByRole('button',{name:'Save server-side role'}).click()
