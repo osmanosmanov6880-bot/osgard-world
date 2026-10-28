@@ -184,6 +184,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 160s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_5_framed_core.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-5-framing.log"
           grep -q '^IRON PULSE V8.5 FRAMED REACTOR PASS:' "$RUNNER_TEMP/iron-pulse-v8-5-framing.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-5-framing.log"; then exit 1; fi
+      - name: V8.6 real 3D pressure relief, live hazard-driven vent animation, steam and instanced surge FX
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_6_reactive_containment.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
+          grep -q '^IRON PULSE V8.6 REACTIVE CONTAINMENT PASS:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
