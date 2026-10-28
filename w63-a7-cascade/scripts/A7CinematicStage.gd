@@ -76,7 +76,7 @@ func _ready() -> void:
     incident_cinema.build()
     first_person = A7FirstPersonOperator.new()
     add_child(first_person)
-    first_person.build()
+    first_person.build(hero_art.surface_lab)
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -384,6 +384,8 @@ func set_compact_view(enabled: bool) -> void:
         cathedral.set_compact_view(enabled)
     if incident_cinema != null:
         incident_cinema.set_compact_view(enabled)
+    if first_person != null:
+        first_person.set_compact_view(enabled)
     if art_kit != null and art_kit.engraved_sign != null:
         art_kit.engraved_sign.visible = not enabled
 
@@ -510,6 +512,9 @@ func qa_readout() -> Dictionary:
         "w70_player_inspections": first_person.inspect_count if first_person != null else 0,
         "w70_last_machine_inspected": first_person.last_inspection if first_person != null else "",
         "w70_headlamp_real": first_person.headlamp is SpotLight3D if first_person != null else false,
+        "w70_true_3d_catwalk_meshes": first_person.walkway_visual_meshes if first_person != null else 0,
+        "w70_actual_walkway_lights": first_person.safety_lights.size() if first_person != null else 0,
+        "w70_real_walkable_deck_collider": first_person.bridge_collision is StaticBody3D if first_person != null else false,
         "cathedral_two_real_sectors": cathedral != null and cathedral.relay_terminals == 3,
         "inspection_sector": sector_index,
         "inspection_progress": guide_progress,
