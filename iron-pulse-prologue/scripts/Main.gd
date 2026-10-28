@@ -176,6 +176,7 @@ var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
 var wayfinder: IPWayfinding
+var campaign_echoes: IPCampaignEchoes
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -274,6 +275,9 @@ func _ready() -> void:
     wayfinder = IPWayfinding.new()
     add_child(wayfinder)
     wayfinder.configure(terminals)
+    campaign_echoes = IPCampaignEchoes.new()
+    add_child(campaign_echoes)
+    campaign_echoes.sync(campaign,locale)
     audio_director = IPSoundscape.new()
     add_child(audio_director)
     _make_player()
@@ -383,6 +387,7 @@ func _publish_web_state() -> void:
     state["story"] = story.diagnostic()
     state["campaign"] = campaign.diagnostic()
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
+    state["campaign_echoes"] = campaign_echoes.readout() if campaign_echoes != null else {}
     state["relay_3d_terminals"] = relay_terminals.size()
     var real_relays: Array = []
     for relay_info in relay_terminals:
@@ -1230,6 +1235,7 @@ func _continue_checkpoint() -> bool:
     session = restored_engine
     story = restored_story
     campaign = saved_campaign
+    campaign_echoes.sync(campaign,saved_locale)
     wayfinder.enabled = bool(saved_wayfinding)
     selected_scenario = session.scenario_id
     locale = saved_locale
@@ -1337,6 +1343,9 @@ func _restart() -> void:
         campaign.modifier_applied = false
         campaign.apply_to_next(session)
     story.reset(selected_scenario)
+    if campaign.active and campaign.index > 0:
+        story.on_campaign_carryover(str(campaign.records[campaign.index-1]["priority"]))
+    campaign_echoes.sync(campaign,locale)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     if DisplayServer.get_name() != "headless":
@@ -1388,6 +1397,7 @@ func _toggle_language() -> void:
     resume_button.text = _copy("resume")
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
+    campaign_echoes.sync(campaign,locale)
     _announce("language")
     _refresh_hud()
     _refresh_radio_ui()
@@ -1715,6 +1725,7 @@ func _show_end() -> void:
     if session.won and campaign.active:
         if campaign.record_victory(session) and DisplayServer.get_name() != "headless":
             checkpoint_store.save(campaign.checkpoint(),CAMPAIGN_RECORD_PATH)
+        campaign_echoes.sync(campaign,locale)
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     if DisplayServer.get_name() != "headless":
         checkpoint_store.clear(checkpoint_path)
