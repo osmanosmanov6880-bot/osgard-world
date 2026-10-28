@@ -50,6 +50,8 @@ var city_reign_squares: Node3D
 var city_reign_hero_architecture: Node3D
 var city_reign_purchased_skyline: Node3D
 var city_reign_building_finishes: Array[StandardMaterial3D] = []
+## B49: one mesh LOD record per ORIGINAL colliding building; no extra draw nodes.
+var city_reign_tower_body_lods: Array[Dictionary] = []
 var streetfront: Node3D
 var facade_balconies: Node3D
 var road_paint: Node3D
@@ -80,6 +82,7 @@ const CITY_REIGN_STREET_ARCHITECTURE = preload("res://scripts/city_reign_street_
 const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.gd")
 const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.gd")
 const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_skyline.gd")
+const CITY_REIGN_TOWER_BODY = preload("res://scripts/city_reign_tower_body_lod.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -300,6 +303,21 @@ func _create_city() -> void:
 				var actual_body: MeshInstance3D = actual_building.get_node("VisualMesh") as MeshInstance3D
 				var building_finish: StandardMaterial3D = R37_MATERIAL_PACK.facade(color,building_count)
 				actual_body.material_override = building_finish
+				# B49: replace the visible cuboid mesh, never its original StaticBody3D,
+				# BoxShape3D, road collision mask, windows or saved game state.
+				var baseline: Mesh = actual_body.mesh
+				var district_standard: ArrayMesh = CITY_REIGN_TOWER_BODY.make_mesh(
+					width,height,id,building_count,false)
+				var district_cinematic: ArrayMesh = CITY_REIGN_TOWER_BODY.make_mesh(
+					width,height,id,building_count,true)
+				building_finish.vertex_color_use_as_albedo = true
+				city_reign_tower_body_lods.append({
+					"visual":actual_body, "original_mesh":baseline,
+					"standard":district_standard,"cinematic":district_cinematic,
+					"physical_body":actual_building,"width":width,"height":height,
+					"district":id
+				})
+				actual_body.mesh = district_standard
 				city_reign_building_finishes.append(building_finish)
 				architecture_trim.call("record",pos,width,height)
 				r98_facade_ribs.call("record",pos,width,height,id)
@@ -616,6 +634,13 @@ func apply_visual_budget(mode: String) -> void:
 	# Low and standard players retain the albedo, but skip normal-map cost.
 	for finish in city_reign_building_finishes:
 		finish.normal_enabled = visual_budget == "cinematic"
+	# Swap resources on the SAME original scene MeshInstance3D. LOW retains
+	# the untouched BoxMesh, STANDARD/CINEMATIC use closed sculpted shells.
+	for entry in city_reign_tower_body_lods:
+		var actual: MeshInstance3D = entry["visual"]
+		var desired: Mesh = entry["original_mesh"] if visual_budget=="low" else entry[visual_budget]
+		if actual.mesh != desired:
+			actual.mesh = desired
 	if weather_particles != null:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if r90_urban != null:
