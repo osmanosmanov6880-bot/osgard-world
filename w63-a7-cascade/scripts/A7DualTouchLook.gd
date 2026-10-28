@@ -147,7 +147,10 @@ func handle_screen_event(event: InputEvent) -> bool:
                 or actor == null or not actor.piloting):
             return false
         physical_look_drags += 1
-        var delta: Vector2 = motion.relative
+        # Godot 4.4 screen_relative is NOT affected by root stretch/scaling.
+        # This keeps the true physical finger sensitivity consistent at 320,
+        # 390 and 844 CSS px; never use scaled relative for camera aiming.
+        var delta: Vector2 = motion.screen_relative
         if delta.length()>MAX_DRAG_PIXELS:
             delta = delta.limit_length(MAX_DRAG_PIXELS)
             clamped_motion_frames += 1
