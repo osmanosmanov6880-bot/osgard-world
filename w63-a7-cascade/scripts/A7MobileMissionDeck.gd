@@ -106,8 +106,11 @@ func build(real_mission: A7SpatialMission,
     panel.anchor_bottom = 1.0
     panel.offset_left = 7
     panel.offset_right = -7
-    panel.offset_top = -174
-    panel.offset_bottom = -70
+    # W80: the real 4x2 W78 thumb grid now occupies the bottom 112px.
+    # Keep the entire five-phase mission above it with a visible 5px gap,
+    # within the exact original live 3D stage; no overlay intercepts WASD.
+    panel.offset_top = -231
+    panel.offset_bottom = -124
     panel.add_theme_stylebox_override("panel",_panel_style())
     panel.mouse_filter = Control.MOUSE_FILTER_PASS
     add_child(panel)
