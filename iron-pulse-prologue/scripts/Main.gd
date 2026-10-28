@@ -20,6 +20,10 @@ const COPY := {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
         "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
+        "campaign_start":"КАМПАНИЯ  /  ТРИ СМЕНЫ",
+        "campaign_next":"СЛЕДУЮЩАЯ ГЛАВА",
+        "campaign_retry":"ПОВТОРИТЬ ЭТУ ГЛАВУ",
+        "campaign_replay":"НАЧАТЬ КАМПАНИЮ ЗАНОВО",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
         "brief_thermal": "ТЕПЛОВОЙ КАСКАД: опасный перегрев и повторные импульсы. E — долгий ремонт, Q — быстрый сброс ценой кислорода и здоровья.",
@@ -87,6 +91,10 @@ const COPY := {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
         "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
+        "campaign_start":"CAMPAIGN  /  THREE SHIFTS",
+        "campaign_next":"NEXT CHAPTER",
+        "campaign_retry":"RETRY THIS CHAPTER",
+        "campaign_replay":"REPLAY THREE SHIFTS",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
         "brief_thermal": "THERMAL CASCADE: dangerous heat and recurring pulses. E — careful 15s repair; Q — rapid purge with resource loss.",
@@ -1159,6 +1167,25 @@ func _checkpoint_payload() -> Dictionary:
         "visited_sectors":visited_sectors.duplicate()
     }
 
+func _save_campaign_intermission() -> bool:
+    # Saving at the end of a won chapter must NOT leave an unresumable record
+    # pointing at the finished old scenario. Write a validated checkpoint
+    # for the NEXT playable chapter, while keeping the victory screen live.
+    if not campaign.active or campaign.complete() or not session.won:
+        return false
+    var pending_engine := IPCrisisEngine.new()
+    if not campaign.start_current(pending_engine):
+        return false
+    var pending_story := IPStoryDirector.new()
+    pending_story.reset(pending_engine.scenario_id)
+    var payload: Dictionary = _checkpoint_payload()
+    payload["engine"] = pending_engine.checkpoint()
+    payload["story"] = pending_story.checkpoint()
+    payload["scenario"] = pending_engine.scenario_id
+    payload["player_position"] = [0.0,1.1,2.0]
+    payload["visited_sectors"] = []
+    return checkpoint_store.save(payload,checkpoint_path)
+
 func _save_checkpoint() -> bool:
     # A headless CI test never writes the shared user checkpoint slot.
     if DisplayServer.get_name() == "headless" or not started or session.finished():
@@ -1303,6 +1330,7 @@ func _restart() -> void:
     else:
         session.reset(selected_scenario)
     story.reset(selected_scenario)
+    _update_scenario_picker()
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     if DisplayServer.get_name() != "headless":
@@ -1672,7 +1700,10 @@ func _show_end() -> void:
         campaign.record_victory(session)
     end_panel.visible = true
     if DisplayServer.get_name() != "headless":
-        checkpoint_store.clear(checkpoint_path)
+        if campaign.active and session.won and not campaign.complete():
+            _save_campaign_intermission()
+        else:
+            checkpoint_store.clear(checkpoint_path)
     end_title.text = _copy("victory") if session.won else _copy("failure")
     var template: String = _copy("stats")
     end_stats.text = template.format({"time":"%.0f" % session.elapsed,"switches":session.switches,"faults":session.faults,"grade":session.grade()})
