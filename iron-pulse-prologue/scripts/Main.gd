@@ -1784,6 +1784,8 @@ func _refresh_hud() -> void:
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
         _copy("rescue_count").format({"used":session.relays_activated.size()})]
+    if campaign.active:
+        allocation_label.text += "  |  %d/3" % campaign.stage_number()
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
