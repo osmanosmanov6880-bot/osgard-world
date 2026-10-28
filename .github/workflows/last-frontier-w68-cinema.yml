@@ -1,0 +1,229 @@
+name: LAST FRONTIER W68 real industrial PBR cinema art (PRODUCTION HOLD)
+
+on:
+  pull_request:
+    branches:
+      - design/last-frontier-w67-industrial-cinematic-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W68_ART_ACCEPTANCE.md'
+      - '.github/workflows/last-frontier-w68-cinema.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w68-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  source-pinned-visual-art:
+    name: Exact approved W67 base and original 6-cycle gameplay/room scripts untouched
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Exact immutable original Godot and only audited material/HUD changes
+        shell: bash
+        env:
+          W68_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w68-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='676dbb045dfc3426f7e38937fa0eacf9350314a2'
+          head=os.environ['W68_HEAD']
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only',base,head).splitlines())
+          allowed={
+              'w63-a7-cascade/scripts/A7CinematicMaterialLab.gd',
+              'w63-a7-cascade/scripts/A7CinematicHeroSet.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7CinematicHud.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w68_industrial_cinema.gd',
+              'w63-a7-cascade/ci/w68_browser_art.py',
+              '.github/workflows/last-frontier-w68-cinema.yml',
+              'docs/LAST_FRONTIER_W68_ART_ACCEPTANCE.md',
+          }
+          assert changed==allowed,{'unexpected':sorted(changed-allowed),
+                                   'missing':sorted(allowed-changed)}
+          immutable=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirector.gd',
+              'w63-a7-cascade/scripts/A7ProceduralAudio.gd',
+              'w63-a7-cascade/scripts/A7ArchitecturalDetail.gd',
+              'w63-a7-cascade/scripts/A7IndustrialCathedral.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w64_real_3d_stage.gd',
+              'w63-a7-cascade/tests/test_w65_story_audio.gd',
+              'w63-a7-cascade/tests/test_w67_cinematic_sectors.gd',
+              'w63-a7-cascade/ci/w64_browser_acceptance.py',
+              'w63-a7-cascade/ci/w65_browser_story_audio.py',
+              'w63-a7-cascade/ci/w67_browser_sectors.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+              'w33-godot-native/scripts/OSGARDCore.gd',
+              'w33-godot-native/scripts/OSGARDMain.gd',
+              '.github/workflows/last-frontier-w67-industrial-cinematic.yml',
+          ]
+          pinned={}
+          for file in immutable:
+              previous=git('rev-parse',base+':'+file)
+              now=git('rev-parse',head+':'+file)
+              assert previous==now,'Protected exact original blob changed: '+file
+              pinned[file]=now
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          materials=Path('w63-a7-cascade/scripts/A7CinematicMaterialLab.gd').read_text()
+          hero=Path('w63-a7-cascade/scripts/A7CinematicHeroSet.gd').read_text()
+          assert 'ImageTexture.create_from_image' in materials
+          assert 'TorusMesh.new()' in hero and 'SpotLight3D.new()' in hero
+          for code in [materials,hero]:
+              assert 'HTTPClient' not in code and 'OS.execute' not in code
+              assert 'model.choose(' not in code and 'JavaScriptBridge' not in code
+          record={
+              'schema':'LAST_FRONTIER_W68_EXACT_W67_ORIGINAL_ART_V1',
+              'status':'PASS','source_sha':head,'base_sha':base,
+              'changed_paths':sorted(changed),'protected_blobs':pinned,
+              'original_game_mechanics_changed':False,
+              'external_assets_injected':False,
+              'hardware_certified':False,
+              'master_merge_approved':False,
+              'public_release_approved':False,
+          }
+          Path('w68-evidence/W68_EXACT_SOURCE.json').write_text(
+              json.dumps(record,indent=2,ensure_ascii=False)+'\n')
+          print('W68 TRUE SOURCE PIN PASS: 18 protected original Godot/CI blobs')
+          PY
+      - name: Retain exact reviewed Git source attestation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w68-original-source-${{ github.event.pull_request.head.sha }}
+          path: w68-evidence/W68_EXACT_SOURCE.json
+          retention-days: 45
+          if-no-files-found: warn
+
+  actual-pbr-godot-and-chromium:
+    name: Actual Godot textured meshes, 6-cycle win, W63-W67 regression and two 3D camera PNG sets
+    needs: source-pinned-visual-art
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Godot 4.4.1 import true PBR procedural material sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w68-evidence
+          timeout --signal=TERM --kill-after=5s 220s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w68-evidence/native-import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w68-evidence/native-import.log; then exit 1; fi
+      - name: Run actual all five native Godot tests, no original test editing
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w64_real_3d_stage test_w65_story_audio test_w67_cinematic_sectors test_w68_industrial_cinema; do
+            echo "W68 original real-Godot regression: $test"
+            timeout --signal=TERM --kill-after=5s 280s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w68-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w68-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w68-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W64 REAL NATIVE 3D CINEMATIC GAME PASS:' w68-evidence/test_w64_real_3d_stage.log
+          grep -q 'LAST FRONTIER W65 ORIGINAL GAME CAUSAL STORY + SYNTH AUDIO PASS:' w68-evidence/test_w65_story_audio.log
+          grep -q 'LAST FRONTIER W67 REAL TWO-ZONE INDUSTRIAL CINEMA PASS:' w68-evidence/test_w67_cinematic_sectors.log
+          grep -q 'LAST FRONTIER W68 REAL ORIGINAL PBR HERO AND COMPLETE GODOT GAME PASS:' w68-evidence/test_w68_industrial_cinema.log
+      - name: Export original fully playable Godot WebGL WASM+PCK
+        shell: bash
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w68-evidence/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w68-evidence/web-export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$EXACT_HEAD" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install actual Chromium/Pillow for original frame checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/last-frontier-w68
+          /tmp/last-frontier-w68/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/last-frontier-w68/bin/python -m playwright install --with-deps chromium
+      - name: Original W67 two-room/390px browse and W68 original microtexture/hero/phone visual QA
+        shell: bash
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 1150s /tmp/last-frontier-w68/bin/python w63-a7-cascade/ci/w67_browser_sectors.py --export w63-a7-cascade/build/web --evidence w68-evidence/w67-regression --sha "$EXACT_HEAD" 2>&1 | tee w68-evidence/w67-browser.log
+          grep -q 'LAST FRONTIER W67 TRUE TWO-ROOM GODOT WEBGL CHROMIUM PASS:' w68-evidence/w67-browser.log
+          timeout --signal=TERM --kill-after=10s 1150s /tmp/last-frontier-w68/bin/python w63-a7-cascade/ci/w68_browser_art.py --export w63-a7-cascade/build/web --evidence w68-evidence/real-pbr-browser --sha "$EXACT_HEAD" 2>&1 | tee w68-evidence/w68-browser.log
+          grep -q 'LAST FRONTIER W68 REAL PBR THREE-DIMENSIONAL WEBGL GAME PASS:' w68-evidence/w68-browser.log
+          python3 - <<'PY'
+          import json,os,hashlib
+          from pathlib import Path
+          head=os.environ['EXACT_HEAD']
+          root=Path('w68-evidence/real-pbr-browser')
+          report=json.loads((root/'W68_ORIGINAL_VISUAL_ACCEPTANCE.json').read_text())
+          assert report['status']=='PASS' and report['source_sha']==head
+          assert report['real_chromium_webassembly']
+          assert report['actual_procedural_microtextures']==7
+          assert len(report['pictures'])==4
+          for photo in report['pictures']:
+              bytes_=(root/photo['filename']).read_bytes()
+              assert hashlib.sha256(bytes_).hexdigest()==photo['sha256']
+          assert not report['physical_gpu_benchmark_available']
+          assert not report['human_aaa_art_approval']
+          assert not report['production_approved']
+          print('W68 four source-bound genuine original Chromium art frames SHA256 PASS')
+          PY
+      - name: Retain actual executable WebGL+PBR images+logs for human art direction
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w68-real-godot-pbr-browser-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w68-evidence/
+          retention-days: 45
+          if-no-files-found: warn
+
+  formal-production-hold:
+    name: W68 still not AAA certified, consumer tested, legally titled or published
+    needs: [source-pinned-visual-art, actual-pbr-godot-and-chromium]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Require exact real source and game PASS, never auto-merge or deploy
+        shell: bash
+        env:
+          SOURCE: ${{ needs.source-pinned-visual-art.result }}
+          RENDER: ${{ needs.actual-pbr-godot-and-chromium.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$RENDER" = success
+          echo 'W68 REAL TEXTURED INDUSTRIAL 3D VISUAL SOFTWARE CANDIDATE PASS'
+          echo 'PRODUCTION HOLD: consumer GPU, 1% low, qualified art director, 12 players, trademark, signed commercial GO absent'
