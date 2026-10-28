@@ -171,6 +171,7 @@ var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var campaign: IPCampaignFlow = IPCampaignFlow.new()
+var world_launch: Dictionary = IPWorldLaunch.parse("")
 var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
 const CAMPAIGN_RECORD_PATH: String = "user://iron_pulse_campaign_progress_v9.json"
 var art_stage: IPCinematicStage
@@ -270,8 +271,13 @@ var _browser_css_size: Vector2i = Vector2i.ZERO
 var _last_web_resize_check: float = -99.0
 
 func _ready() -> void:
-    session.reset()
-    story.reset(session.scenario_id)
+    var initial_query: String = ""
+    if OS.has_feature("web"):
+        # Only read URL search; no code evaluation or remote commands.
+        var browser: Variant = JavaScriptBridge.get_interface("window")
+        if browser != null:
+            initial_query = str(browser.location.search)
+    _apply_world_launch(initial_query)
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -291,6 +297,24 @@ func _ready() -> void:
     _refresh_hud()
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _apply_world_launch(query: String) -> void:
+    # The URL chooses a legitimate mission; it cannot start or win a run.
+    if started:
+        return
+    var parsed: Dictionary = IPWorldLaunch.parse(query)
+    world_launch = parsed.duplicate(true)
+    locale = str(parsed["lang"])
+    selected_scenario = str(parsed["scenario"])
+    campaign = IPCampaignFlow.new()
+    if bool(parsed["campaign"]):
+        campaign.begin()
+        selected_scenario = campaign.current_scenario()
+    session.reset(selected_scenario)
+    story.reset(selected_scenario)
+    if intro_panel != null:
+        _update_scenario_picker()
+        _refresh_hud()
 
 func _attach_web_state() -> void:
     if not OS.has_feature("web"):
@@ -394,6 +418,13 @@ func _publish_web_state() -> void:
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["story"] = story.diagnostic()
     state["campaign"] = campaign.diagnostic()
+    state["world_launch"] = {
+        "schema":IPWorldLaunch.FORMAT,
+        "scenario":selected_scenario,
+        "lang":locale,
+        "campaign":campaign.active,
+        "requested_campaign":bool(world_launch.get("campaign",false))
+    }
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
     state["campaign_echoes"] = campaign_echoes.readout() if campaign_echoes != null else {}
     state["relay_3d_terminals"] = relay_terminals.size()
@@ -1314,7 +1345,12 @@ func _update_scenario_picker() -> void:
 func _select_scenario(next_scenario: String) -> void:
     if started or not IPCrisisEngine.SCENARIOS.has(next_scenario):
         return
+    # Explicit solo scenario selection overrides a prior campaign deep link.
+    if campaign.active:
+        campaign = IPCampaignFlow.new()
+        world_launch["campaign"] = false
     selected_scenario = next_scenario
+    world_launch["scenario"] = next_scenario
     session.reset(next_scenario)
     story.reset(next_scenario)
     radio_ttl = 0.0
