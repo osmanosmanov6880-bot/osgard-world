@@ -36,6 +36,7 @@ jobs:
             'w63-a7-cascade/scripts/A7CinematicStage.gd',
             'w63-a7-cascade/scripts/A7CascadeScreen.gd',
             'w63-a7-cascade/tests/test_w76_immersive_level.gd',
+            'w63-a7-cascade/ci/w76_browser_immersive.py',
             '.github/workflows/last-frontier-w76-immersive.yml',
             'docs/LAST_FRONTIER_W76_IMMERSIVE_GAME.md',
           }
@@ -82,6 +83,39 @@ jobs:
           godot --headless --path . --export-release Web build/web/index.html
           cd ..
           python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install Chromium and Pillow for original Godot WebGL gameplay
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w76
+          /tmp/a7-w76/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w76/bin/python -m playwright install --with-deps chromium
+      - name: Original W74 and new W76 real Chromium human-input visual game regressions
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout 1150s /tmp/a7-w76/bin/python w63-a7-cascade/ci/w74_browser_feedback.py --export w63-a7-cascade/build/web --evidence w76-evidence/w74-source-regression --sha "$SHA" 2>&1 | tee w76-evidence/w74-chromium.log
+          grep -q 'LAST FRONTIER W74 TRUE NATIVE 3D FEEDBACK AND FRAME TELEMETRY CHROMIUM PASS:' w76-evidence/w74-chromium.log
+          timeout 1150s /tmp/a7-w76/bin/python w63-a7-cascade/ci/w76_browser_immersive.py --export w63-a7-cascade/build/web --evidence w76-evidence/w76-real-browser --sha "$SHA" 2>&1 | tee w76-evidence/w76-chromium.log
+          grep -q 'LAST FRONTIER W76 TRUE FIRST-PERSON IMMERSIVE WEBGL CHROMIUM PASS:' w76-evidence/w76-chromium.log
+          python3 - <<'PY'
+          import json,hashlib,os
+          from pathlib import Path
+          root=Path('w76-evidence/w76-real-browser')
+          record=json.loads((root/'W76_TRUE_GAME_CHROMIUM.json').read_text())
+          assert record['source_sha']==os.environ['SHA']
+          assert record['result']=='PASS'
+          assert len(record['screenshots'])==6
+          assert record['real_original_Godot_4_4_1_WebAssembly']
+          assert record['original_A7_gameplay_no_fake_win']
+          assert not record['consumer_gpu_60fps_certified']
+          assert not record['commercial_aaa_release_approved']
+          for item in record['screenshots']:
+              data=(root/item['name']).read_bytes()
+              assert len(data)>12000 and len(data)==item['bytes']
+              assert hashlib.sha256(data).hexdigest()==item['sha256']
+          print('W76 exactly 13 original W74/W76 unmodified Chromium screenshots source-bound PASS')
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
