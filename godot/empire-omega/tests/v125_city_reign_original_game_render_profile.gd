@@ -87,9 +87,18 @@ func _run() -> void:
 		"viewport":[VIEW.x,VIEW.y],
 		"quality":[]
 	}
+	# The live game owns an adaptive graphics governor. A visual-only
+	# WorldBuilder override is NOT a true user-selected mode: the game's
+	# existing 1.1s LOD timer would overwrite it with the saved setting.
+	# Pin the actual runtime controller *inside this non-shipped QA script*.
+	var governor: Object = game.get("adaptive_graphics")
+	if governor==null:
+		push_error("Missing original live-game graphics governor")
+		quit(2)
+		return
 	for quality in ["low","standard","cinematic"]:
-		world.call("apply_visual_budget",quality)
-		# Measure actual player-focused meshes, not an artificial global mode.
+		governor.call("configure",quality,false)
+		game.call("_apply_visual_budget")
 		world.call("update_chunks",car.global_position,quality)
 		for i in range(WARMUP_FRAMES):
 			await RenderingServer.frame_post_draw
@@ -118,6 +127,9 @@ func _run() -> void:
 		if image.save_png(screenshot)!=OK:
 			issues.append("Original Godot pixel save failed for "+quality)
 		stats["graphics_tier"] = quality
+		stats["runtime_effective_graphics"] = str(governor.call("effective_quality"))
+		if stats["runtime_effective_graphics"] != quality:
+			issues.append("Runtime mode drift during native render profile: "+quality)
 		stats["frame_brightness"] = snappedf(luma,0.001)
 		stats["capture"] = screenshot.get_file()
 		stats["actual_source_street_batches"] = detail.get_child_count()
