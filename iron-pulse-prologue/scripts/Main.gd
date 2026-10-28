@@ -44,6 +44,10 @@ const COPY := {
         "rescue_medbay": "МЕДИЦИНСКИЙ УЗЕЛ", "rescue_quench": "ТЕПЛОВОЙ ГАСИТЕЛЬ", "rescue_uplink": "СВЯЗЬ И ЭВАКУАЦИЯ",
         "rescue_count": "СПАСАТЕЛЬНЫЕ СТАНЦИИ {used}/2",
         "rescue_final": "Станции спасения: {used}/2",
+        "relay_medbay": "МЕДБЛОК: воздух и здоровье восстановлены.",
+        "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
+        "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
+        "relay_budget": "ЛИМИТ: доступны только две станции спасения.",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -107,6 +111,10 @@ const COPY := {
         "rescue_medbay": "MEDICAL BAY", "rescue_quench": "HEAT SUPPRESSOR", "rescue_uplink": "EVACUATION UPLINK",
         "rescue_count": "RESCUE NETWORK {used}/2",
         "rescue_final": "Rescue stations: {used}/2",
+        "relay_medbay": "MEDBAY: air and crew condition restored.",
+        "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
+        "relay_uplink": "UPLINK: additional evacuation time secured.",
+        "relay_budget": "CAPACITY LIMIT: only two rescue stations may run.",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -1489,9 +1497,19 @@ func _refresh_hud() -> void:
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
     var nearby: Dictionary = _nearest_terminal()
-    if not nearby.is_empty() and started and not session.finished():
+    var rescue: Dictionary = _nearest_relay()
+    var show_rescue: bool = not rescue.is_empty()
+    if show_rescue and not nearby.is_empty():
+        show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
+    if started and not session.finished() and show_rescue:
+        var relay_dist: float = _physical_distance(rescue["position"])
+        var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
+        var rescue_key: String = "rescue_hint" if available else "rescue_spent"
+        interaction_label.text = _copy(rescue_key).format({
+            "name":_copy(str(rescue["key"])),"distance":"%.1f" % relay_dist})
+    elif not nearby.is_empty() and started and not session.finished():
         var at: Vector3 = nearby["position"]
-        var dist: float = Vector2(at.x,at.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
+        var dist: float = _physical_distance(at)
         var hint_key: String = "choice_hint" if str(nearby["id"]) == "repair" and session.scenario_id != "blackout" and not session.coolant_repaired else "hint"
         interaction_label.text = _copy(hint_key).format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % dist})
     else:
@@ -1539,5 +1557,11 @@ func _update_terminal_highlights(objective_key: String) -> void:
         var active: bool = key == objective_key or (objective_key == "charge" and (key == "bus_a" or key == "bus_b"))
         var indicator: MeshInstance3D = info["indicator"]
         var material: StandardMaterial3D = _terminal_active_material if active else _terminal_idle_material
+        if indicator.material_override != material:
+            indicator.material_override = material
+    for relay in relay_terminals:
+        var indicator: MeshInstance3D = relay["indicator"]
+        var activated: bool = session.relays_activated.has(str(relay["id"]))
+        var material: StandardMaterial3D = _relay_done_material if activated else _relay_ready_material
         if indicator.material_override != material:
             indicator.material_override = material
