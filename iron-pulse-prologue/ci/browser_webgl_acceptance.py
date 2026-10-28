@@ -245,6 +245,52 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                     real_width, real_height)
                                 assert rect[1] + rect[3] < cards["prompt"][1] - 1, (
                                     "Mobile touch target obstructed by prompt card",label,rect,cards["prompt"])
+                        # V9: the optional full campaign must be an actual
+                        # clickable native Godot UI on BOTH PC and phone, not
+                        # a mockup, CSS overlay or injected game method.
+                        assert idle.get("campaign_enabled") is False and idle.get("campaign",{}).get("wins")==0, (
+                            "Old standalone entry must remain compatible",idle.get("campaign"))
+                        campaign_rect = idle.get("campaign_button_rect",[])
+                        assert len(campaign_rect)==4 and campaign_rect[2]>=110 and campaign_rect[3]>=40, (
+                            "Campaign control is absent or too small on the REAL Godot UI",campaign_rect)
+                        box = canvas.bounding_box()
+                        assert box is not None,("No physical Godot canvas",name)
+                        cx = box["x"]+(campaign_rect[0]+campaign_rect[2]/2)*box["width"]/idle["viewport"][0]
+                        cy = box["y"]+(campaign_rect[1]+campaign_rect[3]/2)*box["height"]/idle["viewport"][1]
+                        assert 0<=cx<size["width"] and 0<=cy<size["height"], (
+                            "Native campaign toggle is outside actual screen",name,(cx,cy),campaign_rect)
+                        def click_campaign():
+                            if mobile:
+                                page.touchscreen.tap(cx,cy)
+                            else:
+                                page.mouse.click(cx,cy)
+                        click_campaign()
+                        deadline=time.monotonic()+30
+                        selected_campaign={}
+                        while time.monotonic()<deadline:
+                            selected_campaign=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if selected_campaign.get("campaign_enabled") is True:
+                                break
+                            page.wait_for_timeout(200)
+                        assert selected_campaign.get("campaign_enabled") is True and selected_campaign.get("campaign",{}).get("next_scenario") == "blackout", (
+                            "Real campaign button failed to open the first chapter",selected_campaign)
+                        assert selected_campaign.get("scenario") == "blackout" and selected_campaign.get("started") is False, (
+                            "Campaign selection accidentally started or skipped a mission",selected_campaign)
+                        click_campaign()
+                        deadline=time.monotonic()+30
+                        disabled_campaign={}
+                        while time.monotonic()<deadline:
+                            disabled_campaign=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if disabled_campaign.get("campaign_enabled") is False:
+                                break
+                            page.wait_for_timeout(200)
+                        assert disabled_campaign.get("campaign_enabled") is False and disabled_campaign.get("scenario") == "blackout", (
+                            "Legacy standalone picker did not recover after exiting campaign",disabled_campaign)
+                        report.setdefault("v9_real_campaign_menu",{})[name]={
+                            "real_native_toggle":True,"click_input":"touch" if mobile else "mouse",
+                            "button_rect":campaign_rect,
+                            "sequential_stages":disabled_campaign.get("campaign",{}).get("wins")==0
+                        }
                         # Real Godot input: three different emergencies selected
                         # with genuine native Button clicks/taps, not state injection.
                         selector_rects = idle.get("scenario_button_rects", {})
