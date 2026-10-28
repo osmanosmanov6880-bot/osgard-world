@@ -85,6 +85,9 @@ jobs:
             v135_city_reign_turn_signals \
             v136_city_reign_drive_navigation \
             v137_city_reign_driver_awareness \
+            v138_city_reign_traffic_following \
+            v139_city_reign_signal_auto_cancel \
+            v140_city_reign_real_road_chevron \
             v97_r123_real_pedestrian_body_gait \
             v68_r47_predictive_crosswalk_traffic \
             v110_city_reign_first_mandate \

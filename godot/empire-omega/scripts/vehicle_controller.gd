@@ -13,6 +13,7 @@ const YAW_INERTIA = preload("res://scripts/horizon_yaw_inertia.gd")
 const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
 const R46_LOAD_TRANSFER = preload("res://scripts/horizon_r46_load_transfer.gd")
 const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
+const SIGNAL_CANCEL = preload("res://scripts/city_reign_signal_cancel.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -34,6 +35,9 @@ var brake_lamp_nodes: Array[MeshInstance3D] = []
 var indicator_lamps: Dictionary = {"left":[],"right":[]}
 var indicator_mode: String = "off"
 var indicator_phase: float = 0.0
+var indicator_yaw_last: float = 0.0
+var indicator_angle_progress: float = 0.0
+var indicator_distance: float = 0.0
 var _indicator_lit: Dictionary = {"left":true,"right":true}
 var brake_lights_on := false
 var handbrake_on := false
@@ -110,11 +114,17 @@ func _create_indicators() -> void:
 func set_indicator_mode(value: String) -> void:
 	indicator_mode = SIGNAL_LOGIC.normalized_mode(value)
 	indicator_phase = 0.0
+	indicator_yaw_last = rotation.y
+	indicator_angle_progress = 0.0
+	indicator_distance = 0.0
 	_sync_indicator_lamps()
 
 func toggle_indicator(side: String) -> String:
 	indicator_mode = SIGNAL_LOGIC.toggle(indicator_mode,side)
 	indicator_phase = 0.0
+	indicator_yaw_last = rotation.y
+	indicator_angle_progress = 0.0
+	indicator_distance = 0.0
 	_sync_indicator_lamps()
 	return indicator_mode
 
@@ -122,6 +132,19 @@ func _tick_indicators(delta: float) -> void:
 	if indicator_mode!="off":
 		indicator_phase = SIGNAL_LOGIC.phase_after(indicator_phase,delta)
 	_sync_indicator_lamps()
+
+func _update_indicator_turn(covered: float,steering: float) -> void:
+	# R163: actual yaw and displacement after move_and_slide(), not
+	# an elapsed-time guess; intentional hazard lights stay untouched.
+	if indicator_mode=="left" or indicator_mode=="right":
+		indicator_angle_progress = SIGNAL_CANCEL.progress(indicator_mode,
+			indicator_yaw_last,rotation.y,indicator_angle_progress,covered,speed)
+		if is_finite(covered):
+			indicator_distance += maxf(0.0,covered)
+		if SIGNAL_CANCEL.completed(indicator_mode,indicator_angle_progress,
+			indicator_distance,steering,speed):
+			set_indicator_mode("off")
+	indicator_yaw_last = rotation.y
 
 func _sync_indicator_lamps() -> void:
 	for side_name in ["left","right"]:
@@ -316,6 +339,7 @@ func _physics_process(delta: float) -> void:
 	var physical_limit: float = maxf(MAX_FORWARD * speed_factor,MAX_REVERSE * speed_factor) * delta * 1.35 + 0.35
 	if covered > physical_limit:
 		covered = 0.0
+	_update_indicator_turn(covered,applied_steering)
 	mileage += covered
 	var spin: float = covered / 0.44 * signf(speed)
 	var longitudinal_acceleration: float = (speed-prior_speed)/maxf(delta,0.001)

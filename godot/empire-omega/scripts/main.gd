@@ -10,6 +10,7 @@ const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
 const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
 const CITY_REIGN_CAMERA = preload("res://scripts/city_reign_camera_modes.gd")
 const CITY_REIGN_GUIDANCE = preload("res://scripts/city_reign_road_guidance.gd")
+const CITY_REIGN_ROUTE_CHEVRON = preload("res://scripts/city_reign_route_chevron.gd")
 const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
 const DRIVER_SENSE = preload("res://scripts/city_reign_driver_awareness.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
@@ -52,6 +53,7 @@ var city_reign_crisis: Node3D
 var city_reign_proposals: Node3D
 var city_reign_opening_director: Node3D
 var road_guidance: MeshInstance3D
+var route_chevron: MeshInstance3D
 var drive_nav_status: Dictionary = {}
 var drive_warning_status: Dictionary = {}
 var drive_sensor_timer: float = 0.0
@@ -156,6 +158,8 @@ func _ready() -> void:
 	_spawn_citizens()
 	road_guidance = CITY_REIGN_GUIDANCE.new()
 	add_child(road_guidance)
+	route_chevron = CITY_REIGN_ROUTE_CHEVRON.new()
+	add_child(route_chevron)
 	patrols = POLICE_SCENE.new()
 	add_child(patrols)
 	patrols.traffic_signals = traffic_signals
@@ -355,6 +359,7 @@ func _spawn_citizens() -> void:
 		pedestrians.append(citizen)
 	for traffic in ambient_cars:
 		traffic.citizens = pedestrians
+		traffic.neighbors = ambient_cars
 
 func _stopped_traffic_count() -> int:
 	var stopped := 0
@@ -513,6 +518,7 @@ func _physics_process(delta: float) -> void:
 	if not route_allowed:
 		if hud.map != null: hud.map.route.clear()
 		if road_guidance != null: road_guidance.clear_route()
+		if route_chevron != null: route_chevron.clear_turn()
 	if route_allowed and (route_refresh >= 1.25 or last_route_goal.distance_to(goal) > 2.0):
 		route_refresh = 0.0
 		last_route_goal = goal
@@ -520,8 +526,12 @@ func _physics_process(delta: float) -> void:
 		if hud.map != null: hud.map.route = ground_route
 		if road_guidance != null:
 			road_guidance.sync_route(ground_route,protagonist,true,adaptive_graphics.effective_quality())
+		if route_chevron != null:
+			route_chevron.show_from_route(ground_route,protagonist,adaptive_graphics.effective_quality(),true)
 	if road_guidance != null:
 		road_guidance.visible = route_allowed and not cabinet_open and road_guidance.mesh != null
+	if route_chevron != null:
+		route_chevron.visible = route_allowed and not cabinet_open and route_chevron.active
 	# R162 sensor reads real scene velocities only at 4 Hz; no new rays
 	# or fake goals, and no effect on the vehicle physics time step.
 	drive_sensor_timer += delta
@@ -714,6 +724,7 @@ func _apply_visual_budget() -> void:
 	world.sun.shadow_enabled = effective != "low"
 	world.apply_visual_budget(effective)
 	if road_guidance != null: road_guidance.set_quality(effective)
+	if route_chevron != null: route_chevron.set_quality(effective)
 	# A17 real physical signal geometry: desktop 3-LED die-cast heads in
 	# nine shared GPU draws; LOW uses the EXACT original simple signals.
 	# No re-spawn, traffic AI update or shadow-map allocation on switches.
