@@ -45,6 +45,11 @@ const RU := {
     "quality_hero": "ГРАФИКА / HERO", "quality_eco": "ГРАФИКА / ECO",
     "motion_on": "АНИМАЦИЯ / ВКЛ", "motion_off": "АНИМАЦИЯ / ВЫКЛ",
     "visual": "ТЕПЛО %d   •   ДАВЛЕНИЕ %d   •   ЭНЕРГИЯ %d",
+    "area_core": "СЕКТОР 01 / РЕАКТОР",
+    "area_relay": "СЕКТОР 02 / РЕЛЕЙНЫЙ ЗАЛ",
+    "guide_prev": "← НАЗАД",
+    "guide_next": "ВПЕРЁД →",
+    "tour_status": "ПУТЬ ОПЕРАТОРА %d%%  •  W/A — ДВИЖЕНИЕ, N — ПЕРЕХОД",
     "sound_on": "ЗВУК / ВКЛ", "sound_off": "ЗВУК / ВЫКЛ",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
@@ -78,6 +83,11 @@ const EN := {
     "quality_hero": "QUALITY / HERO", "quality_eco": "QUALITY / ECO",
     "motion_on": "MOTION / ON", "motion_off": "MOTION / OFF",
     "visual": "HEAT %d   •   PRESSURE %d   •   ENERGY %d",
+    "area_core": "SECTOR 01 / REACTOR",
+    "area_relay": "SECTOR 02 / RELAY HALL",
+    "guide_prev": "← BACK",
+    "guide_next": "FORWARD →",
+    "tour_status": "GUIDED INSPECTION %d%%  •  W/A MOVE, N SWITCH SECTOR",
     "sound_on": "SOUND / ON", "sound_off": "SOUND / OFF",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
@@ -104,6 +114,9 @@ var visual_container: SubViewportContainer
 var sub_viewport: SubViewport
 var stage_3d: A7CinematicStage
 var cinematic_hud: A7CinematicHud
+var sector_buttons: Array[Button] = []
+var route_buttons: Array[Button] = []
+var route_label: Label
 var cinema_caption: Label
 var cinema_readout: Label
 var camera_buttons: Array[Button] = []
@@ -253,6 +266,27 @@ func _build() -> void:
     motion_button.custom_minimum_size = Vector2(158, 42)
     sound_button = _button(cinema_controls, "", _toggle_sound)
     sound_button.custom_minimum_size = Vector2(138, 42)
+    # W67 real two-sector walk: native controls change only the camera
+    # position along the modeled catwalk, never the six-cycle puzzle state.
+    var route_rail := HFlowContainer.new()
+    route_rail.name = "TwoTrueSpatialSectors"
+    route_rail.add_theme_constant_override("h_separation", 9)
+    route_rail.add_theme_constant_override("v_separation", 7)
+    cinema.add_child(route_rail)
+    for idx in range(2):
+        var sector_view := _button(route_rail, "", _select_inspection_sector.bind(idx))
+        sector_view.name = "RealSector%02d" % (idx + 1)
+        sector_view.custom_minimum_size = Vector2(182, 42)
+        sector_buttons.append(sector_view)
+    var walk_back := _button(route_rail, "", _step_route.bind(-1))
+    walk_back.name = "WalkBackOn3DDeck"
+    walk_back.custom_minimum_size = Vector2(112, 42)
+    route_buttons.append(walk_back)
+    var walk_forward := _button(route_rail, "", _step_route.bind(1))
+    walk_forward.name = "WalkForwardOn3DDeck"
+    walk_forward.custom_minimum_size = Vector2(112, 42)
+    route_buttons.append(walk_forward)
+    route_label = _label(cinema, "", 11, MUTED)
     subtitle = _label(body, "", 15, MINT)
     intro = _label(body, "", 15, MUTED)
 
@@ -396,6 +430,16 @@ func _select_camera(index: int) -> void:
         stage_3d.set_camera(index)
     _render(model.snapshot())
 
+func _select_inspection_sector(index: int) -> void:
+    if stage_3d != null:
+        stage_3d.set_inspection_sector(index)
+    _render(model.snapshot())
+
+func _step_route(direction: int) -> void:
+    if stage_3d != null:
+        stage_3d.step_inspection_route(direction)
+    _render(model.snapshot())
+
 func _toggle_quality() -> void:
     quality = "eco" if quality == "hero" else "hero"
     if stage_3d != null:
@@ -464,6 +508,18 @@ func _unhandled_key_input(event: InputEvent) -> void:
         _toggle_sound()
         get_viewport().set_input_as_handled()
         return
+    if key.keycode == KEY_W:
+        _step_route(1)
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_A:
+        _step_route(-1)
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_N:
+        _select_inspection_sector(1 - stage_3d.sector_index)
+        get_viewport().set_input_as_handled()
+        return
     var keys := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5]
     var idx: int = keys.find(key.keycode)
     if idx >= 0 and idx < ACTION_ORDER.size():
@@ -525,6 +581,13 @@ func _render(state: Dictionary) -> void:
             camera_buttons[i].button_pressed = stage_3d.camera_index == i
         quality_button.text = _t("quality_" + quality)
         motion_button.text = _t("motion_off" if reduced_motion else "motion_on")
+        for idx in range(sector_buttons.size()):
+            sector_buttons[idx].text = _t("area_core" if idx == 0 else "area_relay")
+        route_buttons[0].text = _t("guide_prev")
+        route_buttons[1].text = _t("guide_next")
+        route_buttons[0].disabled = stage_3d.guide_progress <= 0.0
+        route_buttons[1].disabled = stage_3d.guide_progress >= 1.0
+        route_label.text = _t("tour_status") % roundi(stage_3d.guide_progress * 100.0)
     call_deferred("_publish_web_accessibility")
 
 func _create_web_accessibility() -> void:
@@ -574,6 +637,11 @@ func _publish_web_accessibility() -> void:
         "scene_lights": int(stage_state["real_lights"]),
         "w66_hud": cinematic_hud != null,
         "w66_art_meshes": int(stage_state.get("art_geometry", 0)),
+        "w67_cathedral_meshes": int(stage_state.get("cathedral_geometry", 0)),
+        "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
+        "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
+        "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
+        "w67_nav_steps": int(stage_state.get("inspection_navigation_moves", 0)),
         "renderer_camera": int(stage_state["camera"]),
         "energy_gauge": float(stage_3d.energy_gauge.scale.y),
         "renderer_frames": Engine.get_frames_drawn(),
@@ -597,6 +665,10 @@ func _publish_web_accessibility() -> void:
         "quality": _web_rect(quality_button),
         "motion": _web_rect(motion_button),
         "sound": _web_rect(sound_button),
+        "walk_back": _web_rect(route_buttons[0]),
+        "walk_forward": _web_rect(route_buttons[1]),
+        "sector_0": _web_rect(sector_buttons[0]),
+        "sector_1": _web_rect(sector_buttons[1]),
         "story": _web_rect(narrative_title),
         "forecast": _web_rect(forecast_label),
         "scroll": int(scroll.scroll_vertical),
