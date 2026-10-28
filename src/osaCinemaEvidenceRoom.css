@@ -1,0 +1,83 @@
+/* V62 / EVIDENCE ROOM — real verified architecture, visually calm production interface */
+.osa-evidence-room{--gold:#e9c38b;--cream:#f2e4d0;--muted:#c0af9a;--line:#69533b;--pane:#171a19;color:var(--cream);min-width:0}
+.osa-evidence-room *{box-sizing:border-box}
+.osa-evidence-room button,.osa-evidence-room input,.osa-evidence-room select,.osa-evidence-room textarea{font:inherit}
+.osa-evidence-room button:focus-visible,.osa-evidence-room a:focus-visible,.osa-evidence-room input:focus-visible,.osa-evidence-room textarea:focus-visible,.osa-evidence-room select:focus-visible,.osa-evidence-room summary:focus-visible{outline:2px solid #e9c38b;outline-offset:3px}
+.osa-evidence-room button:disabled{opacity:.48;cursor:not-allowed}
+.osa-evidence-room button:not(:disabled){cursor:pointer}
+.osa-evidence-intro{display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:28px}
+.osa-evidence-intro>div:first-child{flex:1;min-width:0}
+.osa-evidence-intro h3{font:400 clamp(31px,3vw,47px)/1.06 Georgia,serif;color:var(--cream);letter-spacing:-.045em;margin:15px 0 20px}
+.osa-evidence-intro p:not(.osa-studio-eyebrow){font:12px/1.85 'Segoe UI',sans-serif;color:var(--muted);max-width:620px}
+.osa-evidence-toolbar{display:flex;flex-wrap:wrap;gap:9px}
+.osa-evidence-toolbar button,.osa-evidence-actions button{display:inline-flex;align-items:center;gap:9px;border:1px solid #95714b;background:#211d17;color:#efcfa1;min-height:42px;padding:10px 14px;font:12px/1.5 'Segoe UI',sans-serif}
+.osa-evidence-toolbar button:hover,.osa-evidence-actions button:hover{border-color:#e7c18b}
+.osa-evidence-facts{display:flex;align-items:start;gap:15px;border:1px solid #9b6a4b;background:#2a201a;padding:22px 24px;margin:25px 0 26px}
+.osa-evidence-facts>svg{flex:none;color:#f1b58d}
+.osa-evidence-facts div{flex:1;display:flex;flex-direction:column;gap:7px}
+.osa-evidence-facts strong{font:400 21px Georgia,serif;color:#efd6c0}
+.osa-evidence-facts span{font:12px/1.8 'Segoe UI',sans-serif;color:#d5bba6}
+.osa-evidence-facts small{border:1px solid #a3705f;color:#f3b59e;white-space:nowrap;padding:7px 10px;font:10px monospace}
+.osa-evidence-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);background:#141716}
+.osa-evidence-overview>div{border-right:1px solid var(--line);display:flex;flex-direction:column;gap:9px;padding:25px 20px}
+.osa-evidence-overview>div:last-child{border-right:0;background:#32221c}
+.osa-evidence-overview strong{font:400 clamp(26px,2.8vw,40px) Georgia,serif;color:var(--gold)}
+.osa-evidence-overview>div:last-child strong{color:#eca998;font-size:clamp(22px,2.6vw,32px)}
+.osa-evidence-overview span{font:10px/1.6 monospace;color:#c7b4a0}
+.osa-evidence-filter{display:flex;justify-content:flex-end;margin:23px 0}
+.osa-evidence-filter label{display:flex;align-items:center;gap:12px;font:12px 'Segoe UI',sans-serif;color:var(--gold)}
+.osa-evidence-room select,.osa-evidence-room input,.osa-evidence-room textarea{background:#101413;border:1px solid #766044;color:var(--cream);min-height:44px;padding:10px 12px;font:13px/1.5 'Segoe UI',sans-serif;min-width:0;width:100%}
+.osa-evidence-room textarea{resize:vertical;min-height:100px}
+.osa-evidence-filter select{min-width:160px;width:auto;max-width:100%}
+.osa-evidence-list{display:grid;gap:15px}
+.osa-evidence-card{border:1px solid #6b543b;background:#181b1a;padding:clamp(18px,3vw,32px);min-width:0}
+.osa-evidence-card-head{display:flex;justify-content:space-between;align-items:start;gap:20px}
+.osa-evidence-card-head>div{flex:1;min-width:0}
+.osa-evidence-id{font:10px/1.7 monospace;letter-spacing:.075em;color:#cba56f}
+.osa-evidence-card h4{font:400 clamp(22px,2.5vw,33px)/1.2 Georgia,serif;color:#f2e1cc;margin:13px 0}
+.osa-evidence-card-head small{font:10px monospace;color:#b7a996;overflow-wrap:anywhere}
+.osa-evidence-pill{padding:8px 11px;font:10px/1.5 'Segoe UI',sans-serif;border:1px solid #b49a6d;color:#eac68d;background:#2c271d;flex:none;max-width:190px}
+.osa-evidence-pill.state-review_requested{border-color:#9dbcc1;color:#cbe0df;background:#233139}
+.osa-evidence-pill.state-needs_changes{border-color:#bd886f;color:#f5bfa7;background:#38251d}
+.osa-evidence-pill.state-internally_reviewed{border-color:#8fba9d;color:#c4dfc5;background:#23352b}
+.osa-evidence-description{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.7 'Segoe UI',sans-serif;color:#c9b9a6;margin:20px 0}
+.osa-evidence-source{display:flex;flex-wrap:wrap;align-items:start;gap:10px;padding:17px 0;border-top:1px solid #534838;border-bottom:1px solid #534838}
+.osa-evidence-source a{display:inline-flex;align-items:center;gap:8px;color:#d9b67b;font:12px 'Segoe UI',sans-serif;text-decoration:underline;text-underline-offset:4px}
+.osa-evidence-source>div{flex:1;min-width:150px;display:flex;flex-direction:column;gap:8px}
+.osa-evidence-source strong{font:10px monospace;color:#c6a071}
+.osa-evidence-source code{font:10px/1.6 monospace;overflow-wrap:anywhere;color:#ccbba3}
+.osa-evidence-source span{font:11px monospace;color:#bdad9a}
+.osa-evidence-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:18px}
+.osa-evidence-actions>span{font:11px/1.7 'Segoe UI',sans-serif;color:#d3b9a1}
+.osa-evidence-review-history{border-top:1px solid #544532;margin-top:25px;padding-top:15px}
+.osa-evidence-review-history summary{display:flex;align-items:center;gap:9px;color:var(--gold);font:12px 'Segoe UI',sans-serif;cursor:pointer}
+.osa-evidence-review-history>div{display:grid;gap:13px;margin-top:18px}
+.osa-evidence-review-history>div>div{padding:16px;border-left:2px solid #bc9870;background:#24221d}
+.osa-evidence-review-history strong{font:12px/1.6 'Segoe UI',sans-serif;color:#efdbc0}
+.osa-evidence-review-history small{display:block;color:#ad9c85;margin-top:5px;font:10px monospace}
+.osa-evidence-review-history p{font:12px/1.7 'Segoe UI',sans-serif;color:#d2bda5;margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.osa-evidence-create,.osa-evidence-review-form{display:flex;flex-direction:column;gap:19px;border:1px solid #a17b50;background:#211e19;padding:clamp(20px,3vw,36px);margin-top:30px}
+.osa-evidence-review-form{margin-top:24px;border-color:#779091;background:#192629}
+.osa-evidence-form-title{display:flex;align-items:center;gap:16px}
+.osa-evidence-form-title svg{color:#e3bf8d;flex:none}
+.osa-evidence-form-title h4{font:400 clamp(24px,2.7vw,35px) Georgia,serif;color:var(--cream);margin-top:9px}
+.osa-evidence-create>p,.osa-evidence-review-form>p{font:12px/1.7 'Segoe UI',sans-serif;color:#cabaa4}
+.osa-evidence-create label,.osa-evidence-review-form label{display:flex;flex-direction:column;gap:8px;font:12px/1.5 'Segoe UI',sans-serif;color:#e1c192}
+.osa-evidence-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.osa-evidence-form-actions{display:flex;gap:13px;flex-wrap:wrap}
+.osa-evidence-form-actions button,.osa-evidence-review-form>button{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;border:1px solid #ddbd8e;background:#dec18e;color:#21190f;padding:12px 18px;font:12px/1.5 'Segoe UI',sans-serif}
+.osa-evidence-form-actions button:nth-child(2){background:transparent;color:#edd0a7}
+.osa-evidence-review-form>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:13px}
+.osa-evidence-review-form h5{font:400 25px Georgia,serif;color:#d8ece7}
+.osa-evidence-review-form>div:first-child button{border:0;background:transparent;color:#d8ece7;padding:8px}
+.osa-evidence-status,.osa-evidence-empty,.osa-evidence-error,.osa-evidence-notice{display:flex;align-items:center;gap:10px;padding:20px;border:1px solid #6e5840;background:#211d18;font:12px/1.7 'Segoe UI',sans-serif;color:#e8ceb0}
+.osa-evidence-empty{justify-content:center;min-height:120px;color:#c6b29a}
+.osa-evidence-error{border-color:#bb8072;color:#f1b6a7;background:#34201c;margin-top:18px}
+.osa-evidence-notice{border-color:#6d987e;color:#c6e5d0;background:#213127;margin-top:18px}
+.osa-evidence-footer{display:flex;align-items:start;gap:13px;margin-top:38px;padding:22px;border:1px solid #7e6245;background:#1b1c18}
+.osa-evidence-footer svg{flex:none;color:#dab88a}
+.osa-evidence-footer span{flex:1;font:11px/1.8 'Segoe UI',sans-serif;color:#c7b39b}
+@media(max-width:740px){.osa-evidence-intro{align-items:start}.osa-evidence-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.osa-evidence-overview>div:nth-child(2){border-right:0}.osa-evidence-overview>div:nth-child(-n+2){border-bottom:1px solid var(--line)}.osa-evidence-card-head{flex-direction:column;gap:13px}.osa-evidence-pill{max-width:100%}.osa-evidence-facts{padding:18px 15px}.osa-evidence-facts small{display:none}.osa-evidence-form-grid{grid-template-columns:1fr}.osa-evidence-filter{justify-content:stretch}.osa-evidence-filter label{width:100%;display:flex}.osa-evidence-filter select{flex:1;min-width:0}.osa-evidence-room input,.osa-evidence-room select,.osa-evidence-room textarea{font-size:16px}}
+@media(max-width:350px){.osa-evidence-toolbar button{padding:9px 10px;font-size:11px}.osa-evidence-overview>div{padding:18px 12px}.osa-evidence-overview strong{font-size:25px}.osa-evidence-intro h3{font-size:29px}.osa-evidence-form-actions button{width:100%}.osa-evidence-footer>svg:last-child{display:none}}
+@media(prefers-reduced-motion:reduce){.osa-evidence-room *, .osa-evidence-room *::before,.osa-evidence-room *::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+@media print{.osa-evidence-toolbar,.osa-evidence-create,.osa-evidence-actions,.osa-evidence-filter,.osa-evidence-review-form{display:none!important}.osa-evidence-room{color:#141414!important}.osa-evidence-card,.osa-evidence-review-history{break-inside:avoid}}
