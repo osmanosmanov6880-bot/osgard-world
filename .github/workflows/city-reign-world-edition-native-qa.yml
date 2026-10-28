@@ -27,6 +27,7 @@ on:
       - 'godot/empire-omega/scripts/city_reign_live_site_inspection.gd'
       - 'godot/empire-omega/scripts/main.gd'
       - 'godot/empire-omega/tests/v131_city_reign_real_site_inspection.gd'
+      - 'godot/empire-omega/tests/v132_city_reign_pedestrian_waypoint_continuity.gd'
       - 'godot/empire-omega/docs/CITY-REIGN-WORLD-EDITION-PRODUCTION-BLOCK.md'
       - '.github/workflows/city-reign-world-edition-native-qa.yml'
   workflow_dispatch:
@@ -87,6 +88,7 @@ jobs:
             v129_city_reign_paid_crossing_traffic \
             v130_city_reign_community_park_live \
             v131_city_reign_real_site_inspection \
+            v132_city_reign_pedestrian_waypoint_continuity \
             v97_r123_real_pedestrian_body_gait \
             v68_r47_predictive_crosswalk_traffic \
             v110_city_reign_first_mandate \
