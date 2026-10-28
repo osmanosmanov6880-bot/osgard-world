@@ -120,7 +120,12 @@ export default function OSACinemaCollaboration(){
  }
  const invite=async(e:FormEvent)=>{
   e.preventDefault()
-  if(await write('member.set',{username:memberUsername,role:memberRole})){setMemberUsername('');setRemoveUsername('')}
+  if(busy)return
+  const submittedName=memberUsername,submittedRole=memberRole
+  if(await write('member.set',{username:submittedName,role:submittedRole})){
+    setMemberUsername(current=>current===submittedName?'':current)
+    setRemoveUsername('')
+  }
  }
  const removeMember=async(username:string)=>{
   if(removeUsername!==username){setRemoveUsername(username);return}
@@ -200,7 +205,7 @@ export default function OSACinemaCollaboration(){
        </div>}
        {selectedTab==='evidence'&&<section className="osa-collab-tabpanel osa-collab-evidence-container"><Suspense fallback={<p role="status" className="osa-collab-muted">{tr('Загрузка реестра источников…','Loading private evidence room…')}</p>}><EvidenceRoom spaceId={detail.space.id} role={detail.space.role} version={detail.space.version} filmId={detail.space.filmId} username={user?.username??''} locale={locale} onChanged={()=>refresh(detail.space.id)} /></Suspense></section>}
        {selectedTab==='people'&&<section className="osa-collab-tabpanel"><div className="osa-collab-people">{detail.members.map(person=><div key={person.id}><span><Users size={16}/><strong>{person.username}</strong><small>{person.role.toUpperCase()}</small></span>{owner&&person.role!=='owner'&&<button disabled={busy} type="button" onClick={()=>void removeMember(person.username)}>{removeUsername===person.username?tr('Подтвердить исключение','Confirm removal'):tr('Исключить','Remove')}</button>}</div>)}</div>
-       {owner&&<form className="osa-collab-task-form" onSubmit={e=>{void invite(e)}}><p className="osa-studio-eyebrow">OWNER ONLY / EXISTING CORE ACCOUNTS</p><h4>{tr('Предоставить доступ','Grant team access')}</h4><p>{tr('Добавить можно только существующего пользователя Core. Внешние письма не отправляются.','Only existing Core usernames may be added. No external invitation email is sent.')}</p><label>{tr('Логин аккаунта','Existing account username')}<input required minLength={3} maxLength={64} pattern="[A-Za-z0-9_.-]{3,64}" value={memberUsername} onChange={e=>setMemberUsername(e.target.value)}/></label><label>{tr('Роль','Role')}<select value={memberRole} onChange={e=>setMemberRole(e.target.value as 'editor'|'viewer')}><option value="editor">{tr('Редактор','Editor')}</option><option value="viewer">{tr('Наблюдатель','Viewer')}</option></select></label><button disabled={busy} type="submit"><Users size={16}/>{tr('Назначить роль на сервере','Save server-side role')}</button></form>}
+       {owner&&<form className="osa-collab-task-form" onSubmit={e=>{void invite(e)}}><p className="osa-studio-eyebrow">OWNER ONLY / EXISTING CORE ACCOUNTS</p><h4>{tr('Предоставить доступ','Grant team access')}</h4><p>{tr('Добавить можно только существующего пользователя Core. Внешние письма не отправляются.','Only existing Core usernames may be added. No external invitation email is sent.')}</p><label>{tr('Логин аккаунта','Existing account username')}<input required minLength={3} maxLength={64} pattern="[A-Za-z0-9_.-]{3,64}" disabled={busy} value={memberUsername} onChange={e=>setMemberUsername(e.target.value)}/></label><label>{tr('Роль','Role')}<select value={memberRole} disabled={busy} onChange={e=>setMemberRole(e.target.value as 'editor'|'viewer')}><option value="editor">{tr('Редактор','Editor')}</option><option value="viewer">{tr('Наблюдатель','Viewer')}</option></select></label><button disabled={busy} type="submit"><Users size={16}/>{tr('Назначить роль на сервере','Save server-side role')}</button></form>}
        </section>}
        {selectedTab==='audit'&&<section className="osa-collab-tabpanel"><div className="osa-collab-audit">{detail.audit.map(evt=><div key={evt.id}><FileClock size={16}/><span><strong>{evt.kind}</strong><small>{evt.actor} · {evt.at}</small></span><code>#{evt.id}</code></div>)}</div><p className="osa-collab-muted">{tr('Показываются последние 100 событий. Это внутренний журнал пилота, не сертифицированное юридическое доказательство.','Shows the latest 100 entries. This is a pilot activity log, not independently certified legal evidence.')}</p></section>}
       </>}
