@@ -692,6 +692,8 @@ func _publish_web_accessibility() -> void:
         "w68_genuine_texture_pixels": int(stage_state.get("w68_original_texture_pixels", 0)),
         "w68_restrained_hud": cinematic_hud != null and
             bool(cinematic_hud.qa_readout()["read_only"]),
+        "w68_mobile_hud_compact": cinematic_hud != null and
+            bool(cinematic_hud.qa_readout()["w68_compact_minimal"]),
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
