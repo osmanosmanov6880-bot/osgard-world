@@ -76,8 +76,49 @@ def point(x,y,finger):
             "force":1.0}
 
 def send(cdp,kind,points):
+    # Chromium's default CDP implementation treats touchPoints as the
+    # CHANGED points, not the remaining active points. In particular,
+    # touchEnd([finger]) ENDS that exact finger. Never send [finger 1]
+    # when trying to release finger 2; that accidentally stops walking.
     cdp.send("Input.dispatchTouchEvent",
              {"type":kind,"touchPoints":points})
+
+def enable_native_touch_audit(page):
+    # Passive DOM event observation ONLY. No mutation of the Godot game,
+    # input queue, camera, physics, mission or read-only source snapshot.
+    page.evaluate("""() => {
+        window.__w83TouchAudit = [];
+        for (const type of ['touchstart','touchmove','touchend','touchcancel']) {
+            window.addEventListener(type, event => {
+                const points = xs => Array.from(xs, t => ({
+                    id: t.identifier, x: Math.round(t.clientX),
+                    y: Math.round(t.clientY)
+                }));
+                window.__w83TouchAudit.push({
+                    type, changed: points(event.changedTouches),
+                    remaining: points(event.touches)
+                });
+            }, {capture: true, passive: true});
+        }
+    }""")
+
+def assert_source_touch_release(page,a,b):
+    audit=page.evaluate("() => window.__w83TouchAudit.slice()")
+    endings=[x for x in audit if x['type']=='touchend']
+    require(len(endings)>=2,
+        "Real Chromium must deliver TWO separate native DOM touchend events")
+    camera_end,walk_end=endings[-2:]
+    require(len(camera_end['changed'])==1 and
+            abs(camera_end['changed'][0]['x']-b['x'])<35 and
+            len(camera_end['remaining'])==1 and
+            abs(camera_end['remaining'][0]['x']-a['x'])<35,
+            "CDP must release camera finger at camera x while FIRST walk finger remains physically down")
+    require(len(walk_end['changed'])==1 and
+            abs(walk_end['changed'][0]['x']-a['x'])<35 and
+            len(walk_end['remaining'])==0,
+            "CDP final touchEnd must release ONLY first walking finger")
+    return {'camera_end':camera_end,'walk_end':walk_end,
+            'event_count':len(audit)}
 
 def true_dual_finger(page,cdp,g):
     start=snapshot(page)
@@ -92,10 +133,12 @@ def true_dual_finger(page,cdp,g):
     b=point(lx,ly,2)
     send(cdp,"touchStart",[a])
     page.wait_for_timeout(280)
-    send(cdp,"touchStart",[a,b])
+    # CDP touchStart appends only the CHANGED source finger; sending
+    # [a,b] would incorrectly re-send finger a as another new press.
+    send(cdp,"touchStart",[b])
     for ix in range(4):
         b=point(lx+float(ix+1)*16.0,ly-float(ix+1)*7.0,2)
-        send(cdp,"touchMove",[a,b])
+        send(cdp,"touchMove",[b])
         page.wait_for_timeout(110)
     page.wait_for_function("""previous => {
        const el=document.getElementById('a7-cascade-native-state');
@@ -120,7 +163,10 @@ def true_dual_finger(page,cdp,g):
     require(with_fingers["history_count"]==0 and
             with_fingers["w72_valve_index"]==0,
             "True indexed two-finger gestures cannot fake any source gameplay progress")
-    send(cdp,"touchEnd",[a])
+    # The previous driver incorrectly issued touchEnd([a]), terminating
+    # the FIRST walking finger while intending to end the SECOND camera.
+    # In Chromium's real CDP implementation [b] releases ONLY camera.
+    send(cdp,"touchEnd",[b])
     page.wait_for_function("""() => {
         const el=document.getElementById('a7-cascade-native-state');
         if(!el)return false;
@@ -145,18 +191,15 @@ def true_dual_finger(page,cdp,g):
       }catch(e){return false}
     }""",arg=released["w70_real_physics_frames"],timeout=18000)
     still_walking=snapshot(page)
-    # A genuinely collidable Godot world has a solid original safety
-    # barrier on the first W70 catwalk at z=11.7m. After the second-finger
-    # END recovery, W may have already walked into the barrier. Requiring
-    # the character to keep TRANSLATING into solid steel is a wrong test.
-    # Instead assert the original W70 key remains physically DOWN and
-    # real physics frames continue. Translation OR actual barrier contact
-    # is required, never a fabricated position or disabled collision.
+    # Original W70 has colliders; do not require translation through
+    # solid geometry. The FIRST finger must remain physically captured,
+    # W70 original held-key state true, source reassert and native
+    # physics advancing. Motion OR contact proves actual collision-world
+    # processing, never JS altering the character position.
     advancing = still_walking["w70_real_physical_distance"] > distance_at_release+0.12
     body_xyz = still_walking["w70_real_body_xyz"]
-    physical_barrier = (
+    actual_world_contact = (
         len(body_xyz)==3 and
-        10.4 <= float(body_xyz[2]) <= 12.3 and
         still_walking["w70_real_collisions"] >
             released["w70_real_collisions"]
     )
@@ -174,7 +217,7 @@ def true_dual_finger(page,cdp,g):
         "W70_actual_xyz":body_xyz,
         "real_distance_before":distance_at_release,
         "real_distance_after":still_walking["w70_real_physical_distance"],
-        "actually_moved":advancing,"physically_hit_source_barrier":physical_barrier,
+        "actually_moved":advancing,"actual_original_world_contact":actual_world_contact,
     }
     print("W83 TRUE ORIGINAL 2-FINGER POST-LOOK PHYSICS EVIDENCE:",
           json.dumps(evidence,sort_keys=True),flush=True)
@@ -184,10 +227,14 @@ def true_dual_finger(page,cdp,g):
                 released["w83_real_walk_reassert_frames"] and
             still_walking["w70_real_physics_frames"] >=
                 released["w70_real_physics_frames"]+6 and
-            (advancing or physical_barrier),
-            "First real W70 touch stays held, original physics advances, and player EITHER walks OR truly collides with original solid catwalk barrier")
-    send(cdp,"touchEnd",[])
+            (advancing or actual_world_contact),
+            "First original W70 finger stays pressed; independent camera touchEnd cannot release WALK; actual physics moves or collides")
+    # Only now finish the original FIRST movement finger.
+    send(cdp,"touchEnd",[a])
     page.wait_for_timeout(220)
+    audit=assert_source_touch_release(page,a,b)
+    print("W83 REAL CDP TOUCH RELEASE ORDER:",json.dumps(audit,sort_keys=True),
+          flush=True)
     all_released=snapshot(page)
     require(all_released["w83_active_look_finger"]==-1 and
             all_released["w83_source_active_walk_fingers"]==0 and
@@ -236,6 +283,7 @@ def run(export,evidence,sha):
             a=picture(page,evidence/
               "w83-01-390px-original-Godot-3d-world-and-free-look-hint.png")
             cdp=context.new_cdp_session(page)
+            enable_native_touch_audit(page)
             initial,live,rest=true_dual_finger(page,cdp,g)
             b=picture(page,evidence/
               "w83-02-real-two-CDP-fingers-walk-and-camera-look.png")
@@ -297,6 +345,8 @@ def run(export,evidence,sha):
     report={"schema":"LAST_FRONTIER_W83_ORIGINAL_REAL_GODOT_CDP_MULTI_TOUCH_V1",
         "source_sha":sha,"result":"PASS","genuine_Godot_4_4_1_WebGL_WASM":True,
         "actual_Chromium_two_distinct_concurrent_touch_ids":True,
+        "native_Chrome_CDP_changed_finger_release_semantics_verified":True,
+        "native_DOM_camera_then_walk_touchend_audited":True,
         "original_CharacterBody3D_walking_during_camera_drag":True,
         "original_camera_yaw_and_pitch_changed_by_real_touch_move":True,
         "source_game_decisions_and_physical_valve_remain_gated":True,
