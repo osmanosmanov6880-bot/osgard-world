@@ -154,6 +154,7 @@ func apply_variant(id: String) -> void:
 			piece.material_override = material
 	if horizon_visual != null:
 		horizon_visual.call("set_paint",paint)
+		horizon_visual.call("set_visual_variant",id)
 
 func gear_label() -> String:
 	return DYNAMICS.gear(speed)
