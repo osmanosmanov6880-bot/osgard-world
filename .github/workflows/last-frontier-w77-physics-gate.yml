@@ -1,0 +1,216 @@
+name: LAST FRONTIER W77 real physics relay gate + original WebGL visual QA (DRAFT)
+
+on:
+  pull_request:
+    branches:
+      - game/last-frontier-w76-immersive-vertical-slice-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W77_RELAY_GATE.md'
+      - '.github/workflows/last-frontier-w77-physics-gate.yml'
+
+permissions:
+  contents: read
+concurrency:
+  group: last-frontier-w77-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  source-isolation:
+    name: Pin fully accepted W76 SHA and unchanged original A7 physics/game source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Audit seven allowed files and immutable original mechanics
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w77-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='11f56e282da96f809e17553fa86e76440d48a5d9'
+          head=os.environ['HEAD']
+          def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          actual=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          expected={
+              'w63-a7-cascade/scripts/A7SectorBulkhead.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w77_sector_bulkhead.gd',
+              'w63-a7-cascade/ci/w77_browser_sector_gate.py',
+              'docs/LAST_FRONTIER_W77_RELAY_GATE.md',
+              '.github/workflows/last-frontier-w77-physics-gate.yml',
+          }
+          assert actual==expected,{'missing':sorted(expected-actual),'unexpected':sorted(actual-expected)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+              'w63-a7-cascade/scripts/A7SpatialMission.gd',
+              'w63-a7-cascade/scripts/A7FieldOperations.gd',
+              'w63-a7-cascade/scripts/A7WorldInteraction.gd',
+              'w63-a7-cascade/scripts/A7SessionCheckpoint.gd',
+              'w63-a7-cascade/scripts/A7GamepadDirector.gd',
+              'w63-a7-cascade/scripts/A7FrameTelemetry.gd',
+              'w63-a7-cascade/scripts/A7DiegeticFeedback.gd',
+              'w63-a7-cascade/scripts/A7MissionWayfinder.gd',
+              'w63-a7-cascade/scripts/A7CinematicHeroSet.gd',
+              'w63-a7-cascade/scripts/A7CinematicMaterialLab.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirection.gd',
+              'w63-a7-cascade/scripts/A7ProceduralAudio.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w73_world_and_checkpoint.gd',
+              'w63-a7-cascade/tests/test_w74_gamepad_feedback.gd',
+              'w63-a7-cascade/tests/test_w76_immersive_level.gd',
+              'w63-a7-cascade/ci/w76_browser_immersive.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+              '.github/workflows/last-frontier-w76-immersive.yml',
+          ]
+          hashes={}
+          for p in protected:
+              old=git('rev-parse',base+':'+p)
+              cur=git('rev-parse',head+':'+p)
+              assert old==cur,'Unexpected change to original tested game: '+p
+              hashes[p]=cur
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          bulkhead=Path('w63-a7-cascade/scripts/A7SectorBulkhead.gd').read_text()
+          assert 'StaticBody3D.new()' in bulkhead
+          assert 'CollisionShape3D.new()' in bulkhead
+          assert 'set_deferred("disabled", not should_block)' in bulkhead
+          assert 'mission.phase < 2' in bulkhead
+          assert 'mission.active and mission.extended_mode' in bulkhead
+          assert 'pbr.surface("reactor_shell")' in bulkhead
+          assert 'A7CascadeCore.choose' not in bulkhead
+          report={
+              'schema':'LAST_FRONTIER_W77_EXACT_W76_ORIGINAL_SOURCE_GUARD_V1',
+              'status':'PASS','head_sha':head,'accepted_w76_base_sha':base,
+              'changed_files':sorted(actual),'protected_source_git_blobs':hashes,
+              'real_physical_gate_source_exists':True,
+              'original_gameplay_rules_untouched':True,
+              'human_AAA_art_certified':False,'retail_release_authorized':False,
+          }
+          Path('w77-evidence/W77_SOURCE_PIN.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('W77 exact accepted W76 protected original gameplay/source PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w77-authentic-source-pin-${{ github.event.pull_request.head.sha }}
+          path: w77-evidence/W77_SOURCE_PIN.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  true-godot-gameplay:
+    name: Five original Godot suites incl actual blocked/unblocked CharacterBody + two genuine Chromium visual journeys
+    runs-on: ubuntu-latest
+    timeout-minutes: 115
+    needs: source-isolation
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import original W63-W77 Godot project and reject script failures
+        run: |
+          set -euo pipefail
+          mkdir -p w77-evidence
+          timeout 290s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w77-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w77-evidence/import.log; then exit 1; fi
+      - name: Run native original gameplay, physics ray + checksum replay, analog gamepad, W76 cinematic and W77 actual collision passage
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w73_world_and_checkpoint test_w74_gamepad_feedback test_w76_immersive_level test_w77_sector_bulkhead; do
+            timeout 480s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w77-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w77-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w77-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W73 TRUE WORLD RAYCAST AND TRANSACTIONAL CHECKPOINT PASS:' w77-evidence/test_w73_world_and_checkpoint.log
+          grep -q 'LAST FRONTIER W74 TRUE DIEGETIC PHYSICS GAMEPAD AND FRAME TELEMETRY PASS:' w77-evidence/test_w74_gamepad_feedback.log
+          grep -q 'LAST FRONTIER W76 REAL IMMERSIVE PHYSICAL LEVEL AND WORLD NAVIGATION PASS:' w77-evidence/test_w76_immersive_level.log
+          grep -q 'LAST FRONTIER W77 TRUE ORIGINAL PHYSICAL SECTOR DOOR GAME PASS:' w77-evidence/test_w77_sector_bulkhead.log
+      - name: Export real original Godot 4.4.1 WASM/PCK binary
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          cd w63-a7-cascade
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          cd ..
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install native browser Chromium+Pillow for unmodified original game capture
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w77
+          /tmp/a7-w77/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w77/bin/python -m playwright install --with-deps chromium
+      - name: Actual original W76 immersive+W77 physical bulkhead WebGL screenshots and keyboard input
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout 1180s /tmp/a7-w77/bin/python w63-a7-cascade/ci/w76_browser_immersive.py --export w63-a7-cascade/build/web --evidence w77-evidence/older-w76-real-browser --sha "$SHA" 2>&1 | tee w77-evidence/w76-browser.log
+          grep -q 'LAST FRONTIER W76 TRUE FIRST-PERSON IMMERSIVE WEBGL CHROMIUM PASS:' w77-evidence/w76-browser.log
+          timeout 1180s /tmp/a7-w77/bin/python w63-a7-cascade/ci/w77_browser_sector_gate.py --export w63-a7-cascade/build/web --evidence w77-evidence/w77-real-browser --sha "$SHA" 2>&1 | tee w77-evidence/w77-browser.log
+          grep -q 'LAST FRONTIER W77 TRUE NATIVE SECTOR GATE GODOT CHROMIUM PASS:' w77-evidence/w77-browser.log
+          python3 - <<'PY'
+          import json,os,hashlib
+          from pathlib import Path
+          total=0
+          for folder,name in [('older-w76-real-browser','W76_TRUE_GAME_CHROMIUM.json'),
+                              ('w77-real-browser','W77_REAL_GODOT_GATE_BROWSER.json')]:
+              root=Path('w77-evidence')/folder
+              report=json.loads((root/name).read_text())
+              assert report['source_sha']==os.environ['SHA']
+              assert report['result']=='PASS'
+              assert len(report['screenshots'])==6
+              for entry in report['screenshots']:
+                  data=(root/entry['name']).read_bytes()
+                  assert len(data)>12000 and hashlib.sha256(data).hexdigest()==entry['sha256']
+                  total+=1
+          assert total==12
+          print('W77 full REAL original Godot Chromium evidence, exact 12 unchanged screenshots PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w77-actual-physical-gate-playable-webgl-${{ github.event.pull_request.head.sha }}
+          path: |
+            w77-evidence/
+            w63-a7-cascade/build/web/
+          if-no-files-found: warn
+          retention-days: 45
+
+  production-hold:
+    name: Three jobs green means SOFTWARE ONLY, not commercial release or verified AAA artwork
+    runs-on: ubuntu-latest
+    needs: [source-isolation,true-godot-gameplay]
+    if: always()
+    steps:
+      - name: Enforce exact original source, native physical collision, real browser
+        env:
+          SOURCE: ${{ needs.source-isolation.result }}
+          GAME: ${{ needs.true-godot-gameplay.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$GAME" = success
+          echo 'W77 SOURCE+NATIVE STATICBODY COLLISION+REAL WEBGL SOFTWARE PASS.'
+          echo 'GAME REMAINS DRAFT: no physical iOS/Android/PC tests, original artist AAA signoff, title clearance or 12 human first-time player sessions.'
