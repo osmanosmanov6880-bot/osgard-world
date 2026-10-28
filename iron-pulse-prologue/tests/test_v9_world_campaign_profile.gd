@@ -92,7 +92,12 @@ func _run() -> void:
     _check(atlas.save_profile(SLOT) and FileAccess.file_exists(SLOT),
         "Separate V9 dossier uses actual atomic file storage and integrity checksum")
     var loaded := IPCampaignAtlas.new()
-    _check(loaded.load_profile(SLOT) and loaded.snapshot() == atlas.snapshot(),
+    var recovered: bool = loaded.load_profile(SLOT)
+    _check(recovered,"Stored career file is recoverable from real disk")
+    if recovered and loaded.snapshot() != atlas.snapshot():
+        print("V9 SOURCE PROFILE: " + JSON.stringify(atlas.snapshot()))
+        print("V9 RESTORED PROFILE: " + JSON.stringify(loaded.snapshot()))
+    _check(recovered and loaded.snapshot() == atlas.snapshot(),
         "Cross-instance restored file matches all verified archive records")
     _check(loaded.clear_count() == 3 and loaded.last_scenario == "blackout",
         "Restored campaign persists completed operations and replay metadata")
