@@ -59,6 +59,26 @@ MAX_WORKSPACES = 10
 MAX_TEAM_MEMBERS = 20
 MAX_TASKS = 100
 MAX_AUDIT = 2000
+# Strict request fields: the collaboration plane cannot accept release or video controls.
+CREATE_FIELDS = frozenset(('filmId','title'))
+TASK_FIELDS = frozenset(('kind','expectedVersion','sceneId','category','title','status','owner','dueDate','notes'))
+TASK_EDIT_FIELDS = TASK_FIELDS | {'taskId'}
+DELETE_FIELDS = frozenset(('kind','expectedVersion','taskId'))
+MEMBER_FIELDS = frozenset(('kind','expectedVersion','username','role'))
+RENAME_FIELDS = frozenset(('kind','expectedVersion','title'))
+LEAVE_FIELDS = frozenset(('kind','expectedVersion'))
+ALLOWED_FIELDS = {
+ 'task.create': TASK_FIELDS,
+ 'task.update': TASK_EDIT_FIELDS,
+ 'task.delete': DELETE_FIELDS,
+ 'member.set': MEMBER_FIELDS,
+ 'member.remove': MEMBER_FIELDS - {'role'},
+ 'space.rename': RENAME_FIELDS,
+ 'leave': LEAVE_FIELDS,
+}
+def allowed_payload(payload,allowed):
+    require(set(payload).issubset(allowed),'Поле не допускается в планировщике. Он не управляет выпуском фильмов.')
+
 
 def safe_string(value, maximum, minimum=0):
     result = text(value,maximum,minimum)
@@ -142,6 +162,7 @@ def listing(db,actor):
 
 def create(db,actor,payload):
     require(isinstance(payload,dict),'Неверный формат объекта.')
+    allowed_payload(payload,CREATE_FIELDS)
     film=payload.get('filmId')
     require(film in FILMS,'Разрешены только подтверждённые кинопроекты.')
     require(db.execute('SELECT COUNT(*) FROM cinema_spaces WHERE owner_id=?',(actor,)).fetchone()[0]<MAX_WORKSPACES,
@@ -175,6 +196,8 @@ def task_fields(payload,film):
 def mutate(db,space_id,actor,payload):
     require(isinstance(payload,dict),'Ожидается объект изменений.')
     kind=payload.get('kind')
+    require(isinstance(kind,str) and kind in ALLOWED_FIELDS,'Неизвестная операция кинопроизводства.')
+    allowed_payload(payload,ALLOWED_FIELDS[kind])
     row=access(db,space_id,actor,write=kind!='leave',owner=kind in ('member.set','member.remove','space.rename'))
     require(type(payload.get('expectedVersion')) is int and payload['expectedVersion']==row['version'],
             'Пространство изменено в другой вкладке. Обновите данные.','version_conflict',409)
