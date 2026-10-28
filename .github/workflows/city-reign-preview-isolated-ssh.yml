@@ -1,0 +1,315 @@
+# CITY REIGN: isolated, source-authenticated PUBLIC TECHNICAL PREVIEW.
+# Deliberately does NOT merge PR #500/627, mutate master, replace R87 Omega,
+# restart frontend/core, or claim commercial AAA signoff.
+name: CITY REIGN - original Godot WebGL technical preview via isolated SSH
+
+on:
+  push:
+    branches:
+      - feat/city-reign-aaa-world-quality-gate-20261028
+    paths:
+      - '.github/workflows/city-reign-preview-isolated-ssh.yml'
+      - 'scripts/city-reign-preview-manifest.py'
+      - 'scripts/city-reign-preview-remote.sh'
+      - 'scripts/city-reign-preview-release-qa.mjs'
+      - 'scripts/city-reign-preview-real-game.spec.mjs'
+      - 'playwright.city-reign-preview-release.config.mjs'
+
+permissions:
+  contents: read
+
+# A new explicit ship commit must wait for an earlier preview release, not
+# cancel an SSH activation half-way through its file transaction.
+concurrency:
+  group: osgard-city-reign-preview-ssh
+  cancel-in-progress: false
+
+jobs:
+  qualify-native-original-game:
+    if: github.repository == 'osmanosmanov6880-bot/osgard-world' && contains(github.event.head_commit.message, '[publish-city-reign-preview]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Pin EXACT source SHA and no master release
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "${{ github.repository }}" = "osmanosmanov6880-bot/osgard-world"
+          test "$GITHUB_REF" = "refs/heads/feat/city-reign-aaa-world-quality-gate-20261028"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git show -s --format=%B HEAD | grep -Fq '[publish-city-reign-preview]'
+          grep -Fq 'run/main_scene="res://scenes/main.tscn"' godot/empire-omega/project.godot
+          test -s godot/empire-omega/scenes/main.tscn
+          test "$EXPECTED_SHA" != "$(git rev-parse --verify refs/remotes/origin/master 2>/dev/null || true)"
+          echo "Source-locked ORIGINAL playable city from $EXPECTED_SHA"
+      - name: Validate source release safety and CURRENT full-site preservation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin \
+            '+refs/heads/master:refs/remotes/origin/master'
+          node --test scripts/city-reign-preview-release-qa.mjs
+          python3 scripts/omega-live-integrity.py --self-test
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Strict compile of REAL Godot 4.4.1 city, no fake game loader
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p city-reign-preview-native-evidence
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            2>&1 | tee city-reign-preview-native-evidence/strict-native-import.log
+          grep -Fq 'R42 PASS: real Godot imported with no script errors' \
+            city-reign-preview-native-evidence/strict-native-import.log
+      - name: Genuine paid economy, player F, NPC route, traffic and 40 mission save tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in \
+            v128_city_reign_paid_public_works \
+            v129_city_reign_paid_crossing_traffic \
+            v130_city_reign_community_park_live \
+            v131_city_reign_real_site_inspection \
+            v132_city_reign_pedestrian_waypoint_continuity \
+            v97_r123_real_pedestrian_body_gait \
+            v68_r47_predictive_crosswalk_traffic \
+            v110_city_reign_first_mandate \
+            v121_city_reign_first_promise_street_director \
+            v123_city_reign_street_world_integrity \
+            v124_city_reign_tower_silhouette_lod \
+            v127_city_reign_tower_distance_lod \
+            v72_r55_forty_mission_event_save; do
+            log="city-reign-preview-native-evidence/${suite}.log"
+            timeout --signal=TERM --kill-after=6s 140s godot --headless \
+              --path godot/empire-omega --script "res://tests/${suite}.gd" \
+              2>&1 | tee "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|[1-9][0-9]* FAIL|ERROR:.*FAIL' "$log"; then
+              echo "::error::Native public preview GAME fails: $suite"
+              exit 1
+            fi
+            grep -Eqi '[0-9]+ (PASS|passed|pass).*0 (FAIL|failed|fail)' "$log" || {
+              echo "::error::No native zero-failure completion marker: $suite"
+              exit 1
+            }
+          done
+      - name: Official Godot Web export of actual playable main scene
+        shell: bash
+        env:
+          EXACT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p city-reign-preview-release
+          godot --headless --path godot/empire-omega --export-release Web \
+            "$GITHUB_WORKSPACE/city-reign-preview-release/index.html"
+          node scripts/localize-godot-web-export.mjs city-reign-preview-release
+          python3 scripts/city-reign-preview-manifest.py \
+            --export-dir city-reign-preview-release --source-sha "$EXACT_SHA"
+          (cd city-reign-preview-release && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          import json, pathlib, os
+          p=pathlib.Path('city-reign-preview-release/release.json')
+          o=json.loads(p.read_text())
+          assert o['source_commit']==os.environ['EXACT_SHA']
+          assert o['main_scene']=='res://scenes/main.tscn'
+          assert o['commercial_aaa_release'] is False
+          assert o['channel']=='public-technical-preview'
+          assert pathlib.Path('city-reign-preview-release/index.wasm').stat().st_size>1000000
+          assert pathlib.Path('city-reign-preview-release/index.pck').stat().st_size>100000
+          print('PASS original native Godot city WebGL preview bytes:',o['source_commit'])
+          PY
+      - name: Install Chromium and software WebGL for REAL playable-scene acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false \
+            @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Serve ONLY the source-pinned original playable preview on localhost
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4191 --bind 127.0.0.1 \
+            --directory city-reign-preview-release \
+            > /tmp/city-reign-preview-4191-local-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4191/release.json >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/city-reign-preview-4191-local-http.log
+          exit 1
+      - name: Browser proof of ORIGINAL Godot city on desktop and portrait phone
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          CITY_REIGN_PREVIEW_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test \
+            --config playwright.city-reign-preview-release.config.mjs \
+            --workers=1 --retries=0
+      - name: Upload exact native release only after all source and gameplay QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-preview-real-godot-${{ github.sha }}
+          path: city-reign-preview-release/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Preserve private genuine camera images and all native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-preview-game-evidence-${{ github.run_id }}
+          path: |
+            city-reign-preview-native-evidence/
+            city-reign-preview-browser-results/
+            city-reign-preview-browser-report/
+          retention-days: 14
+          if-no-files-found: warn
+
+  publish-isolated-ssh:
+    needs: qualify-native-original-game
+    if: github.repository == 'osmanosmanov6880-bot/osgard-world' && contains(github.event.head_commit.message, '[publish-city-reign-preview]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: city-reign-preview-real-godot-${{ github.sha }}
+          path: city-reign-preview-release/
+      - name: Exact source manifest and byte checks BEFORE any SSH
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          (cd city-reign-preview-release && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path('city-reign-preview-release')
+          m=json.loads((p/'release.json').read_text())
+          assert m['source_commit']==os.environ['RELEASE_SHA']
+          assert m['main_scene']=='res://scenes/main.tscn'
+          assert m['relative_url']=='/games/city-reign-preview/'
+          assert m['channel']=='public-technical-preview'
+          assert m['commercial_aaa_release'] is False
+          assert m['native_tests']=='passed'
+          assert m['artifact_kind']=='native-Godot-HTML5-export'
+          assert {'index.html','index.js','index.wasm','index.pck'}<=set(m['files'])
+          print('PASS: exact original CITY REIGN source and WebGL package')
+          PY
+          tar -czf "$RUNNER_TEMP/city-reign-preview-release.tgz" \
+            -C city-reign-preview-release .
+      - name: Configure SSH to the EXISTING OSgard VPS only
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_cityreign_preview
+          chmod 600 ~/.ssh/osgard_cityreign_preview
+          ssh-keyscan -T 12 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts
+      - name: Preflight VPS disk and upload standalone preview under unique run staging
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          required="$(python3 - "$RUNNER_TEMP/city-reign-preview-release.tgz" <<'PY'
+          import pathlib,sys
+          size=pathlib.Path(sys.argv[1]).stat().st_size
+          print(max(350*1024*1024,size*7))
+          PY
+          )"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_cityreign_preview \
+            "$DEPLOY_USER@$DEPLOY_HOST" "bash -s -- '$required'" \
+            < scripts/omega-native-remote-free-space.sh
+          remote="/tmp/osgard-city-reign-preview-$GITHUB_RUN_ID"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_cityreign_preview \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "test ! -e '$remote' && mkdir -m 700 '$remote'"
+          scp -o StrictHostKeyChecking=yes -i ~/.ssh/osgard_cityreign_preview \
+            "$RUNNER_TEMP/city-reign-preview-release.tgz" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$remote/release.tgz"
+          scp -o StrictHostKeyChecking=yes -i ~/.ssh/osgard_cityreign_preview \
+            scripts/city-reign-preview-remote.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:$remote/deploy.sh"
+      - name: Atomically activate ONLY /games/city-reign-preview/ via SSH
+        id: activate
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          remote="/tmp/osgard-city-reign-preview-$GITHUB_RUN_ID"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_cityreign_preview \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash '$remote/deploy.sh' activate '$GITHUB_RUN_ID' '$GITHUB_SHA'"
+      - name: Verify real HTTPS manifest AND every binary SHA256; rollback on mismatch
+        id: attestation
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          if ! python3 scripts/omega-live-integrity.py \
+              --expected city-reign-preview-release/release.json \
+              --base https://osgard.world/games/city-reign-preview \
+              --nonce "$GITHUB_RUN_ID"; then
+            echo "::error::PUBLIC GAME SHA ATTESTATION FAILED. Triggering isolated preview rollback."
+            remote="/tmp/osgard-city-reign-preview-$GITHUB_RUN_ID"
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+              -i ~/.ssh/osgard_cityreign_preview \
+              "$DEPLOY_USER@$DEPLOY_HOST" \
+              "bash '$remote/deploy.sh' rollback '$GITHUB_RUN_ID' '$GITHUB_SHA'" ||
+              echo "::error::Automatic isolated rollback failed; manual VPS review required."
+            exit 1
+          fi
+          echo "CITY_REIGN_PUBLIC_PREVIEW_LIVE_VERIFIED: original SHA $GITHUB_SHA"
+      - name: Keep rollback backup, remove this run's transport after live attestation
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          remote="/tmp/osgard-city-reign-preview-$GITHUB_RUN_ID"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_cityreign_preview \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash '$remote/deploy.sh' finalize '$GITHUB_RUN_ID' '$GITHUB_SHA'"
