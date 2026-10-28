@@ -95,6 +95,8 @@ def run(web, evidence, exact_sha):
             })
             require(relay["w67_nav_steps"] >= 1,
                     "Guided 3D camera selection did not register")
+            require(relay["w67_relay_fov"] >= 63.9,
+                    "Actual relay camera should frame, not hide behind foreground machinery")
             page.wait_for_timeout(550)
             relay_png = page.screenshot(
                 path=str(evidence / "w67-02-relay-sector-1366.png"))
@@ -143,8 +145,11 @@ def run(web, evidence, exact_sha):
                 return g.viewport[0] <= 420 && g.stage_requested_height<=310;
             }""", timeout=60000)
             page.keyboard.press("n")
-            wait_state(page, {"w67_inspection_sector": 1,
-                              "history_count": 2, "shift": 1})
+            mobile_state = wait_state(page, {"w67_inspection_sector": 1,
+                              "history_count": 2, "shift": 1,
+                              "w67_mobile_world_text_hidden": True})
+            require(mobile_state["w67_relay_fov"] >= 63.9,
+                    "Phone stays framed on actual relay station")
             page.wait_for_timeout(300)
             mobile = page.screenshot(
                 path=str(evidence / "w67-04-relay-mobile-390.png"))
