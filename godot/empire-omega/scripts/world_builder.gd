@@ -54,6 +54,8 @@ var city_reign_purchased_skyline: Node3D
 var city_reign_building_finishes: Array[StandardMaterial3D] = []
 ## B49: one mesh LOD record per ORIGINAL colliding building; no extra draw nodes.
 var city_reign_tower_body_lods: Array[Dictionary] = []
+## B55: actual per-camera mesh LOD counts; gameplay authority unchanged.
+var city_reign_tower_lod_counts: Dictionary = {"low":0,"standard":0,"cinematic":0}
 var streetfront: Node3D
 var facade_balconies: Node3D
 var road_paint: Node3D
@@ -86,6 +88,7 @@ const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.
 const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_skyline.gd")
 const CITY_REIGN_TOWER_BODY = preload("res://scripts/city_reign_tower_body_lod.gd")
 const CITY_REIGN_WINDOW_REVEAL = preload("res://scripts/city_reign_window_reveal_geometry.gd")
+const CITY_REIGN_TOWER_DISTANCE = preload("res://scripts/city_reign_tower_distance_lod.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -318,7 +321,7 @@ func _create_city() -> void:
 					"visual":actual_body, "original_mesh":baseline,
 					"standard":district_standard,"cinematic":district_cinematic,
 					"physical_body":actual_building,"width":width,"height":height,
-					"district":id
+					"district":id,"current_lod":"standard"
 				})
 				actual_body.mesh = district_standard
 				city_reign_building_finishes.append(building_finish)
@@ -336,6 +339,31 @@ func _create_city() -> void:
 				building_count += 1
 				# Emissive parapet gives an evening skyline without external textures.
 				_box(chunk,"RoofLight",Vector3(width+0.35,0.27,width+0.35),Vector3(pos.x,height+0.15,pos.z),Color("69747d"),false,false)
+
+
+## B55: source-native distance LOD. This changes only the original materialized
+## MeshInstance3D.mesh resource, never physics, mission state or window count.
+## The original game already calls update_chunks once per ~1.1s, so per-frame
+## mesh swaps and memory reallocations are strictly avoided.
+func _apply_camera_tower_lod(focus: Vector3,tier: String) -> void:
+	if not focus.is_finite():
+		return
+	var counts: Dictionary = {"low":0,"standard":0,"cinematic":0}
+	for entry in city_reign_tower_body_lods:
+		var body: StaticBody3D = entry["physical_body"]
+		var visual: MeshInstance3D = entry["visual"]
+		var old: String = str(entry.get("current_lod","standard"))
+		var distance: float = CITY_REIGN_TOWER_DISTANCE.projected_distance(
+			focus,body.global_position)
+		var desired_level: String = CITY_REIGN_TOWER_DISTANCE.choose(
+			tier,distance,old)
+		var resource: Mesh = entry["original_mesh"] if desired_level=="low" else entry[desired_level]
+		if visual.mesh != resource:
+			visual.mesh = resource
+		entry["current_lod"] = desired_level
+		counts[desired_level] = int(counts[desired_level])+1
+	assert(CITY_REIGN_TOWER_DISTANCE.bounded_counts(city_reign_tower_body_lods.size(),counts))
+	city_reign_tower_lod_counts = counts
 
 func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 	# Grid-quarter visibility and physics activation. Unlike disk streaming,
@@ -359,6 +387,9 @@ func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 				if collision != null:
 					collision.set_deferred("disabled",not visible_now)
 		building_chunks[key] = entry
+	# Reuse the ORIGINAL 1.1s live-game chunk update tick. Cinematic art
+	# stays near the camera; distant meshes can keep the source cheap LOD.
+	_apply_camera_tower_lod(focus,quality)
 	# Update only when original world chunk culling runs, not every frame.
 	if focus.is_finite():
 		streetlight_focus = focus
@@ -647,6 +678,9 @@ func apply_visual_budget(mode: String) -> void:
 		var desired: Mesh = entry["original_mesh"] if visual_budget=="low" else entry[visual_budget]
 		if actual.mesh != desired:
 			actual.mesh = desired
+		entry["current_lod"] = visual_budget
+	city_reign_tower_lod_counts = {"low":0,"standard":0,"cinematic":0}
+	city_reign_tower_lod_counts[visual_budget] = city_reign_tower_body_lods.size()
 	if weather_particles != null:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if r90_urban != null:
