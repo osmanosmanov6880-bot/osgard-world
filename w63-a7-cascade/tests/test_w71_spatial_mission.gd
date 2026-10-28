@@ -158,9 +158,7 @@ func _run() -> void:
         "Game victory unlocks final return-trip, not immediate mission auto-win")
     _check(mission.progress_events == 4,
         "Four ordered objective transitions before final physical return")
-    _check(not mission.inspect_physical("CORE", ui.model.snapshot(),
-        operator) if operator.body.position.distance_to(
-            operator.inspection_console_core) > 3.2 else false,
+    _check(not mission.inspect_physical("CORE", ui.model.snapshot(), operator),
         "Cannot finish the mission by invoking CORE E while at distant relay")
     operator.body.position = Vector3(4.10, 1.33, 2.14)
     ui.pilot_inspect_button.emit_signal("pressed")
