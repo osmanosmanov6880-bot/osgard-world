@@ -80,6 +80,7 @@ jobs:
             v130_city_reign_community_park_live \
             v131_city_reign_real_site_inspection \
             v132_city_reign_pedestrian_waypoint_continuity \
+            v133_city_reign_camera_modes \
             v97_r123_real_pedestrian_body_gait \
             v68_r47_predictive_crosswalk_traffic \
             v110_city_reign_first_mandate \
@@ -147,6 +148,15 @@ jobs:
           xvfb-run -a -s '-screen 0 1920x1080x24' \
             npx playwright test --config playwright.omega-r90.config.mjs \
               --workers=1 --retries=0
+      - name: Verify actual original Godot player camera V composition in Chromium
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.city-reign-camera-release.config.mjs \
+              --workers=1 --retries=0
       - name: Retain complete original-commit evidence even on CI failure
         if: always()
         uses: actions/upload-artifact@v4
@@ -156,6 +166,8 @@ jobs:
             city-reign-ssh-qa-evidence/
             omega-r90-results/
             omega-r90-report/
+            city-reign-camera-results/
+            city-reign-camera-report/
           retention-days: 14
           if-no-files-found: warn
       - name: Store exact playable engine bytes for a SEPARATE SSH release job

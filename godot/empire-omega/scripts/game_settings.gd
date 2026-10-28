@@ -13,13 +13,14 @@ const DEFAULT_KEYS = {
 	"governor": KEY_TAB, "pause_game": KEY_ESCAPE,
 	"advance_turn": KEY_N, "buy_business": KEY_B,
 	"show_map": KEY_M, "field_journal": KEY_H, "drive_trial": KEY_T, "enter_interior": KEY_I, "diagnostics": KEY_F3, "save_game": KEY_F5,
-	"load_game": KEY_F9, "language": KEY_L, "pay_traffic_fines": KEY_P
+	"load_game": KEY_F9, "language": KEY_L, "pay_traffic_fines": KEY_P,
+	"camera_cycle": KEY_V
 }
 const PAD_BUTTONS = {
 	"jump": JOY_BUTTON_A, "sprint": JOY_BUTTON_LEFT_STICK,
 	"interact": JOY_BUTTON_X, "enter_vehicle": JOY_BUTTON_Y,
 	"governor": JOY_BUTTON_BACK, "pause_game": JOY_BUTTON_START,
-	"show_map": JOY_BUTTON_DPAD_UP
+	"show_map": JOY_BUTTON_DPAD_UP, "camera_cycle": JOY_BUTTON_DPAD_RIGHT
 }
 const STICK_AXES = {
 	"move_forward": [JOY_AXIS_LEFT_Y, -1.0],
@@ -28,11 +29,13 @@ const STICK_AXES = {
 	"move_right": [JOY_AXIS_LEFT_X, 1.0]
 }
 const GRAPHICS_MODES = ["low", "standard", "cinematic"]
+const CAMERA_MODES = ["street", "classic", "panorama"]
 
 var keys: Dictionary = DEFAULT_KEYS.duplicate(true)
 var volume := 0.75
 var mouse_sensitivity := 0.003
 var graphics := "standard"
+var camera_mode := "street"
 var reduced_motion := false
 
 func _ready() -> void:
@@ -97,6 +100,13 @@ func set_graphics(value: String) -> void:
 	save_preferences()
 	preferences_changed.emit()
 
+func set_camera_mode(value: String) -> void:
+	if not CAMERA_MODES.has(value) or value == camera_mode:
+		return
+	camera_mode = value
+	save_preferences()
+	preferences_changed.emit()
+
 func set_mouse_sensitivity(value: float) -> void:
 	mouse_sensitivity = clampf(value,0.001,0.012)
 	save_preferences()
@@ -136,6 +146,8 @@ func load_preferences() -> void:
 	mouse_sensitivity = clampf(float(cfg.get_value("general","mouse_sensitivity",0.003)),0.001,0.012)
 	var selected: String = str(cfg.get_value("general","graphics","standard"))
 	graphics = selected if GRAPHICS_MODES.has(selected) else "standard"
+	var chosen_camera: String = str(cfg.get_value("general","camera_mode","street"))
+	camera_mode = chosen_camera if CAMERA_MODES.has(chosen_camera) else "street"
 	reduced_motion = bool(cfg.get_value("general","reduced_motion",false))
 	var locale: String = str(cfg.get_value("general","locale","ru"))
 	GameState.locale = locale if ["ru","en","zh"].has(locale) else "ru"
@@ -147,6 +159,7 @@ func save_preferences() -> bool:
 	cfg.set_value("general","volume",volume)
 	cfg.set_value("general","mouse_sensitivity",mouse_sensitivity)
 	cfg.set_value("general","graphics",graphics)
+	cfg.set_value("general","camera_mode",camera_mode)
 	cfg.set_value("general","reduced_motion",reduced_motion)
 	cfg.set_value("general","locale",GameState.locale)
 	return cfg.save(PATH) == OK

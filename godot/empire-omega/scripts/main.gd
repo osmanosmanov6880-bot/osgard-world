@@ -8,6 +8,7 @@ const CAR_SCENE = preload("res://scripts/vehicle_controller.gd")
 const HUD_SCENE = preload("res://scripts/hud.gd")
 const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
 const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
+const CITY_REIGN_CAMERA = preload("res://scripts/city_reign_camera_modes.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
@@ -419,8 +420,13 @@ func _physics_process(delta: float) -> void:
 	# Do not mutate user camera preferences or gameplay while the UI is open.
 	var cabinet_open: bool = hud != null and hud.is_strategy_open()
 	var camera_pitch: float = SAFE_CAMERA.cabinet_pitch(cam_pitch,cabinet_open,viewport_size,GameSettings.reduced_motion)
+	# R160: true native 3D lens uses ORIGINAL two wall-raycast-safe camera.
+	camera_pitch = CITY_REIGN_CAMERA.pitch(camera_pitch,GameSettings.camera_mode,
+		phone_view,cabinet_open,GameSettings.reduced_motion)
 	focus = SAFE_CAMERA.cabinet_focus(focus,cam_yaw,cabinet_open,viewport_size,GameSettings.reduced_motion)
 	var ideal: Vector3 = SAFE_CAMERA.desired_position(focus,cam_yaw,camera_pitch,car.speed,driving,viewport_size)
+	ideal = CITY_REIGN_CAMERA.distance(focus,ideal,GameSettings.camera_mode,
+		driving,phone_view,cabinet_open,GameSettings.reduced_motion)
 	var excluding: Array[RID] = [player.get_rid(),car.get_rid()]
 	var camera_solution: Dictionary = SAFE_CAMERA.solve(focus,ideal,camera.global_position,
 		get_world_3d().direct_space_state,excluding,delta,GameSettings.reduced_motion)
@@ -610,6 +616,12 @@ func _input(event: InputEvent) -> void:
 		_buy_market()
 	elif event.is_action_pressed("enter_interior") and not hud.is_strategy_open():
 		_toggle_interior()
+	elif event.is_action_pressed("camera_cycle") and not hud.is_strategy_open() and not interiors.is_inside():
+		# Identical physical InputMap action on keyboard, gamepad and touch.
+		var next_view: String = CITY_REIGN_CAMERA.next_mode(GameSettings.camera_mode)
+		GameSettings.set_camera_mode(next_view)
+		hud.announce(CITY_REIGN_CAMERA.localized_mode(next_view,GameState.locale))
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("diagnostics"):
 		hud.toggle_diagnostics()
 	elif event.is_action_pressed("pay_traffic_fines"):
