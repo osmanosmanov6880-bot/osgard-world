@@ -258,6 +258,15 @@ button { cursor: pointer; }
   .footer-links { flex-wrap: wrap; gap: 19px; }
   .footer-bottom { flex-direction: column; gap: 13px; }
 }
+.operator-ledger { margin-top: 48px; display: grid; grid-template-columns: minmax(0,1.55fr) minmax(0,.6fr); border: 1px solid #455055; background: linear-gradient(140deg,#20282d 0%,#0a0f12 75%); }
+.operator-ledger-copy { padding: clamp(26px,4vw,60px); }
+.operator-ledger h3 { margin: 20px 0 18px; font-size: clamp(23px,2.8vw,39px); line-height: 1.1; max-width: 540px; letter-spacing: -.045em; font-weight: 680; }
+.operator-ledger p { color: #bec7c7; font-size: 15px; line-height: 1.85; max-width: 590px; }
+.operator-ledger-figure { padding: clamp(26px,3vw,44px); border-left: 1px solid #475359; display: flex; flex-direction: column; justify-content: center; background: linear-gradient(130deg,rgba(130,148,155,.09),transparent); }
+.operator-ledger-figure span { letter-spacing: .16em; font-size: 10px; color: #b0bbbe; }
+.operator-ledger-figure strong { font-size: clamp(74px,11vw,156px); font-weight: 600; line-height: 1; letter-spacing: -.085em; color: #f0f2ee; }
+.operator-ledger-figure small { color: #a6b3b7; font-size: 12px; max-width: 245px; line-height: 1.65; }
+@media(max-width:680px) { .operator-ledger { grid-template-columns: 1fr; } .operator-ledger-figure { border-left: 0; border-top: 1px solid #475359; } .operator-ledger-figure strong { font-size: 90px; } }
 .world-evidence-note { margin: 35px 0 0; padding: 20px 24px; border-left: 2px solid var(--accent-soft); background: #192025; color: #b8c4c5; font-size: 13px; line-height: 1.8; max-width: 840px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
