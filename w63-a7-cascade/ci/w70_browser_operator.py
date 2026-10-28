@@ -70,6 +70,12 @@ def run(export, out, sha):
             })
             check(state["w70_collision_shapes"]>=12,
                   "Game has no independently instantiated physics colliders")
+            check(state["w70_true_industrial_bridge_meshes"]>=130,
+                  "Actual extra lit industrial catwalk material/geometry not rendered")
+            check(state["w70_real_practical_bay_lights"]==4,
+                  "Four real Godot local task lamps not mounted")
+            check(state["w70_native_bridge_collision"],
+                  "Character physics must match visible elevated W67-W70 bridge")
             check(state["w68_pbr_profiles"]==7,
                   "W68 original real textured materials lost")
             canvas=page.locator("canvas").first
@@ -85,6 +91,17 @@ def run(export, out, sha):
                   "Physics body/obstacle shapes lost on enter")
             page.wait_for_timeout(400)
             first_person=real_screenshot(page,out,"w70-02-real-first-person-headlamp.png")
+            art_img=Image.open(io.BytesIO(first_person)).convert("RGB")
+            art_crop=art_img.crop((int(art_img.width*.20),int(art_img.height*.22),
+                                   int(art_img.width*.80),int(art_img.height*.63)))
+            art_stats=ImageStat.Stat(art_crop)
+            first_person_luma=sum(v*k for v,k in zip(art_stats.mean,(.2126,.7152,.0722)))
+            print("W70 GENUINE WALKWAY ART EXPOSURE",round(first_person_luma,3),flush=True)
+            # Before this corrective art pass the exact matching W70 crop
+            # had mean luminance 25.17. Do not silently regress to that
+            # empty and almost unlit service corridor.
+            check(first_person_luma>=27.0,
+                  "Art-direction regression: player corridor remains too dark")
             check(pixels_change(overview,first_person)>1000,
                   "Opt-in first person didn't switch to the real playable eye camera")
 
@@ -202,6 +219,8 @@ def run(export, out, sha):
         "original_causal_puzzle_preserved":True,
         "actual_phone_viewport_pixels":True,
         "source_bound_images":files,
+        "measured_actual_first_person_scene_luminance":round(first_person_luma,3),
+        "real_reused_pbr_illuminated_catwalk":True,
         "hardware_gpu_performance_certified":False,
         "human_art_approved":False,
         "commercial_release_approved":False,
