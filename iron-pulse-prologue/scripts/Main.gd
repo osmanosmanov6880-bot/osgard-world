@@ -1736,29 +1736,43 @@ func _refresh_hud() -> void:
         _copy("heat"),int(session.heat),_copy("oxygen"),int(session.oxygen),
         _copy("crew"),int(session.crew_health),_copy("door"),int(session.door_charge),
         _copy("time"),floori(session.time_left/60.0),int(session.time_left)%60]
+    var status_hint: String = _copy("rescue_count").format({"used":session.relays_activated.size()})
+    if session.cascade_state == "active":
+        status_hint = _copy("cascade_live").format({
+            "step":session.cascade_phase,
+            "seconds":"%.0f" % session.cascade_remaining})
+    elif session.cascade_state == "completed":
+        status_hint = _copy("cascade_done")
+    elif session.cascade_state == "failed":
+        status_hint = _copy("cascade_failed")
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
-        _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
-        _copy("rescue_count").format({"used":session.relays_activated.size()})]
+        _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),status_hint]
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
+    cascade_world.update_status(session.cascade_state,session.cascade_phase,
+        session.cascade_remaining,session.elapsed,reduced_motion)
     var nearby: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
-    var show_rescue: bool = not rescue.is_empty()
-    if show_rescue and not nearby.is_empty():
-        show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
-    if started and not session.finished() and show_rescue:
-        var relay_dist: float = _physical_distance(rescue["position"])
+    var cascade: Dictionary = _nearest_cascade_station()
+    var nearest_main: float = _physical_distance(nearby["position"]) if not nearby.is_empty() else 999.0
+    var nearest_rescue: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+    var nearest_cascade: float = _physical_distance(cascade["position"]) if not cascade.is_empty() else 999.0
+    if started and not session.finished() and not cascade.is_empty() and nearest_cascade < nearest_main and nearest_cascade < nearest_rescue:
+        var station_id: String = str(cascade["id"])
+        var valid: bool = (session.cascade_state == "idle" and station_id == "start" and session.coolant_repaired) or (session.cascade_state == "active" and IPCrisisEngine.CASCADE_SEQUENCE[session.cascade_phase] == station_id)
+        var hint_key: String = "cascade_hint" if valid else "cascade_locked" if session.cascade_state == "idle" and not session.coolant_repaired else "cascade_spent"
+        interaction_label.text = _copy(hint_key).format({
+            "name":_copy("cascade_" + station_id),"distance":"%.1f" % nearest_cascade})
+    elif started and not session.finished() and not rescue.is_empty() and nearest_rescue < nearest_main:
         var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
         var rescue_key: String = "rescue_hint" if available else "rescue_spent"
         interaction_label.text = _copy(rescue_key).format({
-            "name":_copy(str(rescue["key"])),"distance":"%.1f" % relay_dist})
+            "name":_copy(str(rescue["key"])),"distance":"%.1f" % nearest_rescue})
     elif not nearby.is_empty() and started and not session.finished():
-        var at: Vector3 = nearby["position"]
-        var dist: float = _physical_distance(at)
         var hint_key: String = "choice_hint" if str(nearby["id"]) == "repair" and session.scenario_id != "blackout" and not session.coolant_repaired else "hint"
-        interaction_label.text = _copy(hint_key).format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % dist})
+        interaction_label.text = _copy(hint_key).format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % nearest_main})
     else:
         interaction_label.text = _copy("action") if started and not session.finished() else ""
     feedback_label.text = _copy(notice_key) if notice_time > 0.0 else ""
@@ -1775,6 +1789,14 @@ func _update_guidance(objective_key: String) -> void:
     if not started or session.finished():
         guidance_label.text = ""
         return
+    if session.cascade_state == "active":
+        var desired: String = IPCrisisEngine.CASCADE_SEQUENCE[session.cascade_phase]
+        for info in cascade_world.stations:
+            if str(info["id"]) == desired:
+                guidance_label.text = _copy("cascade_nav").format({
+                    "name":_copy("cascade_" + desired),
+                    "distance":"%.0f" % _physical_distance(info["position"])})
+                return
     var goal_id: String = objective_key
     if objective_key == "charge":
         goal_id = "bus_a" if player.global_position.x <= 0.0 else "bus_b"
