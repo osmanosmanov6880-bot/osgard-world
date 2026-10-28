@@ -37,7 +37,7 @@ jobs:
           python3 - <<'PY'
           import json,os,re,subprocess
           from pathlib import Path
-          base='6124bbb28e66207c9921fc0ee9e558c158fdefbb'
+          base='8c711f89018f56f380655f5a806edaf9e8ad4af3'
           head=os.environ['HEAD_SHA']
           def git(*args):
               return subprocess.check_output(['git',*args],text=True).strip()
