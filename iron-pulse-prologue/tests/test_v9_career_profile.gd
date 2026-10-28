@@ -88,7 +88,12 @@ func _run() -> void:
 
     _check(career.save(path), "Dedicated V9 profile saves into true atomic offline user storage")
     var reloaded := IPCareerProfile.new()
-    _check(reloaded.load(path),"Versioned V9 profile loads through actual file+SHA256 wrapper")
+    var loaded_from_disk: bool = reloaded.load(path)
+    _check(loaded_from_disk,"Versioned V9 profile loads through actual file+SHA256 wrapper")
+    if not loaded_from_disk:
+        store.clear(path)
+        _finish()
+        return
     _check(reloaded.snapshot()==career.snapshot(),
         "Full mission mastery, achievement set, counters and history survive disk")
     _check(reloaded.recent.size()==4 and reloaded.recent[0]["scenario"]=="breach",
@@ -98,6 +103,10 @@ func _run() -> void:
     corrupted["operations"] = 42
     _check(not reloaded.restore(corrupted) and reloaded.snapshot()==stable,
         "Internally inconsistent lifetime totals rejected transactionally")
+    corrupted = stable.duplicate(true)
+    corrupted["operations"] = 4.5
+    _check(not reloaded.restore(corrupted) and reloaded.snapshot()==stable,
+        "Fractional JSON operation counts are forbidden even though legitimate 4.0 is accepted")
     corrupted = stable.duplicate(true)
     corrupted["achievements"] = ["FIRST_EXTRACTION","FIRST_EXTRACTION"]
     _check(not reloaded.restore(corrupted) and reloaded.snapshot()==stable,
