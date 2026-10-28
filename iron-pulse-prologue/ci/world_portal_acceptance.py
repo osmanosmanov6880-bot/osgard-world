@@ -183,6 +183,9 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                     if last.get("world_launch",{}).get("scenario") == "thermal":
                         break
                     page.wait_for_timeout(350)
+                assert last.get("decision_forecast",{}).get("visible") is False, (
+                    "V15 predictive console must never auto-open before actual player launch",last
+                )
                 assert last.get("scenario") == "thermal", (
                     "Portal clicked HEAT but actual Godot loaded another simulation",last
                 )
