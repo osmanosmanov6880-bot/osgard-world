@@ -159,6 +159,7 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var kinetic_iris: IPKineticIris
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -327,6 +328,7 @@ func _publish_web_state() -> void:
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["containment_fx"] = containment_fx.readout() if containment_fx != null else {}
+    state["kinetic_iris"] = kinetic_iris.readout() if kinetic_iris != null else {}
     # Read-only native material/geometry facts; Chromium QA never invents art.
     var actual_core: SphereMesh = reactor_core.mesh as SphereMesh
     var support_count: int = 0
@@ -516,6 +518,8 @@ func _make_complex() -> void:
     add_child(reactor_atrium)
     containment_fx = IPContainmentFX.new()
     add_child(containment_fx)
+    kinetic_iris = IPKineticIris.new()
+    add_child(kinetic_iris)
     if reactor_core != null and reactor_atrium.core_plasma_material != null:
         reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
@@ -992,6 +996,8 @@ func _layout_hud() -> void:
             reactor_atrium.set_quality("eco")
         if containment_fx != null:
             containment_fx.set_quality("eco")
+        if kinetic_iris != null:
+            kinetic_iris.set_quality("eco")
     # Compact non-overlapping card hierarchy; the center is reserved for 3D.
     header_panel.offset_left = 17.0 if not narrow else 12.0
     header_panel.offset_right = minf(544.0,width-16.0)
@@ -1198,6 +1204,7 @@ func _continue_checkpoint() -> bool:
     world_sectors.set_quality(quality_mode)
     reactor_atrium.set_quality(quality_mode)
     containment_fx.set_quality(quality_mode)
+    kinetic_iris.set_quality(quality_mode)
     exit_gate.position.y = 6.2 if session.override_set else 2.6
     for index in range(legacy_lamps.size()):
         legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
@@ -1379,6 +1386,7 @@ func _input(event: InputEvent) -> void:
             world_sectors.set_quality(quality_mode)
             reactor_atrium.set_quality(quality_mode)
             containment_fx.set_quality(quality_mode)
+            kinetic_iris.set_quality(quality_mode)
             for i in range(legacy_lamps.size()):
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
@@ -1489,6 +1497,10 @@ func _process(delta: float) -> void:
     world_sectors.update_hazard(session.scenario_id,session.heat,session.oxygen,reduced_motion)
     reactor_atrium.update_alarm(session.scenario_id,session.heat,session.oxygen,runtime_seconds,reduced_motion)
     containment_fx.update_from_crisis(
+        session.scenario_id,session.heat,session.oxygen,runtime_seconds,
+        reduced_motion,session.thermal_pulses,session.thermal_shield,
+        started and not paused and not session.finished())
+    kinetic_iris.update_from_crisis(
         session.scenario_id,session.heat,session.oxygen,runtime_seconds,
         reduced_motion,session.thermal_pulses,session.thermal_shield,
         started and not paused and not session.finished())
