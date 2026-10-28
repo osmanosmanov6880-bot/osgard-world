@@ -1,0 +1,86 @@
+name: OSA CINEMA V55 Studio Product Acceptance
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'src/OSACinemaStudio.tsx'
+      - 'src/OSACinemaFilm.tsx'
+      - 'src/osaCinemaStudioRegistry.ts'
+      - 'src/osaCinemaStudio.css'
+      - 'src/osaCinemaFilm.css'
+      - 'src/main.tsx'
+      - 'src/OSAObsidianArchive.tsx'
+      - 'scripts/osa-cinema-v55-studio-contract.test.mjs'
+      - 'scripts/osa-cinema-v55-studio.spec.mjs'
+      - 'playwright.osa-cinema-v55.config.mjs'
+      - '.github/workflows/osa-cinema-v55-studio.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'src/OSACinemaStudio.tsx'
+      - 'src/OSACinemaFilm.tsx'
+      - 'src/osaCinemaStudioRegistry.ts'
+      - 'src/osaCinemaStudio.css'
+      - 'src/osaCinemaFilm.css'
+      - 'src/main.tsx'
+      - 'src/OSAObsidianArchive.tsx'
+      - 'scripts/osa-cinema-v55-studio-contract.test.mjs'
+      - 'scripts/osa-cinema-v55-studio.spec.mjs'
+      - 'playwright.osa-cinema-v55.config.mjs'
+      - '.github/workflows/osa-cinema-v55-studio.yml'
+permissions:
+  contents: read
+jobs:
+  source-and-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: Verify historic and new non-public film gates
+        run: |
+          node --test scripts/osa-cinema-v55-studio-contract.test.mjs
+          node --test scripts/osa-cinema-v53-evidence.test.mjs
+          node --test scripts/osa-cinema-v42-ui-contract.test.mjs
+      - name: Type-check all TSX routes
+        run: npm run check
+      - name: Compile actual production site
+        run: npm run build
+      - name: Verify no new OSA Cinema publication without media proof
+        run: npm run qa:osa-media-release
+  real-browser:
+    needs: source-and-safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install pinned Chromium testing tools
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Exercise desktop and mobile studio, production dossiers and existing cinema
+        run: npx playwright test --config playwright.osa-cinema-v55.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v55-browser-proof
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn
