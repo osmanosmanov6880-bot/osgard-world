@@ -51,7 +51,8 @@ func _ready() -> void:
         label.modulate = Color(0.94,0.97,0.99)
         record_plate.add_child(label)
         panels.append({"mesh":panel,"label":label,"material":material})
-    set_campaign(0,[],"ru",false)
+    var none: Array[Dictionary] = []
+    set_campaign(0,none,"ru",false)
 
 func _box(label: String,at: Vector3,size: Vector3,tint: Color) -> MeshInstance3D:
     var material := StandardMaterial3D.new()
