@@ -119,8 +119,9 @@ func _run() -> void:
     _check(not direction.extra_atmosphere.visible and
         not direction.scanner_lattice.visible,
         "Native ECO hides nonessential atmospheric and optic geometry")
-    _check(direction.main_rig.visible and direction.reactor_readout.visible,
-        "Core essential real machine state is still available in ECO")
+    _check(direction.main_rig.visible and direction.reactor_readout != null and
+        (direction.compact or direction.reactor_readout.visible),
+        "Core physical machine remains in ECO; narrow UI hides optional 3D text")
     ui.quality_button.emit_signal("pressed")
     _check(stage.mode == "hero" and direction.extra_atmosphere.visible,
         "HERO restores the original real material atmosphere")
