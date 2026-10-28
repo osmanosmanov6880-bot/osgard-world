@@ -259,7 +259,13 @@ var _browser_css_size: Vector2i = Vector2i.ZERO
 var _last_web_resize_check: float = -99.0
 
 func _ready() -> void:
-    session.reset()
+    var query: String = ""
+    if OS.has_feature("web"):
+        query = str(JavaScriptBridge.eval("window.location.search",true))
+    var launch: Dictionary = IPLaunchConfig.parse(query)
+    selected_scenario = str(launch["scenario"])
+    locale = str(launch["lang"])
+    session.reset(selected_scenario)
     story.reset(session.scenario_id)
     if DisplayServer.get_name() != "headless":
         campaign_atlas.load_profile()
@@ -319,6 +325,7 @@ func _publish_web_state() -> void:
     var state: Dictionary = session.diagnostic_snapshot()
     state["scene"] = "IRON_PULSE_BLACKOUT"
     state["world_campaign"] = campaign_atlas.diagnostic()
+    state["world_launch"] = {"scenario":selected_scenario,"lang":locale}
     state["started"] = started
     state["paused"] = paused
     state["locale"] = locale
