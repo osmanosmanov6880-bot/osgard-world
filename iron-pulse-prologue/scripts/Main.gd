@@ -1329,6 +1329,9 @@ func start_run() -> void:
     cinematic_view = false
     _apply_cinematic_view()
     story.reset(selected_scenario)
+    if campaign_enabled and campaign.wins() > 0:
+        var previous_result: Dictionary = campaign.completed.back()
+        story.on_campaign_handoff(str(previous_result["priority"]))
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     started = true
@@ -1359,6 +1362,9 @@ func _restart() -> void:
     if campaign_enabled:
         campaign.apply_to_engine(session)
     story.reset(selected_scenario)
+    if campaign_enabled and campaign.wins() > 0:
+        var previous_result: Dictionary = campaign.completed.back()
+        story.on_campaign_handoff(str(previous_result["priority"]))
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     if DisplayServer.get_name() != "headless":
