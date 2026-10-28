@@ -18,7 +18,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора    P — следующий план    F3 — диагностика\nH — показать / скрыть 3D-цель    T — прогноз энергосистемы\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    K — автонастройка    C — камера реактора    P — следующий план    F3 — диагностика\nH — показать / скрыть 3D-цель    T — прогноз энергосистемы\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -88,11 +88,13 @@ const COPY := {
         "motion_reduced": "КАМЕРА: БЕЗ ПОКАЧИВАНИЯ", "motion_normal": "КАМЕРА: КИНОРЕЖИМ",
         "audio_off": "ЗВУК: ВЫКЛ.", "audio_on": "ЗВУК: ВКЛ.",
         "quality_eco": "ГРАФИКА: ECO", "quality_hero": "ГРАФИКА: HERO",
+        "auto_on": "АВТОГРАФИКА: АКТИВНА / РЕАЛЬНЫЕ КАДРЫ", "auto_off": "АВТОГРАФИКА: ВЫКЛ.",
+        "auto_reduce": "АВТО: ECO / НЕСТАБИЛЬНОЕ ВРЕМЯ КАДРА", "auto_recover": "АВТО: HERO / СТАБИЛЬНЫЕ КАДРЫ",
         "footer": "IRON PULSE / BLACKOUT   •   ВЫМЫШЛЕННАЯ СИМУЛЯЦИЯ   •   БЕЗ СЕТЕВЫХ ПОДКЛЮЧЕНИЙ"
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera    P — next shot    F3 — diagnostics\nH — show / hide 3D objective    T — power-route forecast\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    K — adaptive quality    C — reactor camera    P — next shot    F3 — diagnostics\nH — show / hide 3D objective    T — power-route forecast\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -162,6 +164,8 @@ const COPY := {
         "motion_reduced": "CAMERA: REDUCED MOTION", "motion_normal": "CAMERA: CINEMATIC",
         "audio_off": "AUDIO: OFF", "audio_on": "AUDIO: ON",
         "quality_eco": "GRAPHICS: ECO", "quality_hero": "GRAPHICS: HERO",
+        "auto_on": "AUTO GRAPHICS: ON / REAL FRAME MEASUREMENTS", "auto_off": "AUTO GRAPHICS: OFF",
+        "auto_reduce": "AUTO: ECO / SLOW LOCAL FRAME PACING", "auto_recover": "AUTO: HERO / STABLE LOCAL FRAMES",
         "footer": "IRON PULSE / BLACKOUT   •   FICTIONAL SIMULATION   •   OFFLINE BY DESIGN"
     }
 }
@@ -173,6 +177,8 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var campaign: IPCampaignFlow = IPCampaignFlow.new()
 var world_launch: Dictionary = IPWorldLaunch.parse("")
 var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
+var adaptive_performance: IPAdaptivePerformance = IPAdaptivePerformance.new()
+var adaptive_sampling_clock: float = 0.0
 var threat_radar: IPThreatRadar = IPThreatRadar.new()
 var after_action_review: IPAfterActionReview = IPAfterActionReview.new()
 var black_box_report: Dictionary = {}
@@ -223,6 +229,7 @@ var objective_label: Label
 var telemetry_label: Label
 var allocation_label: Label
 var threat_label: Label
+var quality_state_label: Label
 var feedback_label: Label
 var interaction_label: Label
 var footer_label: Label
@@ -259,6 +266,7 @@ var visited_sectors: Array[String] = []
 var pause_panel: PanelContainer
 var pause_title: Label
 var resume_button: Button
+var auto_quality_button: Button
 var end_panel: PanelContainer
 var end_title: Label
 var end_stats: Label
@@ -403,6 +411,9 @@ func _publish_web_state() -> void:
     state["scenario_button_rects"] = scenario_rects
     state["end_visible"] = end_panel.visible
     state["quality_mode"] = quality_mode
+    state["adaptive_quality"] = adaptive_performance.readout(quality_mode,performance_audit.telemetry())
+    state["adaptive_quality_label"] = quality_state_label.text if quality_state_label != null else ""
+    state["auto_quality_button_rect"] = _hud_rect(auto_quality_button) if auto_quality_button != null else []
     state["reduced_motion"] = reduced_motion
     state["audio_muted"] = muted_audio
     state["soundscape_ready"] = audio_director != null and audio_director.ambient != null
@@ -868,6 +879,8 @@ func _make_hud() -> void:
     allocation_label = _label(metrics,"",16,CYAN)
     threat_label = _label(metrics,"",11,AMBER)
     threat_label.name = "V16_LiveFictionalHazardStatus"
+    quality_state_label = _label(metrics,"",10,DIM)
+    quality_state_label.name = "V18_ActualLocalGraphicsMode"
     vitals_panel = _panel(hud_root,Rect2(-365,17,-17,276),Rect2(1,0,1,0),Color(0.014,0.029,0.048,0.92))
     var vitals := VBoxContainer.new()
     vitals.add_theme_constant_override("separation",4)
@@ -901,6 +914,7 @@ func _make_hud() -> void:
     crosshair.offset_right = 24
     crosshair.offset_bottom = 30
     _make_overlays()
+    _refresh_auto_quality_ui()
     _make_touch_controls()
     _make_radio_ui()
     diagnostic_panel = _panel(hud_root,Rect2(-365,295,-15,485),Rect2(1,0,1,0),Color(0.015,0.027,0.045,0.94))
@@ -996,7 +1010,7 @@ func _make_overlays() -> void:
     start_box.add_child(archive_intro_button)
     continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
-    pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
+    pause_panel = _panel(hud_root,Rect2(-240,-150,240,150),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var pause_box := VBoxContainer.new()
     pause_box.add_theme_constant_override("separation",20)
@@ -1007,6 +1021,12 @@ func _make_overlays() -> void:
     resume_button.custom_minimum_size = Vector2(0,56)
     resume_button.pressed.connect(_resume)
     pause_box.add_child(resume_button)
+    auto_quality_button = Button.new()
+    auto_quality_button.name = "V18_OptInActualFrameAdaptiveGraphics"
+    auto_quality_button.custom_minimum_size = Vector2(0,52)
+    auto_quality_button.add_theme_font_size_override("font_size",13)
+    auto_quality_button.pressed.connect(_toggle_auto_quality)
+    pause_box.add_child(auto_quality_button)
     pause_panel.visible = false
     end_panel = _panel(hud_root,Rect2(-300,-220,300,220),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
     end_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1237,6 +1257,8 @@ func _layout_hud() -> void:
     telemetry_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     threat_label.add_theme_font_size_override("font_size",10 if narrow else 11)
+    quality_state_label.add_theme_font_size_override("font_size",10 if narrow else 11)
+    adaptive_performance.compact_device = narrow
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
@@ -1248,6 +1270,8 @@ func _layout_hud() -> void:
         forecast_panel.offset_top = 290.0 if narrow else 296.0
         forecast_panel.offset_bottom = 594.0 if narrow else 601.0
         forecast_label.add_theme_font_size_override("font_size",11 if narrow else 13)
+    pause_panel.offset_left = -minf(240.0,width*0.45)
+    pause_panel.offset_right = minf(240.0,width*0.45)
     intro_panel.offset_left = -minf(310.0,width*0.45)
     intro_panel.offset_right = minf(310.0,width*0.45)
     end_panel.offset_left = -minf(300.0,width*0.45)
@@ -1750,6 +1774,7 @@ func _toggle_language() -> void:
     _update_scenario_picker()
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
+    _refresh_auto_quality_ui()
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
     campaign_echoes.sync(campaign,locale)
@@ -1761,6 +1786,37 @@ func _toggle_language() -> void:
     _refresh_after_action_locale()
     _refresh_run_archive_locale()
     _refresh_radio_ui()
+
+func _apply_graphics_profile(next_mode: String) -> void:
+    if next_mode not in ["hero","eco"] or next_mode == quality_mode:
+        return
+    quality_mode = next_mode
+    art_stage.set_quality(quality_mode)
+    world_sectors.set_quality(quality_mode)
+    reactor_atrium.set_quality(quality_mode)
+    containment_fx.set_quality(quality_mode)
+    for index in range(legacy_lamps.size()):
+        legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
+    if quality_state_label != null:
+        quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
+
+func _refresh_auto_quality_ui() -> void:
+    if auto_quality_button == null:
+        return
+    var english: bool = locale == "en"
+    if adaptive_performance.enabled:
+        auto_quality_button.text = "K / AUTO ON · DISABLE" if english else "K / АВТО ВКЛ. · ВЫКЛ."
+    else:
+        auto_quality_button.text = "K / ENABLE AUTO" if english else "K / ВКЛЮЧИТЬ АВТО"
+    if quality_state_label != null:
+        quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
+
+func _toggle_auto_quality() -> void:
+    adaptive_performance.set_enabled(not adaptive_performance.enabled)
+    adaptive_sampling_clock = 0.0
+    _refresh_auto_quality_ui()
+    _announce("auto_on" if adaptive_performance.enabled else "auto_off")
+    _publish_web_state()
 
 func _gamepad_axis(axis_id: int) -> float:
     var joypads: Array[int] = Input.get_connected_joypads()
@@ -1855,14 +1911,15 @@ func _input(event: InputEvent) -> void:
             _save_checkpoint()
             _refresh_hud()
             return
+        if event.keycode == KEY_K:
+            _toggle_auto_quality()
+            return
         if event.keycode == KEY_G:
-            quality_mode = "eco" if quality_mode == "hero" else "hero"
-            art_stage.set_quality(quality_mode)
-            world_sectors.set_quality(quality_mode)
-            reactor_atrium.set_quality(quality_mode)
-            containment_fx.set_quality(quality_mode)
-            for i in range(legacy_lamps.size()):
-                legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
+            # An explicit player selection always takes priority over AUTO.
+            adaptive_performance.set_enabled(false)
+            adaptive_sampling_clock = 0.0
+            _apply_graphics_profile("eco" if quality_mode == "hero" else "hero")
+            _refresh_auto_quality_ui()
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
             return
         if event.keycode == KEY_C and started and not paused and not session.finished():
@@ -1956,7 +2013,22 @@ func _physics_process(delta: float) -> void:
         _show_end()
 
 func _process(delta: float) -> void:
-    performance_audit.observe(delta,started and not paused,quality_mode)
+    var gameplay_active: bool = started and not paused and not session.finished()
+    performance_audit.observe(delta,gameplay_active,quality_mode)
+    if adaptive_performance.enabled and gameplay_active and is_finite(delta) and delta > 0.0 and delta <= 0.25:
+        adaptive_sampling_clock += delta
+        if adaptive_sampling_clock >= 0.2:
+            var sample_delta: float = minf(adaptive_sampling_clock,0.25)
+            adaptive_sampling_clock = 0.0
+            var compact: bool = (_browser_css_size.x > 0 and _browser_css_size.x < 650) or get_viewport().get_visible_rect().size.x < 650
+            var next_quality: String = adaptive_performance.observe(sample_delta,true,quality_mode,performance_audit.telemetry(),compact)
+            if next_quality != "":
+                _apply_graphics_profile(next_quality)
+                _announce("auto_reduce" if next_quality == "eco" else "auto_recover")
+    else:
+        adaptive_sampling_clock = 0.0
+        if adaptive_performance.enabled:
+            adaptive_performance.observe(0.0,false,quality_mode,{},adaptive_performance.compact_device)
     runtime_seconds += delta
     if OS.has_feature("web") and runtime_seconds - _last_web_resize_check >= 0.4:
         _last_web_resize_check = runtime_seconds
@@ -2188,6 +2260,7 @@ func _refresh_hud() -> void:
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
         _copy("rescue_count").format({"used":session.relays_activated.size()})]
+    quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
     var risk: Dictionary = threat_radar.snapshot(session)
     threat_label.text = threat_radar.cockpit_text(risk,locale)
     var risk_color: Color = RED if str(risk["tier"]) in ["CRITICAL","FAILED"] else AMBER if str(risk["tier"]) == "WATCH" else CYAN

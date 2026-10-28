@@ -225,6 +225,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 190s godot --headless --path iron-pulse-prologue --script res://tests/test_v17_operator_records.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v17-operator-records.log"
           grep -q '^IRON PULSE V17 OPERATOR RECORDS PASS:' "$RUNNER_TEMP/iron-pulse-v17-operator-records.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v17-operator-records.log"; then exit 1; fi
+      - name: V18 measured real-frame quality policy, auto/manual UI, old-save and 3D regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 190s godot --headless --path iron-pulse-prologue --script res://tests/test_v18_adaptive_performance.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v18-performance.log"
+          grep -q '^IRON PULSE V18 ADAPTIVE PERFORMANCE PASS:' "$RUNNER_TEMP/iron-pulse-v18-performance.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v18-performance.log"; then exit 1; fi
       - name: V13 safe world-link contract to actual story campaign and original mission
         shell: bash
         run: |

@@ -371,6 +371,95 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
+
+                        # V18 actual WebGL Godot input: measure honest local
+                        # frame state, toggle opt-in AUTO via K, then back off.
+                        # This is NOT a physical device frame-rate claim.
+                        native_auto=state.get("adaptive_quality",{})
+                        assert native_auto.get("schema")=="IRON_PULSE_ADAPTIVE_QUALITY_V18", (
+                            "Real Godot does not expose source-bound V18 graphics policy",native_auto)
+                        assert native_auto.get("enabled") is False and native_auto.get("policy")=="manual", (
+                            "Real gameplay silently forces adaptive graphics without consent",native_auto)
+                        assert native_auto.get("hardware_certified") is False and native_auto.get("fps_guaranteed") is False and (
+                            native_auto.get("telemetry_uploaded") is False),(
+                            "Local frame samples are misrepresented as hardware certification",native_auto)
+                        original_mode=state.get("quality_mode")
+                        page.keyboard.press("k")
+                        deadline=time.monotonic()+20
+                        auto_on={}
+                        while time.monotonic()<deadline:
+                            auto_on=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if auto_on.get("adaptive_quality",{}).get("enabled") is True:
+                                break
+                            page.wait_for_timeout(180)
+                        assert auto_on.get("adaptive_quality",{}).get("enabled") is True, (
+                            "Native K does not enable measured auto quality",name)
+                        assert auto_on.get("quality_mode")==original_mode, (
+                            "Enabling adaptation instantly forges a frame-based quality change",auto_on)
+                        page.keyboard.press("k")
+                        deadline=time.monotonic()+20
+                        auto_off={}
+                        while time.monotonic()<deadline:
+                            auto_off=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if auto_off.get("adaptive_quality",{}).get("enabled") is False:
+                                break
+                            page.wait_for_timeout(180)
+                        assert auto_off.get("adaptive_quality",{}).get("enabled") is False, (
+                            "Native K does not restore manual graphics",name)
+                        assert auto_off.get("quality_mode")==original_mode, (
+                            "Opt-in ON/OFF modifies artwork without real evidence",auto_off)
+                        if mobile:
+                            page.keyboard.press("Escape")
+                            deadline=time.monotonic()+20
+                            paused={}
+                            while time.monotonic()<deadline:
+                                paused=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if paused.get("paused") is True:
+                                    break
+                                page.wait_for_timeout(180)
+                            assert paused.get("paused") is True, ("Native pause menu inaccessible on touch",name)
+                            rect=paused.get("auto_quality_button_rect")
+                            assert rect and rect[2]>=44 and rect[3]>=44, (
+                                "Native touch AUTO button missing/undersized",name,rect)
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            touch_x=bounds["x"]+(rect[0]+rect[2]/2)*bounds["width"]/paused["viewport"][0]
+                            touch_y=bounds["y"]+(rect[1]+rect[3]/2)*bounds["height"]/paused["viewport"][1]
+                            assert 0<=touch_x<=size["width"] and 0<=touch_y<=size["height"], (
+                                "Adaptive-graphics pause touch button clipped",name,rect)
+                            page.touchscreen.tap(touch_x,touch_y)
+                            deadline=time.monotonic()+20
+                            touched={}
+                            while time.monotonic()<deadline:
+                                touched=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if touched.get("adaptive_quality",{}).get("enabled") is True:
+                                    break
+                                page.wait_for_timeout(180)
+                            assert touched.get("adaptive_quality",{}).get("enabled") is True and (
+                                touched.get("paused") is True),(
+                                "Real pause touch target did not toggle graphics",name,touched)
+                            page.touchscreen.tap(touch_x,touch_y)
+                            deadline=time.monotonic()+20
+                            while time.monotonic()<deadline:
+                                touched=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if touched.get("adaptive_quality",{}).get("enabled") is False:
+                                    break
+                                page.wait_for_timeout(180)
+                            assert touched.get("adaptive_quality",{}).get("enabled") is False, (
+                                "Real pause touch cannot disable AUTO",name,touched)
+                            page.keyboard.press("Escape")
+                            deadline=time.monotonic()+20
+                            resumed={}
+                            while time.monotonic()<deadline:
+                                resumed=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if resumed.get("paused") is False:
+                                    break
+                                page.wait_for_timeout(180)
+                            assert resumed.get("paused") is False, (
+                                "Auto settings broke existing resume input",name)
+                        report.setdefault("v18_local_adaptive_graphics",{})[name] = (
+                            "real engine K ON/OFF, no fake FPS; mobile pause touch ON/OFF PASS")
+
                         # V16: the telemetry strip is computed by IPCrisisEngine.
                         # Post-mission review is forbidden until actual win/loss.
                         threat=state.get("threat_radar",{})

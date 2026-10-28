@@ -267,6 +267,11 @@ button { cursor: pointer; }
 .operator-ledger-figure strong { font-size: clamp(74px,11vw,156px); font-weight: 600; line-height: 1; letter-spacing: -.085em; color: #f0f2ee; }
 .operator-ledger-figure small { color: #a6b3b7; font-size: 12px; max-width: 245px; line-height: 1.65; }
 @media(max-width:680px) { .operator-ledger { grid-template-columns: 1fr; } .operator-ledger-figure { border-left: 0; border-top: 1px solid #475359; } .operator-ledger-figure strong { font-size: 90px; } }
+.frame-quality-note { margin-top: 16px; padding: clamp(25px,4vw,47px); border: 1px solid #374a52; background: linear-gradient(115deg,#10191f,#070d12); display: grid; grid-template-columns: minmax(150px,.65fr) minmax(0,2fr); align-items: start; gap: 28px; }
+.frame-quality-note .feature-index { display: block; margin-top: 8px; }
+.frame-quality-note h3 { margin: 0 0 14px; font-size: clamp(20px,2.3vw,33px); letter-spacing: -.04em; }
+.frame-quality-note p { margin: 0; max-width: 710px; line-height: 1.8; color: #aebfc1; font-size: 14px; }
+@media(max-width:680px) { .frame-quality-note { grid-template-columns: 1fr; gap: 16px; } }
 .world-evidence-note { margin: 35px 0 0; padding: 20px 24px; border-left: 2px solid var(--accent-soft); background: #192025; color: #b8c4c5; font-size: 13px; line-height: 1.8; max-width: 840px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
