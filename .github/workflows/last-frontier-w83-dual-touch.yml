@@ -1,0 +1,246 @@
+name: LAST FRONTIER W83 actual source Godot indexed 2-finger mobile full mission (DRAFT)
+
+on:
+  pull_request:
+    branches:
+      - game/last-frontier-w82-real-wayfinder-hud-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W83_TRUE_MULTITOUCH_GAME.md'
+      - '.github/workflows/last-frontier-w83-dual-touch.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w83-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-godot-source:
+    name: Original full W63-W82 physics and gameplay immutable, only six W83 files
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Pin exact accepted W82 and disallow gameplay rewrites or mock movement
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w83-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='239af2787e287da7674cf49e533f2dbc99bdc1cb'
+          head=os.environ['HEAD']
+          def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch(r'[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          allowed={
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/scripts/A7DualTouchLook.gd',
+              'w63-a7-cascade/tests/test_w83_dual_touch.gd',
+              'w63-a7-cascade/ci/w83_browser_real_multitouch.py',
+              'docs/LAST_FRONTIER_W83_TRUE_MULTITOUCH_GAME.md',
+              '.github/workflows/last-frontier-w83-dual-touch.yml',
+          }
+          assert changed==allowed,{'missing':sorted(allowed-changed),
+                                   'unapproved':sorted(changed-allowed)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7SpatialMission.gd',
+              'w63-a7-cascade/scripts/A7FieldOperations.gd',
+              'w63-a7-cascade/scripts/A7WorldInteraction.gd',
+              'w63-a7-cascade/scripts/A7SessionCheckpoint.gd',
+              'w63-a7-cascade/scripts/A7DiegeticFeedback.gd',
+              'w63-a7-cascade/scripts/A7MissionWayfinder.gd',
+              'w63-a7-cascade/scripts/A7SectorBulkhead.gd',
+              'w63-a7-cascade/scripts/A7TouchFieldControls.gd',
+              'w63-a7-cascade/scripts/A7MobileMissionDeck.gd',
+              'w63-a7-cascade/scripts/A7FullBleedViewport.gd',
+              'w63-a7-cascade/scripts/A7MissionNavCockpit.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w72_field_operations.gd',
+              'w63-a7-cascade/tests/test_w73_world_and_checkpoint.gd',
+              'w63-a7-cascade/tests/test_w74_gamepad_feedback.gd',
+              'w63-a7-cascade/tests/test_w76_immersive_level.gd',
+              'w63-a7-cascade/tests/test_w77_sector_bulkhead.gd',
+              'w63-a7-cascade/tests/test_w78_touch_gameplay.gd',
+              'w63-a7-cascade/tests/test_w79_complete_mobile_mission.gd',
+              'w63-a7-cascade/tests/test_w80_full_bleed_game.gd',
+              'w63-a7-cascade/tests/test_w81_mobile_fullscreen.gd',
+              'w63-a7-cascade/tests/test_w82_real_navigation.gd',
+              'w63-a7-cascade/ci/w81_browser_fused_mobile.py',
+              'w63-a7-cascade/ci/w82_browser_real_navigation.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+          ]
+          hashes={}
+          for file in protected:
+              before=git('rev-parse',base+':'+file)
+              after=git('rev-parse',head+':'+file)
+              assert before==after,'Protected original game/rules/CI changed: '+file
+              hashes[file]=after
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          code=Path('w63-a7-cascade/scripts/A7DualTouchLook.gd').read_text()
+          screen=Path('w63-a7-cascade/scripts/A7CascadeScreen.gd').read_text()
+          assert 'InputEventScreenTouch' in code and 'InputEventScreenDrag' in code
+          assert 'motion.screen_relative' in code
+          assert 'look_finger = touch.index' in code
+          assert 'motion.index != look_finger' in code
+          assert 'actor.rotate_view(delta*LOOK_SENSITIVITY)' in code
+          for prohibited in ['model.choose','A7CascadeCore.choose','body.position =',
+                             'body.global_position =','OS.execute','HTTPClient',
+                             'JavaScriptBridge','sync_connector(','rotate_valve(',
+                             'toggle_relay(','inspect_physical(']:
+              assert prohibited not in code,'W83 cannot hijack original game: '+prohibited
+          for marker in ['w83_dual_touch.build','w83_dual_touch.handle_screen_event',
+                         'w83_real_multitouch_active','w78_touch_overlay.release_all()']:
+              assert marker in screen,'W83 real screen source route missing: '+marker
+          report={'schema':'LAST_FRONTIER_W83_EXACT_ORIGINAL_GODOT_SOURCE_V1',
+                  'result':'PASS','base_sha':base,'head_sha':head,
+                  'changed_files':sorted(changed),
+                  'immutable_original_godot_blobs':hashes,
+                  'original_gameplay_authority_unchanged':True,
+                  'hardware_phone_or_aaa_retail_approved':False}
+          Path('w83-evidence/W83_EXACT_SOURCE_PIN.json').write_text(
+              json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          print('W83 original W63-W82 physics/rules and exact-source multitouch PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w83-source-pin-${{ github.event.pull_request.head.sha }}
+          path: w83-evidence/W83_EXACT_SOURCE_PIN.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  genuine-native-and-webgl:
+    name: Twelve original Godot native suites and true CDP two-finger WebGL, 18 SHA frames
+    runs-on: ubuntu-latest
+    needs: exact-godot-source
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import original real Godot 4.4.1 sources, zero parser/compile errors
+        run: |
+          set -euo pipefail
+          mkdir -p w83-evidence
+          timeout 320s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w83-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w83-evidence/import.log; then exit 1; fi
+      - name: Run twelve physical source-native Godot suites including W83 indexed two-finger 3D camera
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w72_field_operations test_w73_world_and_checkpoint test_w74_gamepad_feedback test_w76_immersive_level test_w77_sector_bulkhead test_w78_touch_gameplay test_w79_complete_mobile_mission test_w80_full_bleed_game test_w81_mobile_fullscreen test_w82_real_navigation test_w83_dual_touch; do
+            timeout 510s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w83-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w83-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W78 TRUE ORIGINAL GODOT MOBILE TOUCH PHYSICS PASS:' w83-evidence/test_w78_touch_gameplay.log
+          grep -q 'LAST FRONTIER W79 TRUE COMPLETE FIVE-PHASE MOBILE GODOT MISSION PASS:' w83-evidence/test_w79_complete_mobile_mission.log
+          grep -q 'LAST FRONTIER W80 TRUE ORIGINAL FULL-BLEED GODOT GAME PASS:' w83-evidence/test_w80_full_bleed_game.log
+          grep -q 'LAST FRONTIER W81 INTEGRATED FULLSCREEN RESPONSIVE MOBILE GAME PASS:' w83-evidence/test_w81_mobile_fullscreen.log
+          grep -q 'LAST FRONTIER W82 REAL WORLD MISSION COMPASS AND REACHABILITY PASS:' w83-evidence/test_w82_real_navigation.log
+          grep -q 'LAST FRONTIER W83 REAL INDEXED TWO-FINGER GODOT CAMERA AND PHYSICS PASS:' w83-evidence/test_w83_dual_touch.log
+      - name: Compile real original 4.4.1 Godot WASM/PCK at exact SHA
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          cd w63-a7-cascade
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          cd ..
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Chromium + Image source QA, true CDP native touch
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w83
+          /tmp/a7-w83/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w83/bin/python -m playwright install --with-deps chromium
+      - name: Source-original W81, W82, plus W83 real two distinct simultaneous CDP touch fingers
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # Run new concurrent real two-finger risk FIRST. Then previous
+          # accepted original W81 and W82 source regressions unchanged.
+          timeout 1190s /tmp/a7-w83/bin/python w63-a7-cascade/ci/w83_browser_real_multitouch.py --export w63-a7-cascade/build/web --evidence w83-evidence/w83-real-native-twofinger --sha "$SHA" 2>&1 | tee w83-evidence/w83-browser.log
+          grep -q 'LAST FRONTIER W83 ACTUAL TWO-FINGER GODOT WEBGL CHROMIUM PASS:' w83-evidence/w83-browser.log
+          # Chromium default CDP Input.dispatchTouchEvent uses CHANGED
+          # touch points (confirmed 2026-10-05 browser automation bug):
+          # release camera b FIRST, only later release physical walk a.
+          grep -Fq 'send(cdp,"touchStart",[b])' w63-a7-cascade/ci/w83_browser_real_multitouch.py
+          grep -Fq 'send(cdp,"touchEnd",[b])' w63-a7-cascade/ci/w83_browser_real_multitouch.py
+          grep -Fq 'send(cdp,"touchEnd",[a])' w63-a7-cascade/ci/w83_browser_real_multitouch.py
+          ! grep -Fq 'send(cdp,"touchStart",[a,b])' w63-a7-cascade/ci/w83_browser_real_multitouch.py
+          grep -Fq 'assert_source_touch_release(page,a,b)' w63-a7-cascade/ci/w83_browser_real_multitouch.py
+          grep -Fq 'page.reload(wait_until="domcontentloaded",timeout=120000)' w63-a7-cascade/ci/w83_browser_real_multitouch.py
+          timeout 1190s /tmp/a7-w83/bin/python w63-a7-cascade/ci/w81_browser_fused_mobile.py --export w63-a7-cascade/build/web --evidence w83-evidence/w81-regression --sha "$SHA" 2>&1 | tee w83-evidence/w81-browser.log
+          grep -q 'LAST FRONTIER W81 TRUE AAA-READABILITY GODOT MOBILE CHROMIUM PASS:' w83-evidence/w81-browser.log
+          timeout 1190s /tmp/a7-w83/bin/python w63-a7-cascade/ci/w82_browser_real_navigation.py --export w63-a7-cascade/build/web --evidence w83-evidence/w82-regression --sha "$SHA" 2>&1 | tee w83-evidence/w82-browser.log
+          grep -q 'LAST FRONTIER W82 REAL ORIGINAL GODOT PHYSICAL NAV CHROMIUM PASS:' w83-evidence/w82-browser.log
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          count=0
+          for folder,name,field,n in [
+              ('w81-regression','W81_FUSED_MOBILE_CHROMIUM.json','head_source_sha',7),
+              ('w82-regression','W82_TRUE_NAVIGATION_CHROMIUM.json','source_sha',5),
+              ('w83-real-native-twofinger','W83_TRUE_ORIGINAL_GODOT_MULTITOUCH_BROWSER.json','source_sha',6)]:
+              root=Path('w83-evidence')/folder
+              proof=json.loads((root/name).read_text())
+              assert proof['result']=='PASS' and proof[field]==os.environ['SHA']
+              assert len(proof['images'])==n
+              for image in proof['images']:
+                  raw=(root/image['name']).read_bytes()
+                  assert len(raw)>12000 and len(raw)==image['bytes']
+                  assert hashlib.sha256(raw).hexdigest()==image['sha256']
+                  count+=1
+          assert count==18
+          print('W83 EXACT SHA 18 real original Godot Chromium frames byte-audited PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w83-genuine-Godot-multitouch-WebGL-${{ github.event.pull_request.head.sha }}
+          path: |
+            w83-evidence/
+            w63-a7-cascade/build/web/
+          if-no-files-found: warn
+          retention-days: 45
+
+  release-safe:
+    name: True W83 software input QA never claims physical device or commercial AAA
+    runs-on: ubuntu-latest
+    needs: [exact-godot-source,genuine-native-and-webgl]
+    if: always()
+    steps:
+      - name: Mandatory original source plus actual Godot/Chromium software PASS, retain release HOLD
+        env:
+          SOURCE: ${{ needs.exact-godot-source.result }}
+          GAME: ${{ needs.genuine-native-and-webgl.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$GAME" = success
+          echo 'W83 actual original Godot two-finger CDP camera+physics SOFTWARE verified.'
+          echo 'RELEASE HOLD: real Android/iPhone hardware, human full mission, AAA art/animation, GPU 60fps, legal rights and owner approval remain unverified.'

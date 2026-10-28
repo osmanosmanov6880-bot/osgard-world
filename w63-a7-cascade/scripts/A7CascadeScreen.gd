@@ -219,6 +219,7 @@ var w78_touch_overlay: A7TouchFieldControls
 var w79_mission_deck: A7MobileMissionDeck
 var w80_full_bleed: A7FullBleedViewport
 var w82_nav_cockpit: A7MissionNavCockpit
+var w83_dual_touch: A7DualTouchLook
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -273,6 +274,14 @@ func _ready() -> void:
     w80_full_bleed.language_button.custom_minimum_size.y = 44.0
     w80_full_bleed.exit_requested.connect(_w76_toggle_immersive)
     w80_full_bleed.language_requested.connect(_toggle_locale)
+    # W83 uses source InputEventScreenTouch + ScreenDrag, preserving
+    # W78 actual held physical movement and W79 source-gated controls.
+    w83_dual_touch = A7DualTouchLook.new()
+    stage_shell.add_child(w83_dual_touch)
+    w83_dual_touch.build(stage_shell,stage_3d.first_person,
+        w78_touch_overlay,w79_mission_deck,w82_nav_cockpit,w80_full_bleed)
+    w83_dual_touch.real_camera_drag_started.connect(
+        _w77_cancel_guided_camera_on_manual_input)
     sound_bus = A7ProceduralAudio.new()
     add_child(sound_bus)
     _create_web_accessibility()
@@ -1260,6 +1269,9 @@ func _layout_stage() -> void:
         w79_mission_deck.set_context(touch_context,w76_immersive,
             stage_3d.first_person.piloting,locale,size.x,model.snapshot())
         w79_mission_deck.configure_landscape(landscape_touch)
+    if w83_dual_touch != null:
+        w83_dual_touch.set_context(touch_context and w76_immersive,
+            locale,size)
     if w82_nav_cockpit != null:
         w82_nav_cockpit.configure(size.x)
     if cinematic_hud != null:
@@ -1276,6 +1288,17 @@ func _toggle_locale() -> void:
     locale = "en" if locale == "ru" else "ru"
     _render(model.snapshot())
 
+func _notification(what: int) -> void:
+    # W83: avoid a stuck CharacterBody3D walk or continued camera gesture
+    # after browser/tab focus loss. Never changes original mission decisions.
+    if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or (
+            what == NOTIFICATION_APPLICATION_FOCUS_OUT) or (
+            what == NOTIFICATION_APPLICATION_PAUSED):
+        if w83_dual_touch != null:
+            w83_dual_touch.cancel_capture()
+        if w78_touch_overlay != null:
+            w78_touch_overlay.release_all()
+
 func _unhandled_input(event: InputEvent) -> void:
     # Right mouse drag rotates the actual first-person Camera3D when active.
     if stage_3d == null or stage_3d.first_person == null:
@@ -1288,6 +1311,13 @@ func _unhandled_input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
 
 func _input(event: InputEvent) -> void:
+    # W83: explicitly indexed touch gestures; only right-side FREE world
+    # screen events are handled. Every W78/W79/W80 interactive button retains
+    # its independent pointer and real source action routing.
+    if w83_dual_touch != null and w83_dual_touch.handle_screen_event(event):
+        get_viewport().set_input_as_handled()
+        call_deferred("_publish_web_accessibility")
+        return
     # W74 native controller events are handled before focused GUI widgets.
     # The analog axis drives the real W70 CharacterBody3D's continuous speed,
     # never fake camera images or a teleported player position.
@@ -1461,6 +1491,9 @@ func _render(state: Dictionary) -> void:
     if w82_nav_cockpit != null and stage_3d != null:
         w82_nav_cockpit.set_context(w76_immersive,
             stage_3d.first_person.piloting,locale,state)
+    if w83_dual_touch != null:
+        w83_dual_touch.set_context(_w81_touch_context() and w76_immersive,
+            locale,size)
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
     load_button.text = _t("load_game")
@@ -1750,6 +1783,25 @@ func _publish_web_accessibility() -> void:
         "w82_compass_source_guidance":str(w82_nav_cockpit.qa_readout()["guidance"]) if w82_nav_cockpit != null else "",
         "w82_no_automatic_gameplay":true,
         "w82_real_phone_hardware_certified":false,
+        "w83_real_multitouch_active":w83_dual_touch.visible if w83_dual_touch != null else false,
+        "w83_real_drag_events":w83_dual_touch.physical_look_drags if w83_dual_touch != null else 0,
+        "w83_real_camera_rotations":w83_dual_touch.real_camera_rotations if w83_dual_touch != null else 0,
+        "w83_touch_claimed":w83_dual_touch.touch_begins if w83_dual_touch != null else 0,
+        "w83_active_look_finger":w83_dual_touch.look_finger if w83_dual_touch != null else -1,
+        "w83_touch_release_events":w83_dual_touch.released_fingers if w83_dual_touch != null else 0,
+        "w83_touch_release_position_recovers":w83_dual_touch.recovered_end_by_position if w83_dual_touch != null else 0,
+        "w83_touch_release_timeout_recovers":w83_dual_touch.recovered_missing_end_timeout if w83_dual_touch != null else 0,
+        "w83_source_active_walk_fingers":w83_dual_touch.source_walk_fingers.size() if w83_dual_touch != null else 0,
+        "w83_true_original_walk_key_held":w83_dual_touch.is_source_walk_held() if w83_dual_touch != null else false,
+        "w83_source_walk_touch_starts":w83_dual_touch.actual_walk_touch_starts if w83_dual_touch != null else 0,
+        "w83_source_walk_touch_ends":w83_dual_touch.actual_walk_touch_ends if w83_dual_touch != null else 0,
+        "w83_real_walk_reassert_frames":w83_dual_touch.original_walk_reassert_frames if w83_dual_touch != null else 0,
+        "w83_source_walk_safety_expirations":w83_dual_touch.expired_long_walk_holds if w83_dual_touch != null else 0,
+        "w83_source_yaw":float(w83_dual_touch.qa_readout()["actual_source_yaw"]) if w83_dual_touch != null else 0.0,
+        "w83_source_pitch":float(w83_dual_touch.qa_readout()["actual_source_pitch"]) if w83_dual_touch != null else 0.0,
+        "w83_real_UI_touches_not_intercepted":w83_dual_touch.rejected_ui_starts if w83_dual_touch != null else 0,
+        "w83_original_body_preserved":bool(w83_dual_touch.qa_readout()["original_source_characterbody_preserved"]) if w83_dual_touch != null else false,
+        "w83_phone_hardware_approved":false,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1814,6 +1866,7 @@ func _publish_web_accessibility() -> void:
         "w80_native_mission_panel":_web_rect(w79_mission_deck.panel) if w79_mission_deck != null else [],
         "w82_native_compass_hud":_web_rect(w82_nav_cockpit.frame) if w82_nav_cockpit != null else [],
         "w82_nav_label":_web_rect(w82_nav_cockpit.title_label) if w82_nav_cockpit != null else [],
+        "w83_camera_swipe_hint":_web_rect(w83_dual_touch.hint_label) if w83_dual_touch != null else [],
         "w80_true_native_menu":_web_rect(w80_full_bleed.exit_button) if w80_full_bleed != null else [],
         "w80_true_native_language":_web_rect(w80_full_bleed.language_button) if w80_full_bleed != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),
