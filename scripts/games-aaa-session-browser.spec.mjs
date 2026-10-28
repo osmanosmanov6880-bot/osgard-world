@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test('WAVE 03: remember last game safely, show true controls, clear remembered launch',async ({page})=>{
   test.setTimeout(60_000)
   await page.goto('/games/',{waitUntil:'domcontentloaded'})
-  await expect(page.locator('#games-grid article.card[data-game]')).toHaveCount(22)
+  await expect(page.locator('#games-grid article.card[data-game]')).toHaveCount(23)
   await expect(page.locator('#last-session')).toBeHidden()
   await page.locator('#games-grid article.card[data-game="time"] a.play-link').click()
   await expect(page.locator('#player-dialog')).toBeVisible()
