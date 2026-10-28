@@ -42,6 +42,8 @@ var active_chunk_count := 0
 var window_points: Array[Transform3D] = []
 var facade_windows: MultiMeshInstance3D
 var facade_frames: MultiMeshInstance3D
+var city_reign_standard_window_frame_mesh: Mesh
+var city_reign_cinematic_window_frame_mesh: Mesh
 var architecture_trim: MultiMeshInstance3D
 var r98_facade_ribs: MultiMeshInstance3D
 var city_reign_facades: Node3D
@@ -83,6 +85,7 @@ const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.g
 const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.gd")
 const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_skyline.gd")
 const CITY_REIGN_TOWER_BODY = preload("res://scripts/city_reign_tower_body_lod.gd")
+const CITY_REIGN_WINDOW_REVEAL = preload("res://scripts/city_reign_window_reveal_geometry.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -409,6 +412,9 @@ func _create_window_batch() -> void:
 	# One draw batch, rather than a new draw call per window.
 	var frame_mesh := BoxMesh.new()
 	frame_mesh.size = Vector3(1.27,1.60,0.055)
+	# Preserve the true source window transform and shared original GPU batch.
+	city_reign_standard_window_frame_mesh = frame_mesh
+	city_reign_cinematic_window_frame_mesh = CITY_REIGN_WINDOW_REVEAL.cinematic_mesh()
 	var frame_grid := MultiMesh.new()
 	frame_grid.transform_format = MultiMesh.TRANSFORM_3D
 	frame_grid.mesh = frame_mesh
@@ -675,6 +681,14 @@ func apply_visual_budget(mode: String) -> void:
 		cityhall_gateway.visible = visual_budget != "low"
 	if facade_frames != null:
 		facade_frames.visible = visual_budget != "low"
+		# B54: original 3D windows remain exactly one MultiMesh instance
+		# apiece. CINEMATIC gets a physically hollow cast-metal frame, while
+		# STANDARD/LOW retain the lightweight original BoxMesh.
+		var frame_mesh: Mesh = (
+			city_reign_cinematic_window_frame_mesh if visual_budget=="cinematic"
+			else city_reign_standard_window_frame_mesh)
+		if facade_frames.multimesh.mesh != frame_mesh:
+			facade_frames.multimesh.mesh = frame_mesh
 	# Quality tier changes update actual GPU material immediately, even if
 	# original night/district electricity state and cached window colors match.
 	_apply_window_shading(ambience_time)
