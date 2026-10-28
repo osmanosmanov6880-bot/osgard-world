@@ -210,6 +210,8 @@ var quality_button: Button
 var motion_button: Button
 var quality: String = "hero"
 var reduced_motion: bool = false
+var w77_operator_focus_tween: Tween
+var w77_focus_cancelled_by_actual_input: int = 0
 var w76_immersive: bool = false
 var w76_immersive_switches: int = 0
 var top_rail: HFlowContainer
@@ -871,6 +873,13 @@ func _start_extended_mission() -> void:
 # Original first-person context camera: one gentle operator-initiated turn
 # toward the REAL physical device, never a teleport or a fabricated rendering.
 # 3D details remain manipulable even when the player disables camera motion.
+func _w77_cancel_guided_camera_on_manual_input() -> void:
+    # Actual player W/A/S/D, mouse drag and nonzero gamepad stick override
+    # any pending cinematic auto-look. No force-teleport or fake key state.
+    if w77_operator_focus_tween != null and w77_operator_focus_tween.is_running():
+        w77_operator_focus_tween.kill()
+        w77_focus_cancelled_by_actual_input += 1
+
 func _focus_physical_field_device(key: String, target: Vector3) -> void:
     if (field_focused_devices.has(key) or stage_3d == null
             or stage_3d.first_person == null
@@ -894,11 +903,14 @@ func _focus_physical_field_device(key: String, target: Vector3) -> void:
         actor.body.rotation.y = yaw
         actor.head_camera.rotation.x = pitch
         return
-    var old: Tween = create_tween()
-    old.set_parallel(true)
-    old.tween_property(actor.body, "rotation:y", yaw, 0.32).set_trans(
+    _w77_cancel_guided_camera_on_manual_input()
+    w77_operator_focus_tween = create_tween()
+    w77_operator_focus_tween.set_parallel(true)
+    w77_operator_focus_tween.tween_property(
+        actor.body, "rotation:y", yaw, 0.32).set_trans(
         Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-    old.tween_property(actor.head_camera, "rotation:x", pitch, 0.32).set_trans(
+    w77_operator_focus_tween.tween_property(
+        actor.head_camera, "rotation:x", pitch, 0.32).set_trans(
         Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _field_valve(direction: int) -> void:
@@ -994,6 +1006,7 @@ func _toggle_pilot() -> void:
     _render(model.snapshot())
 
 func _pilot_nudge(keycode: int) -> void:
+    _w77_cancel_guided_camera_on_manual_input()
     if stage_3d != null:
         stage_3d.first_person_nudge(keycode)
     call_deferred("_publish_web_accessibility")
@@ -1180,6 +1193,7 @@ func _unhandled_input(event: InputEvent) -> void:
     if not stage_3d.first_person.piloting:
         return
     if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+        _w77_cancel_guided_camera_on_manual_input()
         stage_3d.first_person.rotate_view((event as InputEventMouseMotion).relative)
         get_viewport().set_input_as_handled()
 
@@ -1188,7 +1202,10 @@ func _input(event: InputEvent) -> void:
     # The analog axis drives the real W70 CharacterBody3D's continuous speed,
     # never fake camera images or a teleported player position.
     if event is InputEventJoypadMotion:
-        if gamepad.route_motion(event as InputEventJoypadMotion,self):
+        var axis_event: InputEventJoypadMotion = event as InputEventJoypadMotion
+        if absf(axis_event.axis_value) >= 0.17:
+            _w77_cancel_guided_camera_on_manual_input()
+        if gamepad.route_motion(axis_event,self):
             _update_gamepad_hint()
             get_viewport().set_input_as_handled()
         return
@@ -1209,6 +1226,8 @@ func _input(event: InputEvent) -> void:
     if (stage_3d != null and stage_3d.first_person != null
             and stage_3d.first_person.piloting
             and [KEY_W, KEY_A, KEY_S, KEY_D].has(key.keycode)):
+        if key.pressed and not key.echo:
+            _w77_cancel_guided_camera_on_manual_input()
         stage_3d.first_person_key(key.keycode, key.pressed)
         get_viewport().set_input_as_handled()
         call_deferred("_publish_web_accessibility")
@@ -1581,6 +1600,7 @@ func _publish_web_accessibility() -> void:
         "w77_true_native_bulkhead_leaves":int(stage_state.get("w77_bulkhead_mesh_count",0)),
         "w77_true_bulkhead_open_events":int(stage_state.get("w77_real_bulkhead_openings",0)),
         "w77_native_door_open_ratio":float(stage_state.get("w77_real_door_open_ratio",0.0)),
+        "w77_genuine_player_motion_focus_cancels":w77_focus_cancelled_by_actual_input,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
