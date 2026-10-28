@@ -31,7 +31,7 @@ const LABELS := {
         "wins":"УСПЕХ","attempts":"ПОПЫТОК","best":"ЛУЧШАЯ ОЦЕНКА",
         "time":"ЛУЧШЕЕ ВРЕМЯ","win":"СПАСЕНЫ","loss":"ПОТЕРЯНЫ",
         "footer":"ЛОКАЛЬНО НА УСТРОЙСТВЕ  /  БЕЗ АККАУНТА И СЕТЕВОЙ ТЕЛЕМЕТРИИ",
-        "close":"ЗАКРЫТЬ  /  O / ESC","recommended":"Следующая цель: {name}",
+        "close":"X","recommended":"Следующая цель: {name}",
         "noawards":"Ещё нет достижений. Они открываются за реальные решения."
     },
     "en":{
@@ -50,7 +50,7 @@ const LABELS := {
         "wins":"SUCCESS","attempts":"ATTEMPTS","best":"BEST GRADE",
         "time":"BEST TIME","win":"EXTRACTED","loss":"LOST",
         "footer":"STORED LOCALLY  /  NO ACCOUNT OR NETWORK TELEMETRY",
-        "close":"CLOSE  /  O / ESC","recommended":"Next objective: {name}",
+        "close":"X","recommended":"Next objective: {name}",
         "noawards":"No achievements yet. Earn them through actual game choices."
     }
 }
@@ -110,7 +110,7 @@ func _ready() -> void:
     _eyebrow = _make_label(brand,"",12,COPPER)
     _heading = _make_label(brand,"",29,ICE)
     _subtitle = _make_label(brand,"",12,MUTED)
-    close_button = _button("X",Vector2(65,48))
+    close_button = _button("X",Vector2(56,48))
     close_button.name = "CloseOperations"
     close_button.pressed.connect(func(): close_requested.emit())
     header.add_child(close_button)
