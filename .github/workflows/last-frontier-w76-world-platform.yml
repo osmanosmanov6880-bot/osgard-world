@@ -1,0 +1,201 @@
+name: LAST FRONTIER W76 - actual worldwide-ready Godot web game platform (DRAFT)
+
+on:
+  pull_request:
+    branches: [review/last-frontier-w75-honest-playtest-release-gate-20261028]
+    paths:
+      - world-platform/**
+      - docs/LAST_FRONTIER_W76_WORLD_PLATFORM.md
+      - .github/workflows/last-frontier-w76-world-platform.yml
+
+permissions:
+  contents: read
+concurrency:
+  group: world-platform-w76-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  pinned-original-game-and-unit-tests:
+    name: Immutable W74/W75 original game, 12 JS tests, 14 packager and 14 release gate tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Exact base source gate without gameplay rewrites or fake remote product features
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w76-evidence
+          python3 - <<'PY'
+          import subprocess,json,os,re
+          from pathlib import Path
+          base='3d89718b3fca94575293deb576bfe39f60e703a3'
+          head=os.environ['HEAD_SHA']
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch('[a-f0-9]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          for name in ('w63-a7-cascade','w33-godot-native','tooling/last-frontier/w75'):
+              assert git('rev-parse',base+':'+name)==git('rev-parse',head+':'+name),name
+          changed=git('diff','--name-only',base,head).splitlines()
+          assert len(changed)>=15
+          assert all(x.startswith('world-platform/') or x in (
+              'docs/LAST_FRONTIER_W76_WORLD_PLATFORM.md',
+              '.github/workflows/last-frontier-w76-world-platform.yml') for x in changed)
+          must=('index.html','styles.css','app.mjs','core.mjs','sw.js','icon.svg',
+                'manifest.webmanifest','START_WINDOWS.bat','START_LINUX_MAC.sh',
+                'scripts/build.py','tests/core.test.mjs','tests/test_build.py',
+                'tests/browser_platform.py')
+          assert all('world-platform/'+x in changed for x in must)
+          app=Path('world-platform/app.mjs').read_text()
+          assert 'readGameState' in app and 'createPrivateSession' in app
+          assert 'crypto.subtle.digest' in app
+          html=Path('world-platform/index.html').read_text()
+          assert '<iframe ' in html and '<canvas' not in html
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          report={'schema':'LAST_FRONTIER_W76_PINNED_ORIGINAL_GODOT_V1',
+             'head_sha':head,'exact_baseline_sha':base,
+             'original_playable_Godot_directory_unchanged':True,
+             'original_W75_release_evidence_gate_unchanged':True,
+             'change_count':len(changed),'commercial_release_approved':False}
+          Path('w76-evidence/SOURCE_GUARD.json').write_text(json.dumps(report,indent=2))
+          print('W76 verified original unchanged playable Godot & new real portal SOURCE PASS')
+          PY
+      - name: Node engine-state, true bilingual, no fabricated playtests, and adversarial archive tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test world-platform/tests/core.test.mjs 2>&1 | tee w76-evidence/node-platform.log
+          python3 -m unittest discover -s world-platform/tests -p 'test_*.py' -v 2>&1 | tee w76-evidence/packager-security.log
+          grep -q 'Ran 14 tests' w76-evidence/packager-security.log
+          grep -q '^OK$' w76-evidence/packager-security.log
+          python3 -m unittest discover -s tooling/last-frontier/w75 -p 'test_release_gate.py' -v 2>&1 | tee w76-evidence/human-release-HOLD.log
+          grep -q 'Ran 14 tests' w76-evidence/human-release-HOLD.log
+          grep -q '^OK$' w76-evidence/human-release-HOLD.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w76-authentic-source-unit-tests-${{ github.event.pull_request.head.sha }}
+          path: w76-evidence/
+          if-no-files-found: warn
+          retention-days: 45
+
+  genuine-original-Godot-and-web-application:
+    name: Eleven actual native Godot suites, real WebGL WASM+PCK + 9 Chromium product screenshots and offline launch
+    needs: pinned-original-game-and-unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 115
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Strict original Godot 4.4.1 project import
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w76-evidence
+          timeout --signal=TERM --kill-after=5s 280s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w76-evidence/godot-import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w76-evidence/godot-import.log; then exit 1; fi
+      - name: Eleven original real Godot gameplay, 3D physics, native gamepad, local replay tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in test_a7_cascade test_w64_real_3d_stage test_w65_story_audio test_w67_cinematic_sectors test_w68_industrial_cinema test_w69_incident_direction test_w70_first_person_operator test_w71_spatial_mission test_w72_field_operations test_w73_world_and_checkpoint test_w74_gamepad_feedback; do
+            timeout --signal=TERM --kill-after=5s 480s godot --headless --path w63-a7-cascade --script "res://tests/$suite.gd" 2>&1 | tee "w76-evidence/$suite.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w76-evidence/$suite.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w76-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W73 TRUE WORLD RAYCAST AND TRANSACTIONAL CHECKPOINT PASS:' w76-evidence/test_w73_world_and_checkpoint.log
+          grep -q 'LAST FRONTIER W74 TRUE DIEGETIC PHYSICS GAMEPAD AND FRAME TELEMETRY PASS:' w76-evidence/test_w74_gamepad_feedback.log
+      - name: Export the actual game and package verified executable web platform without any fabricated binaries
+        shell: bash
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w76-evidence/godot-export.log
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+          python3 world-platform/scripts/build.py --game-dir w63-a7-cascade/build/web --out w76-world-build --platform-sha "$SHA" --archive w76-evidence/LAST_FRONTIER_WORLD_PLATFORM_PLAYABLE.zip > w76-evidence/build-provenance.json
+          test -s w76-world-build/game/index.wasm
+          test -s w76-world-build/game/index.pck
+          test -s w76-evidence/LAST_FRONTIER_WORLD_PLATFORM_PLAYABLE.zip
+      - name: Install genuine Chromium/SwiftShader browser test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/lf-w76
+          /tmp/lf-w76/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/lf-w76/bin/python -m playwright install --with-deps chromium
+      - name: Genuine desktop/mobile game, mission Y, consented player report, 43MB file integrity, offline original engine boot
+        shell: bash
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 2400s /tmp/lf-w76/bin/python world-platform/tests/browser_platform.py --site w76-world-build --evidence w76-evidence/real-browser --sha "$SHA" --offline 2>&1 | tee w76-evidence/chromium-actual-game.log
+          grep -q 'LAST FRONTIER W76 REAL WORLD PLATFORM / ORIGINAL GODOT WASM' w76-evidence/chromium-actual-game.log
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path('w76-evidence/real-browser')
+          r=json.loads((root/'W76_REAL_BROWSER_AND_GAME_PROOF.json').read_text())
+          assert r['platform_sha']==os.environ['SHA'] and r['result']=='PASS'
+          for k in ('original_godot_WASM_loaded_in_actual_iframe',
+                    'real_engine_state_drives_dashboard',
+                    'real_mission_progress_proved_by_Y_input',
+                    'local_consent_and_self_report_download_proved',
+                    'wasm_and_pck_SHA256_bytes_verified_in_browser',
+                    'real_offline_original_godot_playback_proved'):
+              assert r[k],k
+          assert not r['commercial_release_authorized']
+          assert len(r['true_browser_frames'])==9
+          for frame in r['true_browser_frames']:
+              b=(root/frame['name']).read_bytes()
+              assert len(b)>12000
+              assert hashlib.sha256(b).hexdigest()==frame['sha256']
+          print('W76 source-bound game+world platform true Chromium QA PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w76-playable-world-platform-real-Godot-${{ github.event.pull_request.head.sha }}
+          path: |
+            w76-world-build/
+            w76-evidence/
+          if-no-files-found: warn
+          retention-days: 45
+
+  release-still-hold:
+    name: Software platform complete does not certify global accounts, physical GPUs or AAA commercial release
+    needs: [pinned-original-game-and-unit-tests,genuine-original-Godot-and-web-application]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Real source, native gameplay and Chromium must all pass, production stays HOLD
+        env:
+          SOURCE: ${{ needs.pinned-original-game-and-unit-tests.result }}
+          WEB: ${{ needs.genuine-original-Godot-and-web-application.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$WEB" = success
+          echo 'W76 world platform complete SOFTWARE QA PASS'
+          echo 'RETAIL HOLD: no fabricated 12-player test, GPU device certification, worldwide multiplayer or trademark approval'
