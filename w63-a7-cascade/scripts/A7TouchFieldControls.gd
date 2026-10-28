@@ -146,7 +146,7 @@ func release_all() -> void:
     held_look = 0
 
 func set_context(compact: bool, immersed: bool, piloting: bool,
-        language: String) -> void:
+        language: String, actual_screen_width: float) -> void:
     compact_view = compact
     immersive = immersed
     actual_piloting = piloting
@@ -158,7 +158,7 @@ func set_context(compact: bool, immersed: bool, piloting: bool,
     if visible:
         # Minimum touch hit target is 40px for a 390px CSS viewport, with
         # 320px fallback; no oversized 400px buttons or vertical word wrap.
-        var smallest: float = 32.0 if size.x < 355.0 else 39.0
+        var smallest: float = 32.0 if actual_screen_width < 355.0 else 39.0
         for button in controls.values():
             (button as Button).custom_minimum_size = Vector2(smallest,48)
     (controls["inspect"] as Button).tooltip_text = (
