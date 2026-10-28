@@ -11,11 +11,13 @@ const GRADES: Array[String] = ["S","A","B"]
 var active: bool = false
 var index: int = 0
 var records: Array[Dictionary] = []
+var modifier_applied: bool = false
 
 func begin() -> void:
     active = true
     index = 0
     records.clear()
+    modifier_applied = false
 
 func current_scenario() -> String:
     return ORDER[clampi(index,0,2)]
@@ -51,6 +53,7 @@ func advance() -> bool:
     if not awaiting_advance():
         return false
     index += 1
+    modifier_applied = false
     return true
 
 func summary(locale: String = "ru") -> String:
@@ -105,7 +108,7 @@ func next_modifier() -> Dictionary:
 func apply_to_next(engine: IPCrisisEngine) -> bool:
     # Call strictly after engine.reset(current_scenario()) and only at
     # the start of an unlocked next chapter. No extra resources on retries.
-    if not active or index == 0 or records.size() != index or engine.scenario_id != current_scenario():
+    if modifier_applied or not active or index == 0 or records.size() != index or engine.scenario_id != current_scenario():
         return false
     if engine.elapsed > 0.001 or engine.core_scanned or engine.finished():
         return false
@@ -114,6 +117,7 @@ func apply_to_next(engine: IPCrisisEngine) -> bool:
     engine.oxygen = clampf(engine.oxygen+float(effects["oxygen"]),1.0,100.0)
     engine.crew_health = clampf(engine.crew_health+float(effects["crew"]),1.0,100.0)
     engine.time_left = clampf(engine.time_left+float(effects["time"]),1.0,IPCrisisEngine.MAX_TIME)
+    modifier_applied = true
     return true
 
 func checkpoint() -> Dictionary:
@@ -121,7 +125,8 @@ func checkpoint() -> Dictionary:
         "schema":FORMAT,
         "active":active,
         "index":index,
-        "records":records.duplicate(true)
+        "records":records.duplicate(true),
+        "modifier_applied":modifier_applied
     }
 
 func restore(data: Dictionary) -> bool:
@@ -129,6 +134,9 @@ func restore(data: Dictionary) -> bool:
         return false
     var ix: Variant = data.get("index",null)
     var source: Variant = data.get("records",null)
+    var applied: Variant = data.get("modifier_applied",false)
+    if typeof(applied) != TYPE_BOOL or (bool(applied) and (int(ix) <= 0 or not bool(data["active"]))):
+        return false
     if typeof(ix) != TYPE_INT or not source is Array:
         return false
     if int(ix) < 0 or int(ix) >= MAX_RECORDS or source.size() > MAX_RECORDS:
@@ -171,6 +179,7 @@ func restore(data: Dictionary) -> bool:
     active = bool(data["active"])
     index = int(ix)
     records = checked
+    modifier_applied = bool(applied)
     return true
 
 func diagnostic() -> Dictionary:
@@ -182,5 +191,6 @@ func diagnostic() -> Dictionary:
         "awaiting_next":awaiting_advance(),
         "complete":completed(),
         "modifier":next_modifier(),
+        "modifier_applied":modifier_applied,
         "final_ending":summary("en").get_slice("\n",records.size()+1) if completed() else ""
     }
