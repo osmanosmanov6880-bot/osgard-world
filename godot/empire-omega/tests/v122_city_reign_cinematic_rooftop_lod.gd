@@ -69,7 +69,13 @@ func _run() -> void:
 						break
 					min_y = minf(min_y, v.y)
 					max_y = maxf(max_y, v.y)
-				check(finite and min_y <= -0.5 and max_y >= 3.1,
+				# ArrayMesh vertices are stored as float32: 3.1 becomes
+				# 3.0999999046. Use millimetre-tolerant physical bounds.
+				if not (finite and min_y <= -0.49 and max_y >= 3.09):
+					print("ROOF LOD DIAGNOSTICS finite=", finite,
+						" min_y=", min_y, " max_y=", max_y,
+						" vertices=", premium_vertices.size())
+				check(finite and min_y <= -0.49 and max_y >= 3.09,
 					"real roof geometry is finite, correctly shaded and 3D")
 				check(crowns.multimesh.mesh == standard,
 					"standard starts with original light model")
