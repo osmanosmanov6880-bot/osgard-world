@@ -539,19 +539,30 @@ func _build_reactor() -> void:
     frame.add_child(reactor_core)
     for i in 3:
         var pivot := Node3D.new()
-        pivot.rotation_degrees = Vector3(25.0*float(i),-22.0*float(i),45.0*float(i))
+        # The legacy 90-degree X roll turned a ring EDGE-ON to the physical
+        # observation camera and produced an ugly giant cyan vertical streak.
+        # These three authored poses form interlocking ellipses around the
+        # actual 3D plasma sphere, leaving the center clearly legible.
+        pivot.rotation_degrees = Vector3.ZERO
         frame.add_child(pivot)
         var ring := MeshInstance3D.new()
+        ring.name = "PlasmaFramingRing_%d" % i
         var torus := TorusMesh.new()
-        # True thin containment filaments in Godot geometry; no giant cyan
-        # beam passing across the visible reactor center.
         torus.inner_radius = 1.72 + float(i)*0.44
         torus.outer_radius = 1.78 + float(i)*0.44
-        torus.rings = 32
+        torus.rings = 40
         torus.ring_segments = 12
         ring.mesh = torus
-        ring.material_override = _metal(AMBER if i==1 else Color(0.13,0.63,0.72),0.35,true)
-        ring.rotation_degrees.x = 90.0
+        var ring_tint: Color = AMBER if i==1 else Color(0.13,0.63,0.72)
+        var ring_material := _metal(ring_tint,0.35,true)
+        ring_material.emission_energy_multiplier = 0.90 if i == 0 else 1.08
+        ring.material_override = ring_material
+        var ring_orientations: Array[Vector3] = [
+            Vector3(0.0,0.0,90.0),
+            Vector3(18.0,24.0,62.0),
+            Vector3(-25.0,-25.0,117.0)
+        ]
+        ring.rotation_degrees = ring_orientations[i]
         pivot.add_child(ring)
         reactor_rings.append(pivot)
     for i in 6:
