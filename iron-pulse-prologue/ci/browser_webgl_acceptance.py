@@ -167,6 +167,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "Real eight-petal sliding reactor iris not imported into WebGL",iris)
                         assert iris.get("original_uv_mesh") is True and iris.get("real_steel_material") is True, (
                             "Iris is flat presentation geometry, not original UV-mapped machinery",iris)
+                        assert iris.get("actual_pbr_maps_bound")==3, (
+                            "Custom real 3D iris material lacks original albedo, roughness and normal maps",iris)
                         assert iris.get("gpu_bolt_groups")==1 and iris.get("instanced_guide_bolts")==32, (
                             "Original mechanical bolt detail is not GPU-instanced",iris)
                         assert abs(float(iris.get("aperture_radius_m",0.0))-2.23)<0.02, (
@@ -366,6 +368,42 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 "source":"actual_godot_webgl_chromium",
                                 "hdr_overlays_hidden":True
                             }
+                            # Compare identical physical 3D camera in HERO
+                            # and ECO using the existing G input; independent
+                            # raw screenshot isolates source-side art clutter.
+                            page.keyboard.press("g")
+                            deadline=time.monotonic()+20
+                            eco={}
+                            while time.monotonic()<deadline:
+                                eco=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if eco.get("quality_mode")=="eco":
+                                    break
+                                page.wait_for_timeout(150)
+                            assert eco.get("quality_mode")=="eco" and eco.get("kinetic_iris",{}).get("quality")=="eco", (
+                                "G does not change real V9 mechanical detail from original camera",eco)
+                            assert eco.get("active_camera")=="A7_ServiceObservationCamera",eco
+                            page.wait_for_timeout(450)
+                            eco_frame=page.screenshot(timeout=60000,animations="disabled")
+                            eco_stats=frame_metrics(eco_frame)
+                            assert eco_stats["stddev"]>7 and eco_stats["color_bins"]>=12,eco_stats
+                            (output/"cinematic-reactor-eco-desktop.png").write_bytes(eco_frame)
+                            report["v9_artist_review_hero_vs_eco"]={
+                                "hero_image":"cinematic-reactor-desktop.png",
+                                "eco_image":"cinematic-reactor-eco-desktop.png",
+                                "hero":pure_stats,
+                                "eco":eco_stats,
+                                "source":"real Godot C camera plus genuine G graphics key",
+                                "analysis_required":"human visual check for occluding neon bar/foreground"
+                            }
+                            page.keyboard.press("g")
+                            deadline=time.monotonic()+20
+                            restored_hero={}
+                            while time.monotonic()<deadline:
+                                restored_hero=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if restored_hero.get("quality_mode")=="hero":
+                                    break
+                                page.wait_for_timeout(150)
+                            assert restored_hero.get("quality_mode")=="hero",restored_hero
                             page.keyboard.press("c")
                             deadline=time.monotonic()+20
                             restored={}
