@@ -113,6 +113,9 @@ func build(actual_equipment: A7FieldOperations,
     set_process(true)
     _refresh_materials()
 
+func refresh_from_original_equipment() -> void:
+    _refresh_materials()
+
 func reset_visual_feedback() -> void:
     _pulse_remaining = 0.0
     _animation_phase = 0.0
