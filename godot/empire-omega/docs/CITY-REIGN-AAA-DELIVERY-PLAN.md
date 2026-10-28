@@ -94,3 +94,11 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] New native exact-SHA `v114` must pass in original Godot and staged WebGL Chromium; NO engineering GO until confirmed.
 - [ ] Commission and license high-poly hero vehicles and record actual real-hardware FPS; current shapes are original stylized 3D art, not AAA photoreal approval.
 - Complete source and acceptance contract: `docs/CITY-REIGN-AUTOMOTIVE-ART-DIRECTION.md`.
+
+## A9 — Premium interactive garage (real Godot UI)
+- [x] Four source-bound original Godot PanelContainer vehicle cards, R90 charcoal/brass visual hierarchy, mobile 1-column / desktop 2-column, direct visible 46px actions and RU/EN/ZH.
+- [x] Actual speed/acceleration/handling source multipliers and catalog costs/condition; no fake stats or economy change.
+- [x] Same live `_do_vehicle` -> GameState.buy/select_vehicle callback; original missions, saves and finances remain authoritative.
+- [ ] Exact-source original Godot `v116` plus v113/v115 and full Chrome/WebGL acceptance required before staging merge.
+- [ ] Physical phone screenshot inspection, art review and measured accessibility/contrast.
+- Full UI art contract: `docs/CITY-REIGN-AAA-GARAGE-UI.md`.
