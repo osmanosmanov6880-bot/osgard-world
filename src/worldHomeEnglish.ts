@@ -105,7 +105,7 @@ const worldHomeEnglish: Record<string, string> = {
   "Откройте сценарий. Доступность функций указана на странице.": "Open a flow and try it. Each page states which features are available.",
   "Состояние функций и сборки": "Feature and build status",
   "05 / СЛЕДУЮЩИЙ ШАГ": "05 / NEXT STEP",
-  "Опишите проект и аудиторию. Скачайте бриф, затем приложите его к письму. Эта форма ничего не отправляет.": "Describe your goal, audience and desired outcome. Download the brief and attach it to an email to the address below. The form prepares a request; it does not send anything.",
+  "Опишите проект, скачайте бриф и приложите его к письму: форма сама ничего не отправляет.": "Describe your goal, audience and desired outcome. Download the brief and attach it to an email to the address below. The form prepares a request; it does not send anything.",
   "Сначала определяем задачу и объём. Сроки и стоимость — после анализа брифа.": "The first discussion covers the problem, scope and next step. Timing and cost are set after reviewing the brief.",
   "Что хотите создать?": "What would you like to build?",
   "Для кого продукт, какую задачу решает, что уже есть. От 20 до 5000 символов.": "Who it is for, what problem it solves and what already exists. 20 to 5,000 characters.",

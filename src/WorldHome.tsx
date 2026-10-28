@@ -307,7 +307,7 @@ export default function WorldHome({ development = false }: { development?: boole
 
     <section id="contact" className="brand-section world-contact" aria-labelledby="world-contact-title">
       <div><p className="brand-eyebrow">{tx("05 / СЛЕДУЮЩИЙ ШАГ")}</p><h2 id="world-contact-title">{locale === 'ru' ? <>Начнём<br />с вашей задачи.</> : <>LET’S START<br />WITH YOUR PROJECT.</>}</h2>
-        <p>{tx("Опишите проект и аудиторию. Скачайте бриф, затем приложите его к письму. Эта форма ничего не отправляет.")}</p>
+        <p>{tx("Опишите проект, скачайте бриф и приложите его к письму: форма сама ничего не отправляет.")}</p>
         <a href="mailto:osman.osmanov0099@gmail.com" onClick={() => recordBrandEvent('contact_opened')}>osman.osmanov0099@gmail.com <span aria-hidden="true">↗</span></a>
         <p className="world-contact-next">{tx("Сначала определяем задачу и объём. Сроки и стоимость — после анализа брифа.")}</p>
       </div>
