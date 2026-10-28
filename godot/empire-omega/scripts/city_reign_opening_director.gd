@@ -160,7 +160,11 @@ static func display_position(goal: Dictionary) -> Vector3:
 		return site+Vector3(0,0,-19.0)
 	if id=="car":
 		return site+Vector3(0,0,0)
-	return site+Vector3(0,0,10.0)
+	# The real open-budget/safe-crossings source site already has a 6m
+	# radius visible construction/sign base. Its public entrance is on the
+	# SOUTH pavement. Put the original brass wayfinding arch IN FRONT,
+	# not behind the opaque built facility (actual Chromium critique B39).
+	return site+Vector3(0,0,-10.0)
 
 func _ready() -> void:
 	name = "CityReignAuthenticOpeningStreetDirector"

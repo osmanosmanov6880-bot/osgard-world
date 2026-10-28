@@ -94,7 +94,7 @@ func _run() -> void:
 	guide.call("set_view",Vector3(-120,1.3,-104),false,false)
 	check(guide.visible and guide.get("chosen")=="open_records" and
 		guide.get("last_position")==DIRECTOR.PROJECTS.POSITIONS["open_records"] and
-		guide.position==DIRECTOR.PROJECTS.POSITIONS["open_records"]+Vector3(0,0,10.0),
+		guide.position==DIRECTOR.PROJECTS.POSITIONS["open_records"]+Vector3(0,0,-10.0),
 		"original gate stands at the real selected site but does not cover paid proposal board")
 	guide.call("set_quality","low")
 	check(not guide.visible and guide.get_child_count()==2,
