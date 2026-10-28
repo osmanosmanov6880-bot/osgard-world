@@ -25,6 +25,25 @@ function exposure(raw){
   return {width:img.width,height:img.height,
     brightFraction:bright/n,colorBins:rich.size}
 }
+// Source-provenanced calibrated central optical-patch check. The positions
+// are actual first-party Godot 3D lens centers in the 960x540 Chromium
+// fixture; they are not screen overlays, image-generation or color filters.
+function lensPatch(raw,cx,cy){
+  const im=read(raw)
+  let sums=[0,0,0],total=0
+  for(let y=-4;y<=4;y++)for(let x=-4;x<=4;x++){
+    const p=pixel(im,cx+x/im.width,cy+y/im.height)
+    for(let c=0;c<3;c++)sums[c]+=p[c]
+    total++
+  }
+  return sums.map(s=>s/total)
+}
+function isRuby(rgb){
+  return rgb[0]>95 && rgb[0]>rgb[1]*1.50 && rgb[0]>rgb[2]*1.30
+}
+function isEmerald(rgb){
+  return rgb[1]>85 && rgb[1]>rgb[0]*1.40 && rgb[1]>rgb[2]*1.12
+}
 function compare(rawA,rawB){
   const a=read(rawA),b=read(rawB)
   expect([b.width,b.height]).toEqual([a.width,a.height])
@@ -65,6 +84,10 @@ test('CITY REIGN physical red amber green traffic signs are real law-synced WebG
   await info.attach('genuine-3d-x-green-z-red.png',{body:xGreen,contentType:'image/png'})
   expect(proof.colorBins,'not a static blank fake or unrendered sign surface').toBeGreaterThan(35)
   expect(proof.brightFraction,'real metallic 3D scene illumination').toBeGreaterThan(0.10)
+  const calibratedX={red:lensPatch(xGreen,0.542,0.418),
+    green:lensPatch(xGreen,0.460,0.590)}
+  expect(isRuby(calibratedX.red),'actual emitted RED must be ruby, not pink/white').toBe(true)
+  expect(isEmerald(calibratedX.green),'actual emitted GREEN must be emerald, not cyan/white').toBe(true)
   await canvas.focus()
   await page.keyboard.press('2')
   await page.waitForTimeout(1100)
@@ -73,6 +96,10 @@ test('CITY REIGN physical red amber green traffic signs are real law-synced WebG
   await info.attach('genuine-3d-z-green-x-red.png',{body:zGreen,contentType:'image/png'})
   expect(swap.meanMaxRgbDelta,'genuine source red-green traffic phase changes rendered optical LEDs').toBeGreaterThan(0.25)
   expect(swap.changedFraction).toBeGreaterThan(0.006)
+  const calibratedZ={red:lensPatch(zGreen,0.457,0.418),
+    green:lensPatch(zGreen,0.540,0.590)}
+  expect(isRuby(calibratedZ.red),'actual opposite-direction RED keeps calibrated ruby color').toBe(true)
+  expect(isEmerald(calibratedZ.green),'actual opposite-direction GREEN keeps calibrated emerald color').toBe(true)
   await page.keyboard.press('3')
   await page.waitForTimeout(1000)
   const amber=(await captureAnimatedWebGLViewport(page)).png
@@ -88,7 +115,7 @@ test('CITY REIGN physical red amber green traffic signs are real law-synced WebG
   expect(quality.meanMaxRgbDelta,'LOW quality really restores original physical boxes').toBeGreaterThan(1.0)
   expect(quality.changedFraction).toBeGreaterThan(0.03)
   await info.attach('source-native-signal-webgl-pixels.json',{
-    body:Buffer.from(JSON.stringify({gl,proof,swap,yellow,quality,errors},null,2)),
+    body:Buffer.from(JSON.stringify({gl,proof,swap,yellow,quality,calibratedX,calibratedZ,errors},null,2)),
     contentType:'application/json'
   })
   expect(errors).toEqual([])

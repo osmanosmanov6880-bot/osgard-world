@@ -12,7 +12,11 @@ const INSTANCES_PER_DIRECTION: int = 16
 const TOTAL_LENS_INSTANCES: int = 96
 const LED_HEIGHTS = {"red":0.52,"amber":0.0,"green":-0.52}
 const DARK = {"red":Color("491a21"),"amber":Color("45371d"),"green":Color("15372e")}
-const BRIGHT = {"red":Color("fb4754"),"amber":Color("ffc566"),"green":Color("44f0ad")}
+# Real Chromium image review found the original bright red washed to pink
+# and emerald washed to cyan-white under energy 2.8. Use physically richer
+# pigments and a lower emission power for color-critical traffic readability.
+const BRIGHT = {"red":Color("c91d2a"),"amber":Color("d89c37"),"green":Color("0b9c59")}
+const ACTIVE_LED_RADIANCE: float = 1.25
 var batches: Dictionary = {}
 var finishes: Dictionary = {}
 var placements: Dictionary = {}
@@ -191,7 +195,7 @@ func sync_phase(phase: int,is_warning: bool) -> void:
 			lamp_state[id] = on
 			var mat: StandardMaterial3D = finishes[id]
 			mat.albedo_color = BRIGHT[color_id] if on else DARK[color_id]
-			mat.emission_energy_multiplier = 2.8 if on else 0.0
+			mat.emission_energy_multiplier = ACTIVE_LED_RADIANCE if on else 0.0
 
 func set_quality(tier: String) -> void:
 	detail = tier if ["low","standard","cinematic"].has(tier) else "standard"

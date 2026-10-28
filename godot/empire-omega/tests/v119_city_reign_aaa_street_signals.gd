@@ -32,7 +32,7 @@ func _assert_light_pair(art: Node3D,phase: int,warning: bool) -> void:
 				"real "+name+" LED agrees with original traffic direction phase")
 			var mat: StandardMaterial3D = mats[name]
 			check(mat.emission_enabled and
-				is_equal_approx(mat.emission_energy_multiplier,2.8 if expected_on else 0.0),
+				is_equal_approx(mat.emission_energy_multiplier,ART.ACTIVE_LED_RADIANCE if expected_on else 0.0),
 				"real "+name+" 3D material switches emissive light without spawning")
 	check(not (bool(record["x_green"]) and bool(record["z_green"])),
 		"perpendicular roads never both display green")
