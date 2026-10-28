@@ -1374,9 +1374,64 @@ func _toggle_after_action() -> void:
         return
     debrief_panel.visible = not debrief_panel.visible
     if debrief_panel.visible:
+        if archive_panel != null:
+            archive_panel.visible = false
         forecast_panel.visible = false
         diagnostic_panel.visible = false
         _refresh_after_action_locale()
+    _publish_web_state()
+
+func _clear_operator_overlay() -> void:
+    if archive_panel != null:
+        archive_panel.visible = false
+    archive_erase_armed = false
+
+func _refresh_run_archive_locale() -> void:
+    if archive_intro_button == null or archive_end_button == null or archive_label == null or archive_title == null:
+        return
+    var english: bool = locale == "en"
+    archive_intro_button.text = "OPERATOR RECORDS / O" if english else "АРХИВ ОПЕРАТОРА / O"
+    archive_end_button.text = archive_intro_button.text
+    archive_title.text = "A7 / LOCAL OPERATOR RECORDS" if english else "A7 / ЛОКАЛЬНЫЙ АРХИВ"
+    archive_label.text = run_archive.summary(locale)
+    archive_close_button.text = "CLOSE RECORDS / ESC" if english else "ЗАКРЫТЬ АРХИВ / ESC"
+    archive_erase_button.disabled = run_archive.entries.is_empty()
+    if archive_erase_armed:
+        archive_erase_button.text = "CONFIRM DELETE ALL LOCAL RUNS" if english else "ПОДТВЕРДИТЕ УДАЛЕНИЕ ЗАПИСЕЙ"
+    else:
+        archive_erase_button.text = "ERASE LOCAL RUNS (2 STEPS)" if english else "СТЕРЕТЬ ЗАПИСИ (2 ШАГА)"
+
+func _toggle_run_archive() -> void:
+    # Read-only. No mid-operation pause, skip, data upload or mission mutation.
+    if archive_panel == null or (started and not paused and not session.finished()):
+        return
+    archive_panel.visible = not archive_panel.visible
+    archive_erase_armed = false
+    if archive_panel.visible:
+        if debrief_panel != null:
+            debrief_panel.visible = false
+        if diagnostic_panel != null:
+            diagnostic_panel.visible = false
+    _refresh_run_archive_locale()
+    _publish_web_state()
+
+func _request_archive_erase() -> void:
+    if archive_panel == null or not archive_panel.visible or run_archive.entries.is_empty():
+        return
+    if not archive_erase_armed:
+        archive_erase_armed = true
+        _refresh_run_archive_locale()
+        return
+    # Erase is explicit and scoped ONLY to V17 archive; campaign saves remain.
+    if run_archive.erase():
+        archive_erase_armed = false
+        archive_last_save_ok = false
+        _refresh_run_archive_locale()
+    # If the storage operation fails, retain loaded data and require an
+    # explicit extra click before any retry; never claim successful erasure.
+    else:
+        archive_erase_armed = false
+        _refresh_run_archive_locale()
     _publish_web_state()
 
 func _cycle_director_shot() -> void:
@@ -1597,6 +1652,8 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    _clear_operator_overlay()
+    archive_last_save_ok = false
     _clear_after_action()
     forecast_panel.visible = false
     forecast_report.clear()
@@ -1618,6 +1675,8 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    _clear_operator_overlay()
+    archive_last_save_ok = false
     _clear_after_action()
     forecast_panel.visible = false
     forecast_report.clear()
@@ -1659,6 +1718,7 @@ func _restart() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _resume() -> void:
+    _clear_operator_overlay()
     paused = false
     pause_panel.visible = false
     audio_director.set_active(true)
@@ -1693,6 +1753,7 @@ func _toggle_language() -> void:
     _refresh_hud()
     _refresh_decision_forecast()
     _refresh_after_action_locale()
+    _refresh_run_archive_locale()
     _refresh_radio_ui()
 
 func _gamepad_axis(axis_id: int) -> float:
@@ -1706,21 +1767,30 @@ func _gamepad_button(button_index: int) -> void:
     # Hardware performance/compatibility still requires real controller QA.
     # This dispatch handles Godot's mapped standard gamepad button events.
     if button_index == JOY_BUTTON_START:
+        if archive_panel != null and archive_panel.visible:
+            _toggle_run_archive()
+            return
         if not started:
             start_run()
         else:
             _pause_toggle()
         return
     if button_index == JOY_BUTTON_B:
-        if session.finished():
+        if archive_panel != null and archive_panel.visible:
+            _toggle_run_archive()
+        elif session.finished():
             _toggle_after_action()
         else:
             _toggle_journal()
         return
     if not started or paused:
+        if button_index == JOY_BUTTON_X and not started:
+            _toggle_run_archive()
         return
     if session.finished():
-        if button_index == JOY_BUTTON_A and not debrief_panel.visible:
+        if button_index == JOY_BUTTON_X:
+            _toggle_run_archive()
+        elif button_index == JOY_BUTTON_A and not debrief_panel.visible and not archive_panel.visible:
             _end_action()
         elif button_index == JOY_BUTTON_Y:
             _toggle_after_action()
@@ -1771,6 +1841,9 @@ func _input(event: InputEvent) -> void:
         if event.keycode == KEY_B:
             _toggle_after_action()
             return
+        if event.keycode == KEY_O:
+            _toggle_run_archive()
+            return
         if event.keycode == KEY_H and started and not paused and not session.finished():
             _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
             _save_checkpoint()
@@ -1799,6 +1872,9 @@ func _input(event: InputEvent) -> void:
             _toggle_journal()
             return
         if event.keycode == KEY_ESCAPE:
+            if archive_panel != null and archive_panel.visible:
+                _toggle_run_archive()
+                return
             if debrief_panel != null and debrief_panel.visible:
                 _toggle_after_action()
                 return
@@ -1817,7 +1893,7 @@ func _input(event: InputEvent) -> void:
         if not started or paused:
             return
         if session.finished():
-            if event.keycode == KEY_R:
+            if event.keycode == KEY_R and not archive_panel.visible and not debrief_panel.visible:
                 _end_action()
             return
         if event.keycode == KEY_1 or event.keycode == KEY_2:
@@ -2069,7 +2145,12 @@ func _show_end() -> void:
     if campaign.active:
         end_stats.text += "\n\n" + campaign.summary(locale)
     black_box_report = after_action_review.review(session,campaign)
+    # Headless regressions must not modify the regular player's user:// slot.
+    # Native CI sets a separate temporary path when it tests persistence.
+    if DisplayServer.get_name() != "headless" or run_archive.archive_path != IPRunArchive.PATH:
+        archive_last_save_ok = run_archive.record_finished(session,campaign)
     _refresh_after_action_locale()
+    _refresh_run_archive_locale()
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
