@@ -7,6 +7,10 @@ const SYSTEMS: Array[String] = ["coolant", "life", "door"]
 const SCENARIOS: Array[String] = ["blackout", "thermal", "breach"]
 const RELAYS: Array[String] = ["medbay","quench","uplink"]
 const MAX_RELAYS: int = 2
+# V9: a one-shot optional navigational challenge with a real deadline.
+# Existing three scenarios and evacuation win conditions remain untouched.
+const CASCADE_WINDOW: float = 78.0
+const CASCADE_SEQUENCE: Array[String] = ["bridge","sync","lock"]
 const MAX_TIME: float = 330.0
 const CHARGE_REQUIRED: float = 95.0
 const LOG_LIMIT: int = 32
@@ -16,6 +20,9 @@ var repair_method: String = ""
 var priority_id: String = ""
 var relays_activated: Array[String] = []
 var thermal_shield: bool = false
+var cascade_state: String = "idle"
+var cascade_phase: int = 0
+var cascade_remaining: float = CASCADE_WINDOW
 var time_left: float = MAX_TIME
 var heat: float = 48.0
 var oxygen: float = 93.0
@@ -65,6 +72,9 @@ func reset(next_scenario: String = "blackout") -> void:
     priority_id = ""
     relays_activated.clear()
     thermal_shield = false
+    cascade_state = "idle"
+    cascade_phase = 0
+    cascade_remaining = CASCADE_WINDOW
     won = false
     lost = false
     elapsed = 0.0
@@ -98,6 +108,16 @@ func tick(delta: float) -> void:
 func _integrate_step(dt: float) -> void:
     time_left -= dt
     elapsed += dt
+    if cascade_state == "active":
+        cascade_remaining = maxf(0.0,cascade_remaining-dt)
+        if cascade_remaining <= 0.0:
+            # A failed optional run costs resources but NEVER deletes the
+            # existing campaign objectives or automatically ends a mission.
+            cascade_state = "failed"
+            heat += 11.0
+            oxygen -= 7.0
+            crew_health -= 3.0
+            _record("cascade_failed")
     if powered("coolant"):
         var cool_rate: float = -0.52 if coolant_repaired else 0.25
         if coolant_repaired and scenario_id == "thermal" and repair_method == "deep_stabilize":
@@ -248,6 +268,43 @@ func activate_relay(relay_id: String) -> bool:
     _record("relay_" + relay_id)
     return true
 
+func begin_cascade() -> bool:
+    # Starts only after the old scanner + mechanical coolant repair. Optional:
+    # legacy speedruns never need this encounter to evacuate successfully.
+    if finished() or cascade_state != "idle" or not core_scanned or not coolant_repaired:
+        return _reject()
+    tick(3.0)
+    if finished():
+        return false
+    cascade_state = "active"
+    cascade_phase = 0
+    cascade_remaining = CASCADE_WINDOW
+    _record("cascade_started")
+    return true
+
+func advance_cascade(node_id: String) -> bool:
+    # Three physically separated reactor/service/evacuation/reaction sites.
+    # Order is mandatory; wrong node is rejected instead of giving free credit.
+    if finished() or cascade_state != "active" or cascade_phase >= CASCADE_SEQUENCE.size():
+        return _reject()
+    if node_id != CASCADE_SEQUENCE[cascade_phase]:
+        return _reject()
+    tick(5.0)
+    if finished() or cascade_state != "active":
+        return false
+    cascade_phase += 1
+    if cascade_phase == CASCADE_SEQUENCE.size():
+        cascade_state = "completed"
+        cascade_remaining = maxf(cascade_remaining,0.0)
+        heat = maxf(0.0,heat-17.0)
+        oxygen = minf(100.0,oxygen+7.0)
+        door_charge = minf(100.0,door_charge+15.0)
+        crew_health = minf(100.0,crew_health+3.0)
+        _record("cascade_complete")
+    else:
+        _record("cascade_" + node_id)
+    return true
+
 func cycle_bus(bus_index: int) -> bool:
     if finished() or not coolant_repaired or (bus_index != 0 and bus_index != 1):
         return _reject()
@@ -314,6 +371,8 @@ func diagnostic_snapshot() -> Dictionary:
         "priority":priority_id,
         "relays":relays_activated.duplicate(),"relay_count":relays_activated.size(),
         "thermal_shield":thermal_shield,
+        "cascade_state":cascade_state, "cascade_phase":cascade_phase,
+        "cascade_remaining":cascade_remaining,
         "thermal_pulses": thermal_pulses, "next_pulse": next_pulse_at,
         "leak_active": scenario_id == "breach" and (not coolant_repaired or repair_method == "rapid_patch"),
         "objective": objective_id(), "time_left": time_left, "heat": heat,
@@ -335,6 +394,9 @@ func checkpoint() -> Dictionary:
         "priority":priority_id,
         "relays_activated":relays_activated.duplicate(),
         "thermal_shield":thermal_shield,
+        "cascade_state":cascade_state,
+        "cascade_phase":cascade_phase,
+        "cascade_remaining":cascade_remaining,
         "time_left":time_left, "heat":heat, "oxygen":oxygen,
         "crew_health":crew_health, "door_charge":door_charge,
         "bus_a":bus_a, "bus_b":bus_b,
@@ -382,6 +444,24 @@ func restore_checkpoint(data: Dictionary) -> bool:
     var stored_shield: Variant = data.get("thermal_shield",false)
     if typeof(stored_shield) != TYPE_BOOL or (bool(stored_shield) and not checked_relays.has("quench")):
         return false
+    # V6/V7/V8 checkpoints remain readable: missing V9 fields mean a
+    # dormant optional operation. Reject fabricated progress atomically.
+    var stored_cascade_state: Variant = data.get("cascade_state","idle")
+    var stored_cascade_phase: Variant = data.get("cascade_phase",0)
+    var stored_cascade_remaining: Variant = data.get("cascade_remaining",CASCADE_WINDOW)
+    if not stored_cascade_state is String or str(stored_cascade_state) not in ["idle","active","completed","failed"]:
+        return false
+    if typeof(stored_cascade_phase) != TYPE_INT or int(stored_cascade_phase) < 0 or int(stored_cascade_phase) > CASCADE_SEQUENCE.size():
+        return false
+    if not _valid_number(stored_cascade_remaining,0.0,CASCADE_WINDOW):
+        return false
+    var cs: String = str(stored_cascade_state)
+    var cp: int = int(stored_cascade_phase)
+    var ct: float = float(stored_cascade_remaining)
+    if (cs == "idle" and (cp != 0 or not is_equal_approx(ct,CASCADE_WINDOW))) or (cs == "active" and (cp >= CASCADE_SEQUENCE.size() or ct <= 0.0)) or (cs == "completed" and cp != CASCADE_SEQUENCE.size()) or (cs == "failed" and (cp >= CASCADE_SEQUENCE.size() or ct > 0.0)):
+        return false
+    if cs != "idle" and not bool(data.get("coolant_repaired",false)):
+        return false
     for key in ["time_left","heat","oxygen","crew_health","door_charge","elapsed","next_pulse_at"]:
         var max_value: float = 1000.0
         if key == "heat":
@@ -427,6 +507,9 @@ func restore_checkpoint(data: Dictionary) -> bool:
     priority_id = saved_priority
     relays_activated = checked_relays
     thermal_shield = bool(stored_shield)
+    cascade_state = cs
+    cascade_phase = cp
+    cascade_remaining = ct
     time_left = float(data["time_left"])
     heat = float(data["heat"])
     oxygen = float(data["oxygen"])
