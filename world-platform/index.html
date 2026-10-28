@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070d13">
+  <meta name="description" content="LAST FRONTIER WORLD — real Godot 3D game, local sessions, verified game files and private playtest command center. Experimental review build.">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <title>LAST FRONTIER / WORLD OPERATIONS</title>
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <a class="skip" href="#main" data-i18n="skip">Перейти к содержимому</a>
+  <div class="app-shell">
+    <aside class="rail" aria-label="Primary" id="rail">
+      <div class="brand">
+        <span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 44 44" fill="none"><path d="M22 3 40 13v18L22 41 4 31V13L22 3Z" stroke="currentColor" stroke-width="1.6"/><path d="M22 11 32 17v10l-10 6-10-6V17l10-6Z" stroke="currentColor" stroke-width="1.5"/><path d="m22 15 7 7-7 7-7-7 7-7Z" fill="currentColor"/></svg></span>
+        <span class="brand-text">LAST<span>FRONTIER</span><small>WORLD / COMMAND</small></span>
+      </div>
+      <div class="rail-section-label" data-i18n="navigation">НАВИГАЦИЯ</div>
+      <nav class="nav" id="primaryNav">
+        <button type="button" class="nav-link active" data-route="command" aria-current="page"><span class="nav-glyph">01</span><span data-i18n="navCommand">Командный центр</span><span class="nav-arrow">↗</span></button>
+        <button type="button" class="nav-link" data-route="missions"><span class="nav-glyph">02</span><span data-i18n="navMissions">Протокол миссии</span><span class="nav-arrow">↗</span></button>
+        <button type="button" class="nav-link" data-route="lab"><span class="nav-glyph">03</span><span data-i18n="navLab">Лаборатория игроков</span><span class="nav-arrow">↗</span></button>
+        <button type="button" class="nav-link" data-route="system"><span class="nav-glyph">04</span><span data-i18n="navSystem">Система и файлы</span><span class="nav-arrow">↗</span></button>
+      </nav>
+      <div class="rail-spacer"></div>
+      <div class="rail-bottom">
+        <span class="rail-bottom-icon" aria-hidden="true">◎</span>
+        <div><strong data-i18n="localPrivacy">ПРИВАТНО ПО УМОЛЧАНИЮ</strong><span data-i18n="offlineDetails">Без аккаунтов и аналитических серверов</span></div>
+      </div>
+      <div class="rail-stamp">LF — 076 <span> / </span> SOFTWARE REVIEW</div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-path"><span class="path-dot"></span><span>WORLD OPERATIONS</span><span class="path-slash">/</span><span id="routeName" data-i18n="navCommand">Командный центр</span></div>
+        <div class="topbar-actions">
+          <span class="build-indicator"><span class="indicator-led" id="buildDot"></span><span id="buildStatus" data-i18n="verifying">Проверка сборки</span></span>
+          <button class="locale-button" id="localeButton" type="button" aria-label="Switch language"><span id="currentLocale">RU</span><span class="locale-chevron">⌄</span></button>
+        </div>
+      </header>
+
+      <main id="main" class="main">
+        <section id="view-command" class="view" aria-labelledby="commandTitle">
+          <div class="eyebrow"><span class="signal-dot"></span><span data-i18n="eyebrow">СЕКТОР А7 · ОПЕРАЦИОННАЯ СТАНЦИЯ</span><span class="eyebrow-line"></span><span>EXPERIMENTAL / V0.76</span></div>
+          <div class="hero-header">
+            <div><p class="superlabel">ORIGINAL GAME ENGINE / GODOT 4.4.1</p>
+              <h1 id="commandTitle" data-i18n-html="heroTitle">ЗА ПОСЛЕДНИМ<br><em>РУБЕЖОМ.</em></h1>
+              <p class="hero-description" data-i18n="heroDescription">Здесь начинается настоящее прохождение. Вы управляете реактором, перемещаетесь по объекту и принимаете решения, которые изменяют исход миссии.</p>
+            </div>
+            <div class="version-card">
+              <div class="version-top"><span data-i18n="verifiedSoftware">ПРОВЕРЕНО ПРОГРАММНО</span><span>W74 / 2026</span></div>
+              <strong id="sourceShort">—</strong><span class="version-bottom" data-i18n="notRetail">Не является коммерческим релизом</span>
+            </div>
+          </div>
+
+          <section class="play-module" aria-labelledby="playTitle">
+            <div class="play-top"><div><span class="small-section" data-i18n="liveModule">01 / LIVE SIMULATION</span><h2 id="playTitle" data-i18n="playTitle">Реактор А7 <span>· Реальная игровая сцена</span></h2></div>
+              <div class="live-controls"><span class="runtime-state"><span class="live-dot" id="runtimeDot"></span><span id="runtimeStatus" data-i18n="gameIdle">НЕ ЗАПУЩЕНО</span></span>
+                <button id="focusButton" type="button" class="icon-action" disabled data-i18n-title="focus" title="Фокус в игре" aria-label="Focus game">⌖</button>
+                <button id="fullscreenButton" type="button" class="icon-action" disabled data-i18n-title="fullscreen" title="На весь экран" aria-label="Fullscreen">⛶</button>
+              </div>
+            </div>
+            <div class="game-stage" id="gameStage">
+              <div class="game-poster" id="poster">
+                <div class="orbit-field" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit orbit-c"></div><div class="orbit-core"><div class="core-disc"></div></div><span class="orbit-coordinate">44° 55′ / SECTOR A7</span></div>
+                <div class="game-poster-content"><span class="poster-kicker">INTERACTIVE / FULL ENGINE</span><h3>THE<br>REACTOR<br><i>AWAKENS.</i></h3><p data-i18n="posterDesc">Не видео. Не макет. Игровой движок запускается прямо здесь.</p>
+                  <button id="launchButton" type="button" class="btn btn-primary"><span data-i18n="launch">ЗАПУСТИТЬ ИГРУ</span><span aria-hidden="true">↗</span></button></div>
+                <div class="poster-footer"><span><span class="lattice-marker"></span> A7 / NATIVE THREE-DIMENSIONAL</span><span>WAS<span class="mini">M</span> · WEBGL</span></div>
+              </div>
+              <iframe id="gameFrame" title="LAST FRONTIER real Godot game" allow="fullscreen; autoplay" tabindex="0" referrerpolicy="no-referrer" hidden></iframe>
+              <div id="loadingOverlay" class="loading-overlay" hidden role="status" aria-live="polite"><span class="loading-rotor"></span><strong data-i18n="booting">ЗАГРУЗКА НАСТОЯЩЕГО ИГРОВОГО ДВИЖКА</strong><span id="loadingMessage" data-i18n="loadingFiles">Проверяем игровые ресурсы...</span></div>
+            </div>
+            <div class="play-footer"><div class="game-keyboard"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span data-i18n="controlsMove">ПЕРЕДВИЖЕНИЕ</span><span class="keys-divider"></span><kbd>G</kbd><span data-i18n="controlsUse">МЕХАНИЗМ</span><span class="keys-divider"></span><kbd>F5</kbd><span data-i18n="controlsSave">СОХРАНИТЬ</span></div><span class="game-engine-tag">GODOT <b>4.4.1</b></span></div>
+          </section>
+
+          <section class="metrics-grid" aria-label="Live game metrics">
+            <article class="metric"><span class="metric-label" data-i18n="metricHeat">ТЕМПЕРАТУРА</span><strong id="heatValue">—</strong><div class="meter"><span id="heatMeter"></span></div><small data-i18n="engineSource">Из движка, без имитации</small></article>
+            <article class="metric"><span class="metric-label" data-i18n="metricIntegrity">ЦЕЛОСТНОСТЬ</span><strong id="integrityValue">—</strong><div class="meter"><span id="integrityMeter"></span></div><small data-i18n="engineSource">Из движка, без имитации</small></article>
+            <article class="metric"><span class="metric-label" data-i18n="metricCycle">ЦИКЛ РЕАКТОРА</span><strong id="cycleValue">—</strong><div class="meter"><span id="cycleMeter"></span></div><small data-i18n="engineSource">Из движка, без имитации</small></article>
+            <article class="metric"><span class="metric-label" data-i18n="metricFrame">P95 / КАДР</span><strong id="frameValue">—</strong><div class="meter"><span id="frameMeter"></span></div><small data-i18n="frameDisclaimer">Программный замер, не GPU-тест</small></article>
+          </section>
+          <div class="disclaimer-bar"><span>ⓘ</span><p data-i18n="disclaimer">Экспериментальная локальная игра. Реальных промышленных систем здесь нет. Проверенная программа ≠ проверенный коммерческий AAA-релиз.</p></div>
+        </section>
+
+        <section id="view-missions" class="view" hidden aria-labelledby="missionsTitle">
+          <div class="eyebrow"><span class="signal-dot"></span><span>MISSION ARCHIVE / 02</span><span class="eyebrow-line"></span><span>SECTOR A7</span></div>
+          <div class="section-intro"><p class="superlabel" data-i18n="missionPrelude">ПЯТЬ ФИЗИЧЕСКИХ ЦЕЛЕЙ</p><h1 id="missionsTitle" data-i18n-html="missionTitle">ОТ РЕАКТОРА<br><em>К РЕШЕНИЮ.</em></h1><p data-i18n="missionDesc">Статусы обновляются только по фактическим событиям внутри Godot. Пока игра не запущена, выполнение не предполагается.</p></div>
+          <div class="mission-list" id="missionList" aria-label="Mission phases"></div>
+          <div class="secondary-panel"><strong data-i18n="missionFact">В движке действительно существуют</strong><p data-i18n="missionFactDesc">Шесть игровых циклов, три физических механизма и двенадцать решений. Для завершения необходимо решить задачи, а не нажать кнопку на этом сайте.</p><button id="missionLaunch" class="btn btn-secondary" type="button"><span data-i18n="goPlay">ПЕРЕЙТИ К ИГРЕ</span><span>↗</span></button></div>
+        </section>
+
+        <section id="view-lab" class="view" hidden aria-labelledby="labTitle">
+          <div class="eyebrow"><span class="signal-dot"></span><span>PLAYER RESEARCH / 03</span><span class="eyebrow-line"></span><span>PRIVATE BY DEFAULT</span></div>
+          <div class="section-intro"><p class="superlabel" data-i18n="labPrelude">РЕАЛЬНЫЕ ПРОХОЖДЕНИЯ. НИКАКИХ ВЫДУМАННЫХ ДАННЫХ.</p><h1 id="labTitle" data-i18n-html="labTitle">КАЖДОЕ РЕШЕНИЕ<br><em>ИМЕЕТ ВЕС.</em></h1><p data-i18n="labDesc">Запишите настоящую игровую сессию на своём устройстве. Данные остаются здесь, пока вы сами не экспортируете отчёт. Это не независимое исследование с 12 участниками.</p></div>
+          <div class="lab-grid">
+            <div class="research-card">
+              <div class="small-section">01 / CONSENT & TIMING</div>
+              <h2 data-i18n="sessionTitle">Локальная сессия</h2>
+              <div class="timer" id="sessionTimer">00:00</div>
+              <p class="muted" id="sessionStatus" aria-live="polite" data-i18n="sessionIdle">Сессия не запущена</p>
+              <label class="consent"><input type="checkbox" id="consentCheckbox"><span data-i18n="consent">Я согласен записать игровые действия и длительность локально на этом устройстве. Личные данные не требуются.</span></label>
+              <div class="research-actions"><button type="button" class="btn btn-primary" id="sessionStart" disabled><span data-i18n="sessionStart">НАЧАТЬ ЗАМЕР</span> <span>↗</span></button><button type="button" class="btn btn-secondary" id="sessionStop" disabled data-i18n="sessionStop">ЗАВЕРШИТЬ</button></div>
+              <div class="research-meta"><span data-i18n="sessionFacts">ФАКТИЧЕСКИЕ СОБЫТИЯ</span><strong id="eventCount">0</strong></div>
+            </div>
+            <div class="research-card muted-card">
+              <div class="small-section">02 / HUMAN FEEDBACK</div>
+              <h2 data-i18n="feedbackTitle">Что мешало играть?</h2>
+              <label for="confusionRange" data-i18n="confusionLabel">Количество моментов затруднения</label>
+              <div class="slider-row"><input id="confusionRange" type="range" min="0" max="10" value="0"><output id="confusionOutput" for="confusionRange">0</output></div>
+              <label for="feedbackNote" data-i18n="feedbackLabel">Необязательная заметка (до 500 символов)</label>
+              <textarea id="feedbackNote" rows="5" maxlength="500" data-i18n-placeholder="feedbackPlaceholder" placeholder="Какая механика оказалась непонятной?"></textarea>
+              <button type="button" id="exportSession" class="btn btn-secondary block" disabled><span data-i18n="exportReport">ЭКСПОРТИРОВАТЬ РЕАЛЬНЫЙ ОТЧЁТ JSON</span><span>↓</span></button>
+              <p class="fine-print" data-i18n="labWarning">Самостоятельная сессия не считается независимым тестированием. Результат автоматически не отправляется разработчикам.</p>
+            </div>
+          </div>
+          <div class="secondary-panel"><div class="small-section">RELEASE / QUALITY GATE</div><h2 data-i18n="labGateTitle">Коммерческий релиз остаётся закрытым</h2><p data-i18n="labGateDesc">Нужны 12 независимых игроков, физические тесты PC/Android/iOS, проверка прав на материалы, оригинальный арт и явное решение владельца. Эта панель не утверждает выполнение этих условий.</p><span class="hold-badge">PRODUCTION HOLD</span></div>
+        </section>
+
+        <section id="view-system" class="view" hidden aria-labelledby="systemTitle">
+          <div class="eyebrow"><span class="signal-dot"></span><span>SYSTEM INTEGRITY / 04</span><span class="eyebrow-line"></span><span>VERIFIED BYTES</span></div>
+          <div class="section-intro"><p class="superlabel" data-i18n="systemPrelude">ПРОЗРАЧНАЯ ПРОВЕРКА СБОРКИ</p><h1 id="systemTitle" data-i18n-html="systemTitle">ДОВЕРИЕ<br><em>НА УРОВНЕ БАЙТА.</em></h1><p data-i18n="systemDesc">Платформа запускает оригинальный Godot WebAssembly. При желании можно проверить SHA-256 каждого файла и сохранить ресурсы для автономного использования.</p></div>
+          <div class="system-panel">
+            <div class="system-row"><div><span class="small-section">GIT SOURCE</span><strong id="sourceFull">—</strong></div><span class="mini-dot is-muted" id="sourceVerifiedIcon"></span></div>
+            <div class="system-row"><div><span class="small-section">GODOT / WEBASSEMBLY</span><strong id="wasmFileStatus" data-i18n="notChecked">Не проверено</strong></div><span class="mini-dot is-muted" id="wasmDot"></span></div>
+            <div class="system-row"><div><span class="small-section">PCK / GAME ASSETS</span><strong id="packFileStatus" data-i18n="notChecked">Не проверено</strong></div><span class="mini-dot is-muted" id="packDot"></span></div>
+            <div class="system-row"><div><span class="small-section">EXTERNAL SERVICES</span><strong data-i18n="externalNone">Нет обязательного облачного аккаунта</strong></div><span class="mini-dot good"></span></div>
+            <div class="system-row"><div><span class="small-section">COMMERCIAL RELEASE</span><strong>HOLD / INDEPENDENT REVIEW REQUIRED</strong></div><span class="mini-dot stop"></span></div>
+            <div class="verify-controls"><button id="verifyFiles" class="btn btn-primary" type="button" disabled><span data-i18n="verifyFiles">ПРОВЕРИТЬ SHA-256 ФАЙЛОВ</span><span>⌕</span></button><button id="offlineButton" class="btn btn-secondary" type="button" disabled><span data-i18n="makeOffline">СОХРАНИТЬ ИГРУ ДЛЯ ОФЛАЙН</span><span>↓</span></button></div>
+            <div id="integrityProgress" class="integrity-progress" aria-live="polite" data-i18n="waitingManifest">Ожидание манифеста сборки...</div>
+          </div>
+          <div class="secondary-panel"><strong data-i18n="platformBoundaries">Границы платформы</strong><p data-i18n="platformBoundariesText">В этом выпуске нет глобальных аккаунтов, облачных сохранений, мультиплеера или монетизации. Прогресс остаётся в сохранении Godot на текущем устройстве; исследовательские записи находятся только в браузере.</p></div>
+        </section>
+      </main>
+      <footer class="footer"><span>LAST FRONTIER <b>/</b> WORLD STATION</span><span data-i18n="footerNote">НЕЗАВИСИМЫЙ ИГРОВОЙ ПРОТОТИП · НЕ ДЛЯ ПРОДАЖИ</span><span>2026 © / EXPERIMENTAL</span></footer>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
