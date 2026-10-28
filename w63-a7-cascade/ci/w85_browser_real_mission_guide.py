@@ -34,6 +34,11 @@ def contained(rect,stage):
             and rect[0]+rect[2]<=stage[0]+stage[2]+3
             and rect[1]+rect[3]<=stage[1]+stage[3]+3)
 
+def overlaps(a,b):
+    require(len(a)==4 and len(b)==4,"Actual source Godot rectangles required")
+    return (a[0]<b[0]+b[2] and a[0]+a[2]>b[0] and
+            a[1]<b[1]+b[3] and a[1]+a[3]>b[1])
+
 def frame(page,path):
     raw=page.screenshot(path=str(path))
     img=Image.open(io.BytesIO(raw)).convert('RGB')
@@ -100,7 +105,12 @@ def true_layout(page,width,height,guide_open):
         page.screenshot(path=str(dest/('real-native-%dx%d-%s.png' %
             (width,height,'open' if guide_open else 'closed'))))
         raise
-    return snapshot(page),geometry(page)
+    current=snapshot(page)
+    actual=geometry(page)
+    require(not overlaps(actual['w85_guide_entry'],actual['w80_true_native_menu'])
+        and not overlaps(actual['w85_guide_entry'],actual['w82_native_compass_hud']),
+        "Real source W85 GUIDE must NOT overlap W80 MENU or W82 compass at any 320/390/844 physical viewport")
+    return current,actual
 
 def run(export,evidence,sha):
     require(len(sha)==40 and all(c in '0123456789abcdef' for c in sha),

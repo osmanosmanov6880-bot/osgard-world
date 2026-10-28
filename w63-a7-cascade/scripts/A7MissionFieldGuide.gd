@@ -147,6 +147,20 @@ func build(real_stage: Control, original_mission: A7SpatialMission,
 func configure(viewport_size: Vector2) -> void:
     if panel == null:
         return
+    # At <=355px the original W80 top-right MENU starts around x118.
+    # The 390px W85 GUIDE x93..182 would overlap MENU and accidentally
+    # EXIT the genuine full-bleed game. At narrow width, put GUIDE
+    # deliberately BELOW the real W82 top compass (ends at y126).
+    if viewport_size.x < 356.0:
+        entry_button.offset_left = 8.0
+        entry_button.offset_right = 99.0
+        entry_button.offset_top = 135.0
+        entry_button.offset_bottom = 179.0
+    else:
+        entry_button.offset_left = 93.0
+        entry_button.offset_right = 182.0
+        entry_button.offset_top = 8.0
+        entry_button.offset_bottom = 52.0
     var width: float = minf(372.0,viewport_size.x-18.0)
     panel.offset_left = -width*0.5
     panel.offset_right = width*0.5

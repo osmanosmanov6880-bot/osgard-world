@@ -251,6 +251,13 @@ func _run() -> void:
     ui._layout_stage()
     _check(deck.visible and deck.slots[0].custom_minimum_size.x<=38,
         "320px live Godot small-screen has source-driven concise touch actions")
+    var entry320: Rect2=guide.entry_button.get_global_rect()
+    var menu320: Rect2=ui.w80_full_bleed.exit_button.get_global_rect()
+    var compass320: Rect2=ui.w82_nav_cockpit.frame.get_global_rect()
+    _check(entry320.size.y>=44 and
+        not entry320.intersects(menu320) and
+        not entry320.intersects(compass320),
+        "320px native W85 guide entry CANNOT overlap original MENU or W82 compass")
     guide.entry_button.emit_signal("pressed")
     await process_frame
     var panel320: Rect2=guide.panel.get_global_rect()
