@@ -48,6 +48,10 @@ const COPY := {
         "rescue_medbay": "МЕДИЦИНСКИЙ УЗЕЛ", "rescue_quench": "ТЕПЛОВОЙ ГАСИТЕЛЬ", "rescue_uplink": "СВЯЗЬ И ЭВАКУАЦИЯ",
         "rescue_count": "СПАСАТЕЛЬНЫЕ СТАНЦИИ {used}/2",
         "rescue_final": "Станции спасения: {used}/2",
+        "atlas_next": "СЛЕДУЮЩАЯ ОПЕРАЦИЯ",
+        "atlas_complete": "ВСЯ КАМПАНИЯ ПРОЙДЕНА",
+        "atlas_grade": "ЛУЧШИЙ РАНГ",
+        "atlas_hint": "ПОБЕДЫ СОХРАНЯЮТСЯ ЛОКАЛЬНО — БЕЗ УЧЁТНОЙ ЗАПИСИ",
         "relay_medbay": "МЕДБЛОК: воздух и здоровье восстановлены.",
         "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
         "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
@@ -115,6 +119,10 @@ const COPY := {
         "rescue_medbay": "MEDICAL BAY", "rescue_quench": "HEAT SUPPRESSOR", "rescue_uplink": "EVACUATION UPLINK",
         "rescue_count": "RESCUE NETWORK {used}/2",
         "rescue_final": "Rescue stations: {used}/2",
+        "atlas_next": "NEXT OPERATION",
+        "atlas_complete": "CAMPAIGN COMPLETE",
+        "atlas_grade": "BEST GRADE",
+        "atlas_hint": "VICTORIES SAVE LOCALLY — NO ACCOUNT REQUIRED",
         "relay_medbay": "MEDBAY: air and crew condition restored.",
         "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
         "relay_uplink": "UPLINK: additional evacuation time secured.",
@@ -155,6 +163,7 @@ const COPY := {
 var session: IPCrisisEngine = IPCrisisEngine.new()
 var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
+var campaign_atlas: IPCampaignAtlas = IPCampaignAtlas.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
@@ -214,6 +223,9 @@ var radio_ttl: float = 0.0
 var checkpoint_clock: float = 0.0
 var scenario_buttons: Dictionary = {}
 var scenario_brief: Label
+var campaign_brief: Label
+var end_campaign_summary: Label
+var next_mission_button: Button
 var selected_scenario: String = "blackout"
 var active_sector: String = "reactor"
 var visited_sectors: Array[String] = []
@@ -249,6 +261,8 @@ var _last_web_resize_check: float = -99.0
 func _ready() -> void:
     session.reset()
     story.reset(session.scenario_id)
+    if DisplayServer.get_name() != "headless":
+        campaign_atlas.load_profile()
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -304,6 +318,7 @@ func _publish_web_state() -> void:
         return
     var state: Dictionary = session.diagnostic_snapshot()
     state["scene"] = "IRON_PULSE_BLACKOUT"
+    state["world_campaign"] = campaign_atlas.diagnostic()
     state["started"] = started
     state["paused"] = paused
     state["locale"] = locale
@@ -320,6 +335,8 @@ func _publish_web_state() -> void:
         scenario_rects[str(scenario_key)] = _hud_rect(scenario_buttons[scenario_key] as Control)
     state["scenario_button_rects"] = scenario_rects
     state["end_visible"] = end_panel.visible
+    state["next_mission_visible"] = next_mission_button.visible if next_mission_button != null else false
+    state["campaign_intro_visible"] = campaign_brief.visible if campaign_brief != null else false
     state["quality_mode"] = quality_mode
     state["reduced_motion"] = reduced_motion
     state["audio_muted"] = muted_audio
@@ -825,6 +842,9 @@ func _make_overlays() -> void:
         scenario_buttons[scenario_key] = choice
     scenario_brief = _label(start_box,"",12,AMBER)
     scenario_brief.custom_minimum_size = Vector2(0,44)
+    campaign_brief = _label(start_box,"",13,CYAN)
+    campaign_brief.name = "WorldCampaignProgress"
+    campaign_brief.custom_minimum_size = Vector2(0,42)
     var intro_scroll := ScrollContainer.new()
     intro_scroll.name = "BriefingScroll"
     intro_scroll.custom_minimum_size = Vector2(0,192)
@@ -857,13 +877,22 @@ func _make_overlays() -> void:
     resume_button.pressed.connect(_resume)
     pause_box.add_child(resume_button)
     pause_panel.visible = false
-    end_panel = _panel(hud_root,Rect2(-300,-160,300,160),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
+    end_panel = _panel(hud_root,Rect2(-300,-240,300,240),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
     end_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var end_box := VBoxContainer.new()
-    end_box.add_theme_constant_override("separation",22)
+    end_box.add_theme_constant_override("separation",10)
     end_panel.add_child(end_box)
     end_title = _label(end_box,"",29,CYAN)
     end_stats = _label(end_box,"",15,WHITE)
+    end_campaign_summary = _label(end_box,"",13,CYAN)
+    end_campaign_summary.name = "WorldCampaignDossier"
+    next_mission_button = Button.new()
+    next_mission_button.name = "NextWorldOperation"
+    next_mission_button.text = _copy("atlas_next")
+    next_mission_button.custom_minimum_size = Vector2(0,50)
+    next_mission_button.pressed.connect(_advance_campaign)
+    end_box.add_child(next_mission_button)
+    next_mission_button.visible = false
     end_button = Button.new()
     end_button.text = _copy("restart")
     end_button.custom_minimum_size = Vector2(0,55)
@@ -1220,6 +1249,7 @@ func _update_scenario_picker() -> void:
     if scenario_brief == null:
         return
     intro_title.text = _copy("scenario_title_" + selected_scenario)
+    _update_campaign_ui()
     scenario_brief.text = _copy("brief_" + selected_scenario)
     for mode_id in IPCrisisEngine.SCENARIOS:
         var button: Button = scenario_buttons[mode_id]
@@ -1239,6 +1269,27 @@ func _select_scenario(next_scenario: String) -> void:
 
 func _fast_interact() -> void:
     _interact(true)
+
+func _update_campaign_ui() -> void:
+    if campaign_brief != null:
+        campaign_brief.text = campaign_atlas.route_text(locale)
+    if end_campaign_summary != null and end_panel != null and end_panel.visible:
+        end_campaign_summary.text = campaign_atlas.last_result_text(locale)
+    if next_mission_button != null:
+        next_mission_button.text = _copy("atlas_next")
+
+func _advance_campaign() -> void:
+    # A real transition into the next existing physics scenario. There are
+    # no paywalls, mock unlock screens or deleted legacy mission options.
+    if not session.won or not end_panel.visible:
+        return
+    var next_id: String = campaign_atlas.next_mission(selected_scenario)
+    if next_id == "":
+        return
+    selected_scenario = next_id
+    _restart()
+    _update_scenario_picker()
+    _refresh_hud()
 
 func start_run() -> void:
     cinematic_view = false
@@ -1312,6 +1363,10 @@ func _toggle_language() -> void:
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
     end_button.text = _copy("restart")
+    if next_mission_button != null:
+        next_mission_button.text = _copy("atlas_next")
+    if end_campaign_summary != null and end_panel.visible:
+        end_campaign_summary.text = campaign_atlas.last_result_text(locale)
     footer_label.text = _copy("footer")
     _announce("language")
     _refresh_hud()
@@ -1628,8 +1683,14 @@ func _show_end() -> void:
     if end_panel.visible:
         return
     end_panel.visible = true
+    # One terminal event = one authentic campaign attempt. No double medals.
+    campaign_atlas.record_run(session)
     if DisplayServer.get_name() != "headless":
         checkpoint_store.clear(checkpoint_path)
+        campaign_atlas.save_profile()
+    _update_campaign_ui()
+    if next_mission_button != null:
+        next_mission_button.visible = session.won and campaign_atlas.next_mission(selected_scenario) != ""
     end_title.text = _copy("victory") if session.won else _copy("failure")
     var template: String = _copy("stats")
     end_stats.text = template.format({"time":"%.0f" % session.elapsed,"switches":session.switches,"faults":session.faults,"grade":session.grade()})
@@ -1641,6 +1702,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    if campaign_atlas.is_complete() and session.won:
+        end_stats.text += "\n" + _copy("atlas_complete")
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1697,6 +1760,7 @@ func _refresh_hud() -> void:
         telemetry_label.add_theme_color_override("font_color",WHITE)
     # Keep operator telemetry visible in both RU and EN without font dependence.
     brand_label.text = "IRON PULSE"
+    _update_campaign_ui()
     _refresh_radio_ui()
     _publish_web_state()
 
