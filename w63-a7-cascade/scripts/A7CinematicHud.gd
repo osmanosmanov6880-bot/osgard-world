@@ -16,6 +16,7 @@ var incident: Label
 var integrity: Label
 var scene_state: Dictionary = {}
 var is_english: bool = false
+var compact_mode: bool = false
 
 func _ready() -> void:
     name = "W66CinematicDiegeticHUD"
@@ -41,10 +42,18 @@ func _hud_label(font_size: int, color: Color) -> Label:
     add_child(label)
     return label
 
+func set_compact_mode(enabled: bool) -> void:
+    # Real compact behavior follows the root native viewport rather than
+    # stale first-frame child sizes in the browser ScrollContainer.
+    compact_mode = enabled
+    _relayout()
+    if not scene_state.is_empty():
+        present(scene_state, "en" if is_english else "ru")
+
 func _relayout() -> void:
     if caption == null:
         return
-    var compact: bool = size.x < 540.0
+    var compact: bool = compact_mode
     var xmargin: float = 14.0 if compact else 32.0
     caption.position = Vector2(xmargin, 11.0 if compact else 25.0)
     caption.size = Vector2(maxf(100.0, size.x * 0.80), 26.0)
@@ -68,7 +77,7 @@ func present(snapshot: Dictionary, locale: String) -> void:
     is_english = locale != "ru"
     var cycle: int = mini(6, int(snapshot.get("shift", 0)) + 1)
     var status: String = str(snapshot.get("status", "playing"))
-    var compact: bool = size.x < 540.0
+    var compact: bool = compact_mode
     caption.text = ("A7 / CONTAINMENT" if is_english else "A7 / КОНТУР") if compact else (
         "A7  /  " + ("CONTAINMENT ARRAY" if is_english else "КОНТУР СДЕРЖИВАНИЯ"))
     coordinate.text = ("OPERATOR CAM    •    LIVE SYSTEMS" if is_english
@@ -95,7 +104,7 @@ func _draw() -> void:
         return
     var width: float = size.x
     var height: float = size.y
-    var compact: bool = width < 540.0
+    var compact: bool = compact_mode
     var m: float = 12.0 if compact else 23.0
     # W68: soften UI against actual complex 3D and reserve negative space.
     draw_rect(Rect2(0.0, 0.0, width, 48.0 if compact else 82.0),
@@ -154,7 +163,7 @@ func qa_readout() -> Dictionary:
     return {
         "schema": "LAST_FRONTIER_W66_NATIVE_HUD_V1",
         "read_only": true,
-        "w68_compact_minimal": size.x < 540.0 and not coordinate.visible,
+        "w68_compact_minimal": compact_mode and not coordinate.visible,
         "interactive": false,
         "has_native_labels": caption != null and incident != null and integrity != null,
         "screen_width": roundi(size.x),
