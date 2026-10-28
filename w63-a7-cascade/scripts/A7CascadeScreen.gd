@@ -216,6 +216,7 @@ var w76_immersive: bool = false
 var w76_immersive_switches: int = 0
 var top_rail: HFlowContainer
 var w78_touch_overlay: A7TouchFieldControls
+var w79_mission_deck: A7MobileMissionDeck
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -448,6 +449,19 @@ func _build() -> void:
     w78_touch_overlay.physical_inspection_requested.connect(_pilot_inspect)
     w78_touch_overlay.actual_manual_motion_started.connect(
         _w77_cancel_guided_camera_on_manual_input)
+    w79_mission_deck = A7MobileMissionDeck.new()
+    stage_shell.add_child(w79_mission_deck)
+    w79_mission_deck.build(stage_3d.spatial_mission,
+        stage_3d.field_operations,stage_3d.first_person)
+    # W79 always invokes the already-tested original game/UI handlers;
+    # it has no authority to choose A7 actions or bypass physical distance.
+    w79_mission_deck.valve_requested.connect(_field_valve)
+    w79_mission_deck.relay_requested.connect(_field_relay)
+    w79_mission_deck.sync_requested.connect(_field_sync)
+    w79_mission_deck.original_action_requested.connect(_on_action)
+    w79_mission_deck.save_requested.connect(_save_checkpoint)
+    w79_mission_deck.load_requested.connect(_load_checkpoint)
+    w79_mission_deck.restart_requested.connect(_restart)
     cinema_readout = _label(cinema, "", 12, MINT)
     w76_objective_label = _label(cinema, "", 15, GOLD)
     w76_objective_label.name = "W76ActualMissionGoalAndPhysicalDistance"
@@ -935,6 +949,8 @@ func _field_valve(direction: int) -> void:
         checkpoint.note("valve", direction, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
+    if w79_mission_deck != null:
+        w79_mission_deck.report_real_physical_result(ok)
     call_deferred("_publish_web_accessibility")
 
 func _field_relay(index: int) -> void:
@@ -951,6 +967,8 @@ func _field_relay(index: int) -> void:
         checkpoint.note("relay", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
+    if w79_mission_deck != null:
+        w79_mission_deck.report_real_physical_result(ok)
     call_deferred("_publish_web_accessibility")
 
 func _field_sync(index: int) -> void:
@@ -967,6 +985,8 @@ func _field_sync(index: int) -> void:
         checkpoint.note("sync", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
+    if w79_mission_deck != null:
+        w79_mission_deck.report_real_physical_result(ok)
     call_deferred("_publish_web_accessibility")
 
 func _refresh_mission_ui(state: Dictionary) -> void:
@@ -999,6 +1019,8 @@ func _refresh_mission_ui(state: Dictionary) -> void:
     }
     for key in field_buttons.keys():
         (field_buttons[key] as Button).text = _t(str(field_labels[key]))
+    if w79_mission_deck != null:
+        w79_mission_deck.refresh(state)
     mission_meta.text = ("0 / 5" if not mission.active else "%d / 5" % mini(5, mission.phase))
     if mission.active and mission.phase == 6:
         mission_meta.text = "FAILED / 5"
@@ -1184,6 +1206,9 @@ func _layout_stage() -> void:
     if w78_touch_overlay != null and stage_3d != null:
         w78_touch_overlay.set_context(compact,w76_immersive,
             stage_3d.first_person.piloting,locale,size.x)
+    if w79_mission_deck != null and stage_3d != null:
+        w79_mission_deck.set_context(compact,w76_immersive,
+            stage_3d.first_person.piloting,locale,size.x,model.snapshot())
     if cinematic_hud != null:
         cinematic_hud.set_compact_mode(compact)
     for view in camera_buttons:
@@ -1370,6 +1395,9 @@ func _render(state: Dictionary) -> void:
     if w78_touch_overlay != null and stage_3d != null:
         w78_touch_overlay.set_context(size.x < 640.0,w76_immersive,
             stage_3d.first_person.piloting,locale,size.x)
+    if w79_mission_deck != null and stage_3d != null:
+        w79_mission_deck.set_context(size.x < 640.0,w76_immersive,
+            stage_3d.first_person.piloting,locale,size.x,state)
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
     load_button.text = _t("load_game")
@@ -1623,6 +1651,16 @@ func _publish_web_accessibility() -> void:
         "w78_touch_actual_world_G_actions":w78_touch_overlay.world_use_requests if w78_touch_overlay != null else 0,
         "w78_touch_actual_E_inspections":w78_touch_overlay.inspect_requests if w78_touch_overlay != null else 0,
         "w78_phone_hardware_approved":false,
+        "w79_mobile_complete_mission_visible":w79_mission_deck.visible if w79_mission_deck != null else false,
+        "w79_current_source_phase":w79_mission_deck.current_phase if w79_mission_deck != null else -1,
+        "w79_source_based_mode":w79_mission_deck.current_mode if w79_mission_deck != null else "hidden",
+        "w79_native_command_slots":w79_mission_deck.slots.size() if w79_mission_deck != null else 0,
+        "w79_original_action_attempts":w79_mission_deck.original_core_action_requests if w79_mission_deck != null else 0,
+        "w79_physical_equipment_attempts":w79_mission_deck.physical_equipment_request_count if w79_mission_deck != null else 0,
+        "w79_actual_source_phase_changes":w79_mission_deck.actual_source_phase_changes if w79_mission_deck != null else 0,
+        "w79_original_offline_save_requests":w79_mission_deck.save_requests if w79_mission_deck != null else 0,
+        "w79_checked_load_requests":w79_mission_deck.load_requests if w79_mission_deck != null else 0,
+        "w79_phone_hardware_certified":false,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1670,6 +1708,14 @@ func _publish_web_accessibility() -> void:
         "w78_true_touch_forward":_web_rect(w78_touch_overlay.controls["forward"] as Control) if w78_touch_overlay != null else [],
         "w78_true_touch_world_use":_web_rect(w78_touch_overlay.controls["world_use"] as Control) if w78_touch_overlay != null else [],
         "w78_true_touch_inspect":_web_rect(w78_touch_overlay.controls["inspect"] as Control) if w78_touch_overlay != null else [],
+        "w79_context_title":_web_rect(w79_mission_deck.headline) if w79_mission_deck != null else [],
+        "w79_command0":_web_rect(w79_mission_deck.slots[0]) if w79_mission_deck != null else [],
+        "w79_command1":_web_rect(w79_mission_deck.slots[1]) if w79_mission_deck != null else [],
+        "w79_command2":_web_rect(w79_mission_deck.slots[2]) if w79_mission_deck != null else [],
+        "w79_command3":_web_rect(w79_mission_deck.slots[3]) if w79_mission_deck != null else [],
+        "w79_command4":_web_rect(w79_mission_deck.slots[4]) if w79_mission_deck != null else [],
+        "w79_offline_save":_web_rect(w79_mission_deck.save_button) if w79_mission_deck != null else [],
+        "w79_checked_load":_web_rect(w79_mission_deck.load_button) if w79_mission_deck != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),

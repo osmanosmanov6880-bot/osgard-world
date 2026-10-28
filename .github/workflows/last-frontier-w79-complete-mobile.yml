@@ -1,0 +1,245 @@
+name: LAST FRONTIER W79 complete original 5-phase mobile game and real native/WebGL QA
+
+on:
+  pull_request:
+    branches:
+      - game/last-frontier-w78-native-touch-play-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W79_COMPLETE_MOBILE_GAME.md'
+      - 'docs/LAST_FRONTIER_W79_COMPLETE_MOBILE.md'
+      - '.github/workflows/last-frontier-w79-complete-mobile.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w79-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  true-source-isolation:
+    name: Protect accepted W78 source, all original game rules, physics, checkpoints, touch route and QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Exactly eight source/docs/QA paths and all original A7 code byte-identical
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w79-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='ad1622558580bf686b0c6e3ad54857ce23c02d9a'
+          head=os.environ['HEAD']
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          allowed={
+              'w63-a7-cascade/scripts/A7MobileMissionDeck.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w79_complete_mobile_mission.gd',
+              'w63-a7-cascade/ci/w79_browser_mobile_mission.py',
+              'w63-a7-cascade/ci/w79_browser_complete_mobile.py',
+              'docs/LAST_FRONTIER_W79_COMPLETE_MOBILE_GAME.md',
+              'docs/LAST_FRONTIER_W79_COMPLETE_MOBILE.md',
+              '.github/workflows/last-frontier-w79-complete-mobile.yml',
+          }
+          assert changed==allowed,{
+              'missing':sorted(allowed-changed),
+              'unapproved':sorted(changed-allowed)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7SpatialMission.gd',
+              'w63-a7-cascade/scripts/A7FieldOperations.gd',
+              'w63-a7-cascade/scripts/A7WorldInteraction.gd',
+              'w63-a7-cascade/scripts/A7SessionCheckpoint.gd',
+              'w63-a7-cascade/scripts/A7DiegeticFeedback.gd',
+              'w63-a7-cascade/scripts/A7MissionWayfinder.gd',
+              'w63-a7-cascade/scripts/A7SectorBulkhead.gd',
+              'w63-a7-cascade/scripts/A7TouchFieldControls.gd',
+              'w63-a7-cascade/scripts/A7GamepadDirector.gd',
+              'w63-a7-cascade/scripts/A7FrameTelemetry.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w73_world_and_checkpoint.gd',
+              'w63-a7-cascade/tests/test_w74_gamepad_feedback.gd',
+              'w63-a7-cascade/tests/test_w76_immersive_level.gd',
+              'w63-a7-cascade/tests/test_w77_sector_bulkhead.gd',
+              'w63-a7-cascade/tests/test_w78_touch_gameplay.gd',
+              'w63-a7-cascade/ci/w77_browser_sector_gate.py',
+              'w63-a7-cascade/ci/w78_browser_touch.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+          ]
+          hashes={}
+          for p in protected:
+              old=git('rev-parse',base+':'+p)
+              actual=git('rev-parse',head+':'+p)
+              assert old==actual,'Original accepted W78 source was modified: '+p
+              hashes[p]=actual
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          deck=Path('w63-a7-cascade/scripts/A7MobileMissionDeck.gd').read_text()
+          screen=Path('w63-a7-cascade/scripts/A7CascadeScreen.gd').read_text()
+          for check in ['signal valve_requested','signal relay_requested',
+                        'signal sync_requested','signal original_action_requested',
+                        'signal save_requested','signal load_requested',
+                        'real_source_proximity_rejections_shown',
+                        'mission.active and mission.extended_mode']:
+              assert check in deck,check
+          for check in ['w79_mission_deck.valve_requested.connect(_field_valve)',
+                        'w79_mission_deck.original_action_requested.connect(_on_action)',
+                        'w79_mission_deck.save_requested.connect(_save_checkpoint)',
+                        'w79_mission_deck.load_requested.connect(_load_checkpoint)']:
+              assert check in screen,check
+          for banned in ['A7CascadeCore.choose','model.choose','operator.body.position =',
+                         'HTTPClient','OS.execute']:
+              assert banned not in deck,'No fake/autonomous game authority: '+banned
+          report={
+              'schema':'LAST_FRONTIER_W79_IMMUTABLE_W78_ORIGINAL_ENGINE_V1',
+              'head_sha':head,'accepted_w78_base_sha':base,'status':'PASS',
+              'changed_files':sorted(changed),
+              'protected_original_game_git_blobs':hashes,
+              'real_5_phase_touch_deck_connected_to_existing_original_handlers':True,
+              'original_physical_engine_and_six_cycle_rules_modified':False,
+              'real_iphone_android_hardware_certified':False,
+              'commercial_release_authorized':False,
+          }
+          Path('w79-evidence/W79_SOURCE_PIN.json').write_text(
+              json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          print('W79 ORIGINAL W63-W78 AUTHORITY AND ORIGINAL 3D PHYSICS PIN PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w79-original-source-pins-${{ github.event.pull_request.head.sha }}
+          path: w79-evidence/W79_SOURCE_PIN.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  true-native-and-browser:
+    name: Eight real Godot suites incl true 12-action win, original WASM and 18 genuine browser screenshots
+    runs-on: ubuntu-latest
+    needs: true-source-isolation
+    timeout-minutes: 115
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Godot import real original source and fail GDScript compile errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w79-evidence
+          timeout 300s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w79-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w79-evidence/import.log; then exit 1; fi
+      - name: Execute eight native regression suites, all real five-phase mobile commands, exactly 12 accepted source decisions and final containment
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w72_field_operations test_w73_world_and_checkpoint test_w74_gamepad_feedback test_w76_immersive_level test_w77_sector_bulkhead test_w78_touch_gameplay test_w79_complete_mobile_mission; do
+            timeout 510s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w79-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w79-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w79-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W72 TRUE THREE PHYSICAL INDUSTRIAL PUZZLES PASS:' w79-evidence/test_w72_field_operations.log
+          grep -q 'LAST FRONTIER W73 TRUE WORLD RAYCAST AND TRANSACTIONAL CHECKPOINT PASS:' w79-evidence/test_w73_world_and_checkpoint.log
+          grep -q 'LAST FRONTIER W74 TRUE DIEGETIC PHYSICS GAMEPAD AND FRAME TELEMETRY PASS:' w79-evidence/test_w74_gamepad_feedback.log
+          grep -q 'LAST FRONTIER W76 REAL IMMERSIVE PHYSICAL LEVEL AND WORLD NAVIGATION PASS:' w79-evidence/test_w76_immersive_level.log
+          grep -q 'LAST FRONTIER W77 TRUE ORIGINAL PHYSICAL SECTOR DOOR GAME PASS:' w79-evidence/test_w77_sector_bulkhead.log
+          grep -q 'LAST FRONTIER W78 TRUE ORIGINAL GODOT MOBILE TOUCH PHYSICS PASS:' w79-evidence/test_w78_touch_gameplay.log
+          grep -q 'LAST FRONTIER W79 TRUE COMPLETE FIVE-PHASE MOBILE GODOT MISSION PASS:' w79-evidence/test_w79_complete_mobile_mission.log
+      - name: Export real source-authenticated 4.4.1 Godot WebAssembly
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          cd w63-a7-cascade
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          cd ..
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install native Chromium browser and image byte QA
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/w79-godot
+          /tmp/w79-godot/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/w79-godot/bin/python -m playwright install --with-deps chromium
+      - name: Run true original W78 movement and W79 contextual full-source mission Chromium controls
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout 1150s /tmp/w79-godot/bin/python w63-a7-cascade/ci/w78_browser_touch.py --export w63-a7-cascade/build/web --evidence w79-evidence/w78-original-regression --sha "$SHA" 2>&1 | tee w79-evidence/w78-browser.log
+          grep -q 'LAST FRONTIER W78 TRUE GODOT MOBILE TOUCH CHROMIUM PASS:' w79-evidence/w78-browser.log
+          timeout 1150s /tmp/w79-godot/bin/python w63-a7-cascade/ci/w79_browser_mobile_mission.py --export w63-a7-cascade/build/web --evidence w79-evidence/w79-original-webgl --sha "$SHA" 2>&1 | tee w79-evidence/w79-browser.log
+          grep -q 'LAST FRONTIER W79 TRUE FIVE-PHASE MOBILE GAME CHROMIUM PASS:' w79-evidence/w79-browser.log
+          timeout 1150s /tmp/w79-godot/bin/python w63-a7-cascade/ci/w79_browser_complete_mobile.py --export w63-a7-cascade/build/web --evidence w79-evidence/w79-second-independent-browser --sha "$SHA" 2>&1 | tee w79-evidence/w79-second-browser.log
+          grep -q 'LAST FRONTIER W79 ORIGINAL COMPLETE MOBILE DECK GODOT CHROMIUM PASS:' w79-evidence/w79-second-browser.log
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          n=0
+          for folder,name,key in [
+              ('w78-original-regression','W78_ORIGINAL_GODOT_TOUCH_BROWSER_PROOF.json','source_sha'),
+              ('w79-original-webgl','W79_ACTUAL_GODOT_MOBILE_MISSION_BROWSER.json','head_source_sha'),
+              ('w79-second-independent-browser','W79_ORIGINAL_MOBILE_GODOT_BROWSER_EVIDENCE.json','source_sha')]:
+              root=Path('w79-evidence')/folder
+              obj=json.loads((root/name).read_text())
+              assert obj[key]==os.environ['SHA'] and obj['result']=='PASS'
+              frames=obj['screenshots'] if 'screenshots' in obj else obj['images']
+              assert len(frames)==6
+              for frame in frames:
+                  data=(root/frame['name']).read_bytes()
+                  assert len(data)>12000 and len(data)==frame['bytes']
+                  assert hashlib.sha256(data).hexdigest()==frame['sha256']
+                  n+=1
+          assert n==18
+          print('W79 real original WebGL 18 unaltered exact-source PNG frames PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w79-genuine-mobile-5-phase-game-webgl-${{ github.event.pull_request.head.sha }}
+          path: |
+            w79-evidence/
+            w63-a7-cascade/build/web/
+          if-no-files-found: warn
+          retention-days: 45
+
+  release-hold:
+    name: Real 3D game software PASS is NOT physical iPhone/Android testing, AAA art or commercial release
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [true-source-isolation,true-native-and-browser]
+    steps:
+      - name: No automatic commercial certification or master merge
+        env:
+          SOURCE: ${{ needs.true-source-isolation.result }}
+          GAME: ${{ needs.true-native-and-browser.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$GAME" = success
+          echo 'W79 true complete original native mobile five-phase playable software PASS.'
+          echo 'Physical phone and consumer GPU 60fps, user playtest, original AAA art and legal trademarks remain HOLD.'
