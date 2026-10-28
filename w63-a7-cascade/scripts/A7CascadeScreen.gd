@@ -1333,6 +1333,7 @@ func _publish_web_accessibility() -> void:
         "w73_real_native_world_raycast": bool(stage_state.get("w73_true_eye_raycast", false)),
         "w73_real_collider_target_count": int(stage_state.get("w73_real_ray_targets", 0)),
         "w73_actual_world_ray_target": stage_3d.world_interaction.qa_readout()["actual_active_ray_target"] if stage_3d.world_interaction != null else "",
+        "w73_actual_ray_physics_debug": stage_3d.world_interaction.qa_readout() if stage_3d.world_interaction != null else {},
         "w73_real_raycast_uses": stage_3d.world_interaction.accepted_world_uses if stage_3d.world_interaction != null else 0,
         "w73_rejected_world_uses": stage_3d.world_interaction.rejected_world_uses if stage_3d.world_interaction != null else 0,
         "w73_checkpoint_events": checkpoint.events.size(),
