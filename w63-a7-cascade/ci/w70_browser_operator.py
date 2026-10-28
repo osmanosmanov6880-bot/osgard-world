@@ -103,7 +103,7 @@ def run(export, out, sha):
                         state.w70_real_physical_distance>0.38 &&
                         state.w70_real_physics_frames>15;
                 } catch(e){return false;}
-            }""",begin_z,timeout=50000)
+            }""",arg=begin_z,timeout=50000)
             moved=snapshot(page)
             check(moved["history_count"]==0 and moved["shift"]==0,
                   "Physical W key movement must not trigger original machine choices")
