@@ -507,6 +507,8 @@ func _layout_stage() -> void:
     var compact: bool = size.x < 640.0
     if stage_3d != null:
         stage_3d.set_compact_view(compact)
+    if cinematic_hud != null:
+        cinematic_hud.set_compact_mode(compact)
     for view in camera_buttons:
         view.custom_minimum_size.x = 84.0 if compact else 118.0
     if compact:
