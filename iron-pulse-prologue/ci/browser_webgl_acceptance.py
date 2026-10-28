@@ -134,6 +134,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         bay = idle.get("reactor_atrium", {})
                         assert bay.get("security_director_camera") is True and bay.get("plasma_shader_live") is True, (
                             "New real in-engine observation camera or procedural plasma material missing",bay)
+                        assert bay.get("open_core_inspection") is True, (
+                            "V8.3 reactor remains obscured by front armour despite successful render",bay)
                         assert bay.get("cinematic_vault") is True, (
                             "Actual 3D reactor atrium missing from Godot scene",bay)
                         assert bay.get("vault_height_m",0)>=14.0 and bay.get("open_wall_span_m",0)>=21.0, (
