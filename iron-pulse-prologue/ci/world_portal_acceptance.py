@@ -60,9 +60,15 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 page.goto(address,wait_until="domcontentloaded",timeout=60000)
                 page.wait_for_function("window.IRON_PULSE_WORLD?.missionCount === 3",timeout=20000)
                 assert page.locator("h1").inner_text().replace("\n","").startswith("IRON")
-                assert page.locator("#gameplay-shot").evaluate(
-                    "(img) => img.complete && img.naturalWidth > 600"
-                ), "Displayed gameplay proof did NOT load from same exact build"
+                # The legitimate gameplay capture is lazy-loaded below the
+                # editorial hero. Scroll it into view before verifying, rather
+                # than confusing browser lazy loading with a missing asset.
+                page.locator("#gameplay-shot").scroll_into_view_if_needed()
+                page.wait_for_function(
+                    "() => {const img=document.getElementById('gameplay-shot'); return img.complete && img.naturalWidth > 600;}",
+                    timeout=30000
+                )
+                page.evaluate("window.scrollTo(0,0)")
                 assert page.locator(".mission-option").count() == 3
                 assert page.locator("#mission-play").get_attribute("href").endswith(
                     "?scenario=blackout&lang=ru"
@@ -102,9 +108,12 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 m.wait_for_function("window.IRON_PULSE_WORLD?.missionCount===3",timeout=20000)
                 assert m.evaluate("document.documentElement.lang")=="en"
                 assert m.locator("#mission-name").inner_text()=="AIR"
-                assert m.locator("#gameplay-shot").evaluate(
-                    "(img) => img.complete && img.naturalWidth > 600"
-                ), "Real screenshot missing on phone layout"
+                m.locator("#gameplay-shot").scroll_into_view_if_needed()
+                m.wait_for_function(
+                    "() => {const img=document.getElementById('gameplay-shot'); return img.complete && img.naturalWidth > 600;}",
+                    timeout=30000
+                )
+                m.evaluate("window.scrollTo(0,0)")
                 mwidth = m.evaluate("document.documentElement.scrollWidth")
                 assert mwidth <= 392, f"Mobile world-class portal overflows 390px: {mwidth}"
                 assert m.locator("a[data-play]").first.is_visible(), "Mobile play CTA missing"
