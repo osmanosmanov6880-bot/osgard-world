@@ -165,6 +165,8 @@ def true_dual_finger(page,cdp,g):
         "source_finger_before":released["w83_source_active_walk_fingers"],
         "source_finger_after":still_walking["w83_source_active_walk_fingers"],
         "real_key_after":still_walking["w83_true_original_walk_key_held"],
+        "walk_source_touch_ends_after":still_walking["w83_source_walk_touch_ends"],
+        "walk_safety_expirations_after":still_walking["w83_source_walk_safety_expirations"],
         "W70_physics_frames_before":released["w70_real_physics_frames"],
         "W70_physics_frames_after":still_walking["w70_real_physics_frames"],
         "W70_collisions_before":released["w70_real_collisions"],

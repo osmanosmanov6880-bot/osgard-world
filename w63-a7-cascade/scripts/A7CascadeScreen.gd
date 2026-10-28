@@ -1796,6 +1796,7 @@ func _publish_web_accessibility() -> void:
         "w83_source_walk_touch_starts":w83_dual_touch.actual_walk_touch_starts if w83_dual_touch != null else 0,
         "w83_source_walk_touch_ends":w83_dual_touch.actual_walk_touch_ends if w83_dual_touch != null else 0,
         "w83_real_walk_reassert_frames":w83_dual_touch.original_walk_reassert_frames if w83_dual_touch != null else 0,
+        "w83_source_walk_safety_expirations":w83_dual_touch.expired_long_walk_holds if w83_dual_touch != null else 0,
         "w83_source_yaw":float(w83_dual_touch.qa_readout()["actual_source_yaw"]) if w83_dual_touch != null else 0.0,
         "w83_source_pitch":float(w83_dual_touch.qa_readout()["actual_source_pitch"]) if w83_dual_touch != null else 0.0,
         "w83_real_UI_touches_not_intercepted":w83_dual_touch.rejected_ui_starts if w83_dual_touch != null else 0,

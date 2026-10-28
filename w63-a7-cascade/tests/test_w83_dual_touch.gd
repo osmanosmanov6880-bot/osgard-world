@@ -208,6 +208,26 @@ func _run() -> void:
         and not actor.held_keys.get(KEY_W,false),
         "Only the FIRST physical finger end stops original movement after camera watchdog")
 
+    # The 12s safety limit is based on actual simulated Godot time, NOT
+    # slow wall-clock WebGL time. Confirm still held after many long wall
+    # clock ticks when actual source frames are few; then stop after
+    # 12 physical source-simulated seconds (headless deterministic test).
+    _check(not look.handle_screen_event(_touch(84,walk_pos,true))
+        and actor.held_keys.get(KEY_W,false),
+        "Original physical W held for independent simulated-time safety test")
+    look.source_walk_elapsed_seconds[84]=11.90
+    look._process(0.05)
+    _check(look.source_walk_fingers.has(84)
+        and actor.held_keys.get(KEY_W,false),
+        "Original W not prematurely released before 12 actual simulated seconds")
+    look._process(0.05)
+    _check(not look.source_walk_fingers.has(84)
+        and not actor.held_keys.get(KEY_W,false)
+        and look.expired_long_walk_holds>=1,
+        "Only 12 seconds of genuine Godot simulated W movement triggers safety")
+    _check(ui.model.snapshot()==original_game,
+        "Simulated time-based input protection never alters original A7 gameplay")
+
     # Real focus-loss guard on original Godot notification, not timer magic.
     (walk.controls["back"] as Button).emit_signal("button_down")
     _check(actor.held_keys.get(KEY_S,false),"W78 original held movement primed")

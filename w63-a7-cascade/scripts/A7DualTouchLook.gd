@@ -11,7 +11,7 @@ const COPPER := Color("e5b982")
 const MAX_DRAG_PIXELS := 90.0
 const LOOK_SENSITIVITY := 0.85
 const LOST_TOUCH_TIMEOUT_MS := 1700
-const MAX_CONTINUOUS_WALK_HOLD_MS := 12000
+const MAX_CONTINUOUS_WALK_HOLD_SECONDS := 12.0
 var stage: Control
 var actor: A7FirstPersonOperator
 var touch_controls: A7TouchFieldControls
@@ -38,7 +38,7 @@ var last_touch_ticks_ms: int = 0
 # the ORIGINAL W70 physics key until the originating touch truly ends.
 var source_walk_fingers: Dictionary = {}
 var source_walk_origins: Dictionary = {}
-var source_walk_started_ms: Dictionary = {}
+var source_walk_elapsed_seconds: Dictionary = {}
 var actual_walk_touch_starts: int = 0
 var actual_walk_touch_ends: int = 0
 var original_walk_reassert_frames: int = 0
@@ -107,7 +107,7 @@ func _release_walk_id(index: int) -> void:
     var key: String = str(source_walk_fingers[index])
     source_walk_fingers.erase(index)
     source_walk_origins.erase(index)
-    source_walk_started_ms.erase(index)
+    source_walk_elapsed_seconds.erase(index)
     actual_walk_touch_ends += 1
     if actor != null and A7TouchFieldControls.WALK_KEYS.has(key):
         actor.set_key(int(A7TouchFieldControls.WALK_KEYS[key]),false)
@@ -200,7 +200,7 @@ func handle_screen_event(event: InputEvent) -> bool:
             if walking_key != "" and actor != null and actor.piloting:
                 source_walk_fingers[touch.index] = walking_key
                 source_walk_origins[touch.index] = touch.position
-                source_walk_started_ms[touch.index] = Time.get_ticks_msec()
+                source_walk_elapsed_seconds[touch.index] = 0.0
                 actor.set_key(int(A7TouchFieldControls.WALK_KEYS[walking_key]),true)
                 actual_walk_touch_starts += 1
                 # Deliberately DO NOT consume W78's original Button event;
@@ -283,10 +283,15 @@ func _process(_delta: float) -> void:
     # Only a source finger END in its actual W78 button, mode/focus exit,
     # or bounded 12s safety cap can release the source-held key.
     if visible and actor != null and actor.piloting:
-        var now: int = Time.get_ticks_msec()
         for index in source_walk_fingers.keys().duplicate():
-            if (source_walk_started_ms.has(index) and
-                    now-int(source_walk_started_ms[index])>=MAX_CONTINUOUS_WALK_HOLD_MS):
+            # Measure simulated SOURCE game-frame time, not wall clock.
+            # Headless/SwiftShader WebGL may run slower than real time:
+            # a genuine held finger must not expire while the physics
+            # scene has only advanced a few actual seconds.
+            var elapsed: float = float(source_walk_elapsed_seconds.get(index,0.0))
+            elapsed += clampf(_delta,0.0,0.05)
+            source_walk_elapsed_seconds[index] = elapsed
+            if elapsed >= MAX_CONTINUOUS_WALK_HOLD_SECONDS:
                 expired_long_walk_holds += 1
                 _release_walk_id(int(index))
                 continue
@@ -340,7 +345,7 @@ func qa_readout() -> Dictionary:
         "original_W70_walk_reassert_frames":original_walk_reassert_frames,
         "reindexed_movement_touch_end_ignored":mismatched_walk_releases_ignored,
         "bounded_12s_safety_walk_timeouts":expired_long_walk_holds,
-        "max_continuous_source_walk_ms":MAX_CONTINUOUS_WALK_HOLD_MS,
+        "max_continuous_source_walk_simulated_seconds":MAX_CONTINUOUS_WALK_HOLD_SECONDS,
         "native_watchdog_timeout_ms":LOST_TOUCH_TIMEOUT_MS,
         "cancelled_fingers_on_mode_or_resize":cancelled_captures,
         "bounded_drag_events":clamped_motion_frames,
