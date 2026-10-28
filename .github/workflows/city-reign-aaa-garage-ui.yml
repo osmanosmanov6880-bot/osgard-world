@@ -1,0 +1,104 @@
+name: CITY REIGN AAA GARAGE UI — native business and visual QA, NO DEPLOY
+on:
+  push:
+    branches:
+      - feat/city-reign-aaa-garage-gallery-20261028
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-garage-ui.yml'
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-garage-ui.yml'
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-aaa-garage-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  real-original-godot-garage-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Lock source SHA; never publish
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "${#HEAD_SHA}" -eq 40
+          mkdir -p city-reign-garage-evidence
+          echo "$HEAD_SHA" > city-reign-garage-evidence/source-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Import original city source and sounds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-garage-evidence/native-import.log
+      - name: Native Godot real car-ownership price, style and UI acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in \
+            v26_horizon_sculpted_visuals \
+            v113_city_reign_cinematic_architecture \
+            v116_city_reign_aaa_premium_garage; do
+            log="city-reign-garage-evidence/${name}.log"
+            timeout --signal=TERM --kill-after=6s 150s godot --headless \
+              --path godot/empire-omega --script "res://tests/${name}.gd" | tee "$log"
+            case "$name" in
+              v26*) marker="HORIZON R4 NATIVE:" ;;
+              v113*) marker="CITY REIGN AAA source-native art pass:" ;;
+              v115*) marker="CITY REIGN AAA real player garage silhouettes:" ;;
+              v116*) marker="CITY REIGN AAA native premium garage cards:" ;;
+            esac
+            grep -Fq "$marker" "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::Actual source Godot garage UI failed: $name"; exit 1
+            fi
+          done
+      - name: R138 manual-only release safety contract
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-direct-publish.contract.test.mjs \
+            | tee city-reign-garage-evidence/release-controls.log
+      - name: Real source SHA manifest, no premature AAA promise
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,hashlib,json
+          from pathlib import Path
+          paths=['godot/empire-omega/scripts/hud.gd',
+            'godot/empire-omega/scripts/city_reign_premium_garage.gd',
+            'godot/empire-omega/tests/v116_city_reign_aaa_premium_garage.gd']
+          m={'exact_sha':os.environ['HEAD_SHA'],
+            'sha256':{p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths},
+            'original_real_godot_ui':True,'human_ref_design_approval':False,
+            'phone_physical_testing':False,'public_release_permission':False}
+          Path('city-reign-garage-evidence/manifest.json').write_text(json.dumps(m,indent=2)+'\n')
+          PY
+      - name: Archive authentic UI and security evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-garage-${{ github.run_id }}
+          path: city-reign-garage-evidence/
+          retention-days: 14
+          if-no-files-found: warn
