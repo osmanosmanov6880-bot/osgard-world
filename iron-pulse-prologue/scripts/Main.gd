@@ -18,7 +18,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора\nH — показать / скрыть 3D-цель\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора    P — следующий план\nH — показать / скрыть 3D-цель\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -92,7 +92,7 @@ const COPY := {
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera\nH — show / hide 3D objective\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera    P — next shot\nH — show / hide 3D objective\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -244,6 +244,7 @@ var end_title: Label
 var end_stats: Label
 var end_button: Button
 var touch_ui: Control
+var touch_shot_button: Button
 var touch_moves: Dictionary = {"forward":false, "back":false, "left":false, "right":false}
 var started: bool = false
 var paused: bool = false
@@ -373,6 +374,7 @@ func _publish_web_state() -> void:
         "halo_camera_alignment":absf(normal_front.dot(director_eye))
     }
     state["cinematic_view"] = cinematic_view
+    state["director_shot_index"] = reactor_atrium.director_shot_index
     state["cinematic_hud_hidden"] = cinematic_view and not header_panel.visible and not side_panel.visible and not prompt_panel.visible and not crosshair.visible
     var active_camera: Camera3D = get_viewport().get_camera_3d()
     state["active_camera"] = active_camera.name if active_camera != null else ""
@@ -951,6 +953,11 @@ func _make_touch_controls() -> void:
     fast.pressed.connect(_fast_interact)
     var archive := _touch_button(touch_ui,"J / LOG",216,-357,94)
     archive.pressed.connect(_toggle_journal)
+    var camera_button := _touch_button(touch_ui,"CAM / C",216,-414,94)
+    camera_button.pressed.connect(_toggle_cinematic_view)
+    touch_shot_button = _touch_button(touch_ui,"SHOT / P",216,-471,94)
+    touch_shot_button.pressed.connect(_cycle_director_shot)
+    touch_shot_button.visible = false
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1108,9 +1115,23 @@ func _apply_cinematic_view() -> void:
         # Switch to a physical security camera overlooking the actual 3D
         # reactor. Preserve the player body, timer, mission and checkpoints.
         if reactor_atrium != null and reactor_atrium.director_camera != null:
-            reactor_atrium.director_camera.make_current()
+            reactor_atrium.reset_director_shots()
     elif camera != null:
         camera.make_current()
+    if touch_shot_button != null:
+        touch_shot_button.visible = cinematic_view and touch_ui.visible
+
+func _toggle_cinematic_view() -> void:
+    if not started or paused or session.finished():
+        return
+    cinematic_view = not cinematic_view
+    _apply_cinematic_view()
+    if not cinematic_view:
+        _refresh_radio_ui()
+
+func _cycle_director_shot() -> void:
+    if started and not paused and not session.finished() and cinematic_view:
+        reactor_atrium.cycle_director_shot()
 
 func _refresh_radio_ui() -> void:
     if radio_panel == null:
@@ -1439,6 +1460,8 @@ func _gamepad_button(button_index: int) -> void:
             _choose_priority("crew")
         JOY_BUTTON_DPAD_DOWN:
             _choose_priority("core")
+        JOY_BUTTON_DPAD_RIGHT:
+            _cycle_director_shot()
 
 func _input(event: InputEvent) -> void:
     if event is InputEventJoypadButton and event.pressed:
@@ -1474,10 +1497,10 @@ func _input(event: InputEvent) -> void:
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
             return
         if event.keycode == KEY_C and started and not paused and not session.finished():
-            cinematic_view = not cinematic_view
-            _apply_cinematic_view()
-            if not cinematic_view:
-                _refresh_radio_ui()
+            _toggle_cinematic_view()
+            return
+        if event.keycode == KEY_P and cinematic_view:
+            _cycle_director_shot()
             return
         if event.keycode == KEY_J:
             if cinematic_view:
