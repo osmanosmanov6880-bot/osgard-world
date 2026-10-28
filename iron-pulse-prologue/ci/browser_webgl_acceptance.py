@@ -129,6 +129,34 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "real_relay_positions":positions,
                             "available_slots":2
                         }
+                        # V8 must render a NEW 15m side reactor chamber,
+                        # not just rename old corridor meshes or substitute CGI.
+                        bay = idle.get("reactor_atrium", {})
+                        assert bay.get("cinematic_vault") is True, (
+                            "Actual 3D reactor atrium missing from Godot scene",bay)
+                        assert bay.get("vault_height_m",0)>=14.0 and bay.get("open_wall_span_m",0)>=21.0, (
+                            "Monumental room dimensions were not authored",bay)
+                        assert bay.get("core_center",[0])[0]>10.0, (
+                            "Reactor was not relocated beyond old corridor wall",bay)
+                        assert bay.get("monumental_geometry",0)>=125 and bay.get("instanced_fasteners")==216, (
+                            "Physical reactor shell/draw-call optimized detail missing",bay)
+                        assert bay.get("pbr_texture_maps")==3 and bay.get("physical_guardrail_colliders")==1, (
+                            "Original PBR assets or real physics guardrail missing",bay)
+                        assert bay.get("moving_rotors")==3 and bay.get("diegetic_signs")==3, (
+                            "Real moving containment rings and in-world signs missing",bay)
+                        expected_quality = "eco" if mobile else "hero"
+                        assert bay.get("quality")==expected_quality and bay.get("hero_visible") is (not mobile), (
+                            "Phone/HERO performance budget did not affect new reactor",bay)
+                        report.setdefault("v8_reactor_megastructure",{})[name]={
+                            "room_height_m":bay["vault_height_m"],
+                            "view_opening_m":bay["open_wall_span_m"],
+                            "core_center":bay["core_center"],
+                            "monumental_meshes":bay["monumental_geometry"],
+                            "instanced_steel_fasteners":bay["instanced_fasteners"],
+                            "original_pbr_maps":bay["pbr_texture_maps"],
+                            "guardrail_physics":bay["physical_guardrail_colliders"],
+                            "render_quality":bay["quality"]
+                        }
                         assert idle.get("world_sector") == "reactor",(
                             "Player starts in wrong world area",idle.get("world_sector"))
                         assert world.get("quality") in ("hero","eco"),world
@@ -240,6 +268,21 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "Crew/core priority offered before real scanner",state)
                         assert "МАРА" in state.get("radio_text","") or "MARA" in state.get("radio_text",""), (
                             "No authored radio subtitles shown in Godot",state.get("radio_text"))
+                        # Capture an extra BEFORE-controls gameplay camera frame
+                        # to compare the central scene's art evolution fairly.
+                        # The image is a direct Chromium screenshot of the actual
+                        # exported Godot canvas; no altered/composited stills.
+                        page.wait_for_timeout(900)
+                        hero_png = page.screenshot(timeout=60000,animations="disabled")
+                        hero_stats = frame_metrics(hero_png)
+                        assert hero_stats["color_bins"] >= 12 and hero_stats["stddev"] > 7,hero_stats
+                        hero_name = "hero-"+name+".png"
+                        (output / hero_name).write_bytes(hero_png)
+                        report.setdefault("hero_frame_evidence",{})[name]={
+                            **hero_stats,"image":hero_name,
+                            "source":"actual_godot_webgl_chromium",
+                            "not_a_render_mockup":True
+                        }
                         # Verify both opening and closing the actual journal.
                         if mobile:
                             journal_rect = state["touch_button_rects"]["J / LOG"]
@@ -321,6 +364,9 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                         break
                                     page.wait_for_timeout(200)
                                 assert state.get(property_name) == expected,(key,property_name,state)
+                                if key=="g":
+                                    assert state.get("reactor_atrium",{}).get("quality") == expected, (
+                                        "G button did not switch actual V8 vaulted reactor geometry",state.get("reactor_atrium"))
                             page.keyboard.press("g")
                             page.keyboard.press("m")
                             page.keyboard.press("v")
