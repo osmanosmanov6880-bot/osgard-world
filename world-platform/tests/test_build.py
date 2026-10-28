@@ -153,7 +153,7 @@ class OriginalGodotPackaging(unittest.TestCase):
         self.assertIn("CACHE_GAME",(ROOT/"sw.js").read_text())
         self.assertIn("G direct physics-ray interaction",(ROOT/"README.txt").read_text())
 
-    def test_14_no_global network dependency_in_launcher(self):
+    def test_14_no_global_network_dependency_in_launcher(self):
         self.assertIn("--bind 127.0.0.1",(ROOT/"START_WINDOWS.bat").read_text())
         self.assertIn("--bind 127.0.0.1",(ROOT/"START_LINUX_MAC.sh").read_text())
         sw=(ROOT/"sw.js").read_text()
