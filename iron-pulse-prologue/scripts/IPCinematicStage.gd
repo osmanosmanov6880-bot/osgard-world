@@ -100,10 +100,12 @@ func _ready() -> void:
         var depth: float = 1.3 - float(index) * 6.0
         for side in [-1.0, 1.0]:
             var x: float = side * 5.65
-            _box(hero_details, "Rib_%d_%d" % [index, int(side)], Vector3(x, 2.85, depth), Vector3(0.24, 5.2, 0.34), brushed)
-            _box(hero_details, "WallInlay_%d_%d" % [index, int(side)], Vector3(side*6.64, 2.8, depth-2.5), Vector3(0.07, 3.4, 3.9), recessed)
+            var obstructs_reactor_view: bool = side > 0.0 and depth <= IPReactorAtrium.OPENING_Z_MAX and depth >= IPReactorAtrium.OPENING_Z_MIN
+            if not obstructs_reactor_view:
+                _box(hero_details, "Rib_%d_%d" % [index, int(side)], Vector3(x, 2.85, depth), Vector3(0.24, 5.2, 0.34), brushed)
+                _box(hero_details, "WallInlay_%d_%d" % [index, int(side)], Vector3(side*6.64, 2.8, depth-2.5), Vector3(0.07, 3.4, 3.9), recessed)
+                _box(hero_details, "FiberDuct_%d_%d" % [index, int(side)], Vector3(side*6.3, 4.94, depth-2.3), Vector3(0.17, 0.18,4.65), copper)
             _box(hero_details, "ServiceTrench_%d_%d" % [index, int(side)], Vector3(side*4.7, 0.025, depth-2.3), Vector3(0.60,0.035,4.8), graphite)
-            _box(hero_details, "FiberDuct_%d_%d" % [index, int(side)], Vector3(side*6.3, 4.94, depth-2.3), Vector3(0.17, 0.18,4.65), copper)
         # Maintain the established corridor rhythm outside the new 22m atrium;
         # do not accidentally put old roof panels across the opening.
         if depth > IPReactorAtrium.OPENING_Z_MAX or depth < IPReactorAtrium.OPENING_Z_MIN:
