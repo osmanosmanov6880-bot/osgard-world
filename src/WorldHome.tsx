@@ -5,7 +5,6 @@ import './omegaWorld.css'
 import './developmentSignature.css'
 import { cases } from './featuredCases'
 import { BrandMark } from './BrandMark'
-import { formatEnquiry, validateEnquiry } from './projectEnquiry'
 import { recordBrandEvent } from './brandTelemetry'
 import { MOTION_CHANGE_EVENT } from './osgardRouting'
 import type { GlobeChapter, GlobeMode, GlobeView, GlobeQuality } from './OmegaGlobe'
@@ -124,9 +123,9 @@ export default function WorldHome({ development = false }: { development?: boole
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [brief, contact, saved])
-  const download = () => {
+  const download = (validatedContent: string) => {
     try {
-      const blob = new Blob([formatEnquiry(brief, contact)], { type: 'text/plain;charset=utf-8' })
+      const blob = new Blob([validatedContent], { type: 'text/plain;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = url
@@ -312,7 +311,7 @@ export default function WorldHome({ development = false }: { development?: boole
         <a href="mailto:osman.osmanov0099@gmail.com" onClick={() => recordBrandEvent('contact_opened')}>osman.osmanov0099@gmail.com <span aria-hidden="true">↗</span></a>
         <p className="world-contact-next">{tx("Первое обсуждение — задача, объём и следующий шаг. Сроки и стоимость определяются после разбора брифа.")}</p>
       </div>
-      <form noValidate onSubmit={event => { event.preventDefault(); const problem = validateEnquiry(brief, contact); if (problem) { setError(problem); briefInput.current?.focus(); return } download() }}>
+      <form noValidate onSubmit={async event => { event.preventDefault(); try { const { validateEnquiry, formatEnquiry } = await import('./projectEnquiry'); const problem = validateEnquiry(brief, contact); if (problem) { setError(problem); briefInput.current?.focus(); return } download(formatEnquiry(brief, contact)) } catch { setError(locale === 'ru' ? 'Не удалось подготовить файл. Скопируйте описание и отправьте его на указанный адрес.' : 'Could not prepare the file. Copy your description and email it to the address above.') } }}>
         <label htmlFor="project-brief">{tx("Что хотите создать?")}</label>
         <p id="brief-help" className="brand-field-help">{tx("Для кого продукт, какую задачу решает, что уже есть. От 20 до 5000 символов.")}</p>
         <textarea id="project-brief" name="project-brief" ref={briefInput} aria-invalid={Boolean(error)} aria-describedby="brief-help brief-feedback" required minLength={20} maxLength={5000} value={brief} onChange={event => { setBrief(event.target.value); setSaved(false); setError('') }} placeholder={tx("Например: сервис записи для небольшого клуба. Нужно показать расписание и собирать заявки…")} rows={5} />
