@@ -1765,20 +1765,34 @@ func _refresh_hud() -> void:
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
     var nearby: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
-    var show_rescue: bool = not rescue.is_empty()
-    if show_rescue and not nearby.is_empty():
-        show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
-    if started and not session.finished() and show_rescue:
-        var relay_dist: float = _physical_distance(rescue["position"])
+    var signal: Dictionary = _nearest_signal()
+    var main_dist: float = _physical_distance(nearby["position"]) if not nearby.is_empty() else 999.0
+    var rescue_dist: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+    var signal_dist: float = _physical_distance(signal["position"]) if not signal.is_empty() else 999.0
+    if started and not session.finished() and signal_dist < main_dist and signal_dist < rescue_dist:
+        var signal_id: String = str(signal["id"])
+        if signal_id == "directive":
+            var directive_key: String = "signal_directive_done" if signal_campaign.completed() else "signal_directive_hint" if signal_campaign.route_unlocked() else "signal_directive_locked"
+            interaction_label.text = _copy(directive_key)
+        elif signal_campaign.collected.has(signal_id) or signal_campaign.completed():
+            interaction_label.text = _copy("signal_spent").format({
+                "name":_copy("signal_" + signal_id + "_name")})
+        elif not session.core_scanned:
+            interaction_label.text = _copy("signal_locked").format({
+                "name":_copy("signal_" + signal_id + "_name")})
+        else:
+            interaction_label.text = _copy("signal_hint").format({
+                "name":_copy("signal_" + signal_id + "_name"),
+                "distance":"%.1f" % signal_dist})
+    elif started and not session.finished() and rescue_dist < main_dist:
         var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
         var rescue_key: String = "rescue_hint" if available else "rescue_spent"
         interaction_label.text = _copy(rescue_key).format({
-            "name":_copy(str(rescue["key"])),"distance":"%.1f" % relay_dist})
+            "name":_copy(str(rescue["key"])),"distance":"%.1f" % rescue_dist})
     elif not nearby.is_empty() and started and not session.finished():
-        var at: Vector3 = nearby["position"]
-        var dist: float = _physical_distance(at)
         var hint_key: String = "choice_hint" if str(nearby["id"]) == "repair" and session.scenario_id != "blackout" and not session.coolant_repaired else "hint"
-        interaction_label.text = _copy(hint_key).format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % dist})
+        interaction_label.text = _copy(hint_key).format({
+            "name":_copy(str(nearby["key"])),"distance":"%.1f" % main_dist})
     else:
         interaction_label.text = _copy("action") if started and not session.finished() else ""
     feedback_label.text = _copy(notice_key) if notice_time > 0.0 else ""
