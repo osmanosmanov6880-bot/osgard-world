@@ -14,7 +14,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -81,7 +81,7 @@ const COPY := {
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -1203,7 +1203,48 @@ func _toggle_language() -> void:
     _refresh_hud()
     _refresh_radio_ui()
 
+func _gamepad_axis(axis_id: int) -> float:
+    var joypads: Array[int] = Input.get_connected_joypads()
+    if joypads.is_empty():
+        return 0.0
+    var reading: float = Input.get_joy_axis(joypads[0],axis_id)
+    return reading if absf(reading) >= 0.18 else 0.0
+
+func _gamepad_button(button_index: int) -> void:
+    # Hardware performance/compatibility still requires real controller QA.
+    # This dispatch handles Godot's mapped standard gamepad button events.
+    if button_index == JOY_BUTTON_START:
+        if not started:
+            start_run()
+        else:
+            _pause_toggle()
+        return
+    if button_index == JOY_BUTTON_B:
+        _toggle_journal()
+        return
+    if not started or paused:
+        return
+    if session.finished():
+        if button_index == JOY_BUTTON_A:
+            _restart()
+        return
+    match button_index:
+        JOY_BUTTON_A:
+            _interact()
+        JOY_BUTTON_X:
+            _fast_interact()
+        JOY_BUTTON_Y:
+            flashlight.visible = not flashlight.visible
+            _announce("flashlight")
+        JOY_BUTTON_DPAD_UP:
+            _choose_priority("crew")
+        JOY_BUTTON_DPAD_DOWN:
+            _choose_priority("core")
+
 func _input(event: InputEvent) -> void:
+    if event is InputEventJoypadButton and event.pressed:
+        _gamepad_button(event.button_index)
+        return
     if event is InputEventKey and event.pressed and not event.echo:
         if event.keycode == KEY_L:
             _toggle_language()
@@ -1279,8 +1320,8 @@ func _physics_process(delta: float) -> void:
         return
     var horizontal: float = float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A))
     var vertical: float = float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
-    horizontal += float(touch_moves["right"]) - float(touch_moves["left"])
-    vertical += float(touch_moves["back"]) - float(touch_moves["forward"])
+    horizontal += float(touch_moves["right"]) - float(touch_moves["left"]) + _gamepad_axis(JOY_AXIS_LEFT_X)
+    vertical += float(touch_moves["back"]) - float(touch_moves["forward"]) + _gamepad_axis(JOY_AXIS_LEFT_Y)
     var stick := Vector2(horizontal,vertical).limit_length(1.0)
     var world_direction: Vector3 = player.global_basis * Vector3(stick.x,0,stick.y)
     var speed: float = 7.1 if Input.is_key_pressed(KEY_SHIFT) else 4.9
@@ -1307,6 +1348,9 @@ func _process(delta: float) -> void:
         _last_web_resize_check = runtime_seconds
         _sync_web_canvas_layout()
     if started and not paused and not session.finished():
+        var pad_look := Vector2(_gamepad_axis(JOY_AXIS_RIGHT_X),_gamepad_axis(JOY_AXIS_RIGHT_Y))
+        if pad_look.length() >= 0.18:
+            _look(pad_look*delta*690.0)
         var moving: bool = Vector2(player.velocity.x,player.velocity.z).length() > 0.65
         if moving and not reduced_motion:
             walking_phase += delta * (10.8 if Input.is_key_pressed(KEY_SHIFT) else 7.3)
