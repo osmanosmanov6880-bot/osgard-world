@@ -22,6 +22,10 @@ const LOCATION_DATA = {
 var locations := {}
 var markers := {}
 var project_visuals := {}
+## B33: exact four paid original collider/box meshes shared on demand,
+## never recreated when the HQ refreshes the city without a new purchase.
+var project_visual_levels: Dictionary = {}
+var project_geometry_cache: Dictionary = {}
 var property_markers := {}
 var weather_particles: GPUParticles3D
 var weather_mode := "clear"
@@ -517,6 +521,7 @@ func _create_project_visuals() -> void:
 		var holder := _box(city_root,"Project_" + id,Vector3(15,6,15),pos + Vector3(0,3,0),DISTRICT_COLORS[district].lightened(0.27),true)
 		var roof := _box(holder,"RoofNeon",Vector3(15.5,0.2,15.5),Vector3(0,3.3,0),Color("84c4c6"),false,true)
 		project_visuals[id] = {"root":holder,"roof":roof}
+		project_visual_levels[id] = -1
 		holder.visible = false
 
 func _create_property_markers() -> void:
@@ -696,19 +701,30 @@ func update_development() -> void:
 		var nodes: Dictionary = project_visuals[id]
 		var root: Node3D = nodes["root"]
 		root.visible = level > 0
+		# Prior source allocated 12 NEW BoxMesh/BoxShape3D pairs EVERY time
+		# a citizen dialog/HQ/map refreshed development, even with no purchase.
+		# Only rebuild real original physics size on an ACTUAL changed level.
+		if int(project_visual_levels.get(id,-1)) == level:
+			continue
+		project_visual_levels[id] = level
 		var project_collider: CollisionShape3D = root.get_node("CollisionShape3D") as CollisionShape3D
 		project_collider.set_deferred("disabled",level == 0)
 		if level > 0:
 			var height: float = 6.0 + float(level) * 8.0
 			root.position = _project_position(id) + Vector3(0,height*0.5,0)
+			# FOUR shared source physical collider sizes (Lv1–Lv4),
+			# at most one BoxMesh and BoxShape3D allocation per distinct
+			# original level, not per building and redraw.
+			if not project_geometry_cache.has(level):
+				var cached_box := BoxMesh.new()
+				cached_box.size = Vector3(15,height,15)
+				var cached_shape := BoxShape3D.new()
+				cached_shape.size = Vector3(15,height,15)
+				project_geometry_cache[level] = {"mesh":cached_box,"shape":cached_shape}
+			var source_physics: Dictionary = project_geometry_cache[level]
 			var body: MeshInstance3D = root.get_node("VisualMesh") as MeshInstance3D
-			var box := BoxMesh.new()
-			box.size = Vector3(15,height,15)
-			body.mesh = box
-			var collision: CollisionShape3D = root.get_node("CollisionShape3D")
-			var shape := BoxShape3D.new()
-			shape.size = Vector3(15,height,15)
-			collision.shape = shape
+			body.mesh = source_physics["mesh"]
+			project_collider.shape = source_physics["shape"]
 			var roof: Node3D = nodes["roof"]
 			roof.position.y = height*0.5 + 0.15
 	_update_property_visuals()
