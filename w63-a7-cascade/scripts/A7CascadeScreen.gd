@@ -267,6 +267,11 @@ func _ready() -> void:
     w80_full_bleed = A7FullBleedViewport.new()
     add_child(w80_full_bleed)
     w80_full_bleed.build(stage_shell)
+    # W81 real touch accessibility: the W80 native MENU/RU-EN had only a
+    # 37px button in a 40px bar. Enlarge the actual Godot targets without
+    # altering W80 fullscreen class or original physics/mission authority.
+    w80_full_bleed.exit_button.custom_minimum_size.y = 44.0
+    w80_full_bleed.language_button.custom_minimum_size.y = 44.0
     w80_full_bleed.exit_requested.connect(_w76_toggle_immersive)
     w80_full_bleed.language_requested.connect(_toggle_locale)
     sound_bus = A7ProceduralAudio.new()
@@ -794,7 +799,24 @@ func _w76_update_goal() -> void:
             gate_status = "GATE LOCKED" if stage_3d.sector_bulkhead.physically_blocked else "GATE OPEN"
         helper += "  ·  " + gate_status
     w76_objective_label.text = (label + "   /   " + helper) if mission != null and mission.active else ""
-    w76_objective_label.visible = mission != null and mission.active
+    w76_objective_label.visible = (mission != null and mission.active
+        and not (w76_immersive and _w81_touch_context()))
+
+func _w81_touch_context() -> bool:
+    # A phone in landscape is still touch-driven; W78 width-only rule lost controls.
+    return size.x < 640.0 or (size.x <= 1100.0 and size.y <= 600.0)
+
+func _w81_refresh_layout_chrome() -> void:
+    # Recompute on resize. W80 separate grid browser failed on stale 390px goal.
+    if w76_play_button != null:
+        w76_play_button.visible = not (w76_immersive and stage_3d != null
+            and stage_3d.first_person != null and stage_3d.first_person.piloting)
+    if w76_objective_label != null:
+        _w76_update_goal()
+    if cinema_caption != null:
+        cinema_caption.text = (
+            ("A7 / ПОЛЕВАЯ МИССИЯ" if locale == "ru" else "A7 / FIELD MISSION")
+            if w76_immersive and _w81_touch_context() else _t("stage"))
 
 func _w76_toggle_immersive() -> void:
     w76_immersive = not w76_immersive
@@ -1180,12 +1202,19 @@ func _layout_stage() -> void:
         height = maxf(height + 125.0, cinema_target)
         if size.x < 640.0:
             height = minf(height, 460.0)
+    # Fullscreen has no offscreen scroll area. The W76 minimum 420px was
+    # designed for a dashboard: on an 844x390 phone it pushes actual
+    # physical G/E and mission controls *below* the visible framebuffer.
+    if w80_full_bleed != null and w80_full_bleed.active:
+        height = size.y
     stage_shell.custom_minimum_size = Vector2(0, height)
     if cinematic_hud != null:
         cinematic_hud._relayout()
     visual_container.custom_minimum_size = Vector2(0, height)
     visual_container.stretch_shrink = 2 if quality == "eco" else 1
     var compact: bool = size.x < 640.0
+    var touch_context: bool = _w81_touch_context()
+    var landscape_touch: bool = touch_context and size.x >= 640.0
     # W77 real-Chromium mobile art QA: A7 title must be a FIRST ROW,
     # never a 2-character column that inflates three buttons to 400px.
     if brand_label != null:
@@ -1218,11 +1247,13 @@ func _layout_stage() -> void:
     if stage_3d != null:
         stage_3d.set_compact_view(compact)
     if w78_touch_overlay != null and stage_3d != null:
-        w78_touch_overlay.set_context(compact,w76_immersive,
+        w78_touch_overlay.set_context(touch_context,w76_immersive,
             stage_3d.first_person.piloting,locale,size.x)
+        w78_touch_overlay.configure_landscape(landscape_touch)
     if w79_mission_deck != null and stage_3d != null:
-        w79_mission_deck.set_context(compact,w76_immersive,
+        w79_mission_deck.set_context(touch_context,w76_immersive,
             stage_3d.first_person.piloting,locale,size.x,model.snapshot())
+        w79_mission_deck.configure_landscape(landscape_touch)
     if cinematic_hud != null:
         cinematic_hud.set_compact_mode(compact)
     for view in camera_buttons:
@@ -1230,6 +1261,7 @@ func _layout_stage() -> void:
     if compact:
         quality_button.custom_minimum_size.x = 136.0
         motion_button.custom_minimum_size.x = 136.0
+    _w81_refresh_layout_chrome()
     call_deferred("_publish_web_accessibility")
 
 func _toggle_locale() -> void:
@@ -1413,10 +1445,10 @@ func _render(state: Dictionary) -> void:
         w80_full_bleed.set_locale(locale)
     _w76_update_goal()
     if w78_touch_overlay != null and stage_3d != null:
-        w78_touch_overlay.set_context(size.x < 640.0,w76_immersive,
+        w78_touch_overlay.set_context(_w81_touch_context(),w76_immersive,
             stage_3d.first_person.piloting,locale,size.x)
     if w79_mission_deck != null and stage_3d != null:
-        w79_mission_deck.set_context(size.x < 640.0,w76_immersive,
+        w79_mission_deck.set_context(_w81_touch_context(),w76_immersive,
             stage_3d.first_person.piloting,locale,size.x,state)
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
@@ -1489,6 +1521,7 @@ func _render(state: Dictionary) -> void:
     if stage_3d != null:
         stage_3d.apply_snapshot(state)
         cinema_caption.text = _t("stage")
+        _w81_refresh_layout_chrome()
         var stats_display: Dictionary = state["metrics"]
         cinema_readout.text = _t("visual") % [
             int(stats_display["heat"]), int(stats_display["pressure"]),
@@ -1687,6 +1720,14 @@ func _publish_web_accessibility() -> void:
         "w80_real_viewport_parent_changes":w80_full_bleed.real_reparent_events if w80_full_bleed != null else 0,
         "w80_reversible_screen_returns":w80_full_bleed.reversible_returns if w80_full_bleed != null else 0,
         "w80_physical_phone_hardware_certified":false,
+        "w80_true_native_touch_grid_columns":w78_touch_overlay.rail.columns if w78_touch_overlay != null else 0,
+        "w80_real_immersive_play_button_hidden":not w76_play_button.visible,
+        "w80_redundant_long_objective_hidden":not w76_objective_label.visible,
+        "w81_touch_landscape_enabled":w78_touch_overlay.landscape_layout if w78_touch_overlay != null else false,
+        "w81_true_mobile_mission_and_full_bleed":(w80_full_bleed.active and
+            w78_touch_overlay.visible and w79_mission_deck.visible)
+            if w80_full_bleed != null and w78_touch_overlay != null and w79_mission_deck != null else false,
+        "w81_real_phone_hardware_certified":false,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1742,6 +1783,13 @@ func _publish_web_accessibility() -> void:
         "w79_command4":_web_rect(w79_mission_deck.slots[4]) if w79_mission_deck != null else [],
         "w79_offline_save":_web_rect(w79_mission_deck.save_button) if w79_mission_deck != null else [],
         "w79_checked_load":_web_rect(w79_mission_deck.load_button) if w79_mission_deck != null else [],
+        "w80_touch_left":_web_rect(w78_touch_overlay.controls["left"] as Control) if w78_touch_overlay != null else [],
+        "w80_touch_back":_web_rect(w78_touch_overlay.controls["back"] as Control) if w78_touch_overlay != null else [],
+        "w80_touch_right":_web_rect(w78_touch_overlay.controls["right"] as Control) if w78_touch_overlay != null else [],
+        "w80_touch_look_left":_web_rect(w78_touch_overlay.controls["look_left"] as Control) if w78_touch_overlay != null else [],
+        "w80_touch_look_right":_web_rect(w78_touch_overlay.controls["look_right"] as Control) if w78_touch_overlay != null else [],
+        "w80_native_touch_rail":_web_rect(w78_touch_overlay.rail) if w78_touch_overlay != null else [],
+        "w80_native_mission_panel":_web_rect(w79_mission_deck.panel) if w79_mission_deck != null else [],
         "w80_true_native_menu":_web_rect(w80_full_bleed.exit_button) if w80_full_bleed != null else [],
         "w80_true_native_language":_web_rect(w80_full_bleed.language_button) if w80_full_bleed != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),

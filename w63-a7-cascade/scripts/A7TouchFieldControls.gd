@@ -24,7 +24,7 @@ const WALK_KEYS := {
 }
 
 var actor: A7FirstPersonOperator
-var rail: HBoxContainer
+var rail: GridContainer
 var controls: Dictionary = {}
 var held_directions: Dictionary = {}
 var held_look: int = 0
@@ -39,6 +39,7 @@ var inspect_requests: int = 0
 var physically_stopped_keys: int = 0
 var last_input: String = ""
 var localized_language: String = "ru"
+var landscape_layout: bool = false
 
 func _skin(button: Button, selected: bool) -> void:
     var look: StyleBoxFlat = StyleBoxFlat.new()
@@ -65,17 +66,22 @@ func build(physical_operator: A7FirstPersonOperator) -> void:
     name = "W78ActualBrowserTouchToNative3DPhysics"
     mouse_filter = Control.MOUSE_FILTER_IGNORE
     set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    rail = HBoxContainer.new()
-    rail.name = "W78CompactLiveTouchNavAndUse"
+    # W80: authentic 390px/320px screenshot QA exposed the long W78
+    # single row spilling E outside the 3D stage. Four-column native Godot
+    # layout fits the actual stage width, not the wider root browser frame.
+    rail = GridContainer.new()
+    rail.columns = 4
+    rail.name = "W80TwoRowSourcePhysicsThumbControls"
     rail.anchor_left = 0.0
     rail.anchor_right = 1.0
     rail.anchor_top = 1.0
     rail.anchor_bottom = 1.0
     rail.offset_left = 8.0
     rail.offset_right = -8.0
-    rail.offset_top = -63.0
+    rail.offset_top = -119.0
     rail.offset_bottom = -7.0
-    rail.add_theme_constant_override("separation",3)
+    rail.add_theme_constant_override("h_separation",4)
+    rail.add_theme_constant_override("v_separation",5)
     rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(rail)
     for key in ["left","forward","back","right",
@@ -158,7 +164,7 @@ func set_context(compact: bool, immersed: bool, piloting: bool,
     if visible:
         # Minimum touch hit target is 40px for a 390px CSS viewport, with
         # 320px fallback; no oversized 400px buttons or vertical word wrap.
-        var smallest: float = 32.0 if actual_screen_width < 355.0 else 39.0
+        var smallest: float = 32.0 if actual_screen_width < 355.0 else 48.0
         for button in controls.values():
             (button as Button).custom_minimum_size = Vector2(smallest,48)
     (controls["inspect"] as Button).tooltip_text = (
@@ -167,6 +173,18 @@ func set_context(compact: bool, immersed: bool, piloting: bool,
     (controls["world_use"] as Button).tooltip_text = (
         "Работа с устройством • G" if language=="ru" else
         "Use actual aimed equipment • G")
+
+func configure_landscape(enabled: bool) -> void:
+    if rail == null or enabled == landscape_layout:
+        return
+    landscape_layout = enabled
+    # Keep a reachable actual 430px two-row native rail in phone landscape.
+    rail.anchor_left = 0.5 if enabled else 0.0
+    rail.anchor_right = 0.5 if enabled else 1.0
+    rail.offset_left = -215.0 if enabled else 8.0
+    rail.offset_right = 215.0 if enabled else -8.0
+    rail.offset_top = -119.0
+    rail.offset_bottom = -7.0
 
 func _process(delta: float) -> void:
     if not visible or actor == null or not actor.piloting:
@@ -195,6 +213,7 @@ func qa_readout() -> Dictionary:
         "stuck_key_prevention_release_count":physically_stopped_keys,
         "last_input":last_input,
         "compact_mobile":compact_view,
+        "landscape_original_mobile_control_layout":landscape_layout,
         "immersive":immersive,
         "full_physical_mobile_hardware_tested":false,
         "gameplay_core_decisions_ever_fabricated":false,

@@ -52,6 +52,7 @@ var locale: String = "ru"
 var mobile_screen_width: float = 390.0
 var latest_game_state: Dictionary = {}
 var real_dynamic_ui_updates: int = 0
+var landscape_layout: bool = false
 
 func _panel_style() -> StyleBoxFlat:
     var skin := StyleBoxFlat.new()
@@ -106,8 +107,11 @@ func build(real_mission: A7SpatialMission,
     panel.anchor_bottom = 1.0
     panel.offset_left = 7
     panel.offset_right = -7
-    panel.offset_top = -174
-    panel.offset_bottom = -70
+    # W80: the real 4x2 W78 thumb grid now occupies the bottom 112px.
+    # Keep the entire five-phase mission above it with a visible 5px gap,
+    # within the exact original live 3D stage; no overlay intercepts WASD.
+    panel.offset_top = -231
+    panel.offset_bottom = -124
     panel.add_theme_stylebox_override("panel",_panel_style())
     panel.mouse_filter = Control.MOUSE_FILTER_PASS
     add_child(panel)
@@ -155,6 +159,18 @@ func build(real_mission: A7SpatialMission,
         slots.append(button)
     visible = false
     set_process(false)
+
+func configure_landscape(enabled: bool) -> void:
+    if panel == null or enabled == landscape_layout:
+        return
+    landscape_layout = enabled
+    # Center the genuine 530px W79 mission actions above the physical rail.
+    panel.anchor_left = 0.5 if enabled else 0.0
+    panel.anchor_right = 0.5 if enabled else 1.0
+    panel.offset_left = -265.0 if enabled else 7.0
+    panel.offset_right = 265.0 if enabled else -7.0
+    panel.offset_top = -231.0
+    panel.offset_bottom = -124.0
 
 func _eligible() -> bool:
     return compact and immersed and piloting and mission != null and (
@@ -359,6 +375,7 @@ func qa_readout() -> Dictionary:
         "real_source_proximity_rejections_shown":real_source_proximity_rejections_shown,
         "live_source_state_redraws":real_dynamic_ui_updates,
         "visible":visible,
+        "landscape_centered_source_mission_panel":landscape_layout,
         "read_only_source_authority":true,
         "no_fake_physical_inspections_or_win":true,
         "mobile_hardware_playtested":false,
