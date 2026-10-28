@@ -1,0 +1,221 @@
+name: LAST FRONTIER W67 genuine two-sector Industrial Cathedral (REVIEW HOLD)
+
+on:
+  pull_request:
+    branches:
+      - design/last-frontier-w66-obsidian-aurora-20261028
+    paths:
+      - 'w63-a7-cascade/scripts/A7IndustrialCathedral.gd'
+      - 'w63-a7-cascade/scripts/A7CinematicStage.gd'
+      - 'w63-a7-cascade/scripts/A7CascadeScreen.gd'
+      - 'w63-a7-cascade/tests/test_w67_cinematic_sectors.gd'
+      - 'w63-a7-cascade/ci/w67_browser_sectors.py'
+      - '.github/workflows/last-frontier-w67-industrial-cinematic.yml'
+      - 'docs/LAST_FRONTIER_W67_INDUSTRIAL_CINEMATIC.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w67-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  source-bound-core-review:
+    name: Exact W66 parent and protected W63-W66 rules, test and visual source
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Assert only two-sector visual additions and original game integrity
+        shell: bash
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w67-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          BASE='58f331ed1b07b3389acb47646e390218434d4ce5'
+          head=os.environ['EXACT_HEAD']
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',BASE,head)==BASE
+          changed=set(git('diff','--name-only','--no-renames',BASE,head).splitlines())
+          expected={
+              'w63-a7-cascade/scripts/A7IndustrialCathedral.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w67_cinematic_sectors.gd',
+              'w63-a7-cascade/ci/w67_browser_sectors.py',
+              '.github/workflows/last-frontier-w67-industrial-cinematic.yml',
+              'docs/LAST_FRONTIER_W67_INDUSTRIAL_CINEMATIC.md',
+          }
+          assert changed==expected,{'extra':sorted(changed-expected),'missing':sorted(expected-changed)}
+          protected=(
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirector.gd',
+              'w63-a7-cascade/scripts/A7ProceduralAudio.gd',
+              'w63-a7-cascade/scripts/A7CinematicHud.gd',
+              'w63-a7-cascade/scripts/A7ArchitecturalDetail.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w64_real_3d_stage.gd',
+              'w63-a7-cascade/tests/test_w65_story_audio.gd',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+              'w33-godot-native/scripts/OSGARDCore.gd',
+              'w33-godot-native/scripts/OSGARDMain.gd',
+              '.github/workflows/last-frontier-w66-visual.yml',
+          )
+          blobs={}
+          for path in protected:
+              old,new=git('rev-parse',BASE+':'+path),git('rev-parse',head+':'+path)
+              assert old==new,'Protected original gameplay/CI/asset changed: '+path
+              blobs[path]=new
+          subprocess.run(['git','diff','--check',BASE,head],check=True)
+          arch=Path('w63-a7-cascade/scripts/A7IndustrialCathedral.gd').read_text()
+          stage=Path('w63-a7-cascade/scripts/A7CinematicStage.gd').read_text()
+          assert 'class_name A7IndustrialCathedral' in arch
+          assert 'SECOND_FULLY_MODELED_RELAY_SECTOR' in arch
+          assert 'step_inspection_route' in stage
+          assert 'model.choose(' not in arch and 'HTTPClient' not in arch
+          assert 'OS.execute(' not in arch and 'JavaScriptBridge' not in arch
+          proof={
+              'schema':'LAST_FRONTIER_W67_PINNED_TWO_ZONE_SCOPE_V1',
+              'status':'PASS','exact_sha':head,'w66_base':BASE,
+              'changes':sorted(changed),'protected_blobs':blobs,
+              'original_game_mechanics_changed':False,
+              'original_cinematic_hud_changed':False,
+              'commercial_rights_cleared':False,
+              'consumer_hardware_certified':False,
+              'production_approved':False,'allow_merge_into_master':False,
+          }
+          Path('w67-evidence/W67_PINNED_SOURCE.json').write_text(
+              json.dumps(proof,ensure_ascii=False,indent=2)+'\n')
+          print('PASS: W67 exact W66 ancestry, only authorized art/nav, 14 immutable original blobs')
+          PY
+      - name: Preserve source-bound attestation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w67-exact-source-${{ github.event.pull_request.head.sha }}
+          path: w67-evidence/W67_PINNED_SOURCE.json
+          retention-days: 45
+          if-no-files-found: warn
+
+  true-godot-rendering-and-gameplay:
+    name: Original 105+ W63-W65 tests, two genuinely different 3D rooms and Chromium images
+    runs-on: ubuntu-latest
+    needs: source-bound-core-review
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import actual Godot native source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w67-evidence
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w67-evidence/native-import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w67-evidence/native-import.log; then exit 1; fi
+      - name: Preserve playable original engine, sound, 3D controls, and new actual spatial sector tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w64_real_3d_stage test_w65_story_audio test_w67_cinematic_sectors; do
+            echo "W67 actual Godot: $test"
+            timeout --signal=TERM --kill-after=5s 230s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w67-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w67-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w67-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W64 REAL NATIVE 3D CINEMATIC GAME PASS:' w67-evidence/test_w64_real_3d_stage.log
+          grep -q 'LAST FRONTIER W65 ORIGINAL GAME CAUSAL STORY + SYNTH AUDIO PASS:' w67-evidence/test_w65_story_audio.log
+          grep -q 'LAST FRONTIER W67 REAL TWO-ZONE INDUSTRIAL CINEMA PASS:' w67-evidence/test_w67_cinematic_sectors.log
+      - name: Export the actual original two-zone Godot WebGL game
+        shell: bash
+        env:
+          EXACT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w67-evidence/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w67-evidence/web-export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$EXACT_SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Set up actual software-rendered Chromium and original PNG
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/last-frontier-w67-playwright
+          /tmp/last-frontier-w67-playwright/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/last-frontier-w67-playwright/bin/python -m playwright install --with-deps chromium
+      - name: Actual N/W/A/1/4 Godot WebGL keys, two spatial room screenshots, original model and 390px
+        shell: bash
+        env:
+          EXACT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 1100s /tmp/last-frontier-w67-playwright/bin/python w63-a7-cascade/ci/w67_browser_sectors.py --export w63-a7-cascade/build/web --evidence w67-evidence/real-chromium --sha "$EXACT_SHA" 2>&1 | tee w67-evidence/chromium.log
+          grep -q 'LAST FRONTIER W67 TRUE TWO-ROOM GODOT WEBGL CHROMIUM PASS:' w67-evidence/chromium.log
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          exact=os.environ['EXACT_SHA']
+          root=Path('w67-evidence/real-chromium')
+          proof=json.loads((root/'W67_ACTUAL_BROWSER_PROOF.json').read_text())
+          assert proof['source_sha']==exact and proof['status']=='PASS'
+          assert proof['real_native_3d_rooms']==2 and proof['actual_godot_webassembly']
+          assert proof['genuine_godot_gameplay_input']
+          assert len(proof['pictures'])==4
+          for item in proof['pictures']:
+              b=(root/item['file']).read_bytes()
+              assert hashlib.sha256(b).hexdigest()==item['sha256']
+              assert len(b)>12000
+          assert not proof['production_approved'] and not proof['physical_mobile_gpu_certified']
+          print('W67 original browser evidence checked; physical device/performance remains HOLD')
+          PY
+      - name: Preserve new *playable* Godot WebGL, source-linked PNGs and full QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w67-two-real-rooms-and-browser-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w67-evidence/
+          if-no-files-found: warn
+          retention-days: 45
+
+  final-software-only-hold:
+    name: W67 explicit commercial, trademark, consumer GPU and master merge HOLD
+    needs: [source-bound-core-review, true-godot-rendering-and-gameplay]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Do not confuse visually stronger art with public production approval
+        shell: bash
+        env:
+          SOURCE: ${{ needs.source-bound-core-review.result }}
+          ENGINE: ${{ needs.true-godot-rendering-and-gameplay.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$ENGINE" = success
+          echo 'W67 REAL 3D INDUSTRIAL CINEMATIC SOFTWARE EXPERIMENT PASS'
+          echo 'PRODUCTION HOLD: trademark clearance, real Windows/mobile GPU, art review, independent player tests and signed release GO absent'
