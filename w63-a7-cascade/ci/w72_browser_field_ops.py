@@ -141,6 +141,10 @@ def execute(webdir, images, sha):
                   "Original actual 8-detent mechanical calibration not solved")
             check(rotated["history_count"]==0,
                   "Valves cannot spoof original A7 six-cycle decisions")
+            check(rotated["w72_thermal_camera_focused"] and
+                  rotated["w72_contextual_real_camera_focuses"]==1,
+                  "Real first-person camera must aim at actual user-manipulated machine")
+            page.wait_for_timeout(600)
             rotated_image=capture(page,images,"w72-05-real-3d-thermal-valve-solved.png")
             check(different(approach,rotated_image)>90,
                   "Rotating actual 3D thermal valve does not change scene")
