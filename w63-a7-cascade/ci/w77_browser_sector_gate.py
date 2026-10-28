@@ -133,6 +133,13 @@ def run(export, evidence, sha):
                     s.w76_actual_immersive_first_person===true;
               }catch(_){return false;}
             }""",timeout=60000)
+            g=geometry(page)
+            check(g["brand"][3] <= 68 and g["brand"][2] >= 250,
+                  "REAL MOBILE SCREEN MUST NOT render a 400px-high narrow brand column")
+            check(g["w76_play"][3] <= 65 and g["w76_immersive"][3] <= 65,
+                  "REAL MOBILE play/panel buttons must be 40px-class, never 400px tall")
+            check(g["stage"][1] < 440,
+                  "Actual Godot 3D world must start above mobile fold; no huge title/button header")
             m=shot(page,evidence,
                 "w77-05-mobile-390-real-lock-mission-physical-deck.png")
             check(Image.open(io.BytesIO(m)).size==(390,844),
@@ -167,6 +174,8 @@ def run(export, evidence, sha):
         "browser_does_not_claim_to_test_full_relay_crossing":True,
         "old_A7_core_history_remains_unchanged":True,
         "responsive_390px_browser_not_physical_phone":True,
+        "mobile_brand_single_row_and_no_400px_buttons":True,
+        "actual_playable_3d_scene_visible_above_mobile_fold":True,
         "AAA_professional_art_signed_off":False,
         "physically_verified_60fps":False,
         "commercial_release_authorized":False,
