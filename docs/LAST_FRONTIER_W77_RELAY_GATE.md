@@ -15,6 +15,12 @@ The door is a **source-authoritative traversal gate**, unlike purely decorative 
 - Original PBR profile materials (`reactor_shell`, `dark_steel`, `painted_hazard`) are reused from the verified W68 texture cache. 16 source-authored real 3D meshes, true physics obstacle and diegetic light; on ECO the additional light and close-up detail hide but the collision and gate mechanic stay real.
 - Reduced motion preserves the mechanics but skips animated sliding. The immersive RU/EN single-goal text shows whether passage is actually locked/unlocked. 390px layout suppresses redundant 3D text while keeping the door physically there.
 
+## Genuine mobile art QA fix from W76 browser pixels
+
+Inspected the **actual source-bound W76 Chromium 390×844 screenshot**, not a generated mockup. It showed a serious real usability defect: the long Russian desktop title wrapped into a two-character-wide column, expanding the EN/PLAY/PANELS header row to nearly **400 pixels high** and pushing the playable 3D scene below the fold.
+
+W77 corrects the original Godot `HFlowContainer` responsive composition: on widths under 640px the brand becomes a deliberately compact, single-line bilingual title on its own row; the action buttons use true 40px minimum height, rewrap into short rows, and the native 3D stage remains the dominant content. Desktop keeps the original title. The W77 **real Chromium browser acceptance explicitly fails** if the physical 390px brand is tall, the Play/Panels buttons exceed 65px, or the actual 3D world begins too far below the screen top. Native Godot verifies the compact dimensions too. This is a tested implementation change, not a new reference image or cosmetic aspiration.
+
 ## Source protection
 
 Base is W76 exact source SHA `11f56e282da96f809e17553fa86e76440d48a5d9`. [W76 true real browser and native accepted CI](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40682788204).
