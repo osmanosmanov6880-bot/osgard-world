@@ -89,6 +89,10 @@ func build() -> void:
     # A real narrow obstacle, between core and relay, requires steering.
     _static_box("OperatorGuidedSafetyBarrier",
         Vector3(0.84, 1.55, 1.05), Vector3(6.85, 0.58, 11.7))
+    _static_box("CoreRealOperatorConsoleCollision",
+        Vector3(1.55, 1.65, 0.85), Vector3(4.10, 0.80, 1.16))
+    _static_box("RelayRealOperatorConsoleCollision",
+        Vector3(1.72, 1.35, 0.80), Vector3(8.0, 0.70, 20.85))
 
     body = CharacterBody3D.new()
     body.name = "PhysicalFirstPersonPlayerBody"
