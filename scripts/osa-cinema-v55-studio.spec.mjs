@@ -83,3 +83,18 @@ test('historic interactive OSA CINEMA is still reachable from new studio',async 
  await expect(page.locator('main.osa-cinema[data-cinema-art="obsidian"]')).toBeVisible()
  await expect(page.locator('.osa42-chapter')).toHaveCount(8)
 })
+
+test('Studio resumes exactly the local interactive scene without pretending media is released',async ({page})=>{
+ await page.addInitScript(()=>{
+   window.localStorage.setItem('osgard-osa-learning-progress-v1',JSON.stringify({version:1,lessonCompletions:[],lastLessonSlug:null,cinema:{index:4,answers:{},locale:'ru',completed:false,selfChecks:{}},updatedAt:'2026-10-28T00:00:00.000Z'}))
+ })
+ await page.goto('/osa-cinema/studio?lang=en')
+ const banner=page.locator('section.osa-studio-continue')
+ await expect(banner).toBeVisible()
+ await expect(banner.getByRole('progressbar')).toHaveAttribute('aria-valuenow','63')
+ const resume=banner.getByRole('link',{name:/Resume/})
+ await expect(resume).toHaveAttribute('href','/osa-cinema?lang=en&scene=4')
+ await resume.click()
+ await expect(page.locator('main.osa-cinema')).toBeVisible()
+ await expect(page).toHaveURL(/scene=4/)
+})

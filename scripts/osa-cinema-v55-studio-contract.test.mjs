@@ -91,3 +91,14 @@ test('V55 international discovery has correct canonical pages, not counterfeit V
   assert.ok(sitemap.includes('https://osgard.world'+path+'</loc>'),path)
  }
 })
+
+test('Existing cinematic progress drives a truthful local-only resume CTA',()=>{
+ const resume=read('src/OSAStudioContinue.tsx')
+ assert.match(studio,/OSAStudioContinue locale=\{locale\}/)
+ assert.match(resume,/getOSALearningProgress/)
+ assert.match(resume,/subscribeOSALearningProgress/)
+ assert.match(resume,/\/osa-cinema\?lang=/)
+ assert.match(resume,/YOUR CINEMA \/ LOCAL PROGRESS/)
+ assert.doesNotMatch(resume,/\/checkout|video src|fetch\(/i)
+ assert.match(studio,/window\.addEventListener\('storage',onStorage\)/)
+})
