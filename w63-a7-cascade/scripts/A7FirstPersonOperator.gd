@@ -18,6 +18,13 @@ var headlamp: SpotLight3D
 var collision_world: Node3D
 var collision_shapes: Array[CollisionShape3D] = []
 var floor_body: StaticBody3D
+var bridge_collision: StaticBody3D
+var walkway_visuals: Node3D
+var walkway_detail: Node3D
+var safety_lights: Array[OmniLight3D] = []
+var walkway_visual_meshes: int = 0
+var world_sign: Label3D
+var compact_view: bool = false
 var piloting: bool = false
 var reduced_motion: bool = false
 var quality: String = "hero"
@@ -63,7 +70,109 @@ func _static_cylinder(id: String, radius: float, height: float,
     collision_shapes.append(collision)
     return obstacle
 
-func build() -> void:
+func _walk_box(parent: Node3D, id: String, dims: Vector3, at: Vector3,
+        finish: Material) -> MeshInstance3D:
+    var mesh := BoxMesh.new()
+    mesh.size = dims
+    var item := MeshInstance3D.new()
+    item.name = id
+    item.mesh = mesh
+    item.material_override = finish
+    item.position = at
+    parent.add_child(item)
+    walkway_visual_meshes += 1
+    return item
+
+func _practical_light(id: String, at: Vector3, tint: Color,
+        energy: float) -> OmniLight3D:
+    var lamp := OmniLight3D.new()
+    lamp.name = id
+    lamp.position = at
+    lamp.light_color = tint
+    lamp.light_energy = energy
+    lamp.omni_range = 6.6
+    lamp.shadow_enabled = false
+    walkway_visuals.add_child(lamp)
+    safety_lights.append(lamp)
+    return lamp
+
+func _build_visible_route(material_source: A7CinematicMaterialLab) -> void:
+    # W70.1: a true architectural composition, not a painted screenshot.
+    # Texture references come from the W68 source-verified PBR cache.
+    walkway_visuals = Node3D.new()
+    walkway_visuals.name = "W70ReadablePhysicalOperatorCatwalk"
+    add_child(walkway_visuals)
+    walkway_detail = Node3D.new()
+    walkway_detail.name = "W70HighFrequencyWalkwayDetail"
+    walkway_visuals.add_child(walkway_detail)
+    var grate: StandardMaterial3D = material_source.surface("floor_grate")
+    var steel: StandardMaterial3D = material_source.surface("reactor_shell")
+    var dark: StandardMaterial3D = material_source.surface("dark_steel")
+    var hazard: StandardMaterial3D = material_source.surface("painted_hazard")
+    var amber := StandardMaterial3D.new()
+    amber.albedo_color = COPPER
+    amber.emission_enabled = true
+    amber.emission = COPPER
+    amber.emission_energy_multiplier = 1.3
+    amber.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    var cyan := StandardMaterial3D.new()
+    cyan.albedo_color = BLUE
+    cyan.emission_enabled = true
+    cyan.emission = BLUE
+    cyan.emission_energy_multiplier = 1.7
+    cyan.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    # W67 visible catwalk has x=6.40 and z=5.1..19.7.
+    # Real floor collision is now aligned to that actual deck surface.
+    for segment in range(13):
+        var z: float = 6.10 + float(segment) * 1.02
+        _walk_box(walkway_visuals, "PhysicallyWalkedPBRGrate%02d" % segment,
+            Vector3(3.35, 0.055, 0.72), Vector3(6.4, 0.347, z), grate)
+        _walk_box(walkway_detail, "IndustrialStepEndPlate%02d" % segment,
+            Vector3(3.40, 0.07, 0.12), Vector3(6.4, 0.355, z + 0.39), steel)
+        _walk_box(walkway_visuals, "CenterDiagnosticTravelArrow%02d" % segment,
+            Vector3(0.095, 0.018, 0.31), Vector3(6.4, 0.386, z),
+            cyan if segment % 3 == 0 else amber)
+        for side in [-1, 1]:
+            var x: float = 6.4 + float(side)*1.60
+            _walk_box(walkway_visuals, "ContinuousLightGuard%d_%02d" % [side,segment],
+                Vector3(0.067, 0.065, 0.91), Vector3(x, 1.39, z),
+                cyan if segment % 4 == 0 else amber)
+            _walk_box(walkway_detail, "HardwareRailBracket%d_%02d" % [side,segment],
+                Vector3(0.28, 0.32, 0.17), Vector3(x, 1.11, z), steel)
+
+    # Strong spatial vanishing points: overhead industrial arches and real
+    # practical lights give scale cues instead of a flat empty dark corridor.
+    for bay in range(5):
+        var z: float = 7.00 + float(bay)*2.55
+        for side in [-1, 1]:
+            var x: float = 6.4 + float(side)*1.95
+            _walk_box(walkway_visuals, "CatwalkElectricalPylon%d_%02d" % [side,bay],
+                Vector3(0.30, 4.1, 0.34), Vector3(x, 2.28, z), dark)
+            _walk_box(walkway_detail, "PylonAmberSafetyFoot%d_%02d" % [side,bay],
+                Vector3(0.39, 0.22, 0.43), Vector3(x, 0.49, z), hazard)
+            _walk_box(walkway_visuals, "PylonGroundGlow%d_%02d" % [side,bay],
+                Vector3(0.15, 0.11, 0.09), Vector3(x, 1.80, z), amber)
+        _walk_box(walkway_visuals, "ArchedIndustrialOverheadTruss%02d" % bay,
+            Vector3(4.12, 0.29, 0.38), Vector3(6.4, 4.43, z), steel)
+        _walk_box(walkway_visuals, "CeilingCyanServiceLamp%02d" % bay,
+            Vector3(1.65, 0.09, 0.27), Vector3(6.4, 4.24, z), cyan)
+        if bay < 4:
+            _practical_light("ActualPracticalCatwalkLight%02d" % bay,
+                Vector3(6.4, 3.95, z + 0.8),
+                Color("d9ecf5") if bay%2 == 0 else COPPER,
+                1.25)
+    # An unmissable industrial sign signals the transition to actual relay hall.
+    world_sign = Label3D.new()
+    world_sign.name = "ActualWorldSectorTwoGatewaySign"
+    world_sign.text = "A7  /  02  POWER RELAY"
+    world_sign.font_size = 58
+    world_sign.pixel_size = 0.0043
+    world_sign.modulate = COPPER
+    world_sign.position = Vector3(6.4, 3.25, 18.9)
+    world_sign.rotation.y = PI
+    walkway_visuals.add_child(world_sign)
+
+func build(material_source: A7CinematicMaterialLab) -> void:
     name = "W70RealFirstPersonOperatorWithPhysics"
     collision_world = Node3D.new()
     collision_world.name = "CollisionWorldAlignedToW67IndustrialRooms"
@@ -71,6 +180,9 @@ func build() -> void:
     # Physical footprint follows W67's real visible deck and machine regions.
     floor_body = _static_box("TRUE_A7_GROUND",
         Vector3(22.7, 0.38, 32.4), Vector3(0, -0.36, 9.5))
+    bridge_collision = _static_box("ACTUAL_WALKABLE_A7_BRIDGE",
+        Vector3(3.55, 0.34, 14.50), Vector3(6.4, 0.16, 12.4))
+    _build_visible_route(material_source)
     for side in [-1, 1]:
         _static_box("WestEastSafetyWall%d" % side,
             Vector3(0.64, 5.0, 32.8),
@@ -125,8 +237,8 @@ func build() -> void:
     headlamp.name = "OperatorNativeHeadlamp"
     headlamp.position = Vector3(0, -0.04, -0.10)
     headlamp.light_color = Color("e5f0ed")
-    headlamp.light_energy = 0.9
-    headlamp.spot_range = 9.5
+    headlamp.light_energy = 2.0
+    headlamp.spot_range = 14.5
     headlamp.spot_angle = 34.0
     headlamp.shadow_enabled = false
     head_camera.add_child(headlamp)
@@ -148,8 +260,17 @@ func set_active(enabled: bool) -> void:
 func set_quality(mode: String) -> void:
     quality = "eco" if mode == "eco" else "hero"
     if headlamp != null:
-        headlamp.light_energy = 0.35 if quality == "eco" else 0.90
-        headlamp.spot_range = 7.0 if quality == "eco" else 9.5
+        headlamp.light_energy = 0.35 if quality == "eco" else 2.0
+        headlamp.spot_range = 7.0 if quality == "eco" else 14.5
+    if walkway_detail != null:
+        walkway_detail.visible = quality == "hero"
+    for lamp in safety_lights:
+        lamp.light_energy = 0.36 if quality == "eco" else 1.25
+
+func set_compact_view(enabled: bool) -> void:
+    compact_view = enabled
+    if world_sign != null:
+        world_sign.visible = not compact_view
 
 func set_reduced_motion(enabled: bool) -> void:
     reduced_motion = enabled
@@ -248,6 +369,12 @@ func qa_readout() -> Dictionary:
             body.get_node("OriginalPhysicsOperatorCapsule") is CollisionShape3D,
         "real_floor_static_body": floor_body is StaticBody3D,
         "independent_collision_shapes": collision_shapes.size(),
+        "real_bridge_collision": bridge_collision is StaticBody3D,
+        "real_visible_catwalk_meshes": walkway_visual_meshes,
+        "real_practical_catwalk_lights": safety_lights.size(),
+        "reused_original_w68_pbr_profiles": true,
+        "actual_world_sector_gateway_sign": world_sign != null,
+        "compact_world_sign_hidden": compact_view and world_sign != null and not world_sign.visible,
         "uses_move_and_slide": true,
         "physical_camera": head_camera is Camera3D,
         "genuine_headlamp": headlamp is SpotLight3D,
