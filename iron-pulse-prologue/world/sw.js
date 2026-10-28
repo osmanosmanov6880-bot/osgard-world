@@ -1,9 +1,9 @@
 /* IRON PULSE WORLD — deterministic same-origin, shell-only offline fallback.
    Large WebGL assets are NOT auto-cached; replay availability is not promised.
    No background analytics, push, notifications, remote CDN or account sync. */
-const SHELL_CACHE = "iron-pulse-world-v13-shell-2";
+const SHELL_CACHE = "iron-pulse-world-v14-shell-1";
 const SHELL_FILES = [
-  "./index.html","./styles.css","./app.js",
+  "./index.html","./styles.css","./app.js","./preflight.js","./preflight.css",
   "./assets/iron-pulse-mark.svg","./manifest.webmanifest"
 ];
 self.addEventListener("install",(event)=>{
