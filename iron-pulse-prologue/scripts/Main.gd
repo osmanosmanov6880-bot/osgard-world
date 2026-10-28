@@ -18,7 +18,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -85,7 +85,7 @@ const COPY := {
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -327,6 +327,11 @@ func _publish_web_state() -> void:
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["cinematic_view"] = cinematic_view
     state["cinematic_hud_hidden"] = cinematic_view and not header_panel.visible and not side_panel.visible and not prompt_panel.visible and not crosshair.visible
+    var active_camera: Camera3D = get_viewport().get_camera_3d()
+    state["active_camera"] = active_camera.name if active_camera != null else ""
+    if reactor_atrium != null and reactor_atrium.director_camera != null:
+        var director_direction: Vector3 = (reactor_core.global_position-reactor_atrium.director_camera.global_position).normalized()
+        state["director_camera_alignment"] = (-reactor_atrium.director_camera.global_transform.basis.z).dot(director_direction)
     var to_core: Vector3 = reactor_core.global_position-camera.global_position
     state["reactor_framing_alignment"] = (-camera.global_transform.basis.z).dot(to_core.normalized()) if to_core.length() > 0.001 else -1.0
     state["world_sector"] = active_sector
@@ -487,6 +492,8 @@ func _make_complex() -> void:
     add_child(art_stage)
     reactor_atrium = IPReactorAtrium.new()
     add_child(reactor_atrium)
+    if reactor_core != null and reactor_atrium.core_plasma_material != null:
+        reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
     _terminal_idle_material = _metal(Color(0.08,0.32,0.39),0.12,true)
 
@@ -1018,6 +1025,12 @@ func _apply_cinematic_view() -> void:
     if cinematic_view:
         radio_panel.visible = false
         priority_panel.visible = false
+        # Switch to a physical security camera overlooking the actual 3D
+        # reactor. Preserve the player body, timer, mission and checkpoints.
+        if reactor_atrium != null and reactor_atrium.director_camera != null:
+            reactor_atrium.director_camera.make_current()
+    elif camera != null:
+        camera.make_current()
 
 func _refresh_radio_ui() -> void:
     if radio_panel == null:
