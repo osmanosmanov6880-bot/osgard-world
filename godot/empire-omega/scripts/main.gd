@@ -9,6 +9,7 @@ const HUD_SCENE = preload("res://scripts/hud.gd")
 const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
 const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
 const CITY_REIGN_CAMERA = preload("res://scripts/city_reign_camera_modes.gd")
+const COCKPIT_VIEW = preload("res://scripts/city_reign_cockpit_camera.gd")
 const CITY_REIGN_GUIDANCE = preload("res://scripts/city_reign_road_guidance.gd")
 const CITY_REIGN_ROUTE_CHEVRON = preload("res://scripts/city_reign_route_chevron.gd")
 const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
@@ -441,17 +442,30 @@ func _physics_process(delta: float) -> void:
 	var ideal: Vector3 = SAFE_CAMERA.desired_position(focus,cam_yaw,camera_pitch,car.speed,driving,viewport_size)
 	ideal = CITY_REIGN_CAMERA.distance(focus,ideal,GameSettings.camera_mode,
 		driving,phone_view,cabinet_open,GameSettings.reduced_motion)
-	var excluding: Array[RID] = [player.get_rid(),car.get_rid()]
-	var camera_solution: Dictionary = SAFE_CAMERA.solve(focus,ideal,camera.global_position,
-		get_world_3d().direct_space_state,excluding,delta,GameSettings.reduced_motion)
-	camera.global_position = camera_solution["position"]
-	camera.look_at(focus,Vector3.UP)
+	# R164: fourth real driver-seat camera within the physical car.
+	# Explicitly disable it while walking, inside or in government panels.
+	# No extra Camera3D, no synthetic screenshots and no car physics edits.
+	var cockpit_enabled: bool = COCKPIT_VIEW.enabled(GameSettings.camera_mode,
+		driving,cabinet_open,interiors.is_inside())
+	if car.horizon_visual != null:
+		car.horizon_visual.call("set_cockpit_active",cockpit_enabled)
+		if cockpit_enabled:
+			car.horizon_visual.call("set_cockpit_data",car.speed,car.steering_filter)
+	if cockpit_enabled:
+		camera.global_position = COCKPIT_VIEW.eye(car.global_transform,phone_view)
+		camera.look_at(COCKPIT_VIEW.target(car.global_transform,phone_view),Vector3.UP)
+	else:
+		var excluding: Array[RID] = [player.get_rid(),car.get_rid()]
+		var camera_solution: Dictionary = SAFE_CAMERA.solve(focus,ideal,camera.global_position,
+			get_world_3d().direct_space_state,excluding,delta,GameSettings.reduced_motion)
+		camera.global_position = camera_solution["position"]
+		camera.look_at(focus,Vector3.UP)
 	# R44.2: three instanced foliage GPU batches keep the road and vehicle
 	# visible when the cinematic chase camera passes through a tall canopy.
 	if world.horizon_scenic != null:
 		world.horizon_scenic.call("update_camera_clearance",camera.global_position,focus,delta)
 	# Speed-responsive perspective, disabled for players who request less motion.
-	var desired_fov: float = SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
+	var desired_fov: float = COCKPIT_VIEW.fov(phone_view) if cockpit_enabled else SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
 	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,SAFE_CAMERA.time_alpha(2.2,delta))
 	var protagonist: Vector3 = car.global_position if driving else player.global_position
 	if city_reign_opening_director != null:

@@ -32,7 +32,7 @@ const STICK_AXES = {
 	"move_right": [JOY_AXIS_LEFT_X, 1.0]
 }
 const GRAPHICS_MODES = ["low", "standard", "cinematic"]
-const CAMERA_MODES = ["street", "classic", "panorama"]
+const CAMERA_MODES = ["street", "classic", "panorama", "cockpit"]
 
 var keys: Dictionary = DEFAULT_KEYS.duplicate(true)
 var volume := 0.75
