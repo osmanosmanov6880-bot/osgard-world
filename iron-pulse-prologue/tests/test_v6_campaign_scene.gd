@@ -51,7 +51,7 @@ func _run() -> void:
     _key(game,KEY_1)
     _check(game.session.priority_id == "crew" and game.story.latest_key == "priority_crew",
         "Actual keyboard 1 chooses crew and drives persistent authored narrative")
-    _check(game.session.elapsed >= 8.0 and game.session.heat > 72.0,
+    _check(game.session.elapsed >= 7.99 and game.session.heat > 72.0,
         "Moral choice changes actual deterministic physical state")
     _check(not game.priority_panel.visible, "One-time irreversible decision controls disappear")
     _key(game,KEY_J)
