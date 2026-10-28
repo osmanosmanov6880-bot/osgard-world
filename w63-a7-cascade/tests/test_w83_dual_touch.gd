@@ -187,6 +187,27 @@ func _run() -> void:
     _check(ui.model.snapshot()==original_game,
         "Independent true indexed W70 walking never modifies W63 gameplay")
 
+    # Browser CDP may lose the SECOND finger END while the FIRST W78
+    # movement finger remains physically held. Expiring the LOOK-only
+    # watchdog MUST NOT cancel independent source-owned walking.
+    _check(not look.handle_screen_event(_touch(73,walk_pos,true))
+        and look.source_walk_fingers.size()==1,
+        "First genuine source walking finger active before look-only watchdog")
+    _check(look.handle_screen_event(_touch(74,point,true)),
+        "Second separate genuine camera finger captured before orphan END")
+    look.last_touch_ticks_ms=Time.get_ticks_msec()-1900
+    look._process(0.016)
+    _check(look.look_finger==-1 and look.source_walk_fingers.size()==1
+        and actor.held_keys.get(KEY_W,false),
+        "Lost SECOND finger timeout stops camera only, preserves FIRST original W70 WALK")
+    _check(look.recovered_missing_end_timeout>=2 and
+        ui.model.snapshot()==original_game,
+        "Source-only real camera orphan recovery never edits core decisions")
+    _check(not look.handle_screen_event(_touch(73,walk_pos,false))
+        and look.source_walk_fingers.is_empty()
+        and not actor.held_keys.get(KEY_W,false),
+        "Only the FIRST physical finger end stops original movement after camera watchdog")
+
     # Real focus-loss guard on original Godot notification, not timer magic.
     (walk.controls["back"] as Button).emit_signal("button_down")
     _check(actor.held_keys.get(KEY_S,false),"W78 original held movement primed")

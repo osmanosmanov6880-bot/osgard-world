@@ -134,7 +134,16 @@ def true_dual_finger(page,cdp,g):
     }""",timeout=12000)
     released=snapshot(page)
     distance_at_release=released["w70_real_physical_distance"]
-    page.wait_for_timeout(240)
+    # Ensure the original native Godot physics scene has actually rendered
+    # new frames after the release; do not compare two stale DOM snapshots.
+    page.wait_for_function("""previous => {
+      const el=document.getElementById('a7-cascade-native-state');
+      if(!el)return false;
+      try {
+        const s=JSON.parse(el.getAttribute('data-state'));
+        return s.w70_real_physics_frames>=previous+6;
+      }catch(e){return false}
+    }""",arg=released["w70_real_physics_frames"],timeout=18000)
     still_walking=snapshot(page)
     # A genuinely collidable Godot world has a solid original safety
     # barrier on the first W70 catwalk at z=11.7m. After the second-finger

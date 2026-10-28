@@ -116,10 +116,17 @@ func _release_all_source_walk() -> void:
     for index in source_walk_fingers.keys().duplicate():
         _release_walk_id(int(index))
 
-func cancel_capture() -> void:
+func cancel_look_only() -> void:
+    # A missing SECOND-finger touch END must only release its camera.
+    # Never release the separate FIRST W78 physical movement finger here.
     if look_finger >= 0:
         cancelled_captures += 1
         look_finger = -1
+
+func cancel_capture() -> void:
+    # True mode exit, focus loss or orientation change: BOTH independent
+    # captures must stop, unlike an orphaned second-finger look timeout.
+    cancel_look_only()
     _release_all_source_walk()
 
 func _walk_button_at(point: Vector2) -> String:
@@ -294,7 +301,7 @@ func _process(_delta: float) -> void:
     if (look_finger>=0 and visible and
             Time.get_ticks_msec()-last_touch_ticks_ms>LOST_TOUCH_TIMEOUT_MS):
         recovered_missing_end_timeout += 1
-        cancel_capture()
+        cancel_look_only()
 
 func is_source_walk_held() -> bool:
     # Read EXACT original W70 physics key. This is a read-only source
