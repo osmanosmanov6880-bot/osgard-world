@@ -21,6 +21,7 @@ on:
       - "public/development/index.html"
       - "public/development/osa-intelligence/**"
       - "public/osa-library/**"
+      - "public/osa-cinema-studio/**"
       - "scripts/osa-narration-readiness.mjs"
       - "docs/OSA_TTS_PRODUCTION_PLAN.md"
       - "docs/osa-narration/**"
