@@ -312,6 +312,59 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
+
+                        # V15: interact with the *actual* exported Godot tactical
+                        # console, not a separate HTML mockup. Mobile opens
+                        # through the physical 51px PLAN / T game button.
+                        assert state.get("decision_forecast",{}).get("visible") is False, (
+                            "Tactical decision pane should be opt-in, not covering game")
+                        baseline_actions = (state["switches"],state["faults"],state["scanned"])
+                        if mobile:
+                            plan_rect = state.get("touch_button_rects",{}).get("PLAN / T")
+                            assert plan_rect and plan_rect[2]>=44 and plan_rect[3]>=44, (
+                                "Native touch power-route forecast button missing",state)
+                            bounds = canvas.bounding_box()
+                            page.touchscreen.tap(
+                                bounds["x"]+(plan_rect[0]+plan_rect[2]/2)*bounds["width"]/state["viewport"][0],
+                                bounds["y"]+(plan_rect[1]+plan_rect[3]/2)*bounds["height"]/state["viewport"][1])
+                        else:
+                            page.keyboard.press("t")
+                        forecast_state={}
+                        deadline=time.monotonic()+18
+                        while time.monotonic()<deadline:
+                            forecast_state=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if forecast_state.get("decision_forecast",{}).get("visible") is True:
+                                break
+                            page.wait_for_timeout(200)
+                        forecast=forecast_state.get("decision_forecast",{})
+                        assert forecast.get("visible") is True, ("Native T/PLAN input did not open live panel",name)
+                        real_preview=forecast.get("report",{})
+                        assert real_preview.get("schema")=="IRON_PULSE_DECISION_FORECAST_V15", real_preview
+                        assert real_preview.get("horizon_seconds")==30 and len(real_preview.get("routes",[]))==1, (
+                            "Unrepaired Godot must show only legal current bus route",real_preview)
+                        assert (forecast_state["switches"],forecast_state["faults"],forecast_state["scanned"])==baseline_actions, (
+                            "Read-only forecast mutated real player actions",baseline_actions,forecast_state)
+                        if mobile:
+                            close_rect=forecast.get("close_rect")
+                            assert close_rect and close_rect[2]>=44 and close_rect[3]>=44, (
+                                "Forecast opened without accessible touch close",close_rect)
+                            bounds=canvas.bounding_box()
+                            page.touchscreen.tap(
+                                bounds["x"]+(close_rect[0]+close_rect[2]/2)*bounds["width"]/forecast_state["viewport"][0],
+                                bounds["y"]+(close_rect[1]+close_rect[3]/2)*bounds["height"]/forecast_state["viewport"][1])
+                        else:
+                            page.keyboard.press("t")
+                        deadline=time.monotonic()+18
+                        while time.monotonic()<deadline:
+                            state=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if state.get("decision_forecast",{}).get("visible") is False:
+                                break
+                            page.wait_for_timeout(200)
+                        assert state.get("decision_forecast",{}).get("visible") is False, (
+                            "Native tactical console cannot be closed",name)
+                        report.setdefault("v15_live_decision_forecast",{})[name] = (
+                            "real engine 30s clone + keyboard/touch open/close PASS")
+
                         # V6: the actual renderer must display original MARA dialogue.
                         # This introspection is read-only; keyboard/touch below are real inputs.
                         narrative = state.get("story",{})
