@@ -30,6 +30,7 @@ import nebula_payments
 import core_programs
 import core_inherit
 import core_cinema
+import core_cinema_evidence
 from core_model import Fault, require, text, initial, patch, action, economics, simulation, metrics, now, uid
 
 SCHEMA='''
@@ -61,7 +62,7 @@ class Store:
         Path(path).parent.mkdir(parents=True,exist_ok=True)
         with self.connect() as db:
             require(db.execute('PRAGMA user_version').fetchone()[0] in (0,1),'Версия базы новее этого сервера. Обновите Core.')
-            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+nebula_payments.SCHEMA+core_programs.SCHEMA+core_cinema.SCHEMA)
+            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+nebula_payments.SCHEMA+core_programs.SCHEMA+core_cinema.SCHEMA+core_cinema_evidence.SCHEMA)
             core_inherit.initialize(db)
         self.commerce=core_commerce.Commerce(self,commerce_config,commerce_provider)
         self.nebula=nebula_payments.Payments(self,nebula_config or nebula_payments.Config.from_env(),nebula_provider)
@@ -140,6 +141,8 @@ class Store:
             commerce_project=re.fullmatch(r'projects/([a-f0-9]{32})/commerce',route)
             if commerce_project:return self.commerce.project_orders(db,commerce_project[1],actor)
             if route=='cinema/spaces':return core_cinema.listing(db,actor)
+            evidence_route=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/evidence',route)
+            if evidence_route:return core_cinema_evidence.listing(db,evidence_route[1],actor)
             cinema_route=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})',route)
             if cinema_route:return core_cinema.read(db,cinema_route[1],actor)
             if route=='teams':return core_teams.listing(self,db,actor)
@@ -218,7 +221,7 @@ class Store:
                 old=json.loads(previous['response'])
                 if route.startswith(core_inherit.PREFIX):core_inherit.retry_guard(db,actor,key)
                 if route=='teams':core_teams.access(db,old['teamId'],actor)
-                cinema_retry=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})',route)
+                cinema_retry=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})(?:/evidence)?',route)
                 if cinema_retry:core_cinema.access(db,cinema_retry[1],actor,write=True)
                 if route=='cinema/spaces' and 'workspaceId' in old:core_cinema.access(db,old['workspaceId'],actor,owner=True)
                 team_retry=re.fullmatch(r'teams/([a-f0-9]{32})',route)
@@ -236,9 +239,11 @@ class Store:
             team_mutation=re.fullmatch(r'teams/([a-f0-9]{32})',route)
             program_mutation=re.fullmatch(r'learning/enrollments/([a-f0-9]{32})',route)
             cinema_change=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})',route)
+            evidence_change=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/evidence',route)
             if route.startswith(core_inherit.PREFIX):result=core_inherit.mutate(db,route,actor,payload,key)
             elif route=='cinema/spaces':result=core_cinema.create(db,actor,payload)
             elif cinema_change:result=core_cinema.mutate(db,cinema_change[1],actor,payload)
+            elif evidence_change:result=core_cinema_evidence.mutate(db,evidence_change[1],actor,payload)
             elif program_mutation:result=core_programs.mutate(self,db,program_mutation[1],actor,payload)
             elif route=='teams':result=core_teams.create(db,actor,payload)
             elif team_mutation:result=core_teams.mutate(self,db,team_mutation[1],actor,payload)
