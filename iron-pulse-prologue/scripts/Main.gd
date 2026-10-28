@@ -154,11 +154,13 @@ const COPY := {
 
 var session: IPCrisisEngine = IPCrisisEngine.new()
 var story: IPStoryDirector = IPStoryDirector.new()
+var signal_campaign: IPSignalCampaign = IPSignalCampaign.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var signal_sites: IPSignalSites
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -327,6 +329,8 @@ func _publish_web_state() -> void:
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["containment_fx"] = containment_fx.readout() if containment_fx != null else {}
+    state["signal_campaign"] = signal_campaign.diagnostic()
+    state["signal_sites"] = signal_sites.diagnostic() if signal_sites != null else {}
     # Read-only native material/geometry facts; Chromium QA never invents art.
     var actual_core: SphereMesh = reactor_core.mesh as SphereMesh
     var support_count: int = 0
@@ -516,6 +520,9 @@ func _make_complex() -> void:
     add_child(reactor_atrium)
     containment_fx = IPContainmentFX.new()
     add_child(containment_fx)
+    signal_sites = IPSignalSites.new()
+    add_child(signal_sites)
+    signal_sites.update_campaign(signal_campaign)
     if reactor_core != null and reactor_atrium.core_plasma_material != null:
         reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
@@ -992,6 +999,8 @@ func _layout_hud() -> void:
             reactor_atrium.set_quality("eco")
         if containment_fx != null:
             containment_fx.set_quality("eco")
+        if signal_sites != null:
+            signal_sites.set_quality("eco")
     # Compact non-overlapping card hierarchy; the center is reserved for 3D.
     header_panel.offset_left = 17.0 if not narrow else 12.0
     header_panel.offset_right = minf(544.0,width-16.0)
@@ -1126,6 +1135,7 @@ func _checkpoint_payload() -> Dictionary:
         "schema":"IRON_PULSE_CAMPAIGN_V6",
         "engine":session.checkpoint(),
         "story":story.checkpoint(),
+        "signal_chain":signal_campaign.checkpoint(),
         "scenario":selected_scenario,
         "locale":locale,
         "quality":quality_mode,
@@ -1153,6 +1163,14 @@ func _continue_checkpoint() -> bool:
     if not restored_story.restore(payload["story"]):
         return false
     if restored_engine.finished() or restored_engine.scenario_id != restored_story.scenario:
+        return false
+    # Legacy V6/V7/V8 checkpoints lack this optional key; tampered V9
+    # checkpoints are rejected atomically before the active game is changed.
+    var restored_signals := IPSignalCampaign.new()
+    var raw_signal_data: Variant = payload.get("signal_chain",{})
+    if not raw_signal_data is Dictionary:
+        return false
+    if not restored_signals.restore(raw_signal_data,restored_engine):
         return false
     if payload.get("scenario") != restored_engine.scenario_id:
         return false
@@ -1184,6 +1202,8 @@ func _continue_checkpoint() -> bool:
     _apply_cinematic_view()
     session = restored_engine
     story = restored_story
+    signal_campaign = restored_signals
+    signal_sites.update_campaign(signal_campaign)
     selected_scenario = session.scenario_id
     locale = saved_locale
     quality_mode = saved_quality
@@ -1198,6 +1218,7 @@ func _continue_checkpoint() -> bool:
     world_sectors.set_quality(quality_mode)
     reactor_atrium.set_quality(quality_mode)
     containment_fx.set_quality(quality_mode)
+    signal_sites.set_quality(quality_mode)
     exit_gate.position.y = 6.2 if session.override_set else 2.6
     for index in range(legacy_lamps.size()):
         legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
@@ -1232,6 +1253,8 @@ func _select_scenario(next_scenario: String) -> void:
     selected_scenario = next_scenario
     session.reset(next_scenario)
     story.reset(next_scenario)
+    signal_campaign.reset()
+    signal_sites.update_campaign(signal_campaign)
     radio_ttl = 0.0
     notice_time = 0.0
     _update_scenario_picker()
@@ -1244,6 +1267,8 @@ func start_run() -> void:
     cinematic_view = false
     _apply_cinematic_view()
     story.reset(selected_scenario)
+    signal_campaign.reset()
+    signal_sites.update_campaign(signal_campaign)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     started = true
@@ -1263,6 +1288,8 @@ func _restart() -> void:
     _apply_cinematic_view()
     session.reset(selected_scenario)
     story.reset(selected_scenario)
+    signal_campaign.reset()
+    signal_sites.update_campaign(signal_campaign)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     if DisplayServer.get_name() != "headless":
@@ -1379,6 +1406,7 @@ func _input(event: InputEvent) -> void:
             world_sectors.set_quality(quality_mode)
             reactor_atrium.set_quality(quality_mode)
             containment_fx.set_quality(quality_mode)
+            signal_sites.set_quality(quality_mode)
             for i in range(legacy_lamps.size()):
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
