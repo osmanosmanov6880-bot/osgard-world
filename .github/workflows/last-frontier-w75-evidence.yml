@@ -1,0 +1,193 @@
+name: LAST FRONTIER W75 strict external human/physical release evidence gate (NO PRODUCTION GO)
+
+on:
+  pull_request:
+    branches:
+      - game/last-frontier-w74-inworld-feedback-and-gamepad-20261028
+    paths:
+      - 'tooling/last-frontier/w75/**'
+      - 'docs/LAST_FRONTIER_W75_GO_NO_GO.md'
+      - '.github/workflows/last-frontier-w75-evidence.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w75-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  immutable-game:
+    name: Exact W74 3/3 accepted SHA and original Godot game unchanged, release gate is read-only
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Confirm only five independent source/docs/CI files and 16 real original gameplay/test hashes
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w75-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='73ef81b54cb42831cafd9ac8fa69c5807cd8dc8d'
+          head=os.environ['HEAD']
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          exact={
+              'tooling/last-frontier/w75/release_gate.py',
+              'tooling/last-frontier/w75/test_release_gate.py',
+              'tooling/last-frontier/w75/README.md',
+              'docs/LAST_FRONTIER_W75_GO_NO_GO.md',
+              '.github/workflows/last-frontier-w75-evidence.yml',
+          }
+          assert changed==exact,{'missing':sorted(exact-changed),
+                                 'unexpected':sorted(changed-exact)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/scripts/A7WorldInteraction.gd',
+              'w63-a7-cascade/scripts/A7SessionCheckpoint.gd',
+              'w63-a7-cascade/scripts/A7FieldOperations.gd',
+              'w63-a7-cascade/scripts/A7SpatialMission.gd',
+              'w63-a7-cascade/scripts/A7DiegeticFeedback.gd',
+              'w63-a7-cascade/scripts/A7GamepadDirector.gd',
+              'w63-a7-cascade/scripts/A7FrameTelemetry.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w72_field_operations.gd',
+              'w63-a7-cascade/tests/test_w73_world_and_checkpoint.gd',
+              'w63-a7-cascade/tests/test_w74_gamepad_feedback.gd',
+              'w63-a7-cascade/ci/w74_browser_feedback.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+              '.github/workflows/last-frontier-w74-gamepad-diegetic.yml',
+          ]
+          blobs={}
+          for p in protected:
+              sha1=git('rev-parse',base+':'+p)
+              sha2=git('rev-parse',head+':'+p)
+              assert sha1==sha2,'W75 cannot change original playable game: '+p
+              blobs[p]=sha2
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          gate=Path('tooling/last-frontier/w75/release_gate.py').read_text()
+          for marker in ['def evaluate','_artifact','FINAL_MANUAL_REVIEW_REQUIRED',
+                         'PRODUCTION_HOLD','production_release_authorized_by_software',
+                         'first_time_playtests','physical_device_tests']:
+              assert marker in gate
+          for ban in ['requests.post','urllib.request','subprocess.run','os.system',
+                      'mcp__GitHub__','webbrowser.open','publish_release']:
+              assert ban not in gate,ban
+          report={
+              'schema':'LAST_FRONTIER_W75_SOURCE_ONLY_QUALITY_GUARD_V1',
+              'status':'PASS',
+              'head_sha':head,
+              'accepted_w74_base_sha':base,
+              'allowed_paths':sorted(changed),
+              'immutable_original_game_blobs':blobs,
+              'real_human_sessions_present':False,
+              'physical_gpu_device_tests_present':False,
+              'art_and_legal_signoff_present':False,
+              'no_remote_upload_actions':True,
+              'game_release_authorized':False,
+          }
+          Path('w75-evidence/W75_ORIGINAL_GAME_SOURCE_PIN.json').write_text(
+              json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          print('W75 READ-ONLY source guard PASS: real game remains exact W74')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w75-immutable-game-source-${{ github.event.pull_request.head.sha }}
+          path: w75-evidence/W75_ORIGINAL_GAME_SOURCE_PIN.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  adversarial-no-fake-aaago:
+    name: 14 offline red-team tests, blank form and genuine automatic PRODUCTION HOLD
+    runs-on: ubuntu-latest
+    needs: immutable-game
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Run independent standard-library adversarial release gate tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w75-evidence
+          python3 -m unittest discover -s tooling/last-frontier/w75 -p 'test_release_gate.py' -v 2>&1 | tee w75-evidence/adversarial-tests.log
+          grep -q 'Ran 14 tests' w75-evidence/adversarial-tests.log
+          grep -q '^OK$' w75-evidence/adversarial-tests.log
+      - name: Real blank playtest data must reject commercial release, source never mutates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tooling/last-frontier/w75/release_gate.py --template w75-evidence/W75_BLANK_REAL_WORLD_QA.json
+          set +e
+          python3 tooling/last-frontier/w75/release_gate.py --manifest w75-evidence/W75_BLANK_REAL_WORLD_QA.json --evidence-root w75-evidence --out w75-evidence/W75_RELEASE_HOLD_REPORT.json > w75-evidence/actual-cli-hold.log 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 3
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('w75-evidence')
+          m=json.loads((root/'W75_BLANK_REAL_WORLD_QA.json').read_text())
+          report=json.loads((root/'W75_RELEASE_HOLD_REPORT.json').read_text())
+          assert m['first_time_playtests']==[]
+          assert m['physical_device_tests']==[]
+          assert m['owner_release_consent']['explicit_go'] is False
+          assert report['next_state']=='PRODUCTION_HOLD'
+          assert report['evidence_completeness']=='INCOMPLETE'
+          assert report['statistics']['evidence_checked_first_time_sessions']==0
+          assert report['statistics']['evidence_checked_physical_device_classes']==[]
+          assert report['production_release_authorized_by_software'] is False
+          assert report['master_branch_merge_authorized_by_software'] is False
+          assert report['steam_or_public_domain_publish_authorized_by_software'] is False
+          assert report['can_software_prove_human_identity_or_hardware_genuineness'] is False
+          print('W75 HONEST NO EVIDENCE = RELEASE HOLD. NO fake AAA or synthetic players.')
+          PY
+      - name: Preserve exact source bound blank template, red-team proof and HOLD report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w75-external-evidence-playtest-kit-${{ github.event.pull_request.head.sha }}
+          path: |
+            w75-evidence/
+            tooling/last-frontier/w75/
+          if-no-files-found: warn
+          retention-days: 45
+
+  manual-release-not-automated:
+    name: Software gate PASS means release remains HOLD until humans actually test and sign off
+    runs-on: ubuntu-latest
+    needs: [immutable-game, adversarial-no-fake-aaago]
+    if: always()
+    steps:
+      - name: Never auto-release a fictional AAA or manufacture independent measurements
+        env:
+          CODE: ${{ needs.immutable-game.result }}
+          TEST: ${{ needs.adversarial-no-fake-aaago.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$CODE" = success
+          test "$TEST" = success
+          echo 'W75 QA TOOL SOFTWARE PASS. THE VIDEO GAME RETAIL RELEASE IS STILL HOLD.'
+          echo 'Need 12 real playtest sessions, real physical Win/Android/iOS benchmarks, human AAA original art/audio, independent trademark/licensing/owner signoff.'
