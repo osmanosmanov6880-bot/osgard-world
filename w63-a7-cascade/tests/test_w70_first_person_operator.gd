@@ -61,8 +61,10 @@ func _run() -> void:
         "Actual world PBR floor hardware is not a 2D effect")
     _check(actor.world_sign is Label3D,
         "In-world sector gateway information is genuine Label3D")
-    _check(actor.walkway_visuals.find_child("PhysicallyWalkedPBRGrate00", true, false).material_override
-        == stage.hero_art.surface_lab.surface("floor_grate"),
+    var true_plate: MeshInstance3D = actor.walkway_visuals.find_child(
+        "PhysicallyWalkedPBRGrate00", true, false) as MeshInstance3D
+    _check(true_plate != null and
+        true_plate.material_override == stage.hero_art.surface_lab.surface("floor_grate"),
         "Actual original W68 PBR material cache reused by first-person corridor")
     _check(actor.collision_world.get_child_count() >= 11,
         "Real physics world has many separate collider bodies")
