@@ -15,6 +15,7 @@ const HOT := Color("ee725b")
 const ALERT := Color("ee4f53")
 const AMBER := Color("efb970")
 
+var art_kit: A7ArchitecturalDetail
 var rotor: Node3D
 var sensor_array: Node3D
 var containment_door: MeshInstance3D
@@ -52,6 +53,9 @@ var snapshot_count: int = 0
 func _ready() -> void:
     name = "A7TrueNativeProceduralCinema"
     _construct_facility()
+    art_kit = A7ArchitecturalDetail.new()
+    add_child(art_kit)
+    art_kit.build(self)
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -129,7 +133,7 @@ func _construct_facility() -> void:
     settings.background_color = DARK
     settings.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     settings.ambient_light_color = Color("344455")
-    settings.ambient_light_energy = 0.42
+    settings.ambient_light_energy = 0.86
     environment.environment = settings
     add_child(environment)
 
@@ -240,8 +244,8 @@ func _construct_facility() -> void:
             Vector3(x, 4.72, z), warning_material)
         warning_beacons.append(beacon)
 
-    key_light = _light("A7CopperKeyLight", Vector3(0, 5, 4.4), Color("f9dfaf"), 1.35, 11.5)
-    fill_light = _light("A7TealFillLight", Vector3(-5.8, 3.5, -1.0), COOL, 0.88, 8.5)
+    key_light = _light("A7CopperKeyLight", Vector3(0, 5, 4.4), Color("f9dfaf"), 2.30, 11.5)
+    fill_light = _light("A7TealFillLight", Vector3(-5.8, 3.5, -1.0), COOL, 1.75, 8.5)
     warning_light = _light("A7SafetyVisualLight", Vector3(5.1, 4.0, 1.1), AMBER, 0.35, 8.0)
 
     camera = Camera3D.new()
@@ -255,11 +259,11 @@ func set_camera(index: int) -> void:
     camera_index = clampi(index, 0, 2)
     if camera == null:
         return
-    var spots := [Vector3(8.0, 5.6, 11.5),
-        Vector3(0, 5.0, 13.0),
-        Vector3(-8.1, 4.1, 9.3)]
+    var spots := [Vector3(5.6, 4.25, 8.15),
+        Vector3(0.0, 3.85, 8.30),
+        Vector3(-5.7, 3.60, 7.10)]
     camera.position = spots[camera_index]
-    camera.look_at(Vector3(0.0, 2.0, -0.6), Vector3.UP)
+    camera.look_at(Vector3(0.0, 2.40, -0.95), Vector3.UP)
     camera.current = true
 
 func set_quality(new_mode: String) -> void:
@@ -267,8 +271,10 @@ func set_quality(new_mode: String) -> void:
     if hero_details == null:
         return
     hero_details.visible = mode == "hero"
+    if art_kit != null:
+        art_kit.visible = mode == "hero"
     if key_light != null:
-        key_light.light_energy = 1.35 if mode == "hero" else 0.90
+        key_light.light_energy = 2.30 if mode == "hero" else 1.25
         fill_light.visible = mode == "hero"
 
 func set_reduced_motion(enabled: bool) -> void:
@@ -315,6 +321,8 @@ func apply_snapshot(state: Dictionary) -> void:
         signal_gauge.scale.y = maxf(0.06, signal_strength)
         seal_gauge.scale.y = maxf(0.06, seal)
         containment_door.position.x = (1.0 - seal) * 1.40
+    if art_kit != null:
+        art_kit.present(state)
     snapshot_count += 1
 
 func _process(delta: float) -> void:
@@ -337,6 +345,8 @@ func qa_readout() -> Dictionary:
         "actual_native_3d": rotor != null and camera != null and
             heat_material != null and warning_light != null,
         "real_meshes": mesh_count, "real_lights": light_count,
+        "original_art_kit": art_kit != null,
+        "art_geometry": art_kit.real_geometry_count if art_kit != null else 0,
         "camera": camera_index, "quality": mode,
         "reduced_motion": reduced_motion, "snapshots": snapshot_count,
         "heat": heat, "pressure": pressure, "energy": energy,

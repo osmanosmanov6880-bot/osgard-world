@@ -103,6 +103,7 @@ var stage_shell: Control
 var visual_container: SubViewportContainer
 var sub_viewport: SubViewport
 var stage_3d: A7CinematicStage
+var cinematic_hud: A7CinematicHud
 var cinema_caption: Label
 var cinema_readout: Label
 var camera_buttons: Array[Button] = []
@@ -232,6 +233,9 @@ func _build() -> void:
     visual_container.add_child(sub_viewport)
     stage_3d = A7CinematicStage.new()
     sub_viewport.add_child(stage_3d)
+    cinematic_hud = A7CinematicHud.new()
+    cinematic_hud.name = "ObsidianAuroraLiveHUD"
+    stage_shell.add_child(cinematic_hud)
     cinema_readout = _label(cinema, "", 12, MINT)
     var cinema_controls := HFlowContainer.new()
     cinema_controls.name = "A7ViewAndAccessibilityRail"
@@ -414,6 +418,8 @@ func _layout_stage() -> void:
     elif size.x < 900.0:
         height = clampf(size.y * 0.50, 350.0, 470.0)
     stage_shell.custom_minimum_size = Vector2(0, height)
+    if cinematic_hud != null:
+        cinematic_hud._relayout()
     visual_container.custom_minimum_size = Vector2(0, height)
     visual_container.stretch_shrink = 2 if quality == "eco" else 1
     var compact: bool = size.x < 640.0
@@ -505,6 +511,8 @@ func _render(state: Dictionary) -> void:
         effect.text = _t(action + "_d")
     objective_label.text = _t("objective")
     footnote.text = _t("disclaimer") + "\n" + _t("keys")
+    if cinematic_hud != null:
+        cinematic_hud.present(state, locale)
     if stage_3d != null:
         stage_3d.apply_snapshot(state)
         cinema_caption.text = _t("stage")
@@ -564,6 +572,8 @@ func _publish_web_accessibility() -> void:
         "real_native_3d": bool(stage_state["actual_native_3d"]),
         "scene_meshes": int(stage_state["real_meshes"]),
         "scene_lights": int(stage_state["real_lights"]),
+        "w66_hud": cinematic_hud != null,
+        "w66_art_meshes": int(stage_state.get("art_geometry", 0)),
         "renderer_camera": int(stage_state["camera"]),
         "energy_gauge": float(stage_3d.energy_gauge.scale.y),
         "renderer_frames": Engine.get_frames_drawn(),
