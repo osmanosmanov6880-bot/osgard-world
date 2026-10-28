@@ -184,7 +184,11 @@ func restore_checkpoint(saved: Dictionary) -> bool:
         return false
     if typeof(saved.get("active",null)) != TYPE_BOOL:
         return false
-    if typeof(saved.get("chapter",null)) != TYPE_INT:
+    # Godot JSON deserializes numeric values as floats; validate integer
+    # SEMANTICS, not a raw TYPE_INT tag, to retain all old V6 checkpoints.
+    if not _valid_stat(saved.get("chapter",null),0.0,float(TOTAL_CHAPTERS)):
+        return false
+    if float(saved["chapter"]) != floorf(float(saved["chapter"])):
         return false
     var next_active: bool = bool(saved["active"])
     var next_chapter: int = int(saved["chapter"])
@@ -203,7 +207,9 @@ func restore_checkpoint(saved: Dictionary) -> bool:
             return false
         if str(record.get("grade","")) not in ["S","A","B"]:
             return false
-        if typeof(record.get("score",null)) != TYPE_INT or not _valid_stat(record["score"],0.0,1000.0):
+        if not _valid_stat(record.get("score",null),0.0,1000.0):
+            return false
+        if float(record["score"]) != floorf(float(record["score"])):
             return false
         for key in ["heat","oxygen","crew","elapsed"]:
             var upper: float = 110.0 if key == "heat" else 1000.0 if key == "elapsed" else 100.0
@@ -213,7 +219,9 @@ func restore_checkpoint(saved: Dictionary) -> bool:
             return false
         if record.get("repair") not in SUPPORTED_REPAIRS:
             return false
-        if typeof(record.get("faults",null)) != TYPE_INT or not _valid_stat(record["faults"],0.0,1000.0):
+        if not _valid_stat(record.get("faults",null),0.0,1000.0):
+            return false
+        if float(record["faults"]) != floorf(float(record["faults"])):
             return false
         var relays: Variant = record.get("relays",null)
         if not relays is Array or relays.size() > IPCrisisEngine.MAX_RELAYS:
