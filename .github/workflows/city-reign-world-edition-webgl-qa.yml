@@ -1,0 +1,113 @@
+name: CITY REIGN WORLD EDITION - real original 3D daylight blackout LOD WebGL pixels
+
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/scripts/city_reign_street_architecture.gd'
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/tests/city_reign_world_street_pixel_fixture.gd'
+      - 'godot/empire-omega/tests/city_reign_world_street_pixel_fixture.tscn'
+      - 'scripts/city-reign-world-street-visual.spec.mjs'
+      - 'playwright.city-reign-world.config.mjs'
+      - '.github/workflows/city-reign-world-edition-webgl-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-world-3d-native-browser-pixels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 42
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Prove exact source and forbid shipping QA fixtures
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          mkdir -p city-reign-world-webgl-evidence
+          printf '%s\n' "$SOURCE_SHA" > city-reign-world-webgl-evidence/source-head.sha
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Import original game and export a TEMPORARY in-engine street camera
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            2>&1 | tee city-reign-world-webgl-evidence/original-source-import.log
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('godot/empire-omega/project.godot')
+          text=path.read_text()
+          original='run/main_scene="res://scenes/main.tscn"'
+          assert text.count(original)==1,'Never overwrite shipped gameplay scene'
+          replacement='run/main_scene="res://tests/city_reign_world_street_pixel_fixture.tscn"'
+          path.write_text(text.replace(original,replacement))
+          print('TEMPORARY test-only scene; no PR source file modified')
+          PY
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --import \
+            2>&1 | tee city-reign-world-webgl-evidence/scene-import.log
+          godot --headless --path godot/empire-omega --export-release Web \
+            "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install pinned real Chromium, native Mesa and screenshot decoder
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Serve unpublished original Godot build on 127.0.0.1 ONLY
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4187 --bind 127.0.0.1 \
+            --directory godot/empire-omega/.build-web \
+            > /tmp/city-reign-world-webgl-source.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4187/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/city-reign-world-webgl-source.log
+          exit 1
+      - name: Capture actual Godot 3D original building and source grid response
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.city-reign-world.config.mjs \
+              --workers=1 --retries=0
+      - name: Preserve real WebGL frames and engine errors; no deployments
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-world-real-street-3d-pixels-${{ github.run_id }}
+          path: |
+            city-reign-world-webgl-evidence/
+            city-reign-world-street-visual-results/
+            city-reign-world-street-visual-report/
+          retention-days: 14
+          if-no-files-found: warn
