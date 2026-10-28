@@ -1202,7 +1202,11 @@ func _continue_checkpoint() -> bool:
     if not stored_field is Dictionary:
         return false
     var staged_field := IPContainmentRun.new()
-    if not staged_field.restore(stored_field) or staged_field.lost_suit:
+    var valid_field: bool = staged_field.restore(stored_field) and not staged_field.lost_suit
+    # Node3D is not RefCounted: release temporary validation-only object
+    # immediately or Godot's strict headless acceptance reports a leak.
+    staged_field.free()
+    if not valid_field:
         return false
     var pos: Variant = payload.get("player_position",null)
     if not pos is Array or pos.size() != 3:
