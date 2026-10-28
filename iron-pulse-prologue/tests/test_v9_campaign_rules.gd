@@ -82,6 +82,23 @@ func _run() -> void:
     _check(director.summary("ru").contains("3/3") and director.summary("en").contains("3/3"),
         "Global RU/EN campaign progression shows completion")
 
+    var radio := IPStoryDirector.new()
+    radio.reset("thermal")
+    _check(radio.on_campaign_handoff("core") and radio.latest_key=="handoff_thermal_core",
+        "Core-first GRID choice triggers distinct chapter-two MARA dialogue")
+    _check(radio.latest("ru")["text"].contains("реактор") and radio.latest("en")["text"].contains("reactor"),
+        "International RU/EN voiced-text script recognizes the real prior reactor choice")
+    var radio_checkpoint: Dictionary = radio.checkpoint()
+    var radio_reload := IPStoryDirector.new()
+    _check(radio_reload.restore(radio_checkpoint) and radio_reload.latest_key=="handoff_thermal_core",
+        "Chapter-to-chapter narrative event survives the unchanged V6 story checkpoint format")
+    radio.reset("breach")
+    _check(radio.on_campaign_handoff("crew") and radio.latest_key=="handoff_breach_crew",
+        "Crew-first HEAT choice triggers third-act AIR narrative handoff")
+    radio.reset("blackout")
+    _check(not radio.on_campaign_handoff("crew"),
+        "First GRID chapter cannot fabricate a previous campaign operation")
+
     var data: Dictionary = director.checkpoint()
     var restored := IPCampaignDirector.new()
     _check(restored.restore(data) and restored.checkpoint()==data,
