@@ -181,8 +181,11 @@ def run(site, evidence, sha, offline_test):
             }""",timeout=35000)
             page.wait_for_timeout(950)
             page.locator('button[data-route="missions"]').click()
+            page.wait_for_function("""() =>
+              document.querySelectorAll('.mission-entry.is-active').length === 1
+            """,timeout=20000)
             check(page.locator(".mission-entry.is-active").count()==1,
-                  "Actually starting original Y mission advances only real first objective")
+                  "Actually starting original Y mission activates exactly first true objective")
             check(page.locator(".mission-entry.is-done").count()==0,
                   "World shell never marks entire mission completed on launch")
             missions=screenshot(page,evidence,"w76-03-original-mission-live-true-state.png")
