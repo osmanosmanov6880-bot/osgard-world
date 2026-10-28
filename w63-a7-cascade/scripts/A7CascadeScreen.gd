@@ -869,6 +869,7 @@ func _pilot_inspect() -> void:
     pilot_status_label.text = _t("pilot_core") if target == "CORE" else (
         _t("pilot_relay") if target == "RELAY" else _t("pilot_far"))
     if stage_3d.spatial_mission != null and stage_3d.first_person != null:
+        var before_inspections: int = stage_3d.spatial_mission.real_inspections
         var did_advance: bool = stage_3d.spatial_mission.inspect_physical(
             target, model.snapshot(), stage_3d.first_person)
         if (not did_advance and target != ""
@@ -877,7 +878,9 @@ func _pilot_inspect() -> void:
         if stage_3d.field_operations != null:
             stage_3d.field_operations.observe_phase(
                 stage_3d.spatial_mission.phase, model.snapshot())
-        if target in ["CORE","RELAY"] and stage_3d.spatial_mission.active:
+        if (target in ["CORE","RELAY"] and stage_3d.spatial_mission.active
+                and (did_advance or
+                stage_3d.spatial_mission.real_inspections > before_inspections)):
             checkpoint.note("inspect", target, self)
         _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
