@@ -1152,6 +1152,8 @@ func _start_campaign() -> void:
     story.reset(selected_scenario)
     _update_scenario_picker()
     start_run()
+    _story_event("campaign_chapter_1")
+    _save_checkpoint()
 
 func _checkpoint_payload() -> Dictionary:
     return {
@@ -1178,6 +1180,7 @@ func _save_campaign_intermission() -> bool:
         return false
     var pending_story := IPStoryDirector.new()
     pending_story.reset(pending_engine.scenario_id)
+    pending_story.on_game_event("campaign_chapter_%d" % campaign.stage_number(),"")
     var payload: Dictionary = _checkpoint_payload()
     payload["engine"] = pending_engine.checkpoint()
     payload["story"] = pending_story.checkpoint()
@@ -1330,6 +1333,8 @@ func _restart() -> void:
     else:
         session.reset(selected_scenario)
     story.reset(selected_scenario)
+    if campaign.active:
+        story.on_game_event("campaign_chapter_%d" % campaign.stage_number(),"")
     _update_scenario_picker()
     radio_ttl = 12.0
     checkpoint_clock = 0.0
@@ -1381,6 +1386,10 @@ func _toggle_language() -> void:
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
     end_button.text = _copy("restart")
+    if campaign.active and end_panel.visible:
+        end_button.text = _copy(
+            "campaign_replay" if campaign.complete() else
+            "campaign_next" if session.won else "campaign_retry")
     footer_label.text = _copy("footer")
     _announce("language")
     _refresh_hud()
@@ -1698,6 +1707,8 @@ func _show_end() -> void:
         return
     if campaign.active and session.won:
         campaign.record_victory(session)
+        if campaign.complete():
+            story.on_game_event("campaign_final_" + campaign.ending,"")
     end_panel.visible = true
     if DisplayServer.get_name() != "headless":
         if campaign.active and session.won and not campaign.complete():
