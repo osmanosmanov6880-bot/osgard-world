@@ -64,8 +64,8 @@ func _run() -> void:
 			"four original native Godot cards exist in actual operations HUD: "+language)
 		if gallery==null:
 			continue
-		verify(gallery.columns==DISPLAY.columns_for(get_viewport().get_visible_rect().size.x,
-			bool(hud.get("compact_hud")) or get_viewport().get_visible_rect().size.x<1000.0),
+		verify(gallery.columns==DISPLAY.columns_for(root.get_visible_rect().size.x,
+			bool(hud.get("compact_hud")) or root.get_visible_rect().size.x<1000.0),
 			"real running Godot viewport drives native garage column count")
 		var buttons: int = 0
 		for id in CATALOG.ORDER:
