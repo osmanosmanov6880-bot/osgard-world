@@ -40,3 +40,6 @@ Browser: exact SHA genuine WASM/PCK + real original W83 CDP two-finger physics b
 
 ## Reproduction
 From CI evidence use source SHA and its WebGL export, test logs, native game stage screenshots and JSON manifest. On real hardware validate sustained 10-minute two-finger controls, orientation, touch targets, safe areas, load/save, mobile memory and device power. If physical tests fail, release stays on HOLD.
+
+## W84.1 — precise acceptance guard and export path correction
+Initial [W84 CI #40775022650](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40775022650) failed the exact-source static gate due to a CI assertion checking a nonexistent variable spelling `original_core_commands_issued`, while the actual Godot module correctly declares `original_game_commands_issued`. Replaced the guard with the **real source symbol**, not a skipped guard. Also corrected the WebGL export's working directory to match the already proven original W83 source engine build: `cd w63-a7-cascade && godot --headless --path . --export-release Web build/web/index.html`. This prevents output-path confusion without changing original physics, game decisions or engine. Full native+browser QA still required.

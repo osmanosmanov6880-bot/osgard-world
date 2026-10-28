@@ -96,7 +96,7 @@ jobs:
           gesture=Path('w63-a7-cascade/scripts/A7DualTouchLook.gd').read_text()
           for required in ['ConfigFile.new()','user://last_frontier_native_touch_controls_v1.cfg',
               'physical_controls.rail.move_child(button,i)','set_look_preferences(',
-              'original_core_commands_issued: int = 0','physical_controls.release_all()']:
+              'original_game_commands_issued: int = 0','physical_controls.release_all()']:
               assert required in studio,'Native W84 real option missing: '+required
           for required in ['w84_studio.build','w84_modal_actually_suspends_touch',
               'w84_native_panel','w84_real_left_handed','_w84_sync_modal_input']:
@@ -159,8 +159,10 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          mkdir -p w63-a7-cascade/build/web
-          godot --headless --path w63-a7-cascade --export-release Web build/web/index.html
+          cd w63-a7-cascade
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          cd ..
           python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
       - name: Real headless Chromium with WebGL and touch input
         run: |
