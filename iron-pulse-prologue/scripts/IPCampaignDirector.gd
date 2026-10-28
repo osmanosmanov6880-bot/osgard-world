@@ -120,7 +120,8 @@ func summary(locale: String = "ru") -> String:
         return "CAMPAIGN 3/3  •  RANK " + campaign_grade()
     var names_ru: Array[String] = ["GRID / ОТКЛЮЧЕНИЕ","HEAT / ПЕРЕГРЕВ","AIR / РАЗГЕРМЕТИЗАЦИЯ"]
     var names_en: Array[String] = ["GRID / BLACKOUT","HEAT / CASCADE","AIR / BREACH"]
-    var label: String = (names_en if language == "en" else names_ru)[chapter-1]
+    var chapter_names: Array[String] = names_en if language == "en" else names_ru
+    var label: String = chapter_names[chapter-1]
     var carry: Dictionary = carryover()
     if language == "en":
         return "CAMPAIGN %d/3  •  %s  •  CREW %d%%" % [chapter,label,int(carry["crew"])]
