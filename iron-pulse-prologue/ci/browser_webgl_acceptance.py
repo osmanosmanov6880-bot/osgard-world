@@ -132,6 +132,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         # V8 must render a NEW 15m side reactor chamber,
                         # not just rename old corridor meshes or substitute CGI.
                         bay = idle.get("reactor_atrium", {})
+                        assert bay.get("security_director_camera") is True and bay.get("plasma_shader_live") is True, (
+                            "New real in-engine observation camera or procedural plasma material missing",bay)
                         assert bay.get("cinematic_vault") is True, (
                             "Actual 3D reactor atrium missing from Godot scene",bay)
                         assert bay.get("vault_height_m",0)>=14.0 and bay.get("open_wall_span_m",0)>=21.0, (
@@ -299,8 +301,11 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 page.wait_for_timeout(150)
                             assert clean.get("cinematic_view") is True and clean.get("cinematic_hud_hidden") is True, (
                                 "C did not genuinely remove the in-game HUD",clean)
-                            # The verified initial first-person framing now faces
-                            # the real reactor. Do not turn away before art evidence.
+                            assert clean.get("active_camera") == "A7_ServiceObservationCamera" and clean.get("director_camera_alignment",0) > 0.995, (
+                                "C must select physical camera aimed at real reactor, not just hide HUD",clean)
+                            # Camera is physically mounted in the actual rendered
+                            # gallery facing the real reactor. No CSS/art overlays
+                            # or simulated stills are ever substituted.
                             page.wait_for_timeout(900)
                             pure_image=page.screenshot(timeout=60000,animations="disabled")
                             pure_stats=frame_metrics(pure_image)
@@ -309,7 +314,9 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             report["v8_cinematic_camera_proof"]={
                                 **pure_stats,
                                 "image":"cinematic-reactor-desktop.png",
-                                "input":"actual keyboard C + source-bound first-person camera framing",
+                                "input":"real keyboard C + in-world Godot 3D director camera",
+                                "active_camera":clean.get("active_camera"),
+                                "camera_alignment":clean.get("director_camera_alignment"),
                                 "source":"actual_godot_webgl_chromium",
                                 "hdr_overlays_hidden":True
                             }
@@ -323,6 +330,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 page.wait_for_timeout(150)
                             assert restored.get("cinematic_view") is False and restored["started"] is True, (
                                 "C did not restore the working real HUD",restored)
+                            assert restored.get("active_camera") == "FirstPersonCamera", (
+                                "C must restore original player camera and controls",restored)
                         # Verify both opening and closing the actual journal.
                         if mobile:
                             journal_rect = state["touch_button_rects"]["J / LOG"]
