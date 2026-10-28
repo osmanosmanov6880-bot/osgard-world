@@ -30,7 +30,7 @@ Touch settings entry is top-left 44px-class and does not overlap original W80 to
 
 ## Acceptance and production HOLD
 
-Hard gate: exact source parent commit `c2639548dff83004a05c3f90f229e4340a423c9f`, **7 approved modified/new paths only**; all original W63–W82 protected game systems, W78 original physics buttons, W79 original mission, W80 original full-bleed, W82 compass, W83 physical touch core, W83 Chromium driver and original checkpoints remain protected except the specific W84 camera preference calls and screen wiring.
+Hard gate: exact source parent commit `0de8104918e7dc300998a258dd7599657bf33104`, **7 approved modified/new paths only**; all original W63–W82 protected game systems, W78 original physics buttons, W79 original mission, W80 original full-bleed, W82 compass, W83 physical touch core, W83 Chromium driver and original checkpoints remain protected except the specific W84 camera preference calls and screen wiring.
 
 Native: **13 Godot 4.4.1 suites**, including W84 actual camera inverted-Y, 320/390/844 adaptive geometry, same CharacterBody, no source A7 score mutation, left-handed same native eight physical buttons, ConfigFile save/reload and panel input safety.
 
@@ -43,3 +43,6 @@ From CI evidence use source SHA and its WebGL export, test logs, native game sta
 
 ## W84.1 — precise acceptance guard and export path correction
 Initial [W84 CI #40775022650](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40775022650) failed the exact-source static gate due to a CI assertion checking a nonexistent variable spelling `original_core_commands_issued`, while the actual Godot module correctly declares `original_game_commands_issued`. Replaced the guard with the **real source symbol**, not a skipped guard. Also corrected the WebGL export's working directory to match the already proven original W83 source engine build: `cd w63-a7-cascade && godot --headless --path . --export-release Web build/web/index.html`. This prevents output-path confusion without changing original physics, game decisions or engine. Full native+browser QA still required.
+
+## W84.2 — inherits fully accepted W83.8 original two-finger WebGL source
+W83.8 [exact source run #40774347723](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40774347723) achieved **3/3 GitHub CI PASS**: 12 Godot native tests, original physics, true independent portrait+landscape Chromium two-touch sessions, correct CDP changed point release semantics, original W81/W82 full browser regressions and 18 SHA-bound live frames. W84.2 merges the **exact** W83.8 original browser CI/docs/runner blobs into W84 (no application logic rewrite) and pins this accepted source SHA `0de8104918e7dc300998a258dd7599657bf33104` as the parent of a true two-parent Git merge commit. The W84 source protector still demands that only the seven W84 native source/UI/test/doc/CI paths differ from this accepted W83.8 code. The new W84 user preferences are therefore layered on actually accepted physical two-finger software, not the superseded W83.7 temporary browser driver. Full W84 13 native + 24 SHA browser screenshot verification is still mandatory.

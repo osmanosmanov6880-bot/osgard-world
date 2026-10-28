@@ -305,6 +305,30 @@ def run(export,evidence,sha):
                     "Real far-range valve is STILL rejected after two-finger camera movement")
             c=picture(page,evidence/
               "w83-03-source-physical-rejection-after-multitouch.png")
+            # Independence test: previous portrait run legitimately walks
+            # the original CharacterBody3D into collidable world geometry.
+            # Reset via actual WebGL page reload + native PLAY NOW, NEVER JS
+            # teleport or assignment to a body position. Landscape must
+            # prove forward travel from its OWN original physical spawn.
+            page.set_viewport_size({"width":844,"height":390})
+            page.reload(wait_until="domcontentloaded",timeout=120000)
+            page.locator("#a7-cascade-native-state").wait_for(
+                state="attached",timeout=180000)
+            fresh=wait_state(page,{
+                "w83_real_multitouch_active":False,
+                "w76_actual_immersive_first_person":False,
+                "history_count":0,
+                "w80_genuine_full_bleed_original_stage":False})
+            require(fresh["w70_real_physical_distance"]<0.02,
+                "New real Godot landscape run starts from real original W70 spawn")
+            page.locator("canvas").first.click(position={"x":18,"y":20})
+            page.keyboard.press("Enter")
+            wait_state(page,{"w83_real_multitouch_active":True,
+                             "w80_genuine_full_bleed_original_stage":True,
+                             "history_count":0})
+            enable_native_touch_audit(page)
+            cdp.detach()
+            cdp=context.new_cdp_session(page)
             g=stage_ready(page,844,390)
             d=picture(page,evidence/
               "w83-04-844x390-real-native-landscape-physical-touch-zone.png")
@@ -347,6 +371,7 @@ def run(export,evidence,sha):
         "actual_Chromium_two_distinct_concurrent_touch_ids":True,
         "native_Chrome_CDP_changed_finger_release_semantics_verified":True,
         "native_DOM_camera_then_walk_touchend_audited":True,
+        "portrait_and_landscape_begin_from_separate_real_Godot_3D_spawns":True,
         "original_CharacterBody3D_walking_during_camera_drag":True,
         "original_camera_yaw_and_pitch_changed_by_real_touch_move":True,
         "source_game_decisions_and_physical_valve_remain_gated":True,

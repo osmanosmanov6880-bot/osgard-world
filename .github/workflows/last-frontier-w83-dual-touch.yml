@@ -193,6 +193,7 @@ jobs:
           grep -Fq 'send(cdp,"touchEnd",[a])' w63-a7-cascade/ci/w83_browser_real_multitouch.py
           ! grep -Fq 'send(cdp,"touchStart",[a,b])' w63-a7-cascade/ci/w83_browser_real_multitouch.py
           grep -Fq 'assert_source_touch_release(page,a,b)' w63-a7-cascade/ci/w83_browser_real_multitouch.py
+          grep -Fq 'page.reload(wait_until="domcontentloaded",timeout=120000)' w63-a7-cascade/ci/w83_browser_real_multitouch.py
           timeout 1190s /tmp/a7-w83/bin/python w63-a7-cascade/ci/w81_browser_fused_mobile.py --export w63-a7-cascade/build/web --evidence w83-evidence/w81-regression --sha "$SHA" 2>&1 | tee w83-evidence/w81-browser.log
           grep -q 'LAST FRONTIER W81 TRUE AAA-READABILITY GODOT MOBILE CHROMIUM PASS:' w83-evidence/w81-browser.log
           timeout 1190s /tmp/a7-w83/bin/python w63-a7-cascade/ci/w82_browser_real_navigation.py --export w63-a7-cascade/build/web --evidence w83-evidence/w82-regression --sha "$SHA" 2>&1 | tee w83-evidence/w82-browser.log
