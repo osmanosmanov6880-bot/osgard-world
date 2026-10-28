@@ -191,6 +191,20 @@ jobs:
           timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_6_reactive_containment.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           grep -q '^IRON PULSE V8.6 REACTIVE CONTAINMENT PASS:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"; then exit 1; fi
+      - name: V9 systemic 3-stage hazard physics, irreversible field choices and validated save migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v9_containment_rules.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-rules.log"
+          grep -q '^IRON PULSE V9 SPATIAL CONTAINMENT PASS:' "$RUNNER_TEMP/iron-pulse-v9-rules.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v9-rules.log"; then exit 1; fi
+      - name: V9 real playable 3D hazard corridors, controller/keyboard input and atomic legacy save QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v9_physical_campaign.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-scene.log"
+          grep -q '^IRON PULSE V9 PHYSICAL CAMPAIGN PASS:' "$RUNNER_TEMP/iron-pulse-v9-scene.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v9-scene.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
@@ -238,6 +252,25 @@ jobs:
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             2>&1 | tee "$RUNNER_TEMP/iron-pulse-browser-playback.log"
           grep -q '"status": "PASS"' iron-pulse-prologue/build/browser-evidence/webgl-evidence.json
+      - name: Assemble exact-source international portal, real WebGL and self-contained Windows ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check iron-pulse-prologue/portal/app.js
+          python3 -m py_compile iron-pulse-prologue/portal/serve_preview.py iron-pulse-prologue/ci/package_portal.py iron-pulse-prologue/ci/portal_acceptance.py
+          python3 iron-pulse-prologue/ci/package_portal.py --project iron-pulse-prologue --source-sha "${{ github.event.pull_request.head.sha || github.sha }}" 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-package.log"
+          test -s iron-pulse-prologue/build/portal/SHA256SUMS.txt
+          test -s iron-pulse-prologue/build/portal/downloads/IRON_PULSE_WINDOWS.zip
+      - name: Live Chromium acceptance for RU/EN portal, 390px UI, verified builds and offline safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/iron-pulse-playwright/bin/python" iron-pulse-prologue/ci/portal_acceptance.py \
+            --portal iron-pulse-prologue/build/portal \
+            --source-sha "${{ github.event.pull_request.head.sha || github.sha }}" 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-portal.log"
+          grep -q "^IRON PULSE V9 GLOBAL PORTAL PASS:" "$RUNNER_TEMP/iron-pulse-v9-portal.log"
+          test -s iron-pulse-prologue/build/portal/evidence/portal-desktop.png
+          test -s iron-pulse-prologue/build/portal/evidence/portal-touch.png
       - name: Retain build proof even if packaging fails
         if: always()
         uses: actions/upload-artifact@v4
@@ -248,5 +281,6 @@ jobs:
             iron-pulse-prologue/build/windows
             iron-pulse-prologue/build/proof
             iron-pulse-prologue/build/browser-evidence
+            iron-pulse-prologue/build/portal
           if-no-files-found: warn
           retention-days: 14

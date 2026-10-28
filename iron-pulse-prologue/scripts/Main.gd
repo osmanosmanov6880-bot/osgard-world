@@ -52,6 +52,21 @@ const COPY := {
         "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
         "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
         "relay_budget": "ЛИМИТ: доступны только две станции спасения.",
+        "field_reactor": "ГЕРМОСТВОРКА / РЕАКТОР", "field_service": "ГЕРМОСТВОРКА / СЕРВИС",
+        "field_evacuation": "ГЕРМОСТВОРКА / ШЛЮЗ",
+        "field_hint": "{name}  {distance} м / [E] ИЗОЛИРОВАТЬ",
+        "field_closed": "{name} / КОНТУР ЗАКРЫТ",
+        "field_budget": "Доступны лишь две защитные створки.",
+        "field_seal_reactor": "РЕАКТОРНЫЙ СЕКТОР ЗАЩИЩЁН. Потрачено 7 с и 6% кислорода.",
+        "field_seal_service": "ТЕХНИЧЕСКИЙ СЕКТОР ЗАЩИЩЁН. Потрачено 7 с и 6% кислорода.",
+        "field_seal_evacuation": "ШЛЮЗ ЗАЩИЩЁН. Потрачено 7 с и 6% кислорода.",
+        "suit_critical": "КРИТИЧЕСКИЙ ИЗНОС КОСТЮМА. Покиньте опасную область!",
+        "suit_failure": "КОСТЮМ РАЗРУШЕН. ОПЕРАТОР ПОТЕРЯН.",
+        "field_enter_reactor": "ОПАСНО: РЕАКТОРНАЯ ЗОНА.",
+        "field_enter_service": "ОПАСНО: ТЕХНИЧЕСКИЙ СЕКТОР.",
+        "field_enter_evacuation": "ОПАСНО: ЭВАКУАЦИОННЫЙ ШЛЮЗ.",
+        "suit_readout": "КОСТЮМ  {value}%    /    СТВОРКИ {used}/2",
+        "suit_final": "Костюм: {value}%  /  Изолировано: {used}/2",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -119,6 +134,21 @@ const COPY := {
         "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
         "relay_uplink": "UPLINK: additional evacuation time secured.",
         "relay_budget": "CAPACITY LIMIT: only two rescue stations may run.",
+        "field_reactor": "REACTOR SAFETY SEAL", "field_service": "SERVICE SAFETY SEAL",
+        "field_evacuation": "EVACUATION SAFETY SEAL",
+        "field_hint": "{name}  {distance} m / [E] ISOLATE",
+        "field_closed": "{name} / CIRCUIT LOCKED",
+        "field_budget": "Only two emergency field seals can be authorized.",
+        "field_seal_reactor": "REACTOR CORRIDOR ISOLATED. Cost: 7s and 6% oxygen.",
+        "field_seal_service": "SERVICE SPINE ISOLATED. Cost: 7s and 6% oxygen.",
+        "field_seal_evacuation": "EVACUATION LOCK ISOLATED. Cost: 7s and 6% oxygen.",
+        "suit_critical": "SUIT INTEGRITY CRITICAL. EXIT THE HAZARD ZONE!",
+        "suit_failure": "SUIT COLLAPSE. OPERATOR SIGNAL LOST.",
+        "field_enter_reactor": "WARNING: REACTOR EXPOSURE ZONE.",
+        "field_enter_service": "WARNING: SERVICE EXPOSURE ZONE.",
+        "field_enter_evacuation": "WARNING: EVACUATION HAZARD ZONE.",
+        "suit_readout": "SUIT  {value}%    /    SEALS {used}/2",
+        "suit_final": "Suit: {value}%  /  Isolated: {used}/2",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -159,6 +189,7 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var containment_run: IPContainmentRun
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -192,6 +223,7 @@ var warning_veil: ColorRect
 var objective_label: Label
 var telemetry_label: Label
 var allocation_label: Label
+var suit_label: Label
 var feedback_label: Label
 var interaction_label: Label
 var footer_label: Label
@@ -327,6 +359,7 @@ func _publish_web_state() -> void:
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["containment_fx"] = containment_fx.readout() if containment_fx != null else {}
+    state["containment_run"] = containment_run.readout() if containment_run != null else {}
     # Read-only native material/geometry facts; Chromium QA never invents art.
     var actual_core: SphereMesh = reactor_core.mesh as SphereMesh
     var support_count: int = 0
@@ -516,6 +549,8 @@ func _make_complex() -> void:
     add_child(reactor_atrium)
     containment_fx = IPContainmentFX.new()
     add_child(containment_fx)
+    containment_run = IPContainmentRun.new()
+    add_child(containment_run)
     if reactor_core != null and reactor_atrium.core_plasma_material != null:
         reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
@@ -746,6 +781,7 @@ func _make_hud() -> void:
     side.add_child(metrics)
     telemetry_label = _label(metrics,"",15,WHITE)
     allocation_label = _label(metrics,"",16,CYAN)
+    suit_label = _label(metrics,"",15,WHITE)
     vitals_panel = _panel(hud_root,Rect2(-365,17,-17,276),Rect2(1,0,1,0),Color(0.014,0.029,0.048,0.92))
     var vitals := VBoxContainer.new()
     vitals.add_theme_constant_override("separation",4)
@@ -992,6 +1028,8 @@ func _layout_hud() -> void:
             reactor_atrium.set_quality("eco")
         if containment_fx != null:
             containment_fx.set_quality("eco")
+        if containment_run != null:
+            containment_run.set_quality("eco")
     # Compact non-overlapping card hierarchy; the center is reserved for 3D.
     header_panel.offset_left = 17.0 if not narrow else 12.0
     header_panel.offset_right = minf(544.0,width-16.0)
@@ -1013,6 +1051,7 @@ func _layout_hud() -> void:
     guidance_label.add_theme_font_size_override("font_size",11 if narrow else 12)
     telemetry_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
+    suit_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
@@ -1131,7 +1170,8 @@ func _checkpoint_payload() -> Dictionary:
         "quality":quality_mode,
         "reduced_motion":reduced_motion,
         "player_position":[player.position.x,player.position.y,player.position.z],
-        "visited_sectors":visited_sectors.duplicate()
+        "visited_sectors":visited_sectors.duplicate(),
+        "field_state":containment_run.checkpoint()
     }
 
 func _save_checkpoint() -> bool:
@@ -1155,6 +1195,18 @@ func _continue_checkpoint() -> bool:
     if restored_engine.finished() or restored_engine.scenario_id != restored_story.scenario:
         return false
     if payload.get("scenario") != restored_engine.scenario_id:
+        return false
+    # V6-V8.6 saves legitimately have no field_state. V9 state must be
+    # completely validated before the actual world or player are mutated.
+    var stored_field: Variant = payload.get("field_state",{})
+    if not stored_field is Dictionary:
+        return false
+    var staged_field := IPContainmentRun.new()
+    var valid_field: bool = staged_field.restore(stored_field) and not staged_field.lost_suit
+    # Node3D is not RefCounted: release temporary validation-only object
+    # immediately or Godot's strict headless acceptance reports a leak.
+    staged_field.free()
+    if not valid_field:
         return false
     var pos: Variant = payload.get("player_position",null)
     if not pos is Array or pos.size() != 3:
@@ -1185,6 +1237,7 @@ func _continue_checkpoint() -> bool:
     session = restored_engine
     story = restored_story
     selected_scenario = session.scenario_id
+    containment_run.restore(stored_field)
     locale = saved_locale
     quality_mode = saved_quality
     reduced_motion = bool(payload["reduced_motion"])
@@ -1198,6 +1251,7 @@ func _continue_checkpoint() -> bool:
     world_sectors.set_quality(quality_mode)
     reactor_atrium.set_quality(quality_mode)
     containment_fx.set_quality(quality_mode)
+    containment_run.set_quality(quality_mode)
     exit_gate.position.y = 6.2 if session.override_set else 2.6
     for index in range(legacy_lamps.size()):
         legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
@@ -1234,6 +1288,7 @@ func _select_scenario(next_scenario: String) -> void:
     story.reset(next_scenario)
     radio_ttl = 0.0
     notice_time = 0.0
+    containment_run.reset()
     _update_scenario_picker()
     _refresh_hud()
 
@@ -1241,6 +1296,7 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    containment_run.reset()
     cinematic_view = false
     _apply_cinematic_view()
     story.reset(selected_scenario)
@@ -1259,6 +1315,7 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    containment_run.reset()
     cinematic_view = false
     _apply_cinematic_view()
     session.reset(selected_scenario)
@@ -1379,6 +1436,7 @@ func _input(event: InputEvent) -> void:
             world_sectors.set_quality(quality_mode)
             reactor_atrium.set_quality(quality_mode)
             containment_fx.set_quality(quality_mode)
+            containment_run.set_quality(quality_mode)
             for i in range(legacy_lamps.size()):
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
@@ -1493,6 +1551,18 @@ func _process(delta: float) -> void:
         reduced_motion,session.thermal_pulses,session.thermal_shield,
         started and not paused and not session.finished())
     if started and not paused and not session.finished():
+        var field_event: String = containment_run.step(delta,player.global_position,session,reduced_motion)
+        if field_event != "":
+            if field_event == "suit_failure":
+                if session.fail_suit_integrity():
+                    previous_event = session.last_event
+                    _story_event(session.last_event)
+                    _announce(session.last_event)
+                    _show_end()
+            else:
+                _story_event(field_event)
+                _announce(field_event)
+    if started and not paused and not session.finished():
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
             active_sector = sector
@@ -1564,6 +1634,25 @@ func _interact(fast: bool = false) -> void:
         return
     var target: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
+    var field: Dictionary = containment_run.nearest(player.global_position)
+    if not field.is_empty() and not fast:
+        var field_dist: float = _physical_distance(field["position"])
+        var main_dist: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
+        var rescue_dist: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+        if field_dist < minf(main_dist,rescue_dist):
+            var sealed: bool = containment_run.activate_seal(str(field["id"]),session)
+            previous_event = session.last_event
+            if sealed:
+                _story_event(session.last_event)
+                _announce(session.last_event)
+            elif containment_run.seals.size() >= IPContainmentRun.MAX_SEALS:
+                _story_event("field_budget")
+                _announce("action_denied")
+            else:
+                _announce("action_denied")
+            _save_checkpoint()
+            _refresh_hud()
+            return
     if not rescue.is_empty() and not fast:
         var main_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
         var rescue_distance: float = _physical_distance(rescue["position"])
@@ -1613,13 +1702,13 @@ func _announce(key: String) -> void:
     if audio_director == null or not started:
         return
     match key:
-        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired":
+        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired", "suit_critical", "suit_failure", "field_enter_reactor", "field_enter_service", "field_enter_evacuation":
             audio_director.cue("surge")
         "crew_evacuated":
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink", "field_seal_reactor", "field_seal_service", "field_seal_evacuation":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -1641,6 +1730,9 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    end_stats.text += "\n" + _copy("suit_final").format({
+        "value":int(ceilf(containment_run.suit_integrity)),
+        "used":containment_run.seals.size()})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1668,16 +1760,35 @@ func _refresh_hud() -> void:
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
         _copy("rescue_count").format({"used":session.relays_activated.size()})]
+    suit_label.text = _copy("suit_readout").format({
+        "value":int(ceilf(containment_run.suit_integrity)),
+        "used":containment_run.seals.size()})
+    suit_label.add_theme_color_override("font_color",
+        RED if containment_run.suit_integrity < 30.0 else AMBER if containment_run.suit_integrity < 60.0 else WHITE)
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
     var nearby: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
+    var field: Dictionary = containment_run.nearest(player.global_position)
+    var show_field: bool = started and not session.finished() and not field.is_empty()
     var show_rescue: bool = not rescue.is_empty()
     if show_rescue and not nearby.is_empty():
         show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
-    if started and not session.finished() and show_rescue:
+    if show_field:
+        var distance_to_field: float = _physical_distance(field["position"])
+        var distance_to_main: float = _physical_distance(nearby["position"]) if not nearby.is_empty() else 999.0
+        var distance_to_rescue: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+        show_field = distance_to_field < minf(distance_to_main,distance_to_rescue)
+    if show_field:
+        var field_id: String = str(field["id"])
+        var available: bool = session.core_scanned and not containment_run.seals.has(field_id) and containment_run.seals.size() < IPContainmentRun.MAX_SEALS
+        var label_key: String = "field_hint" if available else "field_closed"
+        interaction_label.text = _copy(label_key).format({
+            "name":_copy("field_" + field_id),
+            "distance":"%.1f" % _physical_distance(field["position"])})
+    elif started and not session.finished() and show_rescue:
         var relay_dist: float = _physical_distance(rescue["position"])
         var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
         var rescue_key: String = "rescue_hint" if available else "rescue_spent"

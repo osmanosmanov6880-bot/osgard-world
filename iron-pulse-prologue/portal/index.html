@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d11">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="IRON PULSE — an original playable industrial sci-fi emergency simulation. Browser and Windows software preview.">
+  <title>IRON PULSE — CONTAINMENT RUN</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main" data-i18n="skip">Перейти к игре</a>
+  <div class="frame" id="top">
+    <header class="site-header">
+      <a href="#top" class="brand" aria-label="IRON PULSE">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>IRON<span class="brand-gap">/</span>PULSE</span>
+      </a>
+      <nav class="primary-nav" aria-label="Primary">
+        <a href="#mission" data-i18n="navMission">Миссия</a>
+        <a href="#systems" data-i18n="navSystems">Системы</a>
+        <a href="#proof" data-i18n="navProof">Проверки</a>
+      </nav>
+      <div class="header-actions">
+        <button class="locale" id="locale-toggle" type="button" aria-label="Switch to English" aria-pressed="false">
+          <span aria-hidden="true">RU</span><span class="divider-v" aria-hidden="true"></span><span aria-hidden="true">EN</span>
+        </button>
+        <a class="header-play" href="./play/index.html" data-i18n="navPlay">Играть <span aria-hidden="true">↗</span></a>
+      </div>
+    </header>
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="live-dot"></span><span data-i18n="heroEyebrow">ПРОИЗВОДСТВЕННЫЙ ПРЕВЬЮ / SECTOR A7</span></p>
+          <h1 id="hero-title">THE CORE<br><em>IS FALLING.</em></h1>
+          <p class="hero-sub" data-i18n="heroSub">Три аварии. Два контура питания. Один экипаж. Реактор не подождёт, пока ты примешь решение.</p>
+          <div class="hero-ctas">
+            <a class="action-primary" href="./play/index.html"><span data-i18n="playBrowser">Запустить в браузере</span><span aria-hidden="true">↗</span></a>
+            <a class="action-secondary" href="./downloads/IRON_PULSE_WINDOWS.zip" download><span data-i18n="downloadWin">Скачать для Windows</span><span aria-hidden="true">↓</span></a>
+          </div>
+          <p class="release-note"><span class="micro-icon" aria-hidden="true">◎</span><span data-i18n="releaseNote">Демо-версия. Не коммерческий релиз. Игровые системы работают офлайн.</span></p>
+          <div class="stat-line" aria-label="Game design facts">
+            <span><strong>03</strong><small data-i18n="statCrisis">сценария аварии</small></span>
+            <span><strong>03</strong><small data-i18n="statZones">опасных сектора</small></span>
+            <span><strong>02 / 03</strong><small data-i18n="statSeals">защитных контура</small></span>
+          </div>
+        </div>
+        <div class="hero-media">
+          <div class="media-head"><span>A7 / CONTAINMENT OBSERVATION</span><span class="media-live"><span class="live-dot"></span> GODOT 4.4.1</span></div>
+          <div class="screen">
+            <img src="./evidence/cinematic-reactor-desktop.png" alt="Actual screenshot from the IRON PULSE Godot WebGL reactor camera" width="1366" height="768" decoding="async" fetchpriority="high">
+            <div class="screen-hud"><div class="screen-top"><span>REACTOR / A7</span><span data-i18n="realScreenshot">НАСТОЯЩИЙ КАДР ИЗ ИГРЫ</span></div><div class="screen-bottom"><span class="pulse-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span>IRON PULSE / FIELD CAPTURE</span></div></div>
+          </div>
+          <div class="media-footer"><span data-i18n="noMock">Снято прямо из игрового WebGL, без концепт-рендера.</span><span id="short-sha">SOURCE VERIFIED</span></div>
+        </div>
+      </section>
+      <section class="mission section" id="mission" aria-labelledby="mission-title">
+        <div class="section-intro">
+          <p class="eyebrow" data-i18n="missionLabel">01 / МИССИЯ</p>
+          <h2 id="mission-title" data-i18n="missionTitle">Каждое решение<br>имеет цену.</h2>
+          <p data-i18n="missionLead">Не наблюдай за катастрофой. Иди через работающий 3D-комплекс, восстанови контуры и выведи экипаж. Температура, кислород и прочность твоего костюма меняются по-настоящему.</p>
+        </div>
+        <div class="mission-grid">
+          <article class="step"><span class="step-num">01</span><span class="step-rule"></span><h3 data-i18n="step1">Найди неисправность</h3><p data-i18n="step1Text">Исследуй реакторный зал и получи настоящие показания аварии.</p></article>
+          <article class="step"><span class="step-num">02</span><span class="step-rule"></span><h3 data-i18n="step2">Выбери жертву</h3><p data-i18n="step2Text">Два контура питают три системы. Защити экипаж или стабилизируй ядро.</p></article>
+          <article class="step"><span class="step-num">03</span><span class="step-rule"></span><h3 data-i18n="step3">Пройди через опасность</h3><p data-i18n="step3Text">Герметизируй два из трёх секторов. Третий придётся пересечь под угрозой костюму.</p></article>
+        </div>
+      </section>
+      <section class="systems section" id="systems" aria-labelledby="systems-title">
+        <div class="section-intro">
+          <p class="eyebrow" data-i18n="systemsLabel">02 / АВАРИЙНЫЕ ПРОТОКОЛЫ</p>
+          <h2 id="systems-title" data-i18n="systemsTitle">Три пути.<br>Три вида угрозы.</h2>
+          <p data-i18n="systemsLead">Переключи сценарий, чтобы увидеть, как меняется задача. В самой игре это настоящие разные системы расчёта.</p>
+        </div>
+        <div class="scenario" id="scenario-panel">
+          <div class="scenario-options" role="group" aria-label="Emergency scenarios">
+            <button type="button" class="scenario-tab active" data-scenario="grid" aria-pressed="true"><span>01</span> GRID</button>
+            <button type="button" class="scenario-tab" data-scenario="heat" aria-pressed="false"><span>02</span> HEAT</button>
+            <button type="button" class="scenario-tab" data-scenario="air" aria-pressed="false"><span>03</span> AIR</button>
+          </div>
+          <div class="scenario-detail"><p class="eyebrow" id="scenario-tag">A7 / GRID DISCONNECT</p><h3 id="scenario-title">BLACKOUT</h3><p id="scenario-description">Система питания отказала. Выбери, какой контур отключить временно, чтобы зарядить эвакуационный шлюз.</p><div class="scenario-meta"><span><i class="risk-dot"></i><span id="scenario-risk">POWER ALLOCATION</span></span><span id="scenario-objective">02 BUSES / 03 LOADS</span></div></div>
+        </div>
+      </section>
+      <section class="proof section" id="proof" aria-labelledby="proof-title">
+        <div class="section-intro">
+          <p class="eyebrow" data-i18n="proofLabel">03 / ИНЖЕНЕРНАЯ ПРОЗРАЧНОСТЬ</p>
+          <h2 id="proof-title" data-i18n="proofTitle">Не обещания.<br>Проверяемый билд.</h2>
+          <p data-i18n="proofLead">Игра экспортируется из одного Git-коммита, проверяется автоматическими тестами и запускается в настоящем Chromium. Аппаратная и художественная приёмка ещё обязательны.</p>
+        </div>
+        <div class="proof-grid">
+          <div class="proof-item"><span class="proof-idx">01 /</span><strong>GODOT 4.4.1</strong><p data-i18n="proofEngine">Настоящая нативная 3D-сцена, игровые механики и сохранения.</p></div>
+          <div class="proof-item"><span class="proof-idx">02 /</span><strong>SHA-256</strong><p data-i18n="proofHash">Проверенные файлы Windows и WebGL из одного исходника.</p></div>
+          <div class="proof-item"><span class="proof-idx">03 /</span><strong>DESKTOP + TOUCH</strong><p data-i18n="proofBrowser">Браузерные тесты управления на ПК и сенсорной эмуляции.</p></div>
+        </div>
+        <div class="release-bar"><div><span class="live-dot"></span><strong data-i18n="holdTitle">SOFTWARE PREVIEW</strong><p data-i18n="holdText">Не готово к коммерческому выпуску: требуется QA реального GPU, телефонов и независимых игроков.</p></div><div class="build-sha" aria-label="Source commit"><span>SOURCE COMMIT</span><code id="build-sha">VERIFYING…</code></div></div>
+      </section>
+      <section class="final-cta" aria-labelledby="cta-title">
+        <div><p class="eyebrow" data-i18n="ctaLabel">REACTOR A7 / SYSTEM ONLINE</p><h2 id="cta-title" data-i18n="ctaTitle">Ты управляешь<br>последними минутами.</h2></div><a class="action-primary" href="./play/index.html"><span data-i18n="ctaPlay">Войти в комплекс</span><span aria-hidden="true">↗</span></a>
+      </section>
+    </main>
+    <footer class="footer"><span>© IRON PULSE / ORIGINAL FICTION</span><span data-i18n="footer">Нет учётных записей, аналитики и сетевой игры. Все сохранения локальные.</span><a href="#top" data-i18n="backTop">Наверх ↑</a></footer>
+  </div>
+</body>
+</html>
