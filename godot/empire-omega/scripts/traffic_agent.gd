@@ -6,6 +6,7 @@ const R47_CROSSING = preload("res://scripts/horizon_r47_crosswalk_prediction.gd"
 const CIVIC_CROSSING = preload("res://scripts/city_reign_civic_traffic_safety.gd")
 const SEDAN_SURFACE = preload("res://scripts/horizon_traffic_sedan_surface.gd")
 const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
+const FOLLOW = preload("res://scripts/city_reign_traffic_following.gd")
 const CAR_LENGTH := 4.1
 const DETECTION_RANGE := 27.0
 const ROAD_HEIGHT := 0.8
@@ -21,6 +22,8 @@ var travelled_metres := 0.0
 var emergency_stops := 0
 var wetness := 1.0
 var citizens: Array = []
+var neighbors: Array = []
+var last_follow_speed: float = 18.0
 var _last_braking := true
 var indicator_lamps: Dictionary = {}
 var _indicator_lit: Dictionary = {"left":true,"right":true}
@@ -223,6 +226,10 @@ func _physics_process(delta: float) -> void:
 	_sync_indicator_lamps()
 	var bend_limit: float = SAFETY.corner_speed(heading,after_corner,displacement.length(),cruising_speed)
 	var goal: float = minf(bend_limit,SAFETY.desired_speed(cruising_speed,obstacle,signal_distance,wetness))
+	# R163: a physical neighboring convoy can only REDUCE the legacy
+	# raycast/signal/pedestrian target, never grant passage or extra speed.
+	last_follow_speed = FOLLOW.scan(self,neighbors,heading,speed,cruising_speed,wetness)
+	goal = minf(goal,last_follow_speed)
 	# B62: fund the real city's zebra crossings to actually calm ordinary
 	# resident traffic. One source-locked speed constraint, AFTER original
 	# pedestrian and signal safety. No change to physics, route or payout.

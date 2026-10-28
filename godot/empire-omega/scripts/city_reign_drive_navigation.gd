@@ -71,6 +71,8 @@ static func snapshot(path: Array[Vector3],at: Vector3) -> Dictionary:
         return {
             "kind":direction,
             "turn_m":minf(remaining,first_dist),
+            "turn_world":corner,
+            "turn_out":Vector3(outgoing.x,0.0,outgoing.y),
             "remaining_m":remaining,
             "lateral_m":separation
         }
