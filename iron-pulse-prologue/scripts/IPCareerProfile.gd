@@ -182,7 +182,9 @@ func _valid_result(value: Variant) -> bool:
     if typeof(item.get("won",null))!=TYPE_BOOL:
         return false
     var grade: Variant = item.get("grade")
-    if not grade is String or (grade not in ["S","A","B"] if item["won"] else grade!="UNRATED"):
+    if not grade is String:
+        return false
+    if (bool(item["won"]) and grade not in ["S","A","B"]) or (not bool(item["won"]) and grade!="UNRATED"):
         return false
     for stat in ["elapsed","crew","heat","oxygen"]:
         var maximum: float = MAX_SECONDS if stat=="elapsed" else 110.0 if stat=="heat" else 100.0
