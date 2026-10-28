@@ -45,6 +45,7 @@ var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
 var r98_facade_ribs: MultiMeshInstance3D
 var city_reign_facades: Node3D
+var city_reign_street_architecture: Node3D
 var city_reign_squares: Node3D
 var city_reign_hero_architecture: Node3D
 var city_reign_purchased_skyline: Node3D
@@ -75,6 +76,7 @@ const R127_SHELTERS = preload("res://scripts/horizon_r127_street_shelters.gd")
 const R95_MASSING = preload("res://scripts/horizon_r95_city_massing.gd")
 const R98_FINS = preload("res://scripts/horizon_r98_architectural_fins.gd")
 const CITY_REIGN_FACADE = preload("res://scripts/city_reign_cinematic_facades.gd")
+const CITY_REIGN_STREET_ARCHITECTURE = preload("res://scripts/city_reign_street_architecture.gd")
 const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.gd")
 const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.gd")
 const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_skyline.gd")
@@ -108,6 +110,7 @@ func _ready() -> void:
 	architecture_trim = ARCHITECTURE_TRIM.new()
 	r98_facade_ribs = R98_FINS.new()
 	city_reign_facades = CITY_REIGN_FACADE.new()
+	city_reign_street_architecture = CITY_REIGN_STREET_ARCHITECTURE.new()
 	streetfront = STREETFRONT_SCENE.new()
 	facade_balconies = BALCONIES_SCENE.new()
 	_create_city()
@@ -117,6 +120,10 @@ func _ready() -> void:
 	city_root.add_child(r98_facade_ribs)
 	city_reign_facades.call("finalize")
 	city_root.add_child(city_reign_facades)
+	# B41: one genuine street-level 3D architectural kit across the existing
+	# building footprints. No gameplay colliders, random draws or fake assets.
+	city_reign_street_architecture.call("finalize")
+	city_root.add_child(city_reign_street_architecture)
 	streetfront.call("finalize")
 	city_root.add_child(streetfront)
 	facade_balconies.call("finalize")
@@ -302,6 +309,7 @@ func _create_city() -> void:
 					pos,ROAD_INTERVAL,(ix+iz+n)%2==0)
 				streetfront.call("record",pos,width,height,building_count,entrance_face)
 				city_reign_facades.call("record",pos,width,height,id,entrance_face)
+				city_reign_street_architecture.call("record",pos,width,height,id,entrance_face)
 				facade_balconies.call("record",pos,width,height,building_count,entrance_face)
 				_record_windows(pos,width,height,entrance_face)
 				building_count += 1
@@ -624,6 +632,8 @@ func apply_visual_budget(mode: String) -> void:
 		r98_facade_ribs.call("set_quality",visual_budget)
 	if city_reign_facades != null:
 		city_reign_facades.call("set_quality",visual_budget)
+	if city_reign_street_architecture != null:
+		city_reign_street_architecture.call("set_quality",visual_budget)
 	if city_reign_squares != null:
 		city_reign_squares.call("set_quality",visual_budget)
 	if city_reign_hero_architecture != null:
@@ -674,6 +684,8 @@ func _apply_lighting() -> void:
 	LIGHT_GRADE.apply_night_overlay(sky_environment.environment,sun,atmosphere,ambience_time)
 	if city_reign_facades != null:
 		city_reign_facades.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_street_architecture != null:
+		city_reign_street_architecture.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	if city_reign_squares != null:
 		city_reign_squares.call("sync_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	if city_reign_hero_architecture != null:
