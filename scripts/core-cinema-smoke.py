@@ -14,6 +14,13 @@ from core_server import Store
 from core_backup import backup
 
 class CinemaTests(base.CoreTests):
+    def setUp(self):
+        super().setUp()
+        # Existing CoreTests share one test server and one owner. Isolate the
+        # independent Cinema fixture, preserving the real SQLite constraints.
+        with self.server.store.transaction() as db:
+            db.execute('DELETE FROM cinema_spaces WHERE owner_id=?',(self.owner['user']['id'],))
+
     def workspace(self,film='zero-window',token=None):
         status,result=self.write('cinema/spaces',{'filmId':film,'title':'OSA production pilot'},token)
         self.assertEqual(status,200,result)
