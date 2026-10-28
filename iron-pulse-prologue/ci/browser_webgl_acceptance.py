@@ -266,6 +266,65 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                     real_width, real_height)
                                 assert rect[1] + rect[3] < cards["prompt"][1] - 1, (
                                     "Mobile touch target obstructed by prompt card",label,rect,cards["prompt"])
+                        # V17: exercise the ORIGINAL native Godot records menu.
+                        # Desktop uses O; mobile taps real 52px Godot Buttons.
+                        # Reading a history cannot launch a game, fabricate a
+                        # completed result or call a remote telemetry API.
+                        ledger=idle.get("operator_records",{})
+                        assert ledger.get("readout",{}).get("schema")=="IRON_PULSE_OPERATOR_RECORDS_V17", (
+                            "Real native V17 ledger has no validated source schema",ledger)
+                        assert ledger.get("readout",{}).get("local_only") is True and (
+                            ledger.get("readout",{}).get("authenticity_certified") is False),(
+                            "Private local records are misrepresented as cryptographically certified",ledger)
+                        assert ledger.get("count")==0 and ledger.get("visible") is False,(
+                            "Fresh Godot run contains fabricated personal completion history",ledger)
+                        if mobile:
+                            rect=ledger.get("open_intro_rect")
+                            assert rect and rect[2]>=44 and rect[3]>=44,(
+                                "Personal archive has no accessible native intro touch button",rect)
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            tap_x=bounds["x"]+(rect[0]+rect[2]/2)*bounds["width"]/idle["viewport"][0]
+                            tap_y=bounds["y"]+(rect[1]+rect[3]/2)*bounds["height"]/idle["viewport"][1]
+                            assert 0<=tap_x<=size["width"] and 0<=tap_y<=size["height"], (
+                                "Records button is clipped outside mobile canvas",rect,(tap_x,tap_y))
+                            page.touchscreen.tap(tap_x,tap_y)
+                        else:
+                            page.keyboard.press("o")
+                        deadline=time.monotonic()+18
+                        ledger_open={}
+                        while time.monotonic()<deadline:
+                            ledger_open=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if ledger_open.get("operator_records",{}).get("visible"):
+                                break
+                            page.wait_for_timeout(180)
+                        opened=ledger_open.get("operator_records",{})
+                        assert opened.get("visible") is True and opened.get("count")==0,(
+                            "Original Godot personal archive did not open honestly",name,opened)
+                        assert ledger_open.get("started") is False and ledger_open.get("intro_visible") is True, (
+                            "Opening operator archive accidentally began a mission",ledger_open)
+                        if mobile:
+                            close=opened.get("close_rect")
+                            assert close and close[2]>=44 and close[3]>=44,(
+                                "Private history has no accessible mobile close control",close)
+                            bounds=canvas.bounding_box()
+                            page.touchscreen.tap(
+                                bounds["x"]+(close[0]+close[2]/2)*bounds["width"]/ledger_open["viewport"][0],
+                                bounds["y"]+(close[1]+close[3]/2)*bounds["height"]/ledger_open["viewport"][1])
+                        else:
+                            page.keyboard.press("o")
+                        deadline=time.monotonic()+18
+                        ledger_closed={}
+                        while time.monotonic()<deadline:
+                            ledger_closed=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if ledger_closed.get("operator_records",{}).get("visible") is False:
+                                break
+                            page.wait_for_timeout(180)
+                        assert ledger_closed.get("operator_records",{}).get("visible") is False, (
+                            "Original Godot personal archive cannot be closed",name)
+                        report.setdefault("v17_real_operator_records",{})[name]=(
+                            "actual Godot intro records + empty data + physical keyboard/touch open/close PASS")
+
                         # Real Godot input: three different emergencies selected
                         # with genuine native Button clicks/taps, not state injection.
                         selector_rects = idle.get("scenario_button_rects", {})

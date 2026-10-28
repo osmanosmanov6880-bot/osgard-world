@@ -176,6 +176,10 @@ var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
 var threat_radar: IPThreatRadar = IPThreatRadar.new()
 var after_action_review: IPAfterActionReview = IPAfterActionReview.new()
 var black_box_report: Dictionary = {}
+var run_archive: IPRunArchive = IPRunArchive.new()
+var archive_last_save_ok: bool = false
+var archive_erase_armed: bool = false
+var archive_erase_failed: bool = false
 var decision_forecaster: IPDecisionForecast = IPDecisionForecast.new()
 var forecast_report: Dictionary = {}
 var forecast_update_clock: float = 0.0
@@ -229,6 +233,13 @@ var intro_body: Label
 var intro_button: Button
 var continue_button: Button
 var campaign_button: Button
+var archive_intro_button: Button
+var archive_end_button: Button
+var archive_panel: PanelContainer
+var archive_label: Label
+var archive_title: Label
+var archive_erase_button: Button
+var archive_close_button: Button
 var radio_panel: PanelContainer
 var radio_speaker: Label
 var radio_dialogue: Label
@@ -294,6 +305,8 @@ func _ready() -> void:
         if browser != null:
             initial_query = str(browser.location.search)
     _apply_world_launch(initial_query)
+    if DisplayServer.get_name() != "headless":
+        run_archive.load_archive()
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -444,6 +457,16 @@ func _publish_web_state() -> void:
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
     state["threat_radar"] = threat_radar.snapshot(session)
     state["threat_hud"] = threat_label.text if threat_label != null else ""
+    state["operator_records"] = {
+        "visible":archive_panel != null and archive_panel.visible,
+        "count":run_archive.entries.size(),
+        "readout":run_archive.readout(),
+        "local_save_success":archive_last_save_ok,
+        "open_intro_rect":_hud_rect(archive_intro_button) if archive_intro_button != null else [],
+        "open_end_rect":_hud_rect(archive_end_button) if archive_end_button != null else [],
+        "close_rect":_hud_rect(archive_close_button) if archive_close_button != null else [],
+        "summary_title":archive_title.text if archive_title != null else ""
+    }
     state["black_box"] = {
         "visible":debrief_panel != null and debrief_panel.visible,
         "available":not black_box_report.is_empty(),
@@ -919,7 +942,7 @@ func _make_vital_meter(parent: VBoxContainer, key: String, caption: String, tint
     vitals_meters[key] = meter
 
 func _make_overlays() -> void:
-    intro_panel = _panel(hud_root,Rect2(-310,-275,310,275),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
+    intro_panel = _panel(hud_root,Rect2(-310,-300,310,300),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     intro_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var start_box := VBoxContainer.new()
     start_box.add_theme_constant_override("separation",8)
@@ -966,6 +989,11 @@ func _make_overlays() -> void:
     campaign_button.custom_minimum_size = Vector2(0,48)
     campaign_button.pressed.connect(_start_campaign)
     start_box.add_child(campaign_button)
+    archive_intro_button = Button.new()
+    archive_intro_button.name = "OpenLocalOperatorRecords"
+    archive_intro_button.custom_minimum_size = Vector2(0,52)
+    archive_intro_button.pressed.connect(_toggle_run_archive)
+    start_box.add_child(archive_intro_button)
     continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
     pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
@@ -1002,6 +1030,11 @@ func _make_overlays() -> void:
     debrief_button.custom_minimum_size = Vector2(0,52)
     debrief_button.pressed.connect(_toggle_after_action)
     end_box.add_child(debrief_button)
+    archive_end_button = Button.new()
+    archive_end_button.name = "ReadPriorRealGameRuns"
+    archive_end_button.custom_minimum_size = Vector2(0,52)
+    archive_end_button.pressed.connect(_toggle_run_archive)
+    end_box.add_child(archive_end_button)
     end_panel.visible = false
     # Native evidence panel. Its 3D game event history comes only from the
     # currently finished engine; the existing end screen stays mounted.
@@ -1025,7 +1058,34 @@ func _make_overlays() -> void:
     debrief_close_button.pressed.connect(_toggle_after_action)
     debrief_box.add_child(debrief_close_button)
     debrief_panel.visible = false
+    # Persistent personal attempt ledger; native Godot, no external services.
+    archive_panel = _panel(hud_root,Rect2(-315,-300,315,300),Rect2(0.5,0.5,0.5,0.5),Color(0.011,0.018,0.025,0.995))
+    archive_panel.name = "V17_LocalOperatorRecords"
+    archive_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+    var records_box := VBoxContainer.new()
+    records_box.add_theme_constant_override("separation",10)
+    archive_panel.add_child(records_box)
+    archive_title = _label(records_box,"A7 / OPERATOR RECORDS",24,CYAN)
+    var records_scroll := ScrollContainer.new()
+    records_scroll.name = "LocalRunsScrollableHistory"
+    records_scroll.custom_minimum_size = Vector2(0,392)
+    records_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    records_box.add_child(records_scroll)
+    archive_label = _label(records_scroll,"",12,WHITE)
+    archive_label.name = "OnlyActualLocalRunResults"
+    archive_erase_button = Button.new()
+    archive_erase_button.name = "TwoStepEraseLocalRuns"
+    archive_erase_button.custom_minimum_size = Vector2(0,52)
+    archive_erase_button.pressed.connect(_request_archive_erase)
+    records_box.add_child(archive_erase_button)
+    archive_close_button = Button.new()
+    archive_close_button.name = "CloseLocalRuns"
+    archive_close_button.custom_minimum_size = Vector2(0,52)
+    archive_close_button.pressed.connect(_toggle_run_archive)
+    records_box.add_child(archive_close_button)
+    archive_panel.visible = false
     _refresh_after_action_locale()
+    _refresh_run_archive_locale()
 
 func _touch_button(parent: Control, text_value: String, x: float, y: float, width: float, move_key: String = "") -> Button:
     var btn := Button.new()
@@ -1193,6 +1253,13 @@ func _layout_hud() -> void:
     end_panel.offset_left = -minf(300.0,width*0.45)
     end_panel.offset_right = minf(300.0,width*0.45)
     end_stats.custom_minimum_size.x = minf(500.0,width*0.83-28.0)
+    if archive_panel != null:
+        var archive_half: float = minf(315.0,width*0.45)
+        archive_panel.offset_left = -archive_half
+        archive_panel.offset_right = archive_half
+        archive_label.custom_minimum_size.x = archive_half*2.0-48.0
+        archive_label.add_theme_font_size_override("font_size",11 if narrow else 12)
+        archive_title.add_theme_font_size_override("font_size",18 if narrow else 24)
     if debrief_panel != null:
         var review_half: float = minf(315.0,width*0.45)
         debrief_panel.offset_left = -review_half
@@ -1308,9 +1375,69 @@ func _toggle_after_action() -> void:
         return
     debrief_panel.visible = not debrief_panel.visible
     if debrief_panel.visible:
+        if archive_panel != null:
+            archive_panel.visible = false
         forecast_panel.visible = false
         diagnostic_panel.visible = false
         _refresh_after_action_locale()
+    _publish_web_state()
+
+func _clear_operator_overlay() -> void:
+    if archive_panel != null:
+        archive_panel.visible = false
+    archive_erase_armed = false
+
+func _refresh_run_archive_locale() -> void:
+    if archive_intro_button == null or archive_end_button == null or archive_label == null or archive_title == null:
+        return
+    var english: bool = locale == "en"
+    archive_intro_button.text = "OPERATOR RECORDS / O" if english else "АРХИВ ОПЕРАТОРА / O"
+    archive_end_button.text = archive_intro_button.text
+    archive_title.text = "A7 / LOCAL OPERATOR RECORDS" if english else "A7 / ЛОКАЛЬНЫЙ АРХИВ"
+    archive_label.text = run_archive.summary(locale)
+    if archive_erase_failed:
+        archive_label.text += "\n" + ("ERASE FAILED: original file preserved." if english else "ОШИБКА УДАЛЕНИЯ: оригинальный файл сохранён.")
+    archive_close_button.text = "CLOSE RECORDS / ESC" if english else "ЗАКРЫТЬ АРХИВ / ESC"
+    archive_erase_button.disabled = run_archive.entries.is_empty() and not run_archive.is_corrupt
+    if archive_erase_armed:
+        archive_erase_button.text = "CONFIRM DELETE ALL LOCAL RUNS" if english else "ПОДТВЕРДИТЕ УДАЛЕНИЕ ЗАПИСЕЙ"
+    else:
+        archive_erase_button.text = "ERASE LOCAL RUNS (2 STEPS)" if english else "СТЕРЕТЬ ЗАПИСИ (2 ШАГА)"
+
+func _toggle_run_archive() -> void:
+    # Read-only. No mid-operation pause, skip, data upload or mission mutation.
+    if archive_panel == null or (started and not paused and not session.finished()):
+        return
+    archive_panel.visible = not archive_panel.visible
+    archive_erase_armed = false
+    archive_erase_failed = false
+    if archive_panel.visible:
+        if debrief_panel != null:
+            debrief_panel.visible = false
+        if diagnostic_panel != null:
+            diagnostic_panel.visible = false
+    _refresh_run_archive_locale()
+    _publish_web_state()
+
+func _request_archive_erase() -> void:
+    if archive_panel == null or not archive_panel.visible or (run_archive.entries.is_empty() and not run_archive.is_corrupt):
+        return
+    if not archive_erase_armed:
+        archive_erase_armed = true
+        _refresh_run_archive_locale()
+        return
+    # Erase is explicit and scoped ONLY to V17 archive; campaign saves remain.
+    if run_archive.erase():
+        archive_erase_armed = false
+        archive_erase_failed = false
+        archive_last_save_ok = false
+        _refresh_run_archive_locale()
+    # If the storage operation fails, retain loaded data and require an
+    # explicit extra click before any retry; never claim successful erasure.
+    else:
+        archive_erase_armed = false
+        archive_erase_failed = true
+        _refresh_run_archive_locale()
     _publish_web_state()
 
 func _cycle_director_shot() -> void:
@@ -1531,6 +1658,8 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    _clear_operator_overlay()
+    archive_last_save_ok = false
     _clear_after_action()
     forecast_panel.visible = false
     forecast_report.clear()
@@ -1552,6 +1681,8 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    _clear_operator_overlay()
+    archive_last_save_ok = false
     _clear_after_action()
     forecast_panel.visible = false
     forecast_report.clear()
@@ -1593,6 +1724,7 @@ func _restart() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _resume() -> void:
+    _clear_operator_overlay()
     paused = false
     pause_panel.visible = false
     audio_director.set_active(true)
@@ -1627,6 +1759,7 @@ func _toggle_language() -> void:
     _refresh_hud()
     _refresh_decision_forecast()
     _refresh_after_action_locale()
+    _refresh_run_archive_locale()
     _refresh_radio_ui()
 
 func _gamepad_axis(axis_id: int) -> float:
@@ -1640,21 +1773,30 @@ func _gamepad_button(button_index: int) -> void:
     # Hardware performance/compatibility still requires real controller QA.
     # This dispatch handles Godot's mapped standard gamepad button events.
     if button_index == JOY_BUTTON_START:
+        if archive_panel != null and archive_panel.visible:
+            _toggle_run_archive()
+            return
         if not started:
             start_run()
         else:
             _pause_toggle()
         return
     if button_index == JOY_BUTTON_B:
-        if session.finished():
+        if archive_panel != null and archive_panel.visible:
+            _toggle_run_archive()
+        elif session.finished():
             _toggle_after_action()
         else:
             _toggle_journal()
         return
     if not started or paused:
+        if button_index == JOY_BUTTON_X and not started:
+            _toggle_run_archive()
         return
     if session.finished():
-        if button_index == JOY_BUTTON_A and not debrief_panel.visible:
+        if button_index == JOY_BUTTON_X:
+            _toggle_run_archive()
+        elif button_index == JOY_BUTTON_A and not debrief_panel.visible and not archive_panel.visible:
             _end_action()
         elif button_index == JOY_BUTTON_Y:
             _toggle_after_action()
@@ -1705,6 +1847,9 @@ func _input(event: InputEvent) -> void:
         if event.keycode == KEY_B:
             _toggle_after_action()
             return
+        if event.keycode == KEY_O:
+            _toggle_run_archive()
+            return
         if event.keycode == KEY_H and started and not paused and not session.finished():
             _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
             _save_checkpoint()
@@ -1733,6 +1878,9 @@ func _input(event: InputEvent) -> void:
             _toggle_journal()
             return
         if event.keycode == KEY_ESCAPE:
+            if archive_panel != null and archive_panel.visible:
+                _toggle_run_archive()
+                return
             if debrief_panel != null and debrief_panel.visible:
                 _toggle_after_action()
                 return
@@ -1751,7 +1899,7 @@ func _input(event: InputEvent) -> void:
         if not started or paused:
             return
         if session.finished():
-            if event.keycode == KEY_R:
+            if event.keycode == KEY_R and not archive_panel.visible and not debrief_panel.visible:
                 _end_action()
             return
         if event.keycode == KEY_1 or event.keycode == KEY_2:
@@ -2003,7 +2151,14 @@ func _show_end() -> void:
     if campaign.active:
         end_stats.text += "\n\n" + campaign.summary(locale)
     black_box_report = after_action_review.review(session,campaign)
+    # Headless regressions must not modify the regular player's user:// slot.
+    # Native CI sets a separate temporary path when it tests persistence.
+    if DisplayServer.get_name() != "headless" or run_archive.archive_path != IPRunArchive.PATH:
+        archive_last_save_ok = run_archive.record_finished(session,campaign)
+        end_stats.text += ("\nLOCAL RUN SAVED" if locale=="en" else "\nЛОКАЛЬНЫЙ ПРОХОД СОХРАНЁН") if archive_last_save_ok else (
+            "\nLOCAL HISTORY NOT SAVED: CHECK STORAGE" if locale=="en" else "\nАРХИВ НЕ СОХРАНЁН: ПРОВЕРЬТЕ ХРАНИЛИЩЕ")
     _refresh_after_action_locale()
+    _refresh_run_archive_locale()
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
