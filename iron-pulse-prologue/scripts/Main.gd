@@ -158,6 +158,7 @@ var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
 var reduced_motion: bool = false
+var cinematic_view: bool = false
 var muted_audio: bool = false
 var quality_mode: String = "hero"
 var walking_phase: float = 0.0
@@ -320,6 +321,7 @@ func _publish_web_state() -> void:
     state["soundscape_ready"] = audio_director != null and audio_director.ambient != null
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
+    state["cinematic_view"] = cinematic_view
     state["world_sector"] = active_sector
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
@@ -987,6 +989,22 @@ func _layout_hud() -> void:
     journal_text.custom_minimum_size.x = journal_half_width*2.0-58.0
     radio_dialogue.add_theme_font_size_override("font_size",12 if narrow else 14)
     _refresh_radio_ui()
+    _apply_cinematic_view()
+
+func _apply_cinematic_view() -> void:
+    # One-key playable environment inspection. No movement, game timers,
+    # controls or original narrative data are modified by this camera HUD mode.
+    if header_panel == null:
+        return
+    header_panel.visible = not cinematic_view
+    side_panel.visible = not cinematic_view
+    prompt_panel.visible = not cinematic_view
+    crosshair.visible = not cinematic_view
+    footer_label.visible = not cinematic_view
+    vitals_panel.visible = not cinematic_view and get_viewport().get_visible_rect().size.x >= 1000.0
+    if cinematic_view:
+        radio_panel.visible = false
+        priority_panel.visible = false
 
 func _refresh_radio_ui() -> void:
     if radio_panel == null:
@@ -995,8 +1013,8 @@ func _refresh_radio_ui() -> void:
     if not line.is_empty():
         radio_speaker.text = str(line["speaker"]) + "   /   ACT " + str(line["act"])
         radio_dialogue.text = str(line["text"])
-    radio_panel.visible = started and not paused and not journal_panel.visible and radio_ttl > 0.0
-    priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible
+    radio_panel.visible = started and not paused and not journal_panel.visible and not cinematic_view and radio_ttl > 0.0
+    priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible and not cinematic_view
     crew_priority_button.text = _copy("choice_crew")
     core_priority_button.text = _copy("choice_core")
     journal_text.text = story.journal_localized(locale)
@@ -1090,6 +1108,8 @@ func _continue_checkpoint() -> bool:
     if saved_locale not in ["ru","en"] or typeof(payload.get("reduced_motion",null)) != TYPE_BOOL:
         return false
     # Now, after atomic validation, restore all gameplay and authored story state.
+    cinematic_view = false
+    _apply_cinematic_view()
     session = restored_engine
     story = restored_story
     selected_scenario = session.scenario_id
@@ -1148,6 +1168,8 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    cinematic_view = false
+    _apply_cinematic_view()
     story.reset(selected_scenario)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
@@ -1164,6 +1186,8 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    cinematic_view = false
+    _apply_cinematic_view()
     session.reset(selected_scenario)
     story.reset(selected_scenario)
     radio_ttl = 12.0
@@ -1285,7 +1309,16 @@ func _input(event: InputEvent) -> void:
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
             return
+        if event.keycode == KEY_C and started and not paused and not session.finished():
+            cinematic_view = not cinematic_view
+            _apply_cinematic_view()
+            if not cinematic_view:
+                _refresh_radio_ui()
+            return
         if event.keycode == KEY_J:
+            if cinematic_view:
+                cinematic_view = false
+                _apply_cinematic_view()
             _toggle_journal()
             return
         if event.keycode == KEY_ESCAPE:
@@ -1512,6 +1545,8 @@ func _announce(key: String) -> void:
             audio_director.cue("confirm")
 
 func _show_end() -> void:
+    cinematic_view = false
+    _apply_cinematic_view()
     if end_panel.visible:
         return
     end_panel.visible = true
