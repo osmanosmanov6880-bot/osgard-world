@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 BUNDLE = (
-    "index.html", "styles.css", "app.js", "manifest.webmanifest", "sw.js",
+    "index.html", "styles.css", "app.js", "preflight.js", "preflight.css", "manifest.webmanifest", "sw.js",
     "assets/iron-pulse-mark.svg", "assets/gameplay-proof.png",
     "play/index.html", "play/index.js", "play/index.wasm", "play/index.pck",
 )
@@ -52,7 +52,11 @@ def attest(site: Path, original_web: Path, source_screenshot: Path, sha: str) ->
     html = (site / "index.html").read_text(encoding="utf-8")
     js = (site / "app.js").read_text(encoding="utf-8")
     css = (site / "styles.css").read_text(encoding="utf-8")
+    preflight = (site / "preflight.js").read_text(encoding="utf-8")
     sw = (site / "sw.js").read_text(encoding="utf-8")
+    assert "IRON_PULSE_LOCAL_PREFLIGHT_V14" in preflight, "Local V14 preflight absent"
+    assert 'id="preflight-run"' in html and './preflight.js' in html, "Preflight UI not wired"
+    assert not re.search(r'\b(?:eval|Function)\s*\(', preflight), "Unsafe preflight dynamic execution"
     assert "IRON PULSE" in html and 'id="campaign-play"' in html, "Real campaign CTA absent"
     assert "./play/index.html" in js and "campaignUrl" in js, "World launch links missing"
     assert ".mini-play" in css and "min-height: 48px" in css, "44px mobile target fix absent"
