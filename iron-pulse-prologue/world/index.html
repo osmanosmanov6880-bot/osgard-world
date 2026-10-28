@@ -12,8 +12,10 @@
   <link rel="icon" href="./assets/iron-pulse-mark.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./preflight.css">
   <title>IRON PULSE WORLD — THREE ACTS</title>
   <script src="./app.js" defer></script>
+  <script src="./preflight.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skip">К содержанию</a>
@@ -129,6 +131,33 @@
       <div class="controls-grid">
         <div class="control-group"><h3 data-i18n="pcTitle">ПК / КЛАВИАТУРА</h3><dl><div><dt>W A S D</dt><dd data-i18n="move">Движение</dd></div><div><dt>MOUSE</dt><dd data-i18n="look">Осмотр</dd></div><div><dt>E / Q</dt><dd data-i18n="use">Действие / срочно</dd></div><div><dt>C / J</dt><dd data-i18n="camera">Камера / радиоархив</dd></div></dl></div>
         <div class="control-group"><h3 data-i18n="accessTitle">ДОСТУПНОСТЬ</h3><dl><div><dt>RU / EN</dt><dd data-i18n="language">Язык интерфейса</dd></div><div><dt>G</dt><dd data-i18n="graphics">HERO / ECO графика</dd></div><div><dt>V</dt><dd data-i18n="reduceMotion">Уменьшение движения</dd></div><div><dt>M</dt><dd data-i18n="mute">Звук вкл./выкл.</dd></div></dl></div>
+      </div>
+    </section>
+
+    <section class="preflight section-shell" id="preflight" aria-labelledby="preflight-title">
+      <p class="overline" data-ready-i18n="overline">004 / ПРОВЕРКА ПЕРЕД ЗАПУСКОМ</p>
+      <h2 id="preflight-title" data-ready-i18n="heading">ПРОВЕРЬ СИСТЕМУ. ЗАТЕМ ВХОДИ.</h2>
+      <p class="preflight-lead" data-ready-i18n="lead">Локальная диагностика браузера и игровой сборки.</p>
+      <div class="preflight-console">
+        <div class="preflight-head">
+          <h3>IRON PULSE / LAUNCH CHECK</h3>
+          <p class="preflight-note" id="preflight-status" role="status" aria-live="polite">Проверка ещё не проводилась.</p>
+        </div>
+        <div class="preflight-checks" aria-label="Browser launch checks">
+          <div class="preflight-check" id="preflight-webgl" data-state="idle"><span class="preflight-check-name" data-ready-i18n="webgl">ГРАФИКА / WEBGL 2</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+          <div class="preflight-check" id="preflight-wasm" data-state="idle"><span class="preflight-check-name" data-ready-i18n="wasm">ИСПОЛНЕНИЕ / WEBASSEMBLY</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+          <div class="preflight-check" id="preflight-files" data-state="idle"><span class="preflight-check-name" data-ready-i18n="files">ИГРОВЫЕ ФАЙЛЫ / GODOT</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+          <div class="preflight-check" id="preflight-manifest" data-state="idle"><span class="preflight-check-name" data-ready-i18n="manifest">МАНИФЕСТ / СБОРКА</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+          <div class="preflight-check" id="preflight-network" data-state="idle"><span class="preflight-check-name" data-ready-i18n="network">СОЕДИНЕНИЕ / ПОДСКАЗКА</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+        </div>
+        <div class="preflight-actions">
+          <button class="button button-primary" id="preflight-run" type="button">ПРОВЕРИТЬ ИГРУ</button>
+          <button class="button button-quiet" id="preflight-download" type="button" disabled data-ready-i18n="save">СКАЧАТЬ ОТЧЁТ</button>
+          <a class="button button-campaign" data-play href="./play/index.html?scenario=blackout&amp;lang=ru" data-ready-i18n="play">ИГРАТЬ В ВЫБРАННУЮ ОПЕРАЦИЮ</a>
+        </div>
+        <div class="preflight-commitline"><span id="preflight-commit-label">КОММИТ СБОРКИ</span><code id="preflight-commit">Не проверен</code></div>
+        <p class="preflight-privacy" data-ready-i18n="privacy">Без отправки отчёта на сервер.</p>
+        <p class="preflight-privacy" data-ready-i18n="manifestNote">Формат манифеста проверяется локально, без криптографической сертификации.</p>
       </div>
     </section>
 
