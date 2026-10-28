@@ -110,7 +110,7 @@ h1 em{font-weight:310;font-style:normal;color:var(--mint);letter-spacing:-.073em
 .poster-kicker{color:var(--gold);font-size:10px;letter-spacing:.20em}
 .game-poster-content h3{font-weight:680;font-size:clamp(44px,4.4vw,69px);line-height:.92;letter-spacing:-.076em;margin:17px 0 10px}
 .game-poster-content h3 i{font-weight:300;color:#b2e9d8;font-style:normal}
-.game-poster-content p{color:#b0c4ca;max-width:312px;margin:0 0 29px;font-size:13px;line-height:1.6}
+.game-poster-content p{color:#b0c4ca;max-width:312px;margin:0 0 16px;font-size:13px;line-height:1.6}
 .btn{height:auto;min-height:45px;display:inline-flex;align-items:center;justify-content:center;gap:24px;padding:12px 21px;border-radius:2px;border:1px solid transparent;font-size:11px;font-weight:800;letter-spacing:.11em;transition:background .2s,border-color .2s,transform .2s;color:var(--text)}
 .btn:not(:disabled):hover{transform:translateY(-1px)}
 .btn-primary{background:#bae8dc;color:#0a2020;border-color:#d6ffec;box-shadow:0 0 35px #8ef4cf15}
