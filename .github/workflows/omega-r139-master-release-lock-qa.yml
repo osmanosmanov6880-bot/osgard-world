@@ -1,0 +1,101 @@
+name: EMPIRE Omega R139 MASTER hotfix safety — NO GAME RELEASE
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-godot-web.yml'
+      - '.github/workflows/omega-web-direct-deploy.yml'
+      - '.github/workflows/omega-source-freshness-qa.yml'
+      - '.github/workflows/omega-r139-master-release-lock-qa.yml'
+      - 'scripts/omega-r138-manual-release-guard.py'
+      - 'scripts/test_omega_r138_release_lock.py'
+      - 'scripts/omega-direct-publish.contract.test.mjs'
+      - 'godot/empire-omega/docs/R139-MASTER-SAFETY-ONLY.md'
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-godot-web.yml'
+      - '.github/workflows/omega-web-direct-deploy.yml'
+      - '.github/workflows/omega-source-freshness-qa.yml'
+      - '.github/workflows/omega-r139-master-release-lock-qa.yml'
+      - 'scripts/omega-r138-manual-release-guard.py'
+      - 'scripts/test_omega_r138_release_lock.py'
+      - 'scripts/omega-direct-publish.contract.test.mjs'
+      - 'godot/empire-omega/docs/R139-MASTER-SAFETY-ONLY.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  master-is-locked-and-public-r87-stays-exact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Require exact original tested PR SHA and safety-only file diff
+        shell: bash
+        env:
+          EXPECTED: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+          if test -z "$BASE_SHA"; then BASE_SHA="$(git rev-parse HEAD^1)"; fi
+          git cat-file -e "$BASE_SHA^{commit}"
+          python3 - "$BASE_SHA" <<'PY'
+          import subprocess,sys
+          base=sys.argv[1]
+          allowed={
+            '.github/workflows/omega-godot-web.yml',
+            '.github/workflows/omega-web-direct-deploy.yml',
+            '.github/workflows/omega-source-freshness-qa.yml',
+            '.github/workflows/omega-r139-master-release-lock-qa.yml',
+            'scripts/omega-r138-manual-release-guard.py',
+            'scripts/test_omega_r138_release_lock.py',
+            'scripts/omega-direct-publish.contract.test.mjs',
+            'godot/empire-omega/docs/R139-MASTER-SAFETY-ONLY.md',
+          }
+          changed=set(subprocess.check_output(
+            ['git','diff','--name-only',base,'HEAD'],text=True).splitlines())
+          assert changed, 'safety hotfix unexpectedly has no changes'
+          assert changed<=allowed, 'R139 safety-only PR edits forbidden game/site files: '+repr(changed-allowed)
+          assert all(not p.startswith('public/') for p in changed)
+          assert all(not p.startswith('godot/empire-omega/scripts/') for p in changed)
+          print('PASS MASTER HOTFIX scoped to safety workflows/guard/docs ONLY',sorted(changed))
+          PY
+      - name: Enforce 21 negative GO tests + real no-auto-release workflow triggers
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/omega-r138-manual-release-guard.py scripts/test_omega_r138_release_lock.py
+          python3 scripts/omega-r138-manual-release-guard.py --self-test
+          python3 scripts/test_omega_r138_release_lock.py
+          node --test scripts/omega-direct-publish.contract.test.mjs
+      - name: Exact immutable public R87 still pinned — no game assets touched
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path('public/games/omega-3d-preview')
+          m=json.loads((root/'release.json').read_text())
+          assert m['source_commit']=='43ae041e8df52418ca74c02405de9c196b59bd37'
+          expected={
+            'index.audio.position.worklet.js':'347b512529c5dca302093f7b9de6d184dd09d10e9a6fba62cbab098a891b2368',
+            'index.audio.worklet.js':'5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3',
+            'index.html':'d6582b09928afd70d67f666cc5b2653c9a6d5a1ec774b92ff44cf4f2d8bbe1b8',
+            'index.js':'19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31',
+            'index.pck':'c34d9b717b024bcec43239032d259229181568284186482ecfcd0f28e580fd4e',
+            'index.png':'3cb4495c0b98dfbe4b663cbf2b6836473572339beb66d902367893162a70be0e',
+            'index.wasm':'e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116',
+          }
+          assert m['files']==expected, 'original public R87 manifest changed!'
+          print('PASS public source commit and all seven original R87 SHA pin values unchanged')
+          PY
+      - name: Reassert no SSH, no release permission and no source mutation
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain --untracked-files=no)"
+          echo 'R139 safety check executed READ ONLY, WITHOUT production authorization or external SSH'
