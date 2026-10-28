@@ -35,7 +35,7 @@ jobs:
           python3 - <<'PY'
           import json,os,re,subprocess
           from pathlib import Path
-          base='3734a9ee6a9f9952a57301becf772db59c0f99fa'
+          base='c27eef7548ca0bf9489d2a5ad5b0b2681bda77d5'
           head=os.environ['HEAD']
           def git(*args): return subprocess.check_output(['git',*args],text=True).strip()
           assert re.fullmatch(r'[0-9a-f]{40}',head)
