@@ -118,6 +118,10 @@ jobs:
         run: |
           set -euo pipefail
           npm ci
+          # The root frontend package intentionally does not depend on the
+          # game QA runner. Pin both native-image decoder and test harness
+          # explicitly, as in the already green B57-B66 browser suites.
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
           sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Serve private source-only build on loopback; no SSH yet
