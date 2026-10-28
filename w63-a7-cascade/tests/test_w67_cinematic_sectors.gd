@@ -78,6 +78,8 @@ func _run() -> void:
         "True 3D camera moved to far relay gallery")
     _check(stage.camera.position.distance_to(original_pos) > 10.0,
         "The second sector is genuinely far from the original core")
+    _check(stage.camera.fov >= 63.9,
+        "Relay hero view backs away to frame all three real machine stacks")
     _check(not ui.route_buttons[0].disabled and ui.route_buttons[1].disabled,
         "Read-only navigation buttons reflect 3D deck boundaries")
     _check(ui.model.snapshot() == old_puzzle,
@@ -141,6 +143,10 @@ func _run() -> void:
         await process_frame
         _check(stage.camera.current, "Genuine camera remains active at %dpx" % w)
         _check(ui.route_buttons.size() == 2, "Guided route controls survive %dpx" % w)
+        _check(world.compact_view == (w < 640),
+            "World-space captions adapt to phone layout at %dpx" % w)
+        _check(world.sector_signs[0].visible == (w >= 640),
+            "Overlapping 3D sign must hide on narrow mobile view %dpx" % w)
         _check(int(ui.model.snapshot()["shift"]) == 1,
             "No accidental gameplay mutation on %dpx viewport resize" % w)
 
