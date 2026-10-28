@@ -121,6 +121,15 @@ func _run() -> void:
     for i in range(74):
         await physics_frame
     player.set_key(KEY_W,false)
+    print("W77 REAL PHYSICAL CROSSING DEBUG:", {
+        "player_xyz":player.body.global_position,
+        "body_yaw":player.body.rotation.y,
+        "physics_frame_updates":player.frame_updates,
+        "collided_frames":player.collided_frames,
+        "gate_shape_disabled":door.gate_shape.disabled,
+        "world_locked":door.physically_blocked,
+        "real_original_mission_phase":mission.phase,
+    })
     _check(player.body.position.z > 15.0,
         "With actual collider disabled real native physics player now CROSSES sector boundary")
     _check(door.gate_body.collision_layer==1,
@@ -146,7 +155,7 @@ func _run() -> void:
     _check(not door.status_label.visible,
         "At 390px compact true world text hides without hiding the actual passage")
     _check(ui.brand_label.custom_minimum_size.y <= 42 and
-        ui.brand_label.text.contains("A7"),
+        ui.brand_label.text.contains("LAST FRONTIER"),
         "Native RU/EN title is a compact one-row mobile brand, not a vertical word column")
     _check(ui.w76_play_button.custom_minimum_size.y <= 42 and
         ui.w76_focus_button.custom_minimum_size.y <= 42,
