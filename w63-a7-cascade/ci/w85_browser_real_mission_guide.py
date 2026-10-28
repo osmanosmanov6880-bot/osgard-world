@@ -49,7 +49,8 @@ def contrast(a,b):
 
 def true_layout(page,width,height,guide_open):
     page.set_viewport_size({"width":width,"height":height})
-    page.wait_for_function("""([w,h,isOpen]) => {
+    try:
+        page.wait_for_function("""([w,h,isOpen]) => {
       const el=document.getElementById('a7-cascade-native-state');
       if(!el)return false;
       try {
@@ -69,7 +70,36 @@ def true_layout(page,width,height,guide_open):
             contained(g.w85_guide_objective,g.stage)&&
             contained(g.w85_guide_distance,g.stage)));
       }catch(e){return false}
-    }""",arg=[width,height,guide_open],timeout=100000)
+    }""",arg=[width,height,guide_open],timeout=45000)
+    except Exception:
+        # A real Godot native layout failure must reveal its grounded cause.
+        # The 320px portrait is not waived: dump exact source geometry and
+        # real UI state, and capture a REAL frame for diagnosis.
+        state=snapshot(page)
+        g=geometry(page)
+        useful={k:state.get(k) for k in [
+            'w85_source_guide_visible','w85_source_guide_open',
+            'w85_safe_source_modal','w85_actual_original_phase',
+            'w85_real_original_body_id','history_count',
+            'w84_native_tune_open','w84_modal_actually_suspends_touch']}
+        rectangles={key:g.get(key) for key in [
+            'viewport','stage','w85_guide_entry','w85_guide_panel',
+            'w85_guide_close','w85_guide_objective','w85_guide_distance',
+            'w84_tune_entry','w80_true_native_menu','w80_true_native_language']}
+        print('W85 ORIGINAL NATIVE RESPONSIVE HARD FAILURE:',
+              json.dumps({'requested':[width,height,guide_open],
+              'actual_state':useful,'actual_geometry':rectangles,
+              'inside_source_guide':{
+                  key:contained(g.get(key,[]),g.get('stage',[0,0,0,0]))
+                  for key in ['w85_guide_entry','w85_guide_panel',
+                      'w85_guide_close','w85_guide_objective',
+                      'w85_guide_distance']}},sort_keys=True),flush=True)
+        from pathlib import Path
+        dest=Path('w85-evidence/diagnostic')
+        dest.mkdir(parents=True,exist_ok=True)
+        page.screenshot(path=str(dest/('real-native-%dx%d-%s.png' %
+            (width,height,'open' if guide_open else 'closed'))))
+        raise
     return snapshot(page),geometry(page)
 
 def run(export,evidence,sha):

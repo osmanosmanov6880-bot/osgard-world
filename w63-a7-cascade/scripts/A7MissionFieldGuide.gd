@@ -202,8 +202,10 @@ func _paint_source() -> void:
         "РЕАЛЬНАЯ МИССИЯ / БЕЗ АВТОПРОХОЖДЕНИЯ")
     for index in range(progress_pips.size()):
         var pip: Label=progress_pips[index]
-        pip.text = "%02d  %s" % [index+1,
-            "●" if phase>=index+1 else ("◉" if phase==index else "○")]
+        # Some default Godot web fonts do not contain ornamental circle
+        # glyphs. Native text-only numbers plus SOURCE-DRIVEN color are
+        # readable at 320px and never show replacement-box symbols.
+        pip.text = "%02d" % (index+1)
         pip.add_theme_color_override("font_color",
             SUCCESS if phase>index else (COPPER if phase==index else MUTED))
     var goal: String=""
