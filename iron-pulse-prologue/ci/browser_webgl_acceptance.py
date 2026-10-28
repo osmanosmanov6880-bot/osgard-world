@@ -160,6 +160,25 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert containment.get("vapor_visible") is False and containment.get("spark_burst_visible") is False, (
                             "False catastrophe effects appear on the idle scenario menu",containment)
                         report.setdefault("v8_6_reactive_world",{})[name]=containment
+                        # V9: campaign must be a real accessible Godot menu
+                        # choice, never a text-only feature promise.
+                        trilogy = idle.get("campaign_v9",{})
+                        assert trilogy.get("active") is False and trilogy.get("completed")==0 and trilogy.get("total_chapters")==3, (
+                            "Three Shifts campaign is not opt-in or starts with forged medals",trilogy)
+                        camp_rect=idle.get("campaign_button_rect",[])
+                        assert idle.get("campaign_button_visible") is True and len(camp_rect)==4,(
+                            "Actual THREE SHIFTS button missing from rendered Godot intro menu",idle)
+                        assert camp_rect[2]>=280 and camp_rect[3]>=42,(
+                            "Campaign button is too small to read or touch",name,camp_rect)
+                        assert camp_rect[0]>=0 and camp_rect[0]+camp_rect[2]<=size["width"]+3,(
+                            "Campaign button clipped horizontally in mobile/desktop intro",name,camp_rect)
+                        assert camp_rect[1]>=0 and camp_rect[1]+camp_rect[3]<=size["height"]+3,(
+                            "Campaign button clipped vertically in mobile/desktop intro",name,camp_rect)
+                        report.setdefault("v9_campaign_menu",{})[name]={
+                            "real_native_button_rect":camp_rect,
+                            "three_chapters":trilogy["total_chapters"],
+                            "no_auto_start":True
+                        }
                         assert bay.get("open_core_inspection") is True, (
                             "V8.3 reactor remains obscured by front armour despite successful render",bay)
                         assert bay.get("cinematic_vault") is True, (
@@ -489,6 +508,56 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                                   "screenshot": filename,
                                                   "initial_frames": idle["godot_frames_drawn"],
                                                   "last_native_state": state})
+                        if not mobile:
+                            # A second clean load is necessary because the old
+                            # solo-mode acceptance has already begun a game.
+                            # We must CLICK the real new Godot Button rather
+                            # than inject campaign variables through JS.
+                            page.reload(wait_until="domcontentloaded", timeout=75000)
+                            marker.wait_for(state="attached",timeout=120000)
+                            deadline=time.monotonic()+100
+                            ready={}
+                            while time.monotonic()<deadline:
+                                ready=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                v=ready.get("viewport",[])
+                                if ready.get("intro_visible") and len(v)==2 and abs(v[0]-size["width"])<=2 and abs(v[1]-size["height"])<=2:
+                                    break
+                                page.wait_for_timeout(250)
+                            assert ready.get("intro_visible") is True and ready.get("campaign_button_visible") is True, (
+                                "Fresh Godot menu failed before true campaign click",ready)
+                            rect=ready["campaign_button_rect"]
+                            cbox=page.locator("canvas").first.bounding_box()
+                            assert cbox is not None
+                            px=cbox["x"]+(rect[0]+rect[2]/2)*cbox["width"]/ready["viewport"][0]
+                            py=cbox["y"]+(rect[1]+rect[3]/2)*cbox["height"]/ready["viewport"][1]
+                            assert 0<=px<=size["width"] and 0<=py<=size["height"],(px,py,rect)
+                            page.mouse.click(px,py)
+                            deadline=time.monotonic()+35
+                            playing={}
+                            while time.monotonic()<deadline:
+                                playing=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if playing.get("campaign_v9",{}).get("active") and playing.get("started"):
+                                    break
+                                page.wait_for_timeout(200)
+                            c=playing.get("campaign_v9",{})
+                            assert playing.get("started") and not playing.get("intro_visible") and c.get("active"),(
+                                "Real campaign CTA click did not launch the connected game",playing)
+                            assert c.get("chapter")==1 and c.get("scenario")=="blackout" and c.get("completed")==0,(
+                                "Campaign mode skips a chapter or mutates old solo game",playing)
+                            assert playing.get("story",{}).get("latest_key")=="campaign_chapter_1",(
+                                "Real campaign click did not trigger localized MARA radio",playing.get("story"))
+                            chapter_png=page.screenshot(timeout=60000,animations="disabled")
+                            chapter_stats=frame_metrics(chapter_png)
+                            assert chapter_stats["color_bins"]>=12 and chapter_stats["stddev"]>7,chapter_stats
+                            (output/"campaign-chapter-1-desktop.png").write_bytes(chapter_png)
+                            report["v9_real_campaign_start"]={
+                                **chapter_stats,
+                                "real_godot_button_click":True,
+                                "chapter":c.get("chapter"),
+                                "radio":playing.get("story",{}).get("latest_key"),
+                                "filename":"campaign-chapter-1-desktop.png",
+                                "src":"actual_godot_chromium_no_state_injection"
+                            }
                     finally:
                         ctx.close()
             finally:
