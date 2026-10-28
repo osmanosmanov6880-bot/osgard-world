@@ -235,7 +235,7 @@ func _build_catwalk_network() -> void:
         for side in [-1.0,1.0]:
             _box(hero_details,"CrosswalkGuard",Vector3(12.4,9.05,z+side*0.53),Vector3(10.8,0.08,0.09),_steel)
             for index in range(7):
-                x = 7.7+float(index)*1.54
+                var x: float = 7.7+float(index)*1.54
                 _box(hero_details,"CrosswalkStanchion",Vector3(x,8.94,z+side*0.53),Vector3(0.085,0.93,0.095),_steel)
     for index in range(9):
         var z: float = -10.0-float(index)*2.5
@@ -268,6 +268,7 @@ func _sign(label: String, text_value: String, pos: Vector3, tint: Color, font_si
     node.name = label
     node.text = text_value
     node.position = pos
+    node.rotation_degrees.y = -90.0
     node.font_size = font_size
     node.pixel_size = 0.0021
     node.modulate = tint
