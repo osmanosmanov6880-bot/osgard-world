@@ -204,6 +204,13 @@ jobs:
             grep -q "^$proof:" "$output"
             if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$output"; then exit 1; fi
           done
+      - name: V15 true deterministic 30s crisis projections, UI controls, and save isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v15_decision_forecast.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v15-forecast.log"
+          grep -q '^IRON PULSE V15 DECISION FORECAST PASS:' "$RUNNER_TEMP/iron-pulse-v15-forecast.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v15-forecast.log"; then exit 1; fi
       - name: V13 safe world-link contract to actual story campaign and original mission
         shell: bash
         run: |
