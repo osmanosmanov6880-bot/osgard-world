@@ -206,7 +206,11 @@ export function missionState(state,locale){
   }
   const phase=finiteClamp(state.w71_mission_phase,0,6);
   const trulyDone=state.w71_mission_complete===true&&state.status==="won";
-  return rows.map(([name,description],i)=>({index:i,name,description,status:trulyDone||i<phase?"done":i===phase?"active":"later"}));
+  // Malformed or failed final states must NEVER mark the full campaign
+  // complete. The fifth phase stays active until the *actual* game wins.
+  const displayPhase=trulyDone?5:Math.min(4,phase);
+  return rows.map(([name,description],i)=>({index:i,name,description,
+    status:trulyDone||i<displayPhase?"done":i===displayPhase?"active":"later"}));
 }
 export function captureEngineEvent(state,elapsedMs){
   if(!validGameState(state))return null;
