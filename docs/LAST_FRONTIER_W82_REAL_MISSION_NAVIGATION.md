@@ -1,7 +1,7 @@
 # LAST FRONTIER W82 — real world compass, original physical mission navigation
 
 Status: **DRAFT, NO PRODUCTION PUBLISH**.
-Exact original W81 engineering parent: `429342c624efc7776a0807676f2e69794ce08bc4` ([PR #650](https://github.com/osmanosmanov6880-bot/osgard-world/pull/650)).
+Exact original W81 engineering parent: `3734a9ee6a9f9952a57301becf772db59c0f99fa` ([PR #650](https://github.com/osmanosmanov6880-bot/osgard-world/pull/650)).
 This is actual in-engine Godot source work, not a style render.
 
 ## Source implementation

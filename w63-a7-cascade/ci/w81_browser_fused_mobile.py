@@ -202,9 +202,21 @@ def run(export, evidence, sha):
               try {
                 const s=JSON.parse(e.getAttribute('data-state'));
                 const g=JSON.parse(e.getAttribute('data-geometry'));
+                // The viewport dimension is updated BEFORE Godot's
+                // responsive native containers have actually completed
+                // their control geometry layout. Require settled physical
+                // source positions, not a stale 390px source rectangle.
+                const inside=(r,p) =>
+                  Array.isArray(r) && r.length===4 && r[2]>0 && r[3]>0 &&
+                  r[0]>=p[0]-3 && r[1]>=p[1]-3 &&
+                  r[0]+r[2]<=p[0]+p[2]+3 &&
+                  r[1]+r[3]<=p[1]+p[3]+3;
                 return g.viewport[0]===320 &&
-                   s.w80_true_native_touch_grid_columns===4 &&
-                   s.w79_mobile_complete_mission_visible===true;
+                  s.w80_true_native_touch_grid_columns===4 &&
+                  s.w79_mobile_complete_mission_visible===true &&
+                  ["w79_command0","w79_command1",
+                   "w80_native_touch_rail","w80_native_mission_panel"]
+                    .every(key=>inside(g[key],g.stage));
               }catch(_){return false}
             }""",timeout=60000)
             small=geometry(page)
