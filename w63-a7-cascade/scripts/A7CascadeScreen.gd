@@ -86,6 +86,9 @@ const RU := {
     "save_fail": "НЕ УДАЛОСЬ СОХРАНИТЬ",
     "load_fail": "ФАЙЛ ПОВРЕЖДЕН ИЛИ СОБЫТИЯ НЕ ПРОХОДЯТ ПРОВЕРКУ",
     "fps_label": "F3 / МОНИТОР КАДРОВ",
+    "w76_play": "ИГРАТЬ СЕЙЧАС / ENTER",
+    "w76_focus_on": "КИНОИГРА / TAB",
+    "w76_focus_off": "ПОКАЗАТЬ ПАНЕЛИ / TAB",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
@@ -159,6 +162,9 @@ const EN := {
     "save_fail": "LOCAL SAVE FAILED",
     "load_fail": "CORRUPT FILE OR INVALID SESSION JOURNAL",
     "fps_label": "F3 / FRAME DIAGNOSTICS",
+    "w76_play": "PLAY NOW / ENTER",
+    "w76_focus_on": "IMMERSIVE GAME / TAB",
+    "w76_focus_off": "SHOW CONTROLS / TAB",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
@@ -204,6 +210,12 @@ var quality_button: Button
 var motion_button: Button
 var quality: String = "hero"
 var reduced_motion: bool = false
+var w76_immersive: bool = false
+var w76_immersive_switches: int = 0
+var w76_play_button: Button
+var w76_focus_button: Button
+var w76_objective_label: Label
+var w76_hidden_sections: Array[Control] = []
 var scroll: ScrollContainer
 var _web_state_element: Variant = null
 # W65 new standalone narrative and original procedural sound (no external files).
@@ -356,6 +368,12 @@ func _build() -> void:
     brand_label = _label(top, "", 27, GOLD)
     language_button = _button(top, "EN", _toggle_locale)
     language_button.custom_minimum_size = Vector2(90, 45)
+    w76_play_button = _button(top, "", _w76_play_now)
+    w76_play_button.name = "W76PlayActualOriginal3DGameNow"
+    w76_play_button.custom_minimum_size = Vector2(185,45)
+    w76_focus_button = _button(top, "", _w76_toggle_immersive)
+    w76_focus_button.name = "W76OptInSingleGoalFirstPersonExperience"
+    w76_focus_button.custom_minimum_size = Vector2(220,45)
     # W65 inherits the tested W64 cinema-first composition:
     # place native 3D reactor before verbose story and instructions.
     # Cinema-first native 3D stage is mounted inside the *actual* Godot UI.
@@ -419,6 +437,8 @@ func _build() -> void:
     cinematic_hud.name = "ObsidianAuroraLiveHUD"
     stage_shell.add_child(cinematic_hud)
     cinema_readout = _label(cinema, "", 12, MINT)
+    w76_objective_label = _label(cinema, "", 15, GOLD)
+    w76_objective_label.name = "W76ActualMissionGoalAndPhysicalDistance"
     diagnostic_label = _label(cinema, "", 11, MUTED)
     diagnostic_label.name = "W74ActualGodotFrameDeltaNotClaimedGPUBenchmark"
     diagnostic_label.visible = false
@@ -556,12 +576,14 @@ func _build() -> void:
     # Original story beats are generated from actual game shift/status;
     # never play fake cutscenes that are independent of the player's choices.
     var narrative_panel := _panel(body)
+    w76_hidden_sections.append(narrative_panel.get_parent() as Control)
     narrative_panel.name = "A7TrueStateIncidentBriefing"
     narrative_title = _label(narrative_panel, "", 17, GOLD)
     narrative_body = _label(narrative_panel, "", 14, WHITE)
     forecast_label = _label(narrative_panel, "", 12, MINT)
 
     var status_box := _panel(body)
+    w76_hidden_sections.append(status_box.get_parent() as Control)
     var strip := HBoxContainer.new()
     strip.add_theme_constant_override("separation", 7)
     status_box.add_child(strip)
@@ -583,6 +605,7 @@ func _build() -> void:
     metrics_flow.add_theme_constant_override("h_separation", 12)
     metrics_flow.add_theme_constant_override("v_separation", 12)
     body.add_child(metrics_flow)
+    w76_hidden_sections.append(metrics_flow)
     for key in ORDER:
         var p := PanelContainer.new()
         p.custom_minimum_size = Vector2(210, 112)
@@ -612,6 +635,7 @@ func _build() -> void:
         metric_bars[key] = bar
 
     var command_box := _panel(body)
+    w76_hidden_sections.append(command_box.get_parent() as Control)
     _label(command_box, "SELECT TWO ACTIONS / EACH SHIFT", 13, GOLD)
     var action_flow := HFlowContainer.new()
     action_flow.add_theme_constant_override("h_separation", 12)
@@ -699,6 +723,43 @@ func _update_gamepad_hint() -> void:
     controller_hint_label.visible = active
     if active:
         controller_hint_label.text = gamepad.explain(locale)
+
+func _w76_play_now() -> void:
+    if stage_3d == null or stage_3d.spatial_mission == null:
+        return
+    if not stage_3d.spatial_mission.active:
+        _start_extended_mission()
+    if not stage_3d.first_person.piloting:
+        _toggle_pilot()
+    if not w76_immersive:
+        _w76_toggle_immersive()
+    _w76_update_goal()
+
+func _w76_update_goal() -> void:
+    if w76_objective_label == null or stage_3d == null:
+        return
+    var mission: A7SpatialMission = stage_3d.spatial_mission
+    var label: String = mission.title(locale) if mission != null else ""
+    var helper: String = stage_3d.mission_wayfinder.localized_hint(locale) if stage_3d.mission_wayfinder != null else ""
+    w76_objective_label.text = (label + "   /   " + helper) if mission != null and mission.active else ""
+    w76_objective_label.visible = mission != null and mission.active
+
+func _w76_toggle_immersive() -> void:
+    w76_immersive = not w76_immersive
+    w76_immersive_switches += 1
+    for section in w76_hidden_sections:
+        if section != null:
+            section.visible = not w76_immersive
+    if intro != null:
+        intro.visible = not w76_immersive
+    if subtitle != null:
+        subtitle.visible = not w76_immersive
+    if footnote != null:
+        footnote.visible = not w76_immersive
+    if scroll != null:
+        scroll.scroll_vertical = 0
+    _layout_stage()
+    _render(model.snapshot())
 
 func _toggle_diagnostics() -> void:
     show_diagnostics = not show_diagnostics
@@ -1027,6 +1088,10 @@ func _layout_stage() -> void:
         height = clampf(size.x * 0.76, 242.0, 305.0)
     elif size.x < 900.0:
         height = clampf(size.y * 0.50, 350.0, 470.0)
+    if w76_immersive:
+        height = maxf(height, clampf(size.y * 0.81, 420.0, 850.0))
+        if size.x < 640.0:
+            height = clampf(size.y * 0.61, 345.0, 570.0)
     if cinema_mode:
         var cinema_target: float = clampf(size.y * 0.78, 585.0, 760.0)
         if size.x < 640.0:
@@ -1104,6 +1169,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
         return
     var key: InputEventKey = event as InputEventKey
     if not key.pressed or key.echo:
+        return
+    if key.keycode == KEY_TAB:
+        _w76_toggle_immersive()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_ENTER or key.keycode == KEY_KP_ENTER:
+        _w76_play_now()
+        get_viewport().set_input_as_handled()
         return
     if key.keycode == KEY_F3:
         _toggle_diagnostics()
@@ -1210,6 +1283,9 @@ func _render(state: Dictionary) -> void:
     subtitle.text = _t("sub")
     intro.text = _t("intro")
     language_button.text = _t("language")
+    w76_play_button.text = _t("w76_play")
+    w76_focus_button.text = _t("w76_focus_off" if w76_immersive else "w76_focus_on")
+    _w76_update_goal()
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
     load_button.text = _t("load_game")
@@ -1443,6 +1519,12 @@ func _publish_web_accessibility() -> void:
         "w74_real_frame_time_p95_ms": float(frame_telemetry.qa_readout()["window_p95_frame_ms"]),
         "w74_diagnostics_visible":show_diagnostics,
         "w74_hardware_gamepad_certified":false,
+        "w76_actual_immersive_first_person":w76_immersive,
+        "w76_real_play_button":w76_play_button != null,
+        "w76_immersive_switches":w76_immersive_switches,
+        "w76_true_world_wayfinder_meshes":int(stage_state.get("w76_actual_mission_wayfinder_meshes",0)),
+        "w76_actual_wayfinding_target":str(stage_state.get("w76_real_mission_target","none")),
+        "w76_world_objective_meters":float(stage_state.get("w76_real_target_distance",-1.0)),
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1484,6 +1566,9 @@ func _publish_web_accessibility() -> void:
         "checkpoint_save": _web_rect(save_button),
         "checkpoint_load": _web_rect(load_button),
         "controller_hint": _web_rect(controller_hint_label),
+        "w76_play":_web_rect(w76_play_button),
+        "w76_immersive":_web_rect(w76_focus_button),
+        "w76_current_goal":_web_rect(w76_objective_label),
         "frame_diagnostics": _web_rect(diagnostic_label),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),
