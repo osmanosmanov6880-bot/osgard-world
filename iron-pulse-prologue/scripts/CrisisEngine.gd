@@ -451,7 +451,11 @@ func restore_checkpoint(data: Dictionary) -> bool:
     var stored_cascade_remaining: Variant = data.get("cascade_remaining",CASCADE_WINDOW)
     if not stored_cascade_state is String or str(stored_cascade_state) not in ["idle","active","completed","failed"]:
         return false
-    if typeof(stored_cascade_phase) != TYPE_INT or int(stored_cascade_phase) < 0 or int(stored_cascade_phase) > CASCADE_SEQUENCE.size():
+    # Godot JSON parser may decode 0/1/2/3 as TYPE_FLOAT when reading
+    # checkpoint JSON. Accept only exactly integral finite numeric values.
+    if not _valid_number(stored_cascade_phase,0.0,float(CASCADE_SEQUENCE.size())):
+        return false
+    if float(stored_cascade_phase) != float(int(stored_cascade_phase)):
         return false
     if not _valid_number(stored_cascade_remaining,0.0,CASCADE_WINDOW):
         return false
