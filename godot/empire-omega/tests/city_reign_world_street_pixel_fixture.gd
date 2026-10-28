@@ -70,5 +70,23 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			GameState.data["day_clock"] = 16.0
 			world.call("apply_visual_budget","cinematic")
 			world.call("update_daynight",16.0)
+		KEY_7:
+			# Actual street-level, source-native storefront at WorldBuilder
+			# quarter ix=2, iz=2, building n=0 (centre -87,-87).
+			# Its real road-facing entrance is the -X face, so the original
+			# camera stays WEST of the facade to see correct plinth/doors/plants.
+			# Safe radius ~150m avoids the entire 248m outer skyscraper ring.
+			GameState.data["energy"] = 95
+			GameState.data["day_clock"] = 16.0
+			world.call("apply_visual_budget","cinematic")
+			world.call("update_daynight",16.0)
+			shot_camera.position = Vector3(-108.0,3.35,-104.0)
+			shot_camera.look_at(Vector3(-87.0,2.78,-87.0),Vector3.UP)
+			assert(Vector2(shot_camera.position.x,shot_camera.position.z).length() < 220.0,
+				"Street-level actual 3D camera must stay clear of remote tower ring")
+		KEY_8:
+			# Return from detail review to the original valid road overview.
+			shot_camera.position = Vector3(-156.0,13.0,-104.0)
+			shot_camera.look_at(Vector3(-191.0,5.0,-87.0),Vector3.UP)
 		_: return
 	get_viewport().set_input_as_handled()
