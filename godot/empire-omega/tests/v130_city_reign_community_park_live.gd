@@ -80,6 +80,12 @@ func _run() -> void:
 	verify(PLANNER.choose(baseline_plan,3,active)==baseline_plan,
 		"construction phase never reroutes pedestrians to an inaccessible park")
 	for turn in range(3):
+		# Turn 3 legitimately triggers an original municipal crisis. The real
+		# game requires a governor response before the NEXT construction turn.
+		# Pay the genuine city relief cost rather than cheating the crisis flag.
+		if str(sim.get("data")["incident"])!="":
+			verify(bool(sim.call("resolve_incident",true)),
+				"genuine original emergency relief is financed before park completion")
 		verify(bool(sim.call("advance_turn")),
 			"original city turn "+str(turn+1)+" legitimately advances the park")
 		world.call("update_development")
