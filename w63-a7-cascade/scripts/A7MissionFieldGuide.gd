@@ -42,6 +42,7 @@ var closes: int = 0
 var blocked_inactive_opens: int = 0
 var gameplay_actions_issued: int = 0
 var refresh_elapsed: float = 0.0
+var compact_mobile: bool = false
 
 func _button(parent: Node, id: String, caption: String) -> Button:
     var button := Button.new()
@@ -147,6 +148,7 @@ func build(real_stage: Control, original_mission: A7SpatialMission,
 func configure(viewport_size: Vector2) -> void:
     if panel == null:
         return
+    compact_mobile = viewport_size.x < 356.0
     # At <=355px the original W80 top-right MENU starts around x118.
     # The 390px W85 GUIDE x93..182 would overlap MENU and accidentally
     # EXIT the genuine full-bleed game. At narrow width, put GUIDE
@@ -321,6 +323,19 @@ func _paint_source() -> void:
     else:
         distance_label.text = _local("SOURCE RESULT · NOT A MOCKUP",
             "ИСХОДНЫЙ РЕЗУЛЬТАТ · НЕ МАКЕТ")
+    # A very narrow 320px viewport MUST use real source-accurate compact
+    # wording. Godot Label's natural minimum width for the full bilingual
+    # subtitle can otherwise push a 302px native panel to >350px, even with
+    # trim/clip enabled. This is a live layout fix, NOT a screenshot crop.
+    if compact_mobile:
+        subtitle_label.text = _local("REAL GAME · HUMAN GUIDE",
+            "РЕАЛЬНЫЕ ЦЕЛИ · БЕЗ АВТОИГРЫ")
+        if current_distance_m>=0:
+            distance_label.text = (
+                _local("%.1f m · READY","%.1f м · РЯДОМ")
+                if within_source_range else
+                _local("%.1f m · GO CLOSER","%.1f м · ПОДОЙДИТЕ")
+            ) % current_distance_m
     for i in range(steps.size()):
         (steps[i] as Label).text = "%d. %s" % [i+1,lines[i]]
 

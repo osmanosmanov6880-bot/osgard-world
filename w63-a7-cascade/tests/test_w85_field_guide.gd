@@ -267,6 +267,13 @@ func _run() -> void:
         panel320.position.y>=stage320.position.y and
         panel320.end.y<=stage320.end.y+2,
         "320px actual Godot five-phase guide fits within live 3D screen")
+    var subtitle320: Rect2=guide.subtitle_label.get_global_rect()
+    var goal320: Rect2=guide.objective_label.get_global_rect()
+    var distance320: Rect2=guide.distance_label.get_global_rect()
+    _check(subtitle320.end.x<=stage320.end.x+2 and
+        goal320.end.x<=stage320.end.x+2 and
+        distance320.end.x<=stage320.end.x+2,
+        "320px authentic source labels fit inside real phone frame, not clipped offscreen")
     _check(guide.opened and not deck.visible and
         not studio.settings_button.visible,
         "Narrow-screen modal safely hides dangerous source buttons and W84 entry")
