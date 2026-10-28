@@ -254,6 +254,7 @@ var diagnostic_panel: PanelContainer
 var diagnostic_label: Label
 var forecast_panel: PanelContainer
 var forecast_label: Label
+var forecast_close_button: Button
 var touch_forecast_button: Button
 var touch_moves: Dictionary = {"forward":false, "back":false, "left":false, "right":false}
 var started: bool = false
@@ -434,7 +435,8 @@ func _publish_web_state() -> void:
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
     state["decision_forecast"] = {
         "visible":forecast_panel != null and forecast_panel.visible,
-        "report":forecast_report.duplicate(true) if forecast_panel != null and forecast_panel.visible else {}
+        "report":forecast_report.duplicate(true) if forecast_panel != null and forecast_panel.visible else {},
+        "close_rect":_hud_rect(forecast_close_button) if forecast_close_button != null else []
     }
     state["campaign_echoes"] = campaign_echoes.readout() if campaign_echoes != null else {}
     state["relay_3d_terminals"] = relay_terminals.size()
@@ -865,8 +867,16 @@ func _make_hud() -> void:
     diagnostic_panel.visible = false
     forecast_panel = _panel(hud_root,Rect2(-455,296,-17,601),Rect2(1,0,1,0),Color(0.022,0.031,0.040,0.97))
     forecast_panel.name = "V15_RealCrisisDecisionWindow"
-    forecast_label = _label(forecast_panel,"",13,WHITE)
+    var forecast_stack := VBoxContainer.new()
+    forecast_stack.add_theme_constant_override("separation",8)
+    forecast_panel.add_child(forecast_stack)
+    forecast_label = _label(forecast_stack,"",13,WHITE)
     forecast_label.name = "ClonedEngine30SecondForecast"
+    forecast_close_button = Button.new()
+    forecast_close_button.text = "CLOSE / X"
+    forecast_close_button.custom_minimum_size = Vector2(110.0,48.0)
+    forecast_close_button.pressed.connect(_toggle_decision_forecast)
+    forecast_stack.add_child(forecast_close_button)
     forecast_panel.visible = false
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
@@ -1214,6 +1224,7 @@ func _refresh_decision_forecast() -> void:
         return
     forecast_report = decision_forecaster.evaluate(session)
     forecast_label.text = decision_forecaster.text_report(forecast_report,locale)
+    forecast_close_button.text = "CLOSE / X" if locale == "en" else "ЗАКРЫТЬ / X"
 
 func _cycle_director_shot() -> void:
     if started and not paused and not session.finished() and cinematic_view:
