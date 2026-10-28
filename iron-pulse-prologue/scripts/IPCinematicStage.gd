@@ -100,13 +100,18 @@ func _ready() -> void:
         var depth: float = 1.3 - float(index) * 6.0
         for side in [-1.0, 1.0]:
             var x: float = side * 5.65
-            _box(hero_details, "Rib_%d_%d" % [index, int(side)], Vector3(x, 2.85, depth), Vector3(0.24, 5.2, 0.34), brushed)
-            _box(hero_details, "WallInlay_%d_%d" % [index, int(side)], Vector3(side*6.64, 2.8, depth-2.5), Vector3(0.07, 3.4, 3.9), recessed)
+            var obstructs_reactor_view: bool = side > 0.0 and depth <= IPReactorAtrium.OPENING_Z_MAX and depth >= IPReactorAtrium.OPENING_Z_MIN
+            if not obstructs_reactor_view:
+                _box(hero_details, "Rib_%d_%d" % [index, int(side)], Vector3(x, 2.85, depth), Vector3(0.24, 5.2, 0.34), brushed)
+                _box(hero_details, "WallInlay_%d_%d" % [index, int(side)], Vector3(side*6.64, 2.8, depth-2.5), Vector3(0.07, 3.4, 3.9), recessed)
+                _box(hero_details, "FiberDuct_%d_%d" % [index, int(side)], Vector3(side*6.3, 4.94, depth-2.3), Vector3(0.17, 0.18,4.65), copper)
             _box(hero_details, "ServiceTrench_%d_%d" % [index, int(side)], Vector3(side*4.7, 0.025, depth-2.3), Vector3(0.60,0.035,4.8), graphite)
-            _box(hero_details, "FiberDuct_%d_%d" % [index, int(side)], Vector3(side*6.3, 4.94, depth-2.3), Vector3(0.17, 0.18,4.65), copper)
-        _box(hero_details, "Arch_%d" % index, Vector3(0, 5.22, depth), Vector3(11.8,0.25,0.33), brushed)
-        _box(hero_details, "RoofRecess_%d" % index, Vector3(0, 5.88, depth-2.6), Vector3(8.7,0.07,4.8), recessed)
-        _box(self, "OverheadPulse_%d" % index, Vector3(0, 5.71, depth), Vector3(7.8,0.045,0.08), cyan)
+        # Maintain the established corridor rhythm outside the new 22m atrium;
+        # do not accidentally put old roof panels across the opening.
+        if depth > IPReactorAtrium.OPENING_Z_MAX or depth < IPReactorAtrium.OPENING_Z_MIN:
+            _box(hero_details, "Arch_%d" % index, Vector3(0, 5.22, depth), Vector3(11.8,0.25,0.33), brushed)
+            _box(hero_details, "RoofRecess_%d" % index, Vector3(0, 5.88, depth-2.6), Vector3(8.7,0.07,4.8), recessed)
+            _box(self, "OverheadPulse_%d" % index, Vector3(0, 5.71, depth), Vector3(7.8,0.045,0.08), cyan)
 
     # Repeated steel decking and fasteners use two actual MultiMesh draw groups.
     var bolts: Array[Vector3] = []
@@ -122,16 +127,16 @@ func _ready() -> void:
     _instances(hero_details, "DeckSeamMarkers", Vector3(0.24,0.04,0.70), walkway, brushed)
 
     # Reactor containment ring: large-scale silhouettes around the existing core.
-    var ring_center := Vector3(0,3.0,-20.5)
-    _torus(hero_details, "ContainmentHorizon01", ring_center, 4.75, brushed, Vector3(90.0,0,0))
-    _torus(hero_details, "ContainmentHorizon02", ring_center, 5.17, copper, Vector3(90.0,0,0))
-    _torus(hero_details, "ContainmentPerimeter", ring_center, 5.55, cyan, Vector3(90.0,0,0))
+    var ring_center := IPReactorAtrium.CORE_CENTER
+    _torus(hero_details, "ContainmentHorizon01", ring_center, 4.75, brushed, Vector3(0,0,90.0))
+    _torus(hero_details, "ContainmentHorizon02", ring_center, 5.17, copper, Vector3(0,0,90.0))
+    _torus(hero_details, "ContainmentPerimeter", ring_center, 5.55, cyan, Vector3(0,0,90.0))
     for i in range(8):
         var a: float = TAU * float(i) / 8.0
         var p := ring_center + Vector3(cos(a)*5.35,sin(a)*2.38,0.0)
         _box(hero_details, "ContainmentLock_%d" % i, p, Vector3(0.44,0.56,0.83), graphite)
-    _box(hero_details, "ReactorTitlePanel", Vector3(0,5.42,-16.8), Vector3(4.8,0.65,0.14), graphite)
-    _sign(hero_details,"ReactorCallsign","A7 // CORE CONTAINMENT",Vector3(0,5.43,-16.67),GLOW,49)
+    _box(hero_details, "ReactorTitlePanel", Vector3(5.4,5.42,-16.8), Vector3(4.8,0.65,0.14), graphite)
+    _sign(hero_details,"ReactorCallsign","A7 // CORE CONTAINMENT",Vector3(5.4,5.43,-16.67),GLOW,49)
     _sign(self,"EmergencySector","SECTOR 07  /  EVACUATION",Vector3(0,4.15,-52.7),GLOW,58)
     _sign(self,"WarningSector","AUTHORIZED PERSONNEL ONLY",Vector3(0,3.58,-52.7),GOLD,35)
 

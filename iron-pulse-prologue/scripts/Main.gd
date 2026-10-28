@@ -2,6 +2,10 @@ extends Node3D
 ## IRON PULSE: BLACKOUT — real, player-controlled 3D vertical slice in Godot 4.4.1.
 ## Procedural artwork and generated UI; offline and self-contained.
 
+# Architectural shot design: on every fresh operation the real first-person
+# camera introduces the open reactor megastructure, not just a dead corridor.
+const REACTOR_REVEAL_YAW := -0.52
+const REACTOR_REVEAL_PITCH := 0.18
 const NIGHT := Color(0.020, 0.034, 0.060)
 const STEEL := Color(0.162, 0.217, 0.287)
 const METAL := Color(0.235, 0.300, 0.368)
@@ -153,10 +157,12 @@ var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
+var reactor_atrium: IPReactorAtrium
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
 var reduced_motion: bool = false
+var cinematic_view: bool = false
 var muted_audio: bool = false
 var quality_mode: String = "hero"
 var walking_phase: float = 0.0
@@ -318,6 +324,11 @@ func _publish_web_state() -> void:
     state["audio_muted"] = muted_audio
     state["soundscape_ready"] = audio_director != null and audio_director.ambient != null
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
+    state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
+    state["cinematic_view"] = cinematic_view
+    state["cinematic_hud_hidden"] = cinematic_view and not header_panel.visible and not side_panel.visible and not prompt_panel.visible and not crosshair.visible
+    var to_core: Vector3 = reactor_core.global_position-camera.global_position
+    state["reactor_framing_alignment"] = (-camera.global_transform.basis.z).dot(to_core.normalized()) if to_core.length() > 0.001 else -1.0
     state["world_sector"] = active_sector
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
@@ -422,9 +433,15 @@ func _make_complex() -> void:
     var cyan := _metal(CYAN,0.12,true)
     var red := _metal(RED,0.12,true)
     _box(self,Vector3(0,-0.48,-28.0),Vector3(14,0.95,74),concrete,true)
-    _box(self,Vector3(0,6.2,-28.0),Vector3(14,0.55,74),steel,true)
+    # V8: keep a collision-safe mission corridor but open the ceiling around
+    # the reactor viewing bay. Both outer roof segments remain real colliders.
+    _box(self,Vector3(0,6.2,-48.0),Vector3(14,0.55,34.0),steel,true)
+    _box(self,Vector3(0,6.2,0.0),Vector3(14,0.55,18.0),steel,true)
     _box(self,Vector3(-7.0,2.8,-28.0),Vector3(0.70,6.3,74),steel,true)
-    _box(self,Vector3(7.0,2.8,-28.0),Vector3(0.70,6.3,74),steel,true)
+    # 22m opening at the right side shows an actually tall reactor hall,
+    # with its own physical guardrail preventing off-path movement.
+    _box(self,Vector3(7.0,2.8,-47.75),Vector3(0.70,6.3,34.5),steel,true)
+    _box(self,Vector3(7.0,2.8,0.0),Vector3(0.70,6.3,18.0),steel,true)
     _box(self,Vector3(0,2.8,-65.0),Vector3(14,6.3,0.7),steel,true)
     for index in 12:
         var depth := 2.0 - float(index) * 5.5
@@ -457,22 +474,29 @@ func _make_complex() -> void:
     for index in 9:
         var z := -3.5 - float(index)*7.0
         _box(self,Vector3(-6.2,2.7,z),Vector3(0.20,4.8,0.34),polished)
-        _box(self,Vector3(6.2,2.7,z),Vector3(0.20,4.8,0.34),polished)
-        _box(self,Vector3(0,5.1,z),Vector3(13,0.23,0.22),polished)
         _box(self,Vector3(-6.1,2.7,z+0.5),Vector3(0.09,0.85,0.14),red)
-        _box(self,Vector3(6.1,2.7,z+0.5),Vector3(0.09,0.85,0.14),red)
+        if z < IPReactorAtrium.OPENING_Z_MIN or z > IPReactorAtrium.OPENING_Z_MAX:
+            _box(self,Vector3(6.2,2.7,z),Vector3(0.20,4.8,0.34),polished)
+            _box(self,Vector3(0,5.1,z),Vector3(13,0.23,0.22),polished)
+            _box(self,Vector3(6.1,2.7,z+0.5),Vector3(0.09,0.85,0.14),red)
     _build_reactor()
     _build_terminals()
     _build_rescue_relays()
     _build_bulkhead()
     art_stage = IPCinematicStage.new()
     add_child(art_stage)
+    reactor_atrium = IPReactorAtrium.new()
+    add_child(reactor_atrium)
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
     _terminal_idle_material = _metal(Color(0.08,0.32,0.39),0.12,true)
 
 func _build_reactor() -> void:
     var frame := Node3D.new()
-    frame.position = Vector3(0,3.0,-20.5)
+    # The original moving core is now physically inside the open side atrium:
+    # same animated meshes and source-bound identifiers, new cinematic scale.
+    frame.name = "A7_OriginalAnimatedCore"
+    frame.position = IPReactorAtrium.CORE_CENTER
+    frame.scale = Vector3.ONE * 1.55
     add_child(frame)
     _box(frame,Vector3(0,-2.3,0),Vector3(5.0,0.6,4.6),_metal(METAL))
     var core_mesh := SphereMesh.new()
@@ -502,8 +526,8 @@ func _build_reactor() -> void:
         var p := Vector3(cos(angle)*3.0, sin(angle)*2.0, 0)
         _box(frame,p,Vector3(0.35,0.3,0.55),_metal(METAL))
     var halo := OmniLight3D.new()
-    halo.light_color = Color(0.11,0.7,0.9)
-    halo.light_energy = 3.5
+    halo.light_color = Color(0.23,0.65,0.78)
+    halo.light_energy = 2.15
     halo.omni_range = 9.0
     frame.add_child(halo)
 
@@ -603,6 +627,10 @@ func _make_player() -> void:
     flashlight.shadow_enabled = false
     flashlight.visible = false
     camera.add_child(flashlight)
+    yaw = REACTOR_REVEAL_YAW
+    pitch = REACTOR_REVEAL_PITCH
+    player.rotation.y = yaw
+    camera.rotation.x = pitch
 
 func _panel(parent: Control, location: Rect2, anchors: Rect2, bg: Color) -> PanelContainer:
     var panel := PanelContainer.new()
@@ -909,6 +937,8 @@ func _layout_hud() -> void:
             legacy_lamps[i].visible = i % 3 == 0
         if world_sectors != null:
             world_sectors.set_quality("eco")
+        if reactor_atrium != null:
+            reactor_atrium.set_quality("eco")
     # Compact non-overlapping card hierarchy; the center is reserved for 3D.
     header_panel.offset_left = 17.0 if not narrow else 12.0
     header_panel.offset_right = minf(544.0,width-16.0)
@@ -971,6 +1001,23 @@ func _layout_hud() -> void:
     journal_text.custom_minimum_size.x = journal_half_width*2.0-58.0
     radio_dialogue.add_theme_font_size_override("font_size",12 if narrow else 14)
     _refresh_radio_ui()
+    _apply_cinematic_view()
+
+func _apply_cinematic_view() -> void:
+    # One-key playable environment inspection. No movement, game timers,
+    # controls or original narrative data are modified by this camera HUD mode.
+    if header_panel == null:
+        return
+    header_panel.visible = not cinematic_view
+    side_panel.visible = not cinematic_view
+    prompt_panel.visible = not cinematic_view
+    crosshair.visible = not cinematic_view
+    footer_label.visible = not cinematic_view
+    var display_width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
+    vitals_panel.visible = not cinematic_view and display_width >= 1000.0
+    if cinematic_view:
+        radio_panel.visible = false
+        priority_panel.visible = false
 
 func _refresh_radio_ui() -> void:
     if radio_panel == null:
@@ -979,8 +1026,8 @@ func _refresh_radio_ui() -> void:
     if not line.is_empty():
         radio_speaker.text = str(line["speaker"]) + "   /   ACT " + str(line["act"])
         radio_dialogue.text = str(line["text"])
-    radio_panel.visible = started and not paused and not journal_panel.visible and radio_ttl > 0.0
-    priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible
+    radio_panel.visible = started and not paused and not journal_panel.visible and not cinematic_view and radio_ttl > 0.0
+    priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible and not cinematic_view
     crew_priority_button.text = _copy("choice_crew")
     core_priority_button.text = _copy("choice_core")
     journal_text.text = story.journal_localized(locale)
@@ -1074,6 +1121,8 @@ func _continue_checkpoint() -> bool:
     if saved_locale not in ["ru","en"] or typeof(payload.get("reduced_motion",null)) != TYPE_BOOL:
         return false
     # Now, after atomic validation, restore all gameplay and authored story state.
+    cinematic_view = false
+    _apply_cinematic_view()
     session = restored_engine
     story = restored_story
     selected_scenario = session.scenario_id
@@ -1088,6 +1137,7 @@ func _continue_checkpoint() -> bool:
         visited_sectors.append(active_sector)
     art_stage.set_quality(quality_mode)
     world_sectors.set_quality(quality_mode)
+    reactor_atrium.set_quality(quality_mode)
     exit_gate.position.y = 6.2 if session.override_set else 2.6
     for index in range(legacy_lamps.size()):
         legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
@@ -1131,6 +1181,8 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    cinematic_view = false
+    _apply_cinematic_view()
     story.reset(selected_scenario)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
@@ -1147,6 +1199,8 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    cinematic_view = false
+    _apply_cinematic_view()
     session.reset(selected_scenario)
     story.reset(selected_scenario)
     radio_ttl = 12.0
@@ -1160,10 +1214,10 @@ func _restart() -> void:
     exit_gate.position = Vector3(0,2.6,-58.9)
     walking_phase = 0.0
     camera.position = Vector3(0,0.62,0)
-    yaw = 0.0
-    pitch = 0.0
-    player.rotation.y = 0.0
-    camera.rotation.x = 0.0
+    yaw = REACTOR_REVEAL_YAW
+    pitch = REACTOR_REVEAL_PITCH
+    player.rotation.y = yaw
+    camera.rotation.x = pitch
     started = true
     paused = false
     end_panel.visible = false
@@ -1263,11 +1317,21 @@ func _input(event: InputEvent) -> void:
             quality_mode = "eco" if quality_mode == "hero" else "hero"
             art_stage.set_quality(quality_mode)
             world_sectors.set_quality(quality_mode)
+            reactor_atrium.set_quality(quality_mode)
             for i in range(legacy_lamps.size()):
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
             return
+        if event.keycode == KEY_C and started and not paused and not session.finished():
+            cinematic_view = not cinematic_view
+            _apply_cinematic_view()
+            if not cinematic_view:
+                _refresh_radio_ui()
+            return
         if event.keycode == KEY_J:
+            if cinematic_view:
+                cinematic_view = false
+                _apply_cinematic_view()
             _toggle_journal()
             return
         if event.keycode == KEY_ESCAPE:
@@ -1362,6 +1426,7 @@ func _process(delta: float) -> void:
         camera.fov = lerpf(camera.fov,fov_target,minf(delta*4.0,1.0))
     art_stage.update_danger(session.heat,session.oxygen,runtime_seconds,reduced_motion)
     world_sectors.update_hazard(session.scenario_id,session.heat,session.oxygen,reduced_motion)
+    reactor_atrium.update_alarm(session.scenario_id,session.heat,session.oxygen,runtime_seconds,reduced_motion)
     if started and not paused and not session.finished():
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
@@ -1493,6 +1558,8 @@ func _announce(key: String) -> void:
             audio_director.cue("confirm")
 
 func _show_end() -> void:
+    cinematic_view = false
+    _apply_cinematic_view()
     if end_panel.visible:
         return
     end_panel.visible = true
