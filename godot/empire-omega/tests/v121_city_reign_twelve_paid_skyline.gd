@@ -149,10 +149,19 @@ func _run() -> void:
 		"REAL paid council transaction changes BOTH original colliding building and new facade")
 	var actual_bill_after: int = int(sim.data["treasury"])
 	var cache_after_purchase: int = cache.size()
+	var paid_original_mesh: Mesh = (source_body.get_node("VisualMesh") as MeshInstance3D).mesh
+	var paid_original_shape: Shape3D = shape.shape
+	var physics_cache: Dictionary = city.get("project_geometry_cache")
+	check(physics_cache.size()==1 and physics_cache.has(1),
+		"first original paid building shares one cached real original BoxMesh/BoxShape3D tier")
 	for ignored in range(3):
 		city.call("update_development")
 	check(int(sim.data["treasury"])==actual_bill_after and cache.size()==cache_after_purchase,
 		"repeated full-city development refresh cannot mint money or recreate GPU meshes")
+	check(physics_cache.size()==1 and
+		(source_body.get_node("VisualMesh") as MeshInstance3D).mesh==paid_original_mesh and
+		shape.shape==paid_original_shape,
+		"reopening HQ/map/rebuilding visuals allocates ZERO original Godot collider or box meshes")
 	var node_count: int = art.get_child_count()
 	city.call("apply_visual_budget","low")
 	check(not purchased_art.visible and source_body.visible and art.get_child_count()==node_count,
