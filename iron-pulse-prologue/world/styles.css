@@ -258,6 +258,7 @@ button { cursor: pointer; }
   .footer-links { flex-wrap: wrap; gap: 19px; }
   .footer-bottom { flex-direction: column; gap: 13px; }
 }
+.world-evidence-note { margin: 35px 0 0; padding: 20px 24px; border-left: 2px solid var(--accent-soft); background: #192025; color: #b8c4c5; font-size: 13px; line-height: 1.8; max-width: 840px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }

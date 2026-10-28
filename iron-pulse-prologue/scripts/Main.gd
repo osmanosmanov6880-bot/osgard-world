@@ -173,6 +173,9 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var campaign: IPCampaignFlow = IPCampaignFlow.new()
 var world_launch: Dictionary = IPWorldLaunch.parse("")
 var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
+var threat_radar: IPThreatRadar = IPThreatRadar.new()
+var after_action_review: IPAfterActionReview = IPAfterActionReview.new()
+var black_box_report: Dictionary = {}
 var decision_forecaster: IPDecisionForecast = IPDecisionForecast.new()
 var forecast_report: Dictionary = {}
 var forecast_update_clock: float = 0.0
@@ -215,6 +218,7 @@ var warning_veil: ColorRect
 var objective_label: Label
 var telemetry_label: Label
 var allocation_label: Label
+var threat_label: Label
 var feedback_label: Label
 var interaction_label: Label
 var footer_label: Label
@@ -248,6 +252,11 @@ var end_panel: PanelContainer
 var end_title: Label
 var end_stats: Label
 var end_button: Button
+var debrief_button: Button
+var debrief_panel: PanelContainer
+var debrief_title: Label
+var debrief_label: Label
+var debrief_close_button: Button
 var touch_ui: Control
 var touch_shot_button: Button
 var diagnostic_panel: PanelContainer
@@ -433,6 +442,15 @@ func _publish_web_state() -> void:
         "requested_campaign":bool(world_launch.get("campaign",false))
     }
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
+    state["threat_radar"] = threat_radar.snapshot(session)
+    state["threat_hud"] = threat_label.text if threat_label != null else ""
+    state["black_box"] = {
+        "visible":debrief_panel != null and debrief_panel.visible,
+        "available":not black_box_report.is_empty(),
+        "report":black_box_report.duplicate(true) if debrief_panel != null and debrief_panel.visible else {},
+        "open_rect":_hud_rect(debrief_button) if debrief_button != null else [],
+        "close_rect":_hud_rect(debrief_close_button) if debrief_close_button != null else []
+    }
     state["decision_forecast"] = {
         "visible":forecast_panel != null and forecast_panel.visible,
         "report":forecast_report.duplicate(true) if forecast_panel != null and forecast_panel.visible else {},
@@ -825,6 +843,8 @@ func _make_hud() -> void:
     side.add_child(metrics)
     telemetry_label = _label(metrics,"",15,WHITE)
     allocation_label = _label(metrics,"",16,CYAN)
+    threat_label = _label(metrics,"",11,AMBER)
+    threat_label.name = "V16_LiveFictionalHazardStatus"
     vitals_panel = _panel(hud_root,Rect2(-365,17,-17,276),Rect2(1,0,1,0),Color(0.014,0.029,0.048,0.92))
     var vitals := VBoxContainer.new()
     vitals.add_theme_constant_override("separation",4)
@@ -960,19 +980,52 @@ func _make_overlays() -> void:
     resume_button.pressed.connect(_resume)
     pause_box.add_child(resume_button)
     pause_panel.visible = false
-    end_panel = _panel(hud_root,Rect2(-300,-160,300,160),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
+    end_panel = _panel(hud_root,Rect2(-300,-220,300,220),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
     end_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var end_box := VBoxContainer.new()
-    end_box.add_theme_constant_override("separation",22)
+    end_box.add_theme_constant_override("separation",12)
     end_panel.add_child(end_box)
     end_title = _label(end_box,"",29,CYAN)
-    end_stats = _label(end_box,"",15,WHITE)
+    var end_scroll := ScrollContainer.new()
+    end_scroll.name = "FinalRealGameStatsScroll"
+    end_scroll.custom_minimum_size = Vector2(0,178)
+    end_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    end_box.add_child(end_scroll)
+    end_stats = _label(end_scroll,"",15,WHITE)
     end_button = Button.new()
     end_button.text = _copy("restart")
     end_button.custom_minimum_size = Vector2(0,55)
     end_button.pressed.connect(_end_action)
     end_box.add_child(end_button)
+    debrief_button = Button.new()
+    debrief_button.name = "A7_BlackBoxOpen"
+    debrief_button.custom_minimum_size = Vector2(0,52)
+    debrief_button.pressed.connect(_toggle_after_action)
+    end_box.add_child(debrief_button)
     end_panel.visible = false
+    # Native evidence panel. Its 3D game event history comes only from the
+    # currently finished engine; the existing end screen stays mounted.
+    debrief_panel = _panel(hud_root,Rect2(-315,-258,315,258),Rect2(0.5,0.5,0.5,0.5),Color(0.015,0.022,0.030,0.995))
+    debrief_panel.name = "V16_GenuineEngineBlackBox"
+    debrief_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+    var debrief_box := VBoxContainer.new()
+    debrief_box.add_theme_constant_override("separation",12)
+    debrief_panel.add_child(debrief_box)
+    debrief_title = _label(debrief_box,"A7 / BLACK BOX",25,AMBER)
+    var debrief_scroll := ScrollContainer.new()
+    debrief_scroll.name = "EventEvidenceScroll"
+    debrief_scroll.custom_minimum_size = Vector2(0,360)
+    debrief_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    debrief_box.add_child(debrief_scroll)
+    debrief_label = _label(debrief_scroll,"",13,WHITE)
+    debrief_label.name = "RealEventDebriefTranscript"
+    debrief_close_button = Button.new()
+    debrief_close_button.name = "CloseBlackBox"
+    debrief_close_button.custom_minimum_size = Vector2(0,52)
+    debrief_close_button.pressed.connect(_toggle_after_action)
+    debrief_box.add_child(debrief_close_button)
+    debrief_panel.visible = false
+    _refresh_after_action_locale()
 
 func _touch_button(parent: Control, text_value: String, x: float, y: float, width: float, move_key: String = "") -> Button:
     var btn := Button.new()
@@ -1123,6 +1176,7 @@ func _layout_hud() -> void:
     guidance_label.add_theme_font_size_override("font_size",11 if narrow else 12)
     telemetry_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
+    threat_label.add_theme_font_size_override("font_size",10 if narrow else 11)
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
@@ -1138,6 +1192,14 @@ func _layout_hud() -> void:
     intro_panel.offset_right = minf(310.0,width*0.45)
     end_panel.offset_left = -minf(300.0,width*0.45)
     end_panel.offset_right = minf(300.0,width*0.45)
+    end_stats.custom_minimum_size.x = minf(500.0,width*0.83-28.0)
+    if debrief_panel != null:
+        var review_half: float = minf(315.0,width*0.45)
+        debrief_panel.offset_left = -review_half
+        debrief_panel.offset_right = review_half
+        debrief_label.custom_minimum_size.x = review_half*2.0-48.0
+        debrief_label.add_theme_font_size_override("font_size",11 if narrow else 13)
+        debrief_title.add_theme_font_size_override("font_size",19 if narrow else 25)
     objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     if radio_panel == null:
         return
@@ -1225,6 +1287,31 @@ func _refresh_decision_forecast() -> void:
     forecast_report = decision_forecaster.evaluate(session)
     forecast_label.text = decision_forecaster.text_report(forecast_report,locale)
     forecast_close_button.text = "CLOSE / X" if locale == "en" else "ЗАКРЫТЬ / X"
+
+func _clear_after_action() -> void:
+    if debrief_panel != null:
+        debrief_panel.visible = false
+    black_box_report.clear()
+
+func _refresh_after_action_locale() -> void:
+    if debrief_button == null or debrief_title == null or debrief_label == null or debrief_close_button == null:
+        return
+    var english: bool = locale == "en"
+    debrief_button.text = "VIEW BLACK BOX / B" if english else "ЧЁРНЫЙ ЯЩИК / B"
+    debrief_title.text = "A7 / AFTER-ACTION REPORT" if english else "A7 / ОТЧЁТ ПО ОПЕРАЦИИ"
+    debrief_close_button.text = "CLOSE REPORT / ESC" if english else "ЗАКРЫТЬ ОТЧЁТ / ESC"
+    debrief_label.text = after_action_review.localized(black_box_report,locale)
+
+func _toggle_after_action() -> void:
+    # Review is a post-operation feature, never a free pause or cheat.
+    if not started or not session.finished() or debrief_panel == null or black_box_report.is_empty():
+        return
+    debrief_panel.visible = not debrief_panel.visible
+    if debrief_panel.visible:
+        forecast_panel.visible = false
+        diagnostic_panel.visible = false
+        _refresh_after_action_locale()
+    _publish_web_state()
 
 func _cycle_director_shot() -> void:
     if started and not paused and not session.finished() and cinematic_view:
@@ -1348,6 +1435,7 @@ func _continue_checkpoint() -> bool:
         if saved_campaign.records.size() != saved_campaign.index:
             return false
     # Now, after atomic validation, restore all gameplay and authored story state.
+    _clear_after_action()
     cinematic_view = false
     _apply_cinematic_view()
     forecast_panel.visible = false
@@ -1443,6 +1531,7 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    _clear_after_action()
     forecast_panel.visible = false
     forecast_report.clear()
     cinematic_view = false
@@ -1463,6 +1552,7 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    _clear_after_action()
     forecast_panel.visible = false
     forecast_report.clear()
     cinematic_view = false
@@ -1536,6 +1626,7 @@ func _toggle_language() -> void:
     _announce("language")
     _refresh_hud()
     _refresh_decision_forecast()
+    _refresh_after_action_locale()
     _refresh_radio_ui()
 
 func _gamepad_axis(axis_id: int) -> float:
@@ -1555,13 +1646,18 @@ func _gamepad_button(button_index: int) -> void:
             _pause_toggle()
         return
     if button_index == JOY_BUTTON_B:
-        _toggle_journal()
+        if session.finished():
+            _toggle_after_action()
+        else:
+            _toggle_journal()
         return
     if not started or paused:
         return
     if session.finished():
-        if button_index == JOY_BUTTON_A:
+        if button_index == JOY_BUTTON_A and not debrief_panel.visible:
             _end_action()
+        elif button_index == JOY_BUTTON_Y:
+            _toggle_after_action()
         return
     match button_index:
         JOY_BUTTON_A:
@@ -1606,6 +1702,9 @@ func _input(event: InputEvent) -> void:
         if event.keycode == KEY_T:
             _toggle_decision_forecast()
             return
+        if event.keycode == KEY_B:
+            _toggle_after_action()
+            return
         if event.keycode == KEY_H and started and not paused and not session.finished():
             _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
             _save_checkpoint()
@@ -1634,6 +1733,9 @@ func _input(event: InputEvent) -> void:
             _toggle_journal()
             return
         if event.keycode == KEY_ESCAPE:
+            if debrief_panel != null and debrief_panel.visible:
+                _toggle_after_action()
+                return
             if journal_panel.visible:
                 _toggle_journal()
             else:
@@ -1900,6 +2002,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
     if campaign.active:
         end_stats.text += "\n\n" + campaign.summary(locale)
+    black_box_report = after_action_review.review(session,campaign)
+    _refresh_after_action_locale()
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1929,6 +2033,10 @@ func _refresh_hud() -> void:
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
         _copy("rescue_count").format({"used":session.relays_activated.size()})]
+    var risk: Dictionary = threat_radar.snapshot(session)
+    threat_label.text = threat_radar.cockpit_text(risk,locale)
+    var risk_color: Color = RED if str(risk["tier"]) in ["CRITICAL","FAILED"] else AMBER if str(risk["tier"]) == "WATCH" else CYAN
+    threat_label.add_theme_color_override("font_color",risk_color)
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
