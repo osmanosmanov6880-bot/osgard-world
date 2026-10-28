@@ -703,18 +703,25 @@ func _unhandled_input(event: InputEvent) -> void:
         stage_3d.first_person.rotate_view((event as InputEventMouseMotion).relative)
         get_viewport().set_input_as_handled()
 
-func _unhandled_key_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
+    # W71 actual-browser correction: raw player motion must be captured before
+    # scroll containers or focused buttons consume a WASD key. Both keydown and
+    # keyup reach real CharacterBody3D physics; all normal shortcuts continue
+    # through _unhandled_key_input when not in operator mode.
     if not (event is InputEventKey):
         return
     var key: InputEventKey = event as InputEventKey
     if (stage_3d != null and stage_3d.first_person != null
             and stage_3d.first_person.piloting
             and [KEY_W, KEY_A, KEY_S, KEY_D].has(key.keycode)):
-        # Listen to both press AND release; physics must stop on keyup.
         stage_3d.first_person_key(key.keycode, key.pressed)
-        call_deferred("_publish_web_accessibility")
         get_viewport().set_input_as_handled()
+        call_deferred("_publish_web_accessibility")
+
+func _unhandled_key_input(event: InputEvent) -> void:
+    if not (event is InputEventKey):
         return
+    var key: InputEventKey = event as InputEventKey
     if not key.pressed or key.echo:
         return
     if key.keycode == KEY_T:
