@@ -131,7 +131,9 @@ function updateMetrics(){
   set("heatValue",Math.round(m.heat)+"%");
   set("integrityValue",Math.round(m.integrity)+"%");
   set("cycleValue",String(m.cycle).padStart(2,"0")+" / 06");
-  set("frameValue",m.p95.toFixed(1)+" ms");
+  // p95=0 means original Godot has not yet produced enough valid
+  // software frame samples. Never present "0.0 ms" as GPU performance.
+  set("frameValue",m.p95>0?m.p95.toFixed(1)+" ms":"—");
   meter("heatMeter",m.heatPct);
   meter("integrityMeter",m.integrityPct);
   meter("cycleMeter",m.filledCycle);
