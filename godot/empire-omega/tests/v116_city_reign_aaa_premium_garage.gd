@@ -2,7 +2,6 @@ extends SceneTree
 ## CITY REIGN AAA A9: authentic responsive charcoal/brass garage presentation.
 ## All prices, owned vehicles and performance factors are read from actual
 ## GameState/VehicleCatalog. Buttons still call the authoritative transaction.
-const HUD = preload("res://scripts/hud.gd")
 const DISPLAY = preload("res://scripts/city_reign_premium_garage.gd")
 const CATALOG = preload("res://scripts/vehicle_catalog.gd")
 var passed: int = 0
@@ -53,7 +52,17 @@ func _run() -> void:
 			verify(bool(snapshot["disabled"]),
 				"cannot buy original locked car or select already driving vehicle")
 	verify(state.data==starting,"creating pure AAA card data does not mutate save, cash or missions")
-	var hud: CanvasLayer = HUD.new()
+	# Autoload globals are initialized before runtime HUD script loading.
+	# Static preload at SceneTree compile time would reject GameState from HUD.
+	var hud_source: Script = load("res://scripts/hud.gd") as Script
+	verify(hud_source!=null and hud_source.can_instantiate(),
+		"real native operations HUD compiles after city GameState autoload")
+	if hud_source==null or not hud_source.can_instantiate():
+		state.data = original
+		state.locale = lang_old
+		quit(1)
+		return
+	var hud: CanvasLayer = hud_source.new()
 	root.add_child(hud)
 	for language in ["ru","en","zh"]:
 		state.locale = language
