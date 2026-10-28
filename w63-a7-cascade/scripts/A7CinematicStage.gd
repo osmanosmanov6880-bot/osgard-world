@@ -18,6 +18,9 @@ const AMBER := Color("efb970")
 var art_kit: A7ArchitecturalDetail
 var cathedral: A7IndustrialCathedral
 var hero_art: A7CinematicHeroSet
+var incident_cinema: A7IncidentDirection
+var inspection_focus: bool = false
+var focus_switches: int = 0
 var guide_progress: float = 0.0
 var sector_index: int = 0
 var guide_moves: int = 0
@@ -67,6 +70,9 @@ func _ready() -> void:
     hero_art = A7CinematicHeroSet.new()
     add_child(hero_art)
     hero_art.build()
+    incident_cinema = A7IncidentDirection.new()
+    add_child(incident_cinema)
+    incident_cinema.build()
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -282,7 +288,7 @@ func set_camera(index: int) -> void:
         Vector3(0.0, 3.15, 8.45),
         Vector3(-5.15, 3.25, 8.10)]
     camera.position = spots[camera_index]
-    camera.fov = 52.0
+    camera.fov = 35.0 if inspection_focus else 52.0
     camera.look_at(Vector3(0.0, 2.80, -0.95), Vector3.UP)
     camera.current = true
 
@@ -319,13 +325,28 @@ func _apply_guide_pose() -> void:
     var look_start := Vector3(0, 2.80, -0.95)
     var look_end := Vector3(8.0, 3.45, 16.45)
     camera.position = start.lerp(end, guide_progress)
-    camera.fov = lerpf(52.0, 64.0, guide_progress)
+    var ordinary_fov: float = lerpf(52.0, 64.0, guide_progress)
+    camera.fov = ordinary_fov * (0.67 if inspection_focus else 1.0)
     camera.look_at(look_start.lerp(look_end, guide_progress), Vector3.UP)
     camera.current = true
+
+# W69 genuine optical close-up, not an enlarged screenshot/HTML transform.
+# Unlike mission commands, changing a camera's FOV never changes the model.
+func toggle_inspection_focus() -> void:
+    inspection_focus = not inspection_focus
+    focus_switches += 1
+    if camera == null:
+        return
+    if sector_index == 0 and guide_progress <= 0.0:
+        camera.fov = 35.0 if inspection_focus else 52.0
+    else:
+        _apply_guide_pose()
 
 func set_compact_view(enabled: bool) -> void:
     if cathedral != null:
         cathedral.set_compact_view(enabled)
+    if incident_cinema != null:
+        incident_cinema.set_compact_view(enabled)
     if art_kit != null and art_kit.engraved_sign != null:
         art_kit.engraved_sign.visible = not enabled
 
@@ -340,18 +361,24 @@ func set_quality(new_mode: String) -> void:
         cathedral.set_quality(mode)
     if hero_art != null:
         hero_art.set_quality(mode)
+    if incident_cinema != null:
+        incident_cinema.set_quality(mode)
     if key_light != null:
         key_light.light_energy = 2.30 if mode == "hero" else 1.25
         fill_light.visible = mode == "hero"
 
 func set_reduced_motion(enabled: bool) -> void:
     reduced_motion = enabled
+    if incident_cinema != null:
+        incident_cinema.set_reduced_motion(enabled)
 
 func trigger_action(action: String) -> void:
     if not ["PUMP", "VENT", "SEAL", "SCAN", "POWER"].has(action):
         return
     recent_action = action
     pulse = 1.0
+    if incident_cinema != null:
+        incident_cinema.accepted_action(action)
 
 func apply_snapshot(state: Dictionary) -> void:
     if heat_material == null:
@@ -394,6 +421,8 @@ func apply_snapshot(state: Dictionary) -> void:
         cathedral.present(state)
     if hero_art != null:
         hero_art.present(state)
+    if incident_cinema != null:
+        incident_cinema.present(state)
     snapshot_count += 1
 
 func _process(delta: float) -> void:
@@ -424,6 +453,13 @@ func qa_readout() -> Dictionary:
         "w68_hero_spots": 2 if hero_art != null and hero_art.spot_core != null and hero_art.spot_relay != null else 0,
         "w68_original_texture_profiles": hero_art.surface_lab.generated if hero_art != null else 0,
         "w68_original_texture_pixels": hero_art.surface_lab.pixels_written if hero_art != null else 0,
+        "w69_cinematic_world": incident_cinema != null,
+        "w69_real_hazard_shutters": int(incident_cinema.qa_readout()["real_shutters"]) if incident_cinema != null else 0,
+        "w69_live_in_world_readouts": int(incident_cinema.qa_readout()["in_world_readouts"]) if incident_cinema != null else 0,
+        "w69_cinema_actions": int(incident_cinema.accepted_actions) if incident_cinema != null else 0,
+        "w69_focus": inspection_focus,
+        "w69_focus_switches": focus_switches,
+        "w69_visual_severity": incident_cinema.incident_severity if incident_cinema != null else 0.0,
         "cathedral_two_real_sectors": cathedral != null and cathedral.relay_terminals == 3,
         "inspection_sector": sector_index,
         "inspection_progress": guide_progress,
