@@ -2,6 +2,7 @@ extends SceneTree
 ## CITY REIGN B65-B66: LIVE real-game on-foot F inspection of genuinely
 ## bought infrastructure, no pretend mission, no forged finance snapshots.
 const VISIT = preload("res://scripts/city_reign_live_site_inspection.gd")
+const INITIATIVES = preload("res://scripts/civic_initiatives.gd")
 const MAIN_SCRIPT_PATH = "res://scripts/main.gd"
 const WORKS = preload("res://scripts/city_reign_civic_outcomes.gd")
 const PARK = preload("res://scripts/city_reign_park_furniture.gd")
@@ -58,9 +59,14 @@ func _run() -> void:
 	var financial: Dictionary = state.duplicate(true)
 	for lang in ["ru","en","zh"]:
 		var message: String = VISIT.report(state,"open_records",lang)
-		verify(message.contains(str(state["treasury"])) and
-			message.contains(str(state["trust"][0])) and message.length()>30,
-			"real live finance inspection reports authentic saved treasury and forum trust: "+lang)
+		var correct_name: String = str(INITIATIVES.PROJECTS["open_records"][lang])
+		# Chinese conveys the same meaning in fewer characters than Russian/
+		# English. Validate the actual localized source name and saved numbers,
+		# never an arbitrary Latin-language string length threshold.
+		verify(message.begins_with(correct_name) and
+			message.contains(str(state["treasury"])) and
+			message.contains(str(state["trust"][0])),
+			"real live finance inspection reports localized project, saved treasury and trust: "+lang)
 	verify(state==financial,
 		"reading real project does not change any financial/mission/save state")
 	# Test both other legitimate completed-save paths as read-only fixtures.
