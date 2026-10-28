@@ -15,6 +15,12 @@ const SCRIPT := {
         "arrival_blackout":"МАРА: Оператор, если слышишь — энергосеть разрушена. Я выведу тебя к экипажу. Действуй осторожно.",
         "arrival_thermal":"МАРА: A7 разогревается. Датчики показывают повторные тепловые удары. Нам нужен холодный расчёт.",
         "arrival_breach":"МАРА: В жилом секторе падает давление. С каждым вдохом времени меньше. Найди источник утечки.",
+        "handoff_thermal_crew":"МАРА: После отключения сети мы вывели людей. Ресурсы на исходе, но твой приказ помог сохранить экипаж. Тепловой каскад не даст нам права на ошибку.",
+        "handoff_thermal_core":"МАРА: Энергосеть ожила благодаря твоему приказу сохранить реактор. Но экипаж понёс потери — теперь каскад перегрева может стоить дороже.",
+        "handoff_thermal_neutral":"МАРА: Первая эвакуация завершена. Я внесла решения в журнал. Вторая тревога — тепловой каскад в реакторе.",
+        "handoff_breach_crew":"МАРА: Мы снова спасли людей, но аварии не прекращаются. В жилом блоке разгерметизация: запас кислорода — это всё, что у нас есть.",
+        "handoff_breach_core":"МАРА: Реактор выдержал два кризиса, но в жилом секторе падает давление. Ты снова будешь решать, что сохранить.",
+        "handoff_breach_neutral":"МАРА: Два аварийных протокола пройдены. Последний сектор теряет воздух; мне нужен ты у шлюза.",
         "scan":"МАРА: Диагноз подтверждён. Прежде чем чинить контур, реши, что важнее: защитить экипаж или стабилизировать ядро. [1] / [2]",
         "priority_crew":"МАРА: Приоритет людям. Кислород перенаправлен в жилой сектор, но ядро стало горячее.",
         "priority_core":"МАРА: Приоритет реактору. Температура падает, но часть ресурсов экипажа потеряна.",
@@ -41,6 +47,12 @@ const SCRIPT := {
         "arrival_blackout":"MARA: If you can hear me, the power grid is broken. I'll guide you to the trapped crew. Move carefully.",
         "arrival_thermal":"MARA: Reactor A7 is heating fast. The sensors show repeating thermal shocks. We need clear decisions.",
         "arrival_breach":"MARA: The habitable sector is losing pressure. Every breath costs time. Find the breach.",
+        "handoff_thermal_crew":"MARA: The first evacuation got people out. Supplies are thin, but your crew-first order saved lives. This thermal cascade leaves no margin.",
+        "handoff_thermal_core":"MARA: The power grid returned because you protected the reactor, but the crew paid a price. Now the heat cascade could cost us even more.",
+        "handoff_thermal_neutral":"MARA: First evacuation complete. I've logged your choices. A second alarm is rising in the reactor: thermal cascade.",
+        "handoff_breach_crew":"MARA: We protected the crew again, but another alarm is coming. The living quarters are venting air; oxygen is all we have left.",
+        "handoff_breach_core":"MARA: The core survived two crises, but the living quarters are losing pressure. You'll have to decide what to preserve again.",
+        "handoff_breach_neutral":"MARA: Two emergency protocols are behind us. The last sector is losing air. I need you at the lock.",
         "scan":"MARA: Diagnosis confirmed. Before repairs, choose what matters most: protect the crew or stabilize the core. [1] / [2]",
         "priority_crew":"MARA: Crew first. Oxygen was redirected to the living quarters, but the reactor grew hotter.",
         "priority_core":"MARA: Reactor first. Temperature is dropping, but the crew sacrificed precious supplies.",
@@ -66,6 +78,8 @@ const SCRIPT := {
 }
 const KEY_TO_ACT := {
     "scan":1,"priority_crew":1,"priority_core":1,"priority_skip":1,
+    "handoff_thermal_crew":0,"handoff_thermal_core":0,"handoff_thermal_neutral":0,
+    "handoff_breach_crew":0,"handoff_breach_core":0,"handoff_breach_neutral":0,
     "repair_standard":2,"repair_careful":2,"repair_fast":2,
     "relay_medbay":2,"relay_quench":2,"relay_uplink":2,"relay_budget":2,
     "surge":2,"thermal_pulse":2,"bus_switched":2,"sector_service":2,
@@ -123,6 +137,14 @@ func _transmit(key: String) -> bool:
     if journal.size() > MAX_LINES:
         journal.pop_front()
     return true
+
+func on_campaign_handoff(previous_priority: String) -> bool:
+    # Authored, checkpointable dialogue based on a completed previous act.
+    # Never called for standalone mode or before the first true victory.
+    if scenario not in ["thermal","breach"]:
+        return false
+    var remembered: String = previous_priority if previous_priority in ["crew","core"] else "neutral"
+    return _transmit("handoff_" + scenario + "_" + remembered)
 
 func on_game_event(event_name: String, priority: String) -> bool:
     if event_name == "priority_crew" or event_name == "priority_core":

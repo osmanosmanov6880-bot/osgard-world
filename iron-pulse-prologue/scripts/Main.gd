@@ -20,6 +20,10 @@ const COPY := {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
         "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
+        "campaign_on":"КАМПАНИЯ / 3 ГЛАВЫ  ✓", "campaign_off":"КАМПАНИЯ / 3 ГЛАВЫ",
+        "campaign_new":"НАЧАТЬ КАМПАНИЮ ЗАНОВО",
+        "campaign_start":"НАЧАТЬ ГЛАВУ", "campaign_next":"СЛЕДУЮЩАЯ ГЛАВА",
+        "campaign_replay":"ПРОЙТИ КАМПАНИЮ ЗАНОВО",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
         "brief_thermal": "ТЕПЛОВОЙ КАСКАД: опасный перегрев и повторные импульсы. E — долгий ремонт, Q — быстрый сброс ценой кислорода и здоровья.",
@@ -87,6 +91,10 @@ const COPY := {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
         "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
+        "campaign_on":"3-CHAPTER CAMPAIGN  ✓", "campaign_off":"3-CHAPTER CAMPAIGN",
+        "campaign_new":"REPLAY FULL CAMPAIGN",
+        "campaign_start":"BEGIN CHAPTER", "campaign_next":"NEXT CHAPTER",
+        "campaign_replay":"REPLAY FULL CAMPAIGN",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
         "brief_thermal": "THERMAL CASCADE: dangerous heat and recurring pulses. E — careful 15s repair; Q — rapid purge with resource loss.",
@@ -156,6 +164,9 @@ var session: IPCrisisEngine = IPCrisisEngine.new()
 var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
+var campaign_progress_path: String = IPCampaignDirector.PROGRESS_PATH
+var campaign: IPCampaignDirector = IPCampaignDirector.new()
+var campaign_enabled: bool = false
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
@@ -213,6 +224,7 @@ var journal_close_button: Button
 var radio_ttl: float = 0.0
 var checkpoint_clock: float = 0.0
 var scenario_buttons: Dictionary = {}
+var campaign_button: Button
 var scenario_brief: Label
 var selected_scenario: String = "blackout"
 var active_sector: String = "reactor"
@@ -247,6 +259,9 @@ var _browser_css_size: Vector2i = Vector2i.ZERO
 var _last_web_resize_check: float = -99.0
 
 func _ready() -> void:
+    var recorded: Dictionary = checkpoint_store.load_checkpoint(campaign_progress_path)
+    if not recorded.is_empty():
+        campaign.restore(recorded)
     session.reset()
     story.reset(session.scenario_id)
     _make_environment()
@@ -304,6 +319,11 @@ func _publish_web_state() -> void:
         return
     var state: Dictionary = session.diagnostic_snapshot()
     state["scene"] = "IRON_PULSE_BLACKOUT"
+    state["campaign_enabled"] = campaign_enabled
+    state["campaign"] = campaign.readout()
+    if campaign_button != null:
+        state["campaign_button_rect"] = _hud_rect(campaign_button)
+        state["campaign_button_visible"] = campaign_button.visible
     state["started"] = started
     state["paused"] = paused
     state["locale"] = locale
@@ -823,6 +843,13 @@ func _make_overlays() -> void:
         choice.pressed.connect(_select_scenario.bind(scenario_key))
         scenario_row.add_child(choice)
         scenario_buttons[scenario_key] = choice
+    campaign_button = Button.new()
+    campaign_button.name = "ThreeActCampaignSwitch"
+    campaign_button.toggle_mode = true
+    campaign_button.custom_minimum_size = Vector2(0,42)
+    campaign_button.add_theme_font_size_override("font_size",15)
+    campaign_button.pressed.connect(_toggle_campaign_mode)
+    start_box.add_child(campaign_button)
     scenario_brief = _label(start_box,"",12,AMBER)
     scenario_brief.custom_minimum_size = Vector2(0,44)
     var intro_scroll := ScrollContainer.new()
@@ -1131,7 +1158,9 @@ func _checkpoint_payload() -> Dictionary:
         "quality":quality_mode,
         "reduced_motion":reduced_motion,
         "player_position":[player.position.x,player.position.y,player.position.z],
-        "visited_sectors":visited_sectors.duplicate()
+        "visited_sectors":visited_sectors.duplicate(),
+        "campaign_enabled":campaign_enabled,
+        "campaign":campaign.checkpoint()
     }
 
 func _save_checkpoint() -> bool:
@@ -1148,6 +1177,16 @@ func _continue_checkpoint() -> bool:
         return false
     var restored_engine := IPCrisisEngine.new()
     var restored_story := IPStoryDirector.new()
+    # Old V6 checkpoints have no campaign fields: they remain independent,
+    # fully supported standalone missions without losing saved V9 progress.
+    var restored_campaign := IPCampaignDirector.new()
+    var restored_campaign_enabled: bool = false
+    if payload.has("campaign") or payload.has("campaign_enabled"):
+        if not payload.get("campaign",null) is Dictionary or typeof(payload.get("campaign_enabled",null)) != TYPE_BOOL:
+            return false
+        if not restored_campaign.restore(payload["campaign"]):
+            return false
+        restored_campaign_enabled = bool(payload["campaign_enabled"])
     if not restored_engine.restore_checkpoint(payload["engine"]):
         return false
     if not restored_story.restore(payload["story"]):
@@ -1155,6 +1194,9 @@ func _continue_checkpoint() -> bool:
     if restored_engine.finished() or restored_engine.scenario_id != restored_story.scenario:
         return false
     if payload.get("scenario") != restored_engine.scenario_id:
+        return false
+    if restored_campaign_enabled and (
+        restored_campaign.finished() or restored_campaign.next_scenario() != restored_engine.scenario_id):
         return false
     var pos: Variant = payload.get("player_position",null)
     if not pos is Array or pos.size() != 3:
@@ -1184,6 +1226,9 @@ func _continue_checkpoint() -> bool:
     _apply_cinematic_view()
     session = restored_engine
     story = restored_story
+    if payload.has("campaign"):
+        campaign = restored_campaign
+    campaign_enabled = restored_campaign_enabled
     selected_scenario = session.scenario_id
     locale = saved_locale
     quality_mode = saved_quality
@@ -1216,18 +1261,52 @@ func _continue_checkpoint() -> bool:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
     return true
 
+func _persist_campaign_progress() -> bool:
+    if DisplayServer.get_name() == "headless":
+        return false
+    return checkpoint_store.save(campaign.checkpoint(),campaign_progress_path)
+
+func _toggle_campaign_mode() -> void:
+    if started:
+        return
+    if not campaign_enabled and campaign.finished():
+        # Explicitly labeled full replay, not an automatic progress reset.
+        campaign.reset()
+        _persist_campaign_progress()
+    campaign_enabled = not campaign_enabled
+    if campaign_enabled:
+        selected_scenario = campaign.next_scenario()
+        session.reset(selected_scenario)
+        campaign.apply_to_engine(session)
+        story.reset(selected_scenario)
+    else:
+        selected_scenario = "blackout"
+        session.reset(selected_scenario)
+        story.reset(selected_scenario)
+    _update_scenario_picker()
+    _refresh_hud()
+
 func _update_scenario_picker() -> void:
     if scenario_brief == null:
         return
-    intro_title.text = _copy("scenario_title_" + selected_scenario)
-    scenario_brief.text = _copy("brief_" + selected_scenario)
+    intro_title.text = "IRON PULSE / CAMPAIGN" if campaign_enabled else _copy("scenario_title_" + selected_scenario)
+    scenario_brief.text = (
+        campaign.summary(locale)+"\n"+_copy("brief_" + selected_scenario)
+        if campaign_enabled else _copy("brief_" + selected_scenario))
+    if campaign_button != null:
+        var campaign_label: String = "campaign_on" if campaign_enabled else "campaign_new" if campaign.finished() else "campaign_off"
+        campaign_button.text = _copy(campaign_label)
+        campaign_button.button_pressed = campaign_enabled
+    if intro_button != null:
+        intro_button.text = _copy("campaign_start" if campaign_enabled else "start")
     for mode_id in IPCrisisEngine.SCENARIOS:
         var button: Button = scenario_buttons[mode_id]
         button.text = _copy("scenario_" + mode_id)
         button.button_pressed = mode_id == selected_scenario
+        button.disabled = campaign_enabled
 
 func _select_scenario(next_scenario: String) -> void:
-    if started or not IPCrisisEngine.SCENARIOS.has(next_scenario):
+    if started or campaign_enabled or not IPCrisisEngine.SCENARIOS.has(next_scenario):
         return
     selected_scenario = next_scenario
     session.reset(next_scenario)
@@ -1241,9 +1320,18 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    if started or (campaign_enabled and campaign.finished()):
+        return
+    if campaign_enabled:
+        selected_scenario = campaign.next_scenario()
+        session.reset(selected_scenario)
+        campaign.apply_to_engine(session)
     cinematic_view = false
     _apply_cinematic_view()
     story.reset(selected_scenario)
+    if campaign_enabled and campaign.wins() > 0:
+        var previous_result: Dictionary = campaign.completed.back()
+        story.on_campaign_handoff(str(previous_result["priority"]))
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     started = true
@@ -1251,7 +1339,10 @@ func start_run() -> void:
     intro_panel.visible = false
     pause_panel.visible = false
     end_panel.visible = false
+    end_button.text = _copy("restart")
     _announce("shift_started")
+    _update_scenario_picker()
+    _refresh_hud()
     _refresh_radio_ui()
     _save_checkpoint()
     audio_director.set_active(true)
@@ -1259,10 +1350,21 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    if campaign_enabled and session.won:
+        if campaign.finished():
+            # Final replay is a user-initiated explicit action.
+            campaign.reset()
+            _persist_campaign_progress()
+        selected_scenario = campaign.next_scenario()
     cinematic_view = false
     _apply_cinematic_view()
     session.reset(selected_scenario)
+    if campaign_enabled:
+        campaign.apply_to_engine(session)
     story.reset(selected_scenario)
+    if campaign_enabled and campaign.wins() > 0:
+        var previous_result: Dictionary = campaign.completed.back()
+        story.on_campaign_handoff(str(previous_result["priority"]))
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     if DisplayServer.get_name() != "headless":
@@ -1281,7 +1383,10 @@ func _restart() -> void:
     started = true
     paused = false
     end_panel.visible = false
+    end_button.text = _copy("restart")
     _announce("shift_started")
+    _update_scenario_picker()
+    _refresh_hud()
     _refresh_radio_ui()
     _save_checkpoint()
     audio_director.set_active(true)
@@ -1627,6 +1732,9 @@ func _show_end() -> void:
     _apply_cinematic_view()
     if end_panel.visible:
         return
+    if campaign_enabled and session.won:
+        if campaign.record_victory(session):
+            _persist_campaign_progress()
     end_panel.visible = true
     if DisplayServer.get_name() != "headless":
         checkpoint_store.clear(checkpoint_path)
@@ -1641,6 +1749,21 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    end_button.text = _copy("restart")
+    end_panel.offset_top = -160.0
+    end_panel.offset_bottom = 160.0
+    if campaign_enabled:
+        end_stats.text += "\n" + campaign.summary(locale)
+        if session.won:
+            if campaign.finished():
+                end_stats.text += "\n" + campaign.ending_text(locale)
+                end_button.text = _copy("campaign_replay")
+                end_panel.offset_top = -230.0
+                end_panel.offset_bottom = 230.0
+            else:
+                end_button.text = _copy("campaign_next")
+        else:
+            end_button.text = _copy("restart")
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1657,6 +1780,8 @@ func _refresh_hud() -> void:
         display_key = "repair_" + session.scenario_id
     objective_label.text = _copy(display_key)
     subtitle_label.text = _copy("scenario_title_" + selected_scenario)
+    if campaign_enabled:
+        subtitle_label.text += "  /  %d/3" % mini(campaign.wins()+1,3)
     if started:
         subtitle_label.text += " / " + _copy("sector_" + active_sector)
     _update_guidance(objective_key)
