@@ -19,6 +19,7 @@ var art_kit: A7ArchitecturalDetail
 var cathedral: A7IndustrialCathedral
 var hero_art: A7CinematicHeroSet
 var incident_cinema: A7IncidentDirection
+var first_person: A7FirstPersonOperator
 var inspection_focus: bool = false
 var focus_switches: int = 0
 var guide_progress: float = 0.0
@@ -73,6 +74,9 @@ func _ready() -> void:
     incident_cinema = A7IncidentDirection.new()
     add_child(incident_cinema)
     incident_cinema.build()
+    first_person = A7FirstPersonOperator.new()
+    add_child(first_person)
+    first_person.build()
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -275,6 +279,8 @@ func _construct_facility() -> void:
     add_child(camera)
 
 func set_camera(index: int) -> void:
+    if first_person != null and first_person.piloting:
+        first_person.set_active(false)
     camera_index = clampi(index, 0, 2)
     guide_progress = 0.0
     sector_index = 0
@@ -296,6 +302,8 @@ func set_camera(index: int) -> void:
 # spaces, not cycling another decorative 2D image. Movement never issues
 # a command to A7CascadeCore, nor changes puzzle scores or history.
 func set_inspection_sector(index: int) -> void:
+    if first_person != null and first_person.piloting:
+        first_person.set_active(false)
     sector_index = clampi(index, 0, 1)
     guide_progress = 0.0 if sector_index == 0 else 1.0
     if cathedral != null:
@@ -305,6 +313,8 @@ func set_inspection_sector(index: int) -> void:
     guide_moves += 1
 
 func step_inspection_route(direction: int) -> void:
+    if first_person != null and first_person.piloting:
+        first_person.set_active(false)
     if direction == 0:
         return
     guide_progress = clampf(guide_progress + 0.20 * float(signi(direction)), 0.0, 1.0)
@@ -330,11 +340,38 @@ func _apply_guide_pose() -> void:
     camera.look_at(look_start.lerp(look_end, guide_progress), Vector3.UP)
     camera.current = true
 
+# W70: a truly physically colliding first-person spectator/inspector.
+# No puzzle rule authority: movement never issues A7CascadeCore.choose().
+func toggle_first_person() -> void:
+    if first_person == null:
+        return
+    var next: bool = not first_person.piloting
+    first_person.set_active(next)
+    if not next and camera != null:
+        if guide_progress > 0.0:
+            _apply_guide_pose()
+        else:
+            set_camera(camera_index)
+
+func first_person_key(keycode: int, down: bool) -> void:
+    if first_person != null:
+        first_person.set_key(keycode, down)
+
+func first_person_nudge(keycode: int) -> void:
+    if first_person != null:
+        first_person.nudge(keycode)
+
+func first_person_inspect() -> String:
+    return first_person.inspect_nearby() if first_person != null else ""
+
 # W69 genuine optical close-up, not an enlarged screenshot/HTML transform.
 # Unlike mission commands, changing a camera's FOV never changes the model.
 func toggle_inspection_focus() -> void:
     inspection_focus = not inspection_focus
     focus_switches += 1
+    if first_person != null and first_person.piloting:
+        first_person.head_camera.fov = 48.0 if inspection_focus else 74.0
+        return
     if camera == null:
         return
     if sector_index == 0 and guide_progress <= 0.0:
@@ -363,6 +400,8 @@ func set_quality(new_mode: String) -> void:
         hero_art.set_quality(mode)
     if incident_cinema != null:
         incident_cinema.set_quality(mode)
+    if first_person != null:
+        first_person.set_quality(mode)
     if key_light != null:
         key_light.light_energy = 2.30 if mode == "hero" else 1.25
         fill_light.visible = mode == "hero"
@@ -371,6 +410,8 @@ func set_reduced_motion(enabled: bool) -> void:
     reduced_motion = enabled
     if incident_cinema != null:
         incident_cinema.set_reduced_motion(enabled)
+    if first_person != null:
+        first_person.set_reduced_motion(enabled)
 
 func trigger_action(action: String) -> void:
     if not ["PUMP", "VENT", "SEAL", "SCAN", "POWER"].has(action):
@@ -460,6 +501,15 @@ func qa_readout() -> Dictionary:
         "w69_focus": inspection_focus,
         "w69_focus_switches": focus_switches,
         "w69_visual_severity": incident_cinema.incident_severity if incident_cinema != null else 0.0,
+        "w70_first_person_enabled": first_person.piloting if first_person != null else false,
+        "w70_real_collision_count": first_person.collision_shapes.size() if first_person != null else 0,
+        "w70_actual_player_position": first_person.qa_readout()["body_position"] if first_person != null else [],
+        "w70_actual_walk_distance": first_person.move_distance if first_person != null else 0.0,
+        "w70_physics_frames": first_person.frame_updates if first_person != null else 0,
+        "w70_physics_contacts": first_person.collided_frames if first_person != null else 0,
+        "w70_player_inspections": first_person.inspect_count if first_person != null else 0,
+        "w70_last_machine_inspected": first_person.last_inspection if first_person != null else "",
+        "w70_headlamp_real": first_person.headlamp is SpotLight3D if first_person != null else false,
         "cathedral_two_real_sectors": cathedral != null and cathedral.relay_terminals == 3,
         "inspection_sector": sector_index,
         "inspection_progress": guide_progress,
