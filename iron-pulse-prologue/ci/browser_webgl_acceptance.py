@@ -138,6 +138,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "Monumental room dimensions were not authored",bay)
                         assert bay.get("core_center",[0])[0]>10.0, (
                             "Reactor was not relocated beyond old corridor wall",bay)
+                        assert float(idle.get("reactor_framing_alignment",-1.0)) > 0.96, (
+                            "The cinematic reactor was built but is NOT centered in the actual playable first-person shot",idle.get("reactor_framing_alignment"))
                         assert bay.get("monumental_geometry",0)>=125 and bay.get("instanced_fasteners")==216, (
                             "Physical reactor shell/draw-call optimized detail missing",bay)
                         assert bay.get("pbr_texture_maps")==3 and bay.get("physical_guardrail_colliders")==1, (
@@ -297,10 +299,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 page.wait_for_timeout(150)
                             assert clean.get("cinematic_view") is True and clean.get("cinematic_hud_hidden") is True, (
                                 "C did not genuinely remove the in-game HUD",clean)
-                            # Move real pointer to the right to inspect the
-                            # observation aperture from the real first-person camera.
-                            page.mouse.move(680,380)
-                            page.mouse.move(905,380,steps=6)
+                            # The verified initial first-person framing now faces
+                            # the real reactor. Do not turn away before art evidence.
                             page.wait_for_timeout(900)
                             pure_image=page.screenshot(timeout=60000,animations="disabled")
                             pure_stats=frame_metrics(pure_image)
@@ -309,7 +309,7 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             report["v8_cinematic_camera_proof"]={
                                 **pure_stats,
                                 "image":"cinematic-reactor-desktop.png",
-                                "input":"actual keyboard C + first-person mouse movement",
+                                "input":"actual keyboard C + source-bound first-person camera framing",
                                 "source":"actual_godot_webgl_chromium",
                                 "hdr_overlays_hidden":True
                             }
