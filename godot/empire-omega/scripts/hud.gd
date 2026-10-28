@@ -13,6 +13,7 @@ const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
 const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_premium_garage.gd")
+const CITY_REIGN_SHOWROOM = preload("res://scripts/city_reign_hero_showroom.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -295,6 +296,7 @@ var diagnostic_visible := false
 var map_visible_before_diagnostics := false
 var overlay: ColorRect
 var strategy_contents: VBoxContainer
+var city_reign_showroom: VBoxContainer
 var strategy_title: Label
 var strategy_close_button: Button
 var strategy_nav_buttons: Dictionary = {}
@@ -1012,6 +1014,11 @@ func _city_reign_garage_stat(parent: Node,code: String,value: float,lang: String
 func _draw_city_reign_premium_garage(d: Dictionary) -> void:
 	var locale: String = GameState.locale if CITY_REIGN_GARAGE.SPEC_LABELS.has(GameState.locale) else "ru"
 	var compact: bool = compact_hud or get_viewport().get_visible_rect().size.x < 1000.0
+	city_reign_showroom = CITY_REIGN_SHOWROOM.new()
+	city_reign_showroom.name = "CityReignSourceCarShowroom"
+	strategy_contents.add_child(city_reign_showroom)
+	city_reign_showroom.call("build",locale,compact,GameSettings.graphics!="low",
+		str(d.get("vehicle_selected","compact")))
 	var grid := GridContainer.new()
 	grid.name = "CityReignAAAOriginalGarageGallery"
 	grid.columns = CITY_REIGN_GARAGE.columns_for(get_viewport().get_visible_rect().size.x,compact)
@@ -1053,6 +1060,15 @@ func _draw_city_reign_premium_garage(d: Dictionary) -> void:
 		var action_button: Button = _button(content,action_label,
 			Callable(self,"_do_vehicle").bind(vehicle_id),bool(actual["disabled"]))
 		action_button.name = "CityReignGarageAction_"+vehicle_id
+		var inspect: Button = _button(content,
+			_v08("ОСМОТРЕТЬ 3D","INSPECT 3D","查看3D"),
+			Callable(self,"_preview_city_reign_vehicle").bind(vehicle_id),
+			GameSettings.graphics=="low")
+		inspect.name = "CityReignGaragePreview_"+vehicle_id
+
+func _preview_city_reign_vehicle(id: String) -> void:
+	if city_reign_showroom != null and is_instance_valid(city_reign_showroom):
+		city_reign_showroom.call("preview_vehicle",id)
 
 func _redraw_strategy() -> void:
 	strategy_title.text = _v08("CITY REIGN · КОМАНДНЫЙ ЦЕНТР","CITY REIGN · OPERATIONS","CITY REIGN · 指挥中心")

@@ -110,3 +110,20 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] Exact-source original Godot `v116` plus v113/v115 and full Chrome/WebGL acceptance required before staging merge.
 - [ ] Physical phone screenshot inspection, art review and measured accessibility/contrast.
 - Full UI art contract: `docs/CITY-REIGN-AAA-GARAGE-UI.md`.
+
+## AAA A11 — actually interactive native 3D automotive showroom
+- [x] Actual source car art (original real HORIZON car with A7 body/greenhouse variants) shown within a single demand-rendered 3D Godot offscreen camera, no image generation or copyrighted car designs.
+- [x] Desktop original stage with two unshadowed key/fill studio lights, satin basalt turntable, vehicle-color styling, interactive 15-degree rotation and genuinely inspectable unowned cars (preview does NOT buy).
+- [x] Phone never allocates preview until explicit user inspection; LOW graphics forbids new GPU viewport; offscreen budget bounded to 620x282 desktop / 340x184 mobile and single `UPDATE_ONCE`.
+- [ ] Exact native original Godot v117, existing economy/physics regressions, actual WebGL Chromium and human art test must pass. Source acceptance isn't photoreal AAA quality approval.
+- Design and provenance: `docs/CITY-REIGN-AAA-REAL-3D-SHOWROOM.md`.
+
+### A11 pixel reality gate
+- [x] Add separately exported TEST-ONLY source-original Godot WebGL fixture and pinned real Chromium pixel assertions for body switch and 15° render rotation. Never change the production entrypoint in Git.
+- [ ] Actual software GPU real screenshot artifacts, pixel deltas and browser error-free evidence must pass on exact PR head before human review. No fake AAA art claims.
+
+## A14–A15 — REAL original automotive atelier lighting and architectural depth
+- [x] One original bounded physical 504-vertex circular metal inlay, 7 real GPU-instanced architectural louvres, 1 original background masonry panel; all no-collider, no-shadow, optional on mobile.
+- [x] PBR metal reflects original procedural studio sky within Godot Compatibility, while a new accessible original day/night toggle changes two actual lights and stage illumination.
+- [ ] Source-locked Godot `v118` and actual rendered night/day *RGB pixel delta* CI to pass on exact head; original proprietary/licensed hero car art and independent physical-performance/art director approval missing.
+- Detailed visual art contract: `docs/CITY-REIGN-AAA-REAL-3D-SHOWROOM.md`.
