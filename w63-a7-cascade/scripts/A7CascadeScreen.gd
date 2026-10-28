@@ -681,6 +681,8 @@ func _restart() -> void:
         stage_3d.field_feedback.reset_visual_feedback()
     if stage_3d != null and stage_3d.spatial_mission != null:
         stage_3d.spatial_mission.reset()
+        if stage_3d.field_feedback != null:
+            stage_3d.field_feedback.refresh_from_original_equipment()
     model.reset()
     if sound_bus != null:
         sound_bus.cue("restart")
@@ -778,6 +780,8 @@ func _start_extended_mission() -> void:
         model.snapshot(), stage_3d.field_operations)
     if ok:
         checkpoint.note("start_extended", 0, self)
+        if stage_3d.field_feedback != null:
+            stage_3d.field_feedback.refresh_from_original_equipment()
     else:
         mission_meta.text = _t("mission_wait")
     _refresh_mission_ui(model.snapshot())
@@ -929,6 +933,8 @@ func _pilot_inspect() -> void:
         if stage_3d.field_operations != null:
             stage_3d.field_operations.observe_phase(
                 stage_3d.spatial_mission.phase, model.snapshot())
+            if stage_3d.field_feedback != null:
+                stage_3d.field_feedback.refresh_from_original_equipment()
         if (target in ["CORE","RELAY"] and stage_3d.spatial_mission.active
                 and (did_advance or
                 stage_3d.spatial_mission.real_inspections > before_inspections)):
