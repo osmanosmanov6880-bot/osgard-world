@@ -67,9 +67,11 @@ func _valid_event(kind: String, value: Variant) -> bool:
     if kind == "inspect":
         return value is String and ["CORE","RELAY"].has(value)
     if kind == "valve":
-        return value is int and [1,-1].has(value)
+        return (value is int or value is float) and (
+            float(value) == float(int(value))) and [1,-1].has(int(value))
     if kind in ["relay","sync"]:
-        return value is int and value >= 0 and value <= 2
+        return (value is int or value is float) and (
+            float(value) == float(int(value))) and int(value) >= 0 and int(value) <= 2
     return false
 
 func note(kind: String, value: Variant, ui: A7CascadeScreen) -> void:
