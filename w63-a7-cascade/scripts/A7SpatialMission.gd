@@ -216,11 +216,20 @@ func _advance(next_phase: int) -> void:
     _draw_3d_status()
     progress_changed.emit(phase)
 
-func inspect_physical(target: String, game_state: Dictionary) -> bool:
-    if not active or not ["CORE", "RELAY"].has(target):
+func inspect_physical(target: String, game_state: Dictionary,
+        operator: A7FirstPersonOperator) -> bool:
+    if not active or operator == null or not operator.piloting or operator.body == null:
         return false
-    # A7FirstPersonOperator.inspect_nearby() is the ONLY caller from UI.
-    # This method can't independently teleport the player or grant puzzle win.
+    if not ["CORE", "RELAY"].has(target):
+        return false
+    # Verify physics proximity AGAIN at the mission authority boundary.
+    # Merely spoofing a string, switching camera or pressing E at a distance
+    # cannot advance actual spatial objectives.
+    var physical_target: Vector3 = (operator.inspection_console_core
+        if target == "CORE" else operator.inspection_console_relay)
+    var allowed_distance: float = 3.2 if target == "CORE" else 4.0
+    if operator.body.position.distance_to(physical_target) >= allowed_distance:
+        return false
     last_inspection = target
     real_inspections += 1
     if phase == 0 and target == "CORE":
