@@ -69,7 +69,7 @@ export const WORDS={
     skip:"Skip to content",navigation:"NAVIGATION",navCommand:"Command center",
     navMissions:"Mission protocol",navLab:"Player research lab",navSystem:"System & files",
     localPrivacy:"PRIVATE BY DEFAULT",offlineDetails:"No accounts or analytics servers",
-    verifying:"Verifying build",verified:"BUILD VERIFIED",unverified:"MANIFEST UNAVAILABLE",
+    verifying:"Verifying build",verified:"SOURCE MANIFEST LOADED",bytesVerified:"GAME BYTES VERIFIED",unverified:"MANIFEST UNAVAILABLE",
     eyebrow:"SECTOR A7 · FIELD OPERATIONS STATION",
     heroTitle:"BEYOND THE<br><em>LAST FRONTIER.</em>",
     heroDescription:"The mission begins in a real game. Stabilize the reactor, walk the facility and make decisions that genuinely affect the outcome.",
