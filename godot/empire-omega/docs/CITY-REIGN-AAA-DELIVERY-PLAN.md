@@ -117,3 +117,7 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [x] Phone never allocates preview until explicit user inspection; LOW graphics forbids new GPU viewport; offscreen budget bounded to 620x282 desktop / 340x184 mobile and single `UPDATE_ONCE`.
 - [ ] Exact native original Godot v117, existing economy/physics regressions, actual WebGL Chromium and human art test must pass. Source acceptance isn't photoreal AAA quality approval.
 - Design and provenance: `docs/CITY-REIGN-AAA-REAL-3D-SHOWROOM.md`.
+
+### A11 pixel reality gate
+- [x] Add separately exported TEST-ONLY source-original Godot WebGL fixture and pinned real Chromium pixel assertions for body switch and 15° render rotation. Never change the production entrypoint in Git.
+- [ ] Actual software GPU real screenshot artifacts, pixel deltas and browser error-free evidence must pass on exact PR head before human review. No fake AAA art claims.

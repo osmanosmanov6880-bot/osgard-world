@@ -16,3 +16,10 @@ The playable R90 city operations cabinet presents four source-real ownership/veh
 - Strict exact-head Godot import, R126 traffic, A7 garage physics, A9 actual purchase, Chromium WebGL and source integrity/regression must pass before any staging merge.
 - This **does not claim AAA photorealistic human visual approval**. Still missing final licensed hero cars, studio-polished metallic/normal textures, raytraced/high-quality reflections for high-end PC, animation, real phone frame benchmarks, player playtests, native photo/pixel inspection, independent aesthetic signoff and commercial licensing.
 - **No master, no public R87, no SSH deploy. Production HOLD.**
+
+## Dedicated REAL source-pixel browser acceptance (not game release)
+- `tests/city_reign_real_showroom_visual_fixture.tscn` plus its `.gd` actor is a clearly labeled TEST-ONLY startup. Production `project.godot` remains unchanged in Git; only the ephemeral CI checkout changes `run/main_scene` for the isolated fixture export.
+- `scripts/city-reign-aaa-real-showroom.spec.mjs`: real exported Godot 4.4.1 WASM + native OpenGL rendering under Chromium, original `HORIZON_BODY` and actual connected studio World3D.
+- Accept actual rendered car PBR pixel variation, then switch compact → utility by real key input and demand a meaningful real RGB pixel difference, then rotate the real turntable by exactly 15 degrees and demand a different real frame.
+- Upload actual raw WebGL/Chromium PNGs and measured JSON diagnostics. Never accept an unchanged screenshot, missing graphics, static HTML mock or image-generation substitute.
+- This proves a software-Mesa-browser scene rendering, **not** physical desktop GPU/mobile FPS or a human AAA art signoff.
