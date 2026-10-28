@@ -251,6 +251,24 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert set(selector_rects) == {"blackout","thermal","breach"}, (
                             "Three actual mission-selection buttons missing",selector_rects)
                         assert idle.get("scenario") == "blackout",idle
+                        # V9 world progression is a real IP campaign profile
+                        # within original Godot, not website-only fabricated stats.
+                        archive=idle.get("world_campaign",{})
+                        assert archive.get("schema")=="IRON_PULSE_WORLD_CAMPAIGN_V9", (
+                            "Real Godot exported build missing offline world profile",archive)
+                        assert archive.get("cleared")==0 and archive.get("total_runs")==0, (
+                            "Fresh user silently inherits fake victories or leaderboards",archive)
+                        assert archive.get("medals")=={"blackout":"-","thermal":"-","breach":"-"}, (
+                            "Real mission dossier must initially be unearned",archive)
+                        assert idle.get("campaign_intro_visible") is True, (
+                            "International campaign status is absent from native mission selector",idle)
+                        assert idle.get("world_launch")=={"scenario":"blackout","lang":"ru"}, (
+                            "Default deep link altered historically verified source scenario",idle)
+                        report.setdefault("v9_native_campaign",{})[name]={
+                            "unearned_medals":archive["medals"],
+                            "total_runs":archive["total_runs"],
+                            "native_intro_visible":idle["campaign_intro_visible"]
+                        }
                         for scenario_id,expected_key,expected_value in (
                             ("thermal","heat",72.0),
                             ("breach","oxygen",68.0),
