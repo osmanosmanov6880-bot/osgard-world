@@ -23,3 +23,8 @@ This is a readable new narrative/wayfinding link, not a finished 30-minute scree
 
 ## Acceptance without fake victories
 Original Godot v121 must load the genuine playable scene, perform real city payment `start_initiative('open_records')`, advance TWO real turns, verify completed original 3D public archive, inspect 12 original car NPCs/34 residents, check original mission unchanged and no extra saved keys. All native CI, original full-city WebGL and manual release contract must be green before R90 candidate merge. Master/public deployment HOLD.
+
+## Source-original City/Chromium screenshot gate
+The disposable CI `tests/city_reign_opening_live_pixel_fixture.gd` uses the actual `WorldBuilder.gd`, `project_landmarks.gd`, `city_reign_promise_markers.gd`, `city_reign_opening_director.gd` and original registered `GameState.start_initiative('open_records')`, plus TWO real `advance_turn()` calls. A real Godot 4.4.1 WebGL export on localhost captures the original City Hall-adjacent proposal site before financing, funded scaffolds, partially advanced works, the physical public archive completed after two turns, and LOW mode which hides only new guidance. Each change must occur in real captured pixel deltas; failures are not hidden, thresholds are NOT reduced for convenience.
+
+This source-only fixture is NOT a claim of cinematic AAA actor rendering. Production entrypoint remains `res://scenes/main.tscn` on all Git commits; CI swaps to the optical test scene only inside disposable checkout. All screenshots and source SHA are published as GitHub Actions proof.
