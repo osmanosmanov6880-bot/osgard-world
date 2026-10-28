@@ -191,6 +191,20 @@ jobs:
           timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_6_reactive_containment.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           grep -q '^IRON PULSE V8.6 REACTIVE CONTAINMENT PASS:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"; then exit 1; fi
+      - name: V9 lifetime operations profile, three emergency mastery, achievements and secure offline storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 160s godot --headless --path iron-pulse-prologue --script res://tests/test_v9_career_profile.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-career.log"
+          grep -q '^IRON PULSE V9 OPERATIONS PROFILE PASS:' "$RUNNER_TEMP/iron-pulse-v9-career.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v9-career.log"; then exit 1; fi
+      - name: V9 real Godot operations center, controller, mobile layout and exactly-once debrief
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 160s godot --headless --path iron-pulse-prologue --script res://tests/test_v9_operations_scene.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-ui.log"
+          grep -q '^IRON PULSE V9 OPERATIONS SCENE PASS:' "$RUNNER_TEMP/iron-pulse-v9-ui.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v9-ui.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
