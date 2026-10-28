@@ -78,12 +78,15 @@ void fragment() {
     float sweep = smoothstep(0.33, 0.96, strata * 0.5 + 0.5);
     float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
     float fresnel = pow(1.0 - facing, 2.1);
-    vec3 cold = vec3(0.08, 0.53, 0.78);
-    vec3 hot = vec3(1.0, 0.25, 0.07);
+    vec3 cold = vec3(0.06, 0.76, 0.98);
+    vec3 hot = vec3(1.0, 0.35, 0.09);
     vec3 tone = mix(cold, hot, thermal_bias);
-    float light = 0.30 + vein * 0.55 + sweep * 0.60 + fresnel * 0.65;
-    ALBEDO = tone * 0.30;
-    EMISSION = tone * light * (1.35 + crisis * 1.20);
+    float electric = pow(clamp(vein * 0.78 + sweep * 0.38, 0.0, 1.0), 4.0);
+    vec3 white_hot = mix(vec3(0.73, 0.96, 1.0), vec3(1.0, 0.83, 0.55), thermal_bias);
+    vec3 ion = mix(tone, white_hot, electric * 0.70);
+    float light = 0.58 + vein * 0.75 + sweep * 0.62 + fresnel * 0.70;
+    ALBEDO = ion * 0.34;
+    EMISSION = ion * light * (1.48 + crisis * 1.05);
 }
 """
     core_plasma_material = ShaderMaterial.new()
@@ -195,7 +198,10 @@ func _torus(parent: Node3D, label: String, point: Vector3, radius: float, materi
     var node := MeshInstance3D.new()
     node.name = label
     var mesh := TorusMesh.new()
-    mesh.inner_radius = radius-0.14
+    # Thin luminous conductors avoid giant cyan foreground bars; load-bearing
+    # steel containment rings retain their original industrial profile.
+    var strip: float = 0.055 if material == _plasma or material == _warning else 0.14
+    mesh.inner_radius = radius-strip
     mesh.outer_radius = radius
     mesh.rings = 40
     mesh.ring_segments = 12
@@ -291,12 +297,15 @@ func _build_monumental_core_housing() -> void:
     structure.add_child(shield_housing)
     _column(shield_housing,"CoreFoundation",Vector3(0,-6.1,0),3.9,1.2,_steel)
     _column(shield_housing,"UpperReactorCap",Vector3(0,6.1,0),3.4,1.0,_painted)
-    # Eight open-work faceted panels create a readable massive manufactured
-    # silhouette while leaving direct sightlines to the animated plasma core.
+    # Open a camera-facing service throat of roughly 100 degrees. The
+    # old front armour obstructed the LIVE plasma sphere completely. Side
+    # and rear armoured cassettes preserve weight and containment machinery.
     for panel_index in range(12):
-        if panel_index % 3 != 1:
+        if panel_index % 3 != 1 and panel_index not in [5,6,7]:
             _tapered_armor_panel(panel_index)
     for index in range(10):
+        if index in [4,5,6]:
+            continue
         var angle: float = TAU*float(index)/10.0
         var radius: float = 4.15
         var brace := Node3D.new()
@@ -445,6 +454,7 @@ func readout() -> Dictionary:
         "security_director_camera":director_camera != null,
         "security_camera_position":[director_camera.global_position.x,director_camera.global_position.y,director_camera.global_position.z] if director_camera != null else [],
         "plasma_shader_live":core_plasma_material != null,
+        "open_core_inspection":shield_housing != null and shield_housing.get_node_or_null("ReactorHeatShield_05") == null and shield_housing.get_node_or_null("CustomUV_ArmourCassette_06") == null,
         "plasma_phase":_plasma_phase,
         "open_wall_span_m":OPENING_Z_MAX-OPENING_Z_MIN,
         "vault_height_m":15.0,
