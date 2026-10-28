@@ -1,0 +1,54 @@
+/* OSA CINEMA / V55 — actual public production dossiers, no unverified video. */
+.osa-film-page{background:#090a0c}.osa-film-header nav a{display:inline-flex;align-items:center;gap:7px}
+.osa-film-hero{position:relative;min-height:620px;isolation:isolate;background:#08090b;overflow:hidden}
+.osa-film-visual{position:absolute;inset:0;z-index:-1;background-color:#1b1612;background-size:cover;background-position:center;opacity:.73}
+.osa-film-visual:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#08090b 0%,transparent 45%),linear-gradient(90deg,#07080a 0%,transparent 80%)}
+.osa-film-hero-inner{max-width:1500px;margin:auto;padding:65px clamp(22px,6vw,100px) 115px}
+.osa-film-crumb{display:inline-flex;align-items:center;gap:10px;margin-bottom:78px;font:11px Arial,sans-serif;letter-spacing:.12em;color:#f0dfc7!important}
+.osa-film-hero h1{font:400 clamp(48px,7.7vw,118px)/.95 Georgia,serif;letter-spacing:-.055em;max-width:900px;margin:21px 0 24px;text-shadow:0 4px 27px #060608}
+.osa-film-logline{font:400 clamp(16px,1.75vw,23px)/1.55 Georgia,serif;color:#e2d5c3;max-width:690px;text-shadow:0 2px 10px #050505}
+.osa-film-tags{display:flex;align-items:center;flex-wrap:wrap;gap:19px;margin-top:24px}
+.osa-film-tags span{display:inline-flex;align-items:center;gap:8px;font:11px monospace;letter-spacing:.04em;color:#d3b991}
+.osa-film-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:35px}
+.osa-film-utility{display:inline-flex;gap:9px;align-items:center;justify-content:center;background:#0b0b0dcc;border:1px solid #a18a6b;color:#f4e3ca;min-height:54px;padding:15px 20px;font-size:12px}
+.osa-film-utility.active{background:#443522;color:#f1cb91}
+.osa-film-feedback{font-size:12px;color:#d2c19f;min-height:16px;margin:13px 0}
+.osa-film-hero-footer{position:absolute;bottom:0;width:100%;display:flex;justify-content:space-between;gap:12px;padding:22px clamp(22px,6vw,100px);border-top:1px solid rgba(215,173,111,.23);font:10px monospace;color:#dfc39b;letter-spacing:.12em}
+.osa-film-main{max-width:1500px;margin:auto;padding:0 clamp(22px,6vw,100px)}
+.osa-film-overview{display:grid;grid-template-columns:270px 1fr;gap:55px;padding:110px 0;border-bottom:1px solid var(--st-line)}
+.osa-film-side-label{font:10px monospace;letter-spacing:.2em;color:var(--st-gold);padding-top:8px}
+.osa-film-overview h2,.osa-film-evidence h2,.osa-film-next h2{font:400 clamp(34px,4vw,60px)/1.08 Georgia,serif;letter-spacing:-.03em;margin:18px 0 25px}
+.osa-film-prose{max-width:790px;font:400 clamp(15px,1.4vw,19px)/1.8 Georgia,serif;color:#c7bfb4}
+.osa-film-release{display:grid;grid-template-columns:62px 1fr auto;gap:25px;align-items:center;padding:45px;background:linear-gradient(110deg,#201b14,#101216 74%);border:1px solid #675136;margin-top:72px}
+.osa-film-release-icon{width:62px;height:62px;display:grid;place-items:center;background:rgba(222,179,116,.1);border:1px solid #98744b;border-radius:50%;color:#eac48a}
+.osa-film-release h2{font:400 clamp(22px,2.9vw,40px) Georgia,serif;margin:11px 0}
+.osa-film-release p:not(.osa-studio-eyebrow){font-size:13px;line-height:1.75;color:#cabdb0;max-width:790px}
+.osa-film-no-video{display:flex;align-items:center;gap:7px;white-space:nowrap;border:1px solid #795f44;color:#e5bd83;padding:10px 13px;font:11px monospace}
+.osa-film-production{padding:115px 0 70px}
+.osa-film-gate-list{list-style:none;padding:0;margin:0;border-top:1px solid var(--st-line)}
+.osa-film-gate{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:25px;align-items:center;padding:23px 16px;border-bottom:1px solid var(--st-line);transition:background .2s}
+.osa-film-gate:hover{background:#ffffff05}
+.osa-film-gate-mark{width:43px;height:43px;border:1px solid #66553c;border-radius:50%;display:grid;place-items:center;color:#bba582}
+.osa-film-gate.verified .osa-film-gate-mark{border-color:#578e7c;color:#a0d2ba}
+.osa-film-gate-description span{font:10px monospace;letter-spacing:.12em;color:#bba17c}
+.osa-film-gate-description h3{font:400 clamp(14px,1.55vw,19px)/1.45 Georgia,serif;color:#e9dac4;margin:7px 0 0}
+.osa-film-gate-state{border:1px solid #64513c;padding:9px 13px;color:#c3ab89;font:10px/1.2 monospace;text-transform:uppercase}
+.osa-film-gate.verified .osa-film-gate-state{border-color:#547568;color:#a0c9b5}
+.osa-film-evidence{padding:70px 0 110px;border-top:1px solid var(--st-line);display:grid;grid-template-columns:1fr 1fr;gap:70px}
+.osa-film-evidence p:not(.osa-studio-eyebrow){color:#b4aaa0;line-height:1.7;max-width:500px}
+.osa-film-sources{display:grid;align-content:center;gap:10px}
+.osa-film-sources a{border:1px solid #4e453c;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px;background:#141312;color:#e4d2b3;font-size:13px}
+.osa-film-sources a:hover{border-color:#bd9d6a;background:#221a13}
+.osa-film-next{border-top:1px solid var(--st-line);padding:70px 0 120px}
+.osa-film-next-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.osa-film-next-card{display:flex;flex-direction:column;justify-content:space-between;gap:24px;min-height:200px;padding:27px;border:1px solid #615039;background:linear-gradient(125deg,#1b1916,#0f1114)}
+.osa-film-next-card:hover{border-color:#d3af78;transform:translateY(-2px)}
+.osa-film-next-card>span:first-child{font:10px monospace;color:#bc9c71;letter-spacing:.12em}
+.osa-film-next-card strong{font:400 clamp(27px,3vw,46px) Georgia,serif}
+.osa-film-next-card>span:last-child{display:flex;justify-content:space-between;align-items:center;color:#c0b3a2;font-size:12px;gap:15px}
+.osa-film-missing{display:grid;place-items:center}.osa-film-missing-inner{padding:70px 20px;text-align:center}.osa-film-missing h1{font:50px Georgia,serif}.osa-film-missing p:not(.osa-studio-eyebrow){color:#c1b2a0}.osa-film-missing a{margin-top:20px}
+.osa-studio-modal-return{display:block;margin-top:13px;padding:11px 0;color:#d1bc9d;border:0;border-bottom:1px solid #856c49;background:transparent;text-align:left;font-size:12px}
+@media(max-width:960px){.osa-film-release{grid-template-columns:55px 1fr}.osa-film-no-video{grid-column:2;justify-self:start}.osa-film-overview{grid-template-columns:180px 1fr;gap:30px}.osa-film-evidence{gap:30px}}
+@media(max-width:700px){.osa-film-hero{min-height:640px}.osa-film-hero-inner{padding:40px 22px 115px}.osa-film-crumb{margin-bottom:65px}.osa-film-hero h1{font-size:clamp(47px,10vw,71px)}.osa-film-visual{opacity:.45;background-position:63% center}.osa-film-hero-footer{font-size:8px}.osa-film-overview{display:block;padding:80px 0}.osa-film-side-label{margin-bottom:25px}.osa-film-release{display:block;margin-top:20px;padding:28px}.osa-film-release-icon{margin-bottom:19px}.osa-film-no-video{display:inline-flex;margin-top:16px}.osa-film-production{padding:85px 0 50px}.osa-film-gate{grid-template-columns:40px minmax(0,1fr);gap:12px;padding:18px 0}.osa-film-gate-mark{width:36px;height:36px}.osa-film-gate-state{grid-column:2;justify-self:start}.osa-film-evidence{display:block;padding:55px 0 70px}.osa-film-sources{margin-top:30px}.osa-film-next-grid{grid-template-columns:1fr}.osa-film-next{padding-bottom:70px}}
+@media(max-width:390px){.osa-film-hero h1{font-size:43px}.osa-film-actions .osa-studio-button{width:100%}.osa-film-utility{flex:1;min-width:125px}.osa-film-tags{gap:12px}.osa-film-hero-footer span:first-child{display:none}}
+@media print{.osa-film-page{background:#fff!important;color:#111!important}.osa-film-header,.osa-film-actions,.osa-film-next,.osa-studio-footer,.osa-studio-skip{display:none!important}.osa-film-visual{display:none!important}.osa-film-hero{min-height:0;background:#fff!important}.osa-film-hero-inner{padding:0 0 20px!important}.osa-film-hero h1,.osa-film-logline,.osa-film-hero-footer,.osa-film-overview h2,.osa-film-release h2,.osa-film-evidence h2,.osa-film-production h2,.osa-film-gate h3{color:#111!important;text-shadow:none!important}.osa-film-main{padding:0!important}.osa-film-overview,.osa-film-production,.osa-film-evidence{padding:20px 0!important}.osa-film-release{background:#fff!important;break-inside:avoid}.osa-film-gate{break-inside:avoid}.osa-film-prose,.osa-film-release p,.osa-film-evidence p{color:#333!important}}
