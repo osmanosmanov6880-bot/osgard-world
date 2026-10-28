@@ -130,7 +130,9 @@ func _ready() -> void:
     var ring_center := IPReactorAtrium.CORE_CENTER
     _torus(hero_details, "ContainmentHorizon01", ring_center, 4.75, brushed, Vector3(0,0,90.0))
     _torus(hero_details, "ContainmentHorizon02", ring_center, 5.17, copper, Vector3(0,0,90.0))
-    _torus(hero_details, "ContainmentPerimeter", ring_center, 5.55, cyan, Vector3(0,0,90.0))
+    # The huge bright outer hoop previously overwhelmed the energy core;
+    # this is a brushed-metal load frame, not a giant decorative neon circle.
+    _torus(hero_details, "ContainmentPerimeter", ring_center, 5.55, brushed, Vector3(0,0,90.0))
     for i in range(8):
         var a: float = TAU * float(i) / 8.0
         var p := ring_center + Vector3(cos(a)*5.35,sin(a)*2.38,0.0)

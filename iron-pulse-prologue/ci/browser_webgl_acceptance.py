@@ -160,6 +160,21 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert containment.get("vapor_visible") is False and containment.get("spark_burst_visible") is False, (
                             "False catastrophe effects appear on the idle scenario menu",containment)
                         report.setdefault("v8_6_reactive_world",{})[name]=containment
+                        # V10: actual native geometry, not a mockup/cosmetic
+                        # canvas layer. Confirm physical set-piece art edits in
+                        # the exported Godot scene on both desktop and touch.
+                        assert bay.get("filmic_roof_lights")==6 and bay.get("continuous_emissive_roof_beams")==0, (
+                            "Old 8.7m camera-axis neon roof strip returned to V10 scene",bay)
+                        assert bay.get("far_wall_fixture_depth",0)>16.8, (
+                            "New lights are not physically mounted to far industrial wall",bay)
+                        assert bay.get("machined_steel_thermal_hoops")==3 and bay.get("discrete_amber_latch_details")==6, (
+                            "Restrained machined containment rings and warning latches missing",bay)
+                        report.setdefault("v10_non_neon_industrial_architecture",{})[name]={
+                            "recessed_far_wall_fixtures":bay["filmic_roof_lights"],
+                            "unbroken_neon_camera_beams":bay["continuous_emissive_roof_beams"],
+                            "steel_containment_rings":bay["machined_steel_thermal_hoops"],
+                            "amber_safety_latches":bay["discrete_amber_latch_details"]
+                        }
                         # V9: FOUR physically modeled optional challenge stations,
                         # distinct route, unspent state and strict real timer.
                         # The browser only reads the same Godot state shown to the

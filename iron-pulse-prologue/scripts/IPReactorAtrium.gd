@@ -228,7 +228,14 @@ func _build_open_vault() -> void:
         var z: float = -9.4 - float(index)*4.2
         _box(structure,"VaultHighRoofTruss_%d" % index,Vector3(12.3,14.55,z),Vector3(11.6,0.42,0.68),_steel)
         _box(structure,"VaultFarColumn_%d" % index,Vector3(18.04,7.0,z),Vector3(0.48,13.5,0.68),_steel)
-        _box(structure,"VaultFarCeilingLight_%d" % index,Vector3(12.3,14.18,z),Vector3(8.7,0.09,0.15),_plasma)
+        # The old 8.7m-long cyan roof strip ran straight toward the A7
+        # camera and rendered as a huge neon bar OVER THE PLASMA. Put a
+        # small physically mounted safety fixture on the FAR retaining wall
+        # instead, while keeping all six actual illuminating stations.
+        _box(structure,"VaultCeilingFixtureRecess_%d" % index,
+            Vector3(17.25,14.18,z),Vector3(0.34,0.24,1.80),_dark)
+        _box(structure,"VaultFarCeilingLight_%d" % index,
+            Vector3(17.02,14.13,z),Vector3(0.14,0.095,1.45),_plasma)
     for level in [4.1,8.8,12.7]:
         _box(structure,"FarViewingDeck_%d" % int(level*10),Vector3(17.1,level,-20.5),Vector3(2.5,0.26,23.5),_deck)
         _box(structure,"DeckHandrail_%d" % int(level*10),Vector3(15.75,level+0.95,-20.5),Vector3(0.16,0.22,23.0),_steel)
@@ -321,7 +328,15 @@ func _build_monumental_core_housing() -> void:
             _box(brace,"ServiceCoolantDuct_%d" % int(y*10),Vector3(0.40,y,0.0),Vector3(0.13,0.55,0.52),_steel)
     for row in [-3.9,0.0,3.9]:
         _torus(shield_housing,"MachinedCircumferentialRing_%d" % int(row*10),Vector3(0,row,0),4.7,_steel,Vector3.ZERO)
-        _torus(shield_housing,"PlasmaContainmentTrim_%d" % int(row*10),Vector3(0,row+0.18,0),4.95,_plasma,Vector3.ZERO)
+        # Full 360-degree cyan XZ hoops were edge-on to the security camera
+        # and made saturated horizontal light bars. Permanent hoops are
+        # machined steel; only discreet service lock markers emit warning.
+        _torus(shield_housing,"PlasmaContainmentTrim_%d" % int(row*10),
+            Vector3(0,row+0.18,0),4.95,_steel,Vector3.ZERO)
+        for side in [-1.0,1.0]:
+            _box(shield_housing,"SafetyLatch_%d_%d" % [int(row*10),int(side)],
+                Vector3(-0.18,row+0.24,side*4.95),
+                Vector3(0.20,0.13,0.28),_warning)
     for rotor_index in range(3):
         var rotor := Node3D.new()
         rotor.name = "MechanicalRotor_%d" % rotor_index
@@ -404,10 +419,10 @@ func _build_lighting() -> void:
         var lamp := OmniLight3D.new()
         lamp.name = "AtriumNeutralAreaFill"
         lamp.position = spot
-        lamp.light_color = Color(0.66,0.79,0.86)
+        lamp.light_color = Color(0.76,0.82,0.86)
         # The ECO-safe middle lamp actually illuminates the front reactor
         # armour, rather than sitting hidden behind its silhouette.
-        lamp.light_energy = 2.05 if absf(spot.z+20.5)<0.1 else 1.20
+        lamp.light_energy = 2.50 if absf(spot.z+20.5)<0.1 else 1.42
         lamp.omni_range = 18.5
         lamp.shadow_enabled = false
         structure.add_child(lamp)
@@ -467,6 +482,11 @@ func readout() -> Dictionary:
     return {
         "rotor_camera_alignment_min":rotor_alignment,
         "cinematic_vault":true,
+        "filmic_roof_lights":6,
+        "far_wall_fixture_depth":17.02,
+        "continuous_emissive_roof_beams":0,
+        "machined_steel_thermal_hoops":3,
+        "discrete_amber_latch_details":6,
         "security_director_camera":director_camera != null,
         "security_camera_position":[director_camera.global_position.x,director_camera.global_position.y,director_camera.global_position.z] if director_camera != null else [],
         "plasma_shader_live":core_plasma_material != null,
