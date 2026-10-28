@@ -25,6 +25,7 @@ var field_operations: A7FieldOperations
 var world_interaction: A7WorldInteraction
 var field_feedback: A7DiegeticFeedback
 var mission_wayfinder: A7MissionWayfinder
+var sector_bulkhead: A7SectorBulkhead
 var inspection_focus: bool = false
 var focus_switches: int = 0
 var guide_progress: float = 0.0
@@ -97,6 +98,9 @@ func _ready() -> void:
     mission_wayfinder = A7MissionWayfinder.new()
     add_child(mission_wayfinder)
     mission_wayfinder.build(spatial_mission, first_person)
+    sector_bulkhead = A7SectorBulkhead.new()
+    add_child(sector_bulkhead)
+    sector_bulkhead.build(spatial_mission, first_person, hero_art.surface_lab)
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -414,6 +418,8 @@ func set_compact_view(enabled: bool) -> void:
         field_feedback.set_compact_view(enabled)
     if mission_wayfinder != null:
         mission_wayfinder.set_compact_view(enabled)
+    if sector_bulkhead != null:
+        sector_bulkhead.set_compact_view(enabled)
     if art_kit != null and art_kit.engraved_sign != null:
         art_kit.engraved_sign.visible = not enabled
 
@@ -440,6 +446,8 @@ func set_quality(new_mode: String) -> void:
         field_feedback.set_quality(mode)
     if mission_wayfinder != null:
         mission_wayfinder.set_quality(mode)
+    if sector_bulkhead != null:
+        sector_bulkhead.set_quality(mode)
     if key_light != null:
         key_light.light_energy = 2.30 if mode == "hero" else 1.25
         fill_light.visible = mode == "hero"
@@ -458,6 +466,8 @@ func set_reduced_motion(enabled: bool) -> void:
         field_feedback.set_reduced_motion(enabled)
     if mission_wayfinder != null:
         mission_wayfinder.set_reduced_motion(enabled)
+    if sector_bulkhead != null:
+        sector_bulkhead.set_reduced_motion(enabled)
 
 func trigger_action(action: String) -> void:
     if not ["PUMP", "VENT", "SEAL", "SCAN", "POWER"].has(action):
@@ -574,6 +584,11 @@ func qa_readout() -> Dictionary:
         "w76_actual_mission_wayfinder_meshes":mission_wayfinder.native_meshes if mission_wayfinder != null else 0,
         "w76_real_mission_target":mission_wayfinder.goal_kind if mission_wayfinder != null else "none",
         "w76_real_target_distance":mission_wayfinder.real_distance if mission_wayfinder != null else -1.0,
+        "w77_true_physical_bulkhead":sector_bulkhead.gate_body is StaticBody3D if sector_bulkhead != null else false,
+        "w77_physically_restricted_sector":sector_bulkhead.physically_blocked if sector_bulkhead != null else false,
+        "w77_real_bulkhead_openings":sector_bulkhead.real_open_events if sector_bulkhead != null else 0,
+        "w77_bulkhead_mesh_count":sector_bulkhead.native_meshes if sector_bulkhead != null else 0,
+        "w77_real_door_open_ratio":sector_bulkhead.qa_readout()["native_motion_open_ratio"] if sector_bulkhead != null else 0.0,
         "w74_3d_mechanic_animations":field_feedback.accepted_3d_feedback if field_feedback != null else 0,
         "w74_native_controller_motion_events":first_person.controller_axis_inputs if first_person != null else 0,
         "w74_native_analog_player_movement_frames":first_person.actual_controller_motion_frames if first_person != null else 0,
