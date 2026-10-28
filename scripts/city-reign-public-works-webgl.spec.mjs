@@ -5,7 +5,7 @@ import {realGameFrameEvidence} from './omega-world-frame-evidence.mjs'
 
 // Actual Godot engine PixelDiff: never CSS, generated images, canvas paint,
 // synthetic screenshot, remote art or a fake frontend. Only original WebGL
-// after a real treasury-debit transaction and two legitimate city turns.
+// after real treasury-debit transactions and two or three legitimate city turns.
 function pixelsChanged(original,built) {
   const a=PNG.sync.read(original),b=PNG.sync.read(built)
   if(a.width!==b.width||a.height!==b.height)
@@ -27,7 +27,7 @@ function pixelsChanged(original,built) {
 }
 
 test('Original paid civic choices become genuinely distinct 3D city infrastructure',async({page},info)=>{
-  test.setTimeout(280000)
+  test.setTimeout(330000)
   const errors=[]
   page.on('pageerror',e=>errors.push(e.message))
   page.on('crash',()=>errors.push('Chromium original Godot renderer crashed'))
@@ -86,14 +86,32 @@ test('Original paid civic choices become genuinely distinct 3D city infrastructu
   await page.keyboard.press('6')
   const lowBudget=await frame('07-original-open-budget-pavilion-mobile-low')
   const qualityDiff=pixelsChanged(afterBudget,lowBudget)
+  // B66: third genuinely payable resident attraction. The ORIGINAL
+  // three-turn park investment creates source-owned 3D park sculptures,
+  // actual stone/wood benches and powered path lamps. No fake DOM scene.
+  await page.keyboard.press('p')
+  await page.keyboard.press('1')
+  await page.keyboard.press('9')
+  const beforePark=await frame('08-original-real-residential-park-before-funding')
+  await page.keyboard.press('0')
+  const afterPark=await frame('09-original-funded-municipal-park-after-three-real-turns')
+  const parkDiff=pixelsChanged(beforePark,afterPark)
+  expect(parkDiff.significantFraction,
+    'Funding original 3-turn community park must physically change actual source Godot WebGL pixels')
+    .toBeGreaterThan(0.002)
+  await page.keyboard.press('6')
+  const parkLow=await frame('10-real-funded-public-park-accessible-mobile-low')
+  const parkLowDiff=pixelsChanged(afterPark,parkLow)
   expect(errors).toEqual([])
   await info.attach('CITY_REIGN_B61_REAL_SOURCE_PIXELS_AND_PROVENANCE.json',{
     body:Buffer.from(JSON.stringify({
       source:'godot/empire-omega/tests/city_reign_public_works_pixel_fixture.tscn',
       gameWorld:'res://scripts/world_builder.gd',authoritativeTransactions:[
         'GameState.start_initiative("safe_crossings")',
-        'GameState.start_initiative("open_records")','GameState.advance_turn() x 2'],
-      evidence,webgl,crossingDiff,budgetDiff,powerDiff,qualityDiff,
+        'GameState.start_initiative("open_records")',
+        'GameState.start_initiative("community_park")',
+        'GameState.advance_turn() x 2 or 3 as the ORIGINAL civic project requires'],
+      evidence,webgl,crossingDiff,budgetDiff,parkDiff,powerDiff,qualityDiff,parkLowDiff,
       knownLimitations:['CI Chromium SwiftShader is NOT real phone FPS',
         'Original game source geometry is procedural, NOT AAA photogrammetry']
     },null,2)),contentType:'application/json'
