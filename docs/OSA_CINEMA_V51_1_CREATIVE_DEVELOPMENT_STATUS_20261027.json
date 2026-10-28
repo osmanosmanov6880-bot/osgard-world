@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "project": "OSA CINEMA / BEYOND THE MODEL — ZERO WINDOW",
+  "creativeVersion": "V51.1",
+  "asOf": "2026-10-27",
+  "isCompletedShortFilm": false,
+  "isCompletedFeature": false,
+  "publicReleaseVerified": false,
+  "paidCheckoutEnabled": false,
+  "literaryShort": {
+    "scenes": 13,
+    "targetMinutes": 18,
+    "format": "FULL_DRAFT_NEEDS_TABLE_READ",
+    "publishedToGit": false
+  },
+  "featureTreatment": {
+    "storyBeats": 44,
+    "targetMinutes": 102,
+    "fullFeatureScreenplayWritten": false,
+    "publishedToGit": false
+  },
+  "trailerSource": {
+    "name": "osa-v48-directors-en.mp4",
+    "sha256": "39afc1a738a4c0e1c100454ca23097559bc67d5910f3e5a1008e3e7f8db713aa",
+    "sourceModified": false,
+    "rightsStatus": "USER_OWNER_SELF_ATTESTED_NOT_INDEPENDENTLY_VERIFIED"
+  },
+  "outputs": [
+    {
+      "locale": "ru",
+      "filename": "OSA_CINEMA_V51_1_ZERO_WINDOW_CONCEPT_TEASER_RU_1080P.mp4",
+      "bytes": 40814894,
+      "sha256": "9637134cae818a85bc12134d3cbc2217954751f34704869b6090e8d10effddcd",
+      "durationSeconds": 86,
+      "frameCount": 2064,
+      "resolution": "1920x1080",
+      "frameRate": 24,
+      "captionCues": 5
+    },
+    {
+      "locale": "en",
+      "filename": "OSA_CINEMA_V51_1_ZERO_WINDOW_CONCEPT_TEASER_EN_1080P.mp4",
+      "bytes": 40833160,
+      "sha256": "514490252b38ae69cfc05cd609433d37da9f5242f9860979a3dbc358d0b29de2",
+      "durationSeconds": 86,
+      "frameCount": 2064,
+      "resolution": "1920x1080",
+      "frameRate": 24,
+      "captionCues": 5
+    }
+  ],
+  "measuredAudio": {
+    "integratedLUFS": -18.3,
+    "loudnessRangeLU": 4.9,
+    "truePeakDBFS": -3.7,
+    "score": "original instrumental, no actor dialogue"
+  },
+  "qa": {
+    "mp4FullDecode": "PASS_2_OF_2",
+    "localHTTPrangeAndFullSHA": "PASS_2_OF_2",
+    "localBrowserUI": "PASS_5_OF_5",
+    "localBrowserMediaPlayback": "NOT_VERIFIED_ERR_BLOCKED_BY_ADMINISTRATOR",
+    "publicHttps": "NOT_VERIFIED",
+    "zipFileSha": "PASS_EVERY_FILE"
+  },
+  "ownerLocalPackages": [
+    {
+      "name": "OSA_CINEMA_V51_1_ZERO_WINDOW_SCREENING_1080P_20261027.zip",
+      "bytes": 81970332,
+      "sha256": "4dd902d5edf0f59ba2cd4968885446c320329c1d69b03e59b3b7d8032e243e3f",
+      "inGithub": false
+    },
+    {
+      "name": "OSA_CINEMA_V51_1_ZERO_WINDOW_COMPLETE_EDIT_SOURCE_20261027.zip",
+      "bytes": 193746974,
+      "sha256": "6e570cf917bc18b0353be1319c47b248d0a028bc61ef484e3e34fb94c02d0299",
+      "inGithub": false
+    }
+  ],
+  "releaseGate": "DEVELOPMENT_ONLY_NOT_A_FILM_PREMIERE",
+  "missingProduction": [
+    "short_table_read",
+    "specialist_technical_review",
+    "cast_and_crews",
+    "actual_18_minute_principal_photography",
+    "feature_length_screenplay",
+    "cinematic_dialogue_sound",
+    "independent_rights_and_localization_QA",
+    "public_distribution"
+  ]
+}
