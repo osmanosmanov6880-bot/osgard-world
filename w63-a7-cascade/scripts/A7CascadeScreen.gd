@@ -1183,7 +1183,7 @@ func _layout_stage() -> void:
         stage_3d.set_compact_view(compact)
     if w78_touch_overlay != null and stage_3d != null:
         w78_touch_overlay.set_context(compact,w76_immersive,
-            stage_3d.first_person.piloting,locale)
+            stage_3d.first_person.piloting,locale,size.x)
     if cinematic_hud != null:
         cinematic_hud.set_compact_mode(compact)
     for view in camera_buttons:
@@ -1369,7 +1369,7 @@ func _render(state: Dictionary) -> void:
     _w76_update_goal()
     if w78_touch_overlay != null and stage_3d != null:
         w78_touch_overlay.set_context(size.x < 640.0,w76_immersive,
-            stage_3d.first_person.piloting,locale)
+            stage_3d.first_person.piloting,locale,size.x)
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
     load_button.text = _t("load_game")
