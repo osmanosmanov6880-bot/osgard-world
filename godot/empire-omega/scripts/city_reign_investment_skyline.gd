@@ -11,7 +11,7 @@ const DISTRICTS = ["forum","housing","lower","aqueduct"]
 const MAX_TOWERS: int = 12
 const MAX_LEVEL: int = 4
 const MAX_CACHE: int = 48
-const MAX_VERTICES_PER_TOWER: int = 4500
+const MAX_VERTICES_PER_TOWER: int = 7000
 const BASE_WIDTH: float = 7.55
 const LEVEL_HEIGHT: float = 8.0
 const HEIGHT_BASE: float = 6.0
@@ -267,8 +267,8 @@ func set_quality(tier: String) -> void:
 				int(levels[id])>0 and quality!="low")
 
 func geometry_is_bounded() -> bool:
-	if sites.size()!=MAX_TOWERS or facades.size()!=MAX_TOWERS or
-		levels.size()!=MAX_TOWERS or get_child_count()!=MAX_TOWERS:
+	if (sites.size()!=MAX_TOWERS or facades.size()!=MAX_TOWERS or
+		levels.size()!=MAX_TOWERS or get_child_count()!=MAX_TOWERS):
 		return false
 	if _finish.size()!=DISTRICTS.size() or _cache.size()>MAX_CACHE:
 		return false
