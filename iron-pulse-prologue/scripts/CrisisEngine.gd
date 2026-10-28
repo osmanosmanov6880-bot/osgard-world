@@ -248,6 +248,26 @@ func activate_relay(relay_id: String) -> bool:
     _record("relay_" + relay_id)
     return true
 
+func authorize_field_seal() -> bool:
+    # A costly real emergency action, not an infinite free safety button.
+    # The independent physical field model enforces 2-of-3 spatial choices.
+    if finished() or not core_scanned or oxygen < 12.0:
+        return _reject()
+    tick(7.0)
+    if finished():
+        return false
+    oxygen = maxf(0.0, oxygen-6.0)
+    return true
+
+func fail_suit_integrity() -> bool:
+    # The operator is physically exposed in the playable world. A collapsed
+    # suit makes the original mission fail and feeds existing ending logic.
+    if finished() or not core_scanned:
+        return false
+    lost = true
+    _record("suit_failure")
+    return true
+
 func cycle_bus(bus_index: int) -> bool:
     if finished() or not coolant_repaired or (bus_index != 0 and bus_index != 1):
         return _reject()
