@@ -1135,9 +1135,9 @@ func _layout_stage() -> void:
             Vector2(maxf(150.0,size.x - 52.0),40.0)
             if compact else Vector2.ZERO)
         brand_label.add_theme_font_size_override(
-            "font_size",20 if compact else 27)
+            "font_size",18 if compact else 27)
         brand_label.text = (
-            ("A7  /  РУБЕЖ" if locale == "ru" else "A7  /  FRONTIER")
+            ("ПОСЛЕДНИЙ РУБЕЖ" if locale == "ru" else "LAST FRONTIER")
             if compact else _t("brand"))
     if top_rail != null:
         top_rail.add_theme_constant_override(
@@ -1322,7 +1322,7 @@ func _render(state: Dictionary) -> void:
     if brand_label == null:
         return
     brand_label.text = (
-        ("A7  /  РУБЕЖ" if locale == "ru" else "A7  /  FRONTIER")
+        ("ПОСЛЕДНИЙ РУБЕЖ" if locale == "ru" else "LAST FRONTIER")
         if size.x < 640.0 else _t("brand"))
     subtitle.text = _t("sub")
     intro.text = _t("intro")
