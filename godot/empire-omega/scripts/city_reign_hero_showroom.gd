@@ -8,13 +8,13 @@ const CAR_CATALOG = preload("res://scripts/vehicle_catalog.gd")
 const REFERENCE = preload("res://scripts/horizon_r90_reference_style.gd")
 const LANG = {
 	"ru":{"title":"АТЕЛЬЕ АВТОМОБИЛЕЙ","hint":"Оригинальная 3D-модель · проверка перед выбором",
-		"open":"ОСМОТРЕТЬ В 3D","left":"↶  ПОВЕРНУТЬ","right":"ПОВЕРНУТЬ  ↷",
+		"open":"ОСМОТРЕТЬ В 3D","left":"ВЛЕВО","right":"ВПРАВО",
 		"low":"3D-предпросмотр отключён в режиме низкой графики"},
 	"en":{"title":"AUTOMOTIVE ATELIER","hint":"Original playable 3D model · inspect before choosing",
-		"open":"INSPECT IN 3D","left":"↶  ROTATE","right":"ROTATE  ↷",
+		"open":"INSPECT IN 3D","left":"ROTATE LEFT","right":"ROTATE RIGHT",
 		"low":"3D preview is disabled in low-graphics mode"},
 	"zh":{"title":"车辆设计展厅","hint":"真实游戏3D模型 · 选择前查看",
-		"open":"查看3D模型","left":"↶  旋转","right":"旋转  ↷",
+		"open":"查看3D模型","left":"向左转","right":"向右转",
 		"low":"低画质模式下禁用3D预览"}
 }
 const ROTATE_STEP: float = PI / 12.0
