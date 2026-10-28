@@ -353,3 +353,100 @@ real-device targets have been satisfied.
    Aim at player-defined performance targets; do not invent FPS numbers.
 6. Controlled release review, crash handling, rollback, privacy and asset
    usage clearance before any public deployment.
+
+
+---
+
+## B57–B62 — genuine source-paid urban consequences and traffic response
+
+**Source-authoritative product change, not an invented simulation:** the
+existing `GameState.start_initiative()` / `GameState.advance_turn()` flows
+debit the exact saved treasury, stock of materials/goods and city-turn actions.
+A project must finish its real two construction turns before the environment
+changes. Buying a proposal, visiting a UI or taking a screenshot cannot cause
+an immediate building or reward. This preserves source gameplay and old saves.
+
+### B57 — two actual original street outcomes [CODE INTEGRATED]
+
+**`scripts/city_reign_civic_outcomes.gd`** is installed in the original
+`WorldBuilder`, receiving live original city state, time, power, language and
+graphics quality. There are no new physics bodies, invented road topology,
+cash rewards, mission IDs or save keys.
+
+| Original paid choice | Completed-only physical 3D consequences | Mobile/blackout behavior |
+|---|---|---|
+| `safe_crossings` | Four actual 10m-wide source road sites, 36 zebra strips in one MultiMesh, 40 roadside reflectors in another | Essential white safety road paint remains visible on LOW; optional reflector mesh off on LOW, emissive at powered night and dark at blackout |
+| `open_records` | Source-authored 3D stone/metal records pavilion adjacent to the ORIGINAL `open_records` investment site; readable current treasury and forum trust from the real save in RU/EN/ZH | Essential pavilion and honest budget board remain accessible on LOW; extra metal solar-sunshade canopy only in CINEMATIC |
+
+**Exclusivity is enforced:** building one project never fabricates the other's
+completion. Reset removes both; a valid original saved state reconstructs the
+corresponding finished physical infrastructure. Repeated UI/state refreshes
+must neither duplicate nodes nor issue new financial transactions.
+
+### B58–B60 — native saving, source economy and game-play integration [VERIFIED]
+
+Native test `tests/v128_city_reign_paid_public_works.gd` uses the **real**
+Godot 4.4.1 GameState. It performs the genuine debits, two city turns,
+construction transitions, physical outcomes, all three hardware tiers,
+blackout, three locales, filesystem save/reload and original economic
+invariants. Persistent numeric values are compared semantically across
+Godot JSON integer/float conversion rather than requiring byte-identical
+Variant representations. CI **49/49 PASS, 0 FAIL** on source commit
+`54f06f8f`. Exact newest B62 head must be independently accepted.
+
+### B61 — no-render-swap real WebGL screenshot provenance [CI GATE]
+
+The transient test-only scene
+`tests/city_reign_public_works_pixel_fixture.tscn` uses the original
+`WorldBuilder` and calls real `GameState.start_initiative` plus two genuine
+turns. `scripts/city-reign-public-works-webgl.spec.mjs` captures actual
+Chromium WebGL2 before/after PNG frames, nighttime, blackout and the
+alternate budget pavilion. Daylight loader/splash detection remains strict;
+the night/blackout frame is checked as a real sourced WebGL2 canvas **without**
+the false positive daytime brightness threshold. The original shipped
+`main.tscn` in GitHub is never replaced by the test camera.
+
+A web screenshot validates only a rendering difference. It does **not** prove
+an entire 30-minute AAA chapter, human player satisfaction or real mobile FPS.
+The dedicated WebGL source capture must finish successfully on the exact
+candidate commit before the visual gate may be declared complete.
+
+### B62 — financing safety changes real resident vehicle physics [SOURCE INTEGRATED]
+
+The original `traffic_agent.gd` retains original collision box, real route,
+traffic signal physics, predictive walker safety and all original cars. It now
+calls the bounded, read-only
+`scripts/city_reign_civic_traffic_safety.gd` speed governor. Only when the
+same **actual saved** `safe_crossings` project is in `projects_done`,
+ordinary residents' cars approaching the same four funded physical crossing
+coordinates limit to approximately 4.8 m/s (17.3 km/h) within 16m, gradually
+decelerating over the approach. Cars in unrelated lanes or moving away retain
+original speeds; emergency patrols keep their original response, and **the
+player's personal car controller is not touched**.
+
+All restrictions reuse existing scalar target speed in the original
+`TrafficAgent._physics_process`, downstream of established collision,
+pedestrian prediction, red lights, and turn handling. No hidden collision
+volume, new traffic scene, alternate lane path, payout or fake UI state.
+
+`tests/v129_city_reign_paid_crossing_traffic.gd` verifies original actual
+investment, two construction turns, deterministic near/mid/far speed policy,
+patrol exemption, off-road and reverse motion, existing pedestrian prediction,
+and a real original CharacterBody3D NPC deceleration/acceleration check. New
+native CI also requires existing R47 walking-predictor regression.
+
+### Release gates remaining [NOT APPROVED]
+
+1. Run exact-head native Godot campaign/state tests and WebGL before/after QA.
+2. Inspect true 3D crossing geometry for visibility at player eye height and
+   ensure white markings are not covered by the existing asphalt; only source
+   screenshots can confirm this.
+3. Measure real GPU performance and avoid shader overdraw on supported PCs and
+   real Android/iPhone hardware. Software Mesa timings are not user-device FPS.
+4. Test the entire first chapter with independent human players; validate
+   navigation, car feel, pedestrian crossings and 30-minute completion.
+5. Replace procedural cuboids with legally cleared professional city/vehicle
+   assets; sound, animation, cinematics, lighting and art direction are still
+   significantly below the Matrix/GTA/Forza benchmark.
+6. Keep PR #627 draft; **do not merge or deploy to master** until exact-head
+   native, WebGL, performance, art and player signoffs all pass.
