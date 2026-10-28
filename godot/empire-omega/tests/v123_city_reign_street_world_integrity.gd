@@ -2,7 +2,8 @@ extends SceneTree
 ## CITY REIGN B41-B44: source-native, actual Godot 4.4.1 street architecture.
 ## Tests real volumetric mesh data and real WorldBuilder integration, not text.
 const KIT = preload("res://scripts/city_reign_street_architecture.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
+# Load the real WorldBuilder only after SceneTree registers autoloads.
+# Preloading before the native SceneTree exists makes GameState unresolved.
 var passed: int = 0
 var failed: int = 0
 
@@ -115,7 +116,13 @@ func _run() -> void:
 	await process_frame
 
 	# Full real original level composition, not a stand-alone toy fixture.
-	var world: Node3D = WORLD.new()
+	var world_source: Variant = load("res://scripts/world_builder.gd")
+	check(world_source is Script and world_source.can_instantiate(),
+		"original WorldBuilder GDScript compiles after GameState autoload")
+	if not (world_source is Script and world_source.can_instantiate()):
+		quit(1)
+		return
+	var world: Node3D = world_source.new()
 	root.add_child(world)
 	var integrated: Node3D = world.get("city_reign_street_architecture")
 	var original_count: int = int(world.get("building_count"))
