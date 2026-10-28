@@ -2,6 +2,7 @@ import React, { StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 const AcademyHome = React.lazy(() => import('./AcademyHome'))
 const OSACinema = React.lazy(() => import('./OSACinema'))
+const OSACinemaStudio = React.lazy(() => import('./OSACinemaStudio'))
 const LectureLibrary = React.lazy(() => import('./LectureLibrary'))
 const OSAExperimentPage = React.lazy(() => import('./OSAExperimentPage'))
 const OSAProgramPage = React.lazy(() => import('./OSAProgramPage'))
@@ -110,6 +111,7 @@ function RoutedContent({ path, href }: { path: string; href: string }) {
   if (path === '/lectures') return <><Seo path="/lectures" /><LectureLibrary /></>
   if (path.startsWith('/lectures/')) return <><Seo path={path} /><OSALessonPage slug={path.slice('/lectures/'.length)} /></>
   if (path === '/portal') return <><Seo path="/" /><WorldHome /></>
+  if (path === '/osa-cinema/studio') return <><Seo path={path} /><OSACinemaStudio /></>
   if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>
   if (path === '/miniapp') return <MiniApp />
   if (path === '/games/time' || path === '/games/time-empire') return <><Seo path="/games/time" /><TimePrototype /></>
