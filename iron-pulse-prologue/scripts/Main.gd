@@ -173,6 +173,9 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var campaign: IPCampaignFlow = IPCampaignFlow.new()
 var world_launch: Dictionary = IPWorldLaunch.parse("")
 var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
+var threat_radar: IPThreatRadar = IPThreatRadar.new()
+var after_action_review: IPAfterActionReview = IPAfterActionReview.new()
+var black_box_report: Dictionary = {}
 var decision_forecaster: IPDecisionForecast = IPDecisionForecast.new()
 var forecast_report: Dictionary = {}
 var forecast_update_clock: float = 0.0
@@ -215,6 +218,7 @@ var warning_veil: ColorRect
 var objective_label: Label
 var telemetry_label: Label
 var allocation_label: Label
+var threat_label: Label
 var feedback_label: Label
 var interaction_label: Label
 var footer_label: Label
@@ -248,6 +252,11 @@ var end_panel: PanelContainer
 var end_title: Label
 var end_stats: Label
 var end_button: Button
+var debrief_button: Button
+var debrief_panel: PanelContainer
+var debrief_title: Label
+var debrief_label: Label
+var debrief_close_button: Button
 var touch_ui: Control
 var touch_shot_button: Button
 var diagnostic_panel: PanelContainer
@@ -433,6 +442,15 @@ func _publish_web_state() -> void:
         "requested_campaign":bool(world_launch.get("campaign",false))
     }
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
+    state["threat_radar"] = threat_radar.snapshot(session)
+    state["threat_hud"] = threat_label.text if threat_label != null else ""
+    state["black_box"] = {
+        "visible":debrief_panel != null and debrief_panel.visible,
+        "available":not black_box_report.is_empty(),
+        "report":black_box_report.duplicate(true) if debrief_panel != null and debrief_panel.visible else {},
+        "open_rect":_hud_rect(debrief_button) if debrief_button != null else [],
+        "close_rect":_hud_rect(debrief_close_button) if debrief_close_button != null else []
+    }
     state["decision_forecast"] = {
         "visible":forecast_panel != null and forecast_panel.visible,
         "report":forecast_report.duplicate(true) if forecast_panel != null and forecast_panel.visible else {},
@@ -825,6 +843,8 @@ func _make_hud() -> void:
     side.add_child(metrics)
     telemetry_label = _label(metrics,"",15,WHITE)
     allocation_label = _label(metrics,"",16,CYAN)
+    threat_label = _label(metrics,"",11,AMBER)
+    threat_label.name = "V16_LiveFictionalHazardStatus"
     vitals_panel = _panel(hud_root,Rect2(-365,17,-17,276),Rect2(1,0,1,0),Color(0.014,0.029,0.048,0.92))
     var vitals := VBoxContainer.new()
     vitals.add_theme_constant_override("separation",4)
@@ -960,19 +980,52 @@ func _make_overlays() -> void:
     resume_button.pressed.connect(_resume)
     pause_box.add_child(resume_button)
     pause_panel.visible = false
-    end_panel = _panel(hud_root,Rect2(-300,-160,300,160),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
+    end_panel = _panel(hud_root,Rect2(-300,-220,300,220),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
     end_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var end_box := VBoxContainer.new()
-    end_box.add_theme_constant_override("separation",22)
+    end_box.add_theme_constant_override("separation",12)
     end_panel.add_child(end_box)
     end_title = _label(end_box,"",29,CYAN)
-    end_stats = _label(end_box,"",15,WHITE)
+    var end_scroll := ScrollContainer.new()
+    end_scroll.name = "FinalRealGameStatsScroll"
+    end_scroll.custom_minimum_size = Vector2(0,178)
+    end_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    end_box.add_child(end_scroll)
+    end_stats = _label(end_scroll,"",15,WHITE)
     end_button = Button.new()
     end_button.text = _copy("restart")
     end_button.custom_minimum_size = Vector2(0,55)
     end_button.pressed.connect(_end_action)
     end_box.add_child(end_button)
+    debrief_button = Button.new()
+    debrief_button.name = "A7_BlackBoxOpen"
+    debrief_button.custom_minimum_size = Vector2(0,52)
+    debrief_button.pressed.connect(_toggle_after_action)
+    end_box.add_child(debrief_button)
     end_panel.visible = false
+    # Native evidence panel. Its 3D game event history comes only from the
+    # currently finished engine; the existing end screen stays mounted.
+    debrief_panel = _panel(hud_root,Rect2(-315,-258,315,258),Rect2(0.5,0.5,0.5,0.5),Color(0.015,0.022,0.030,0.995))
+    debrief_panel.name = "V16_GenuineEngineBlackBox"
+    debrief_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+    var debrief_box := VBoxContainer.new()
+    debrief_box.add_theme_constant_override("separation",12)
+    debrief_panel.add_child(debrief_box)
+    debrief_title = _label(debrief_box,"A7 / BLACK BOX",25,AMBER)
+    var debrief_scroll := ScrollContainer.new()
+    debrief_scroll.name = "EventEvidenceScroll"
+    debrief_scroll.custom_minimum_size = Vector2(0,360)
+    debrief_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    debrief_box.add_child(debrief_scroll)
+    debrief_label = _label(debrief_scroll,"",13,WHITE)
+    debrief_label.name = "RealEventDebriefTranscript"
+    debrief_close_button = Button.new()
+    debrief_close_button.name = "CloseBlackBox"
+    debrief_close_button.custom_minimum_size = Vector2(0,52)
+    debrief_close_button.pressed.connect(_toggle_after_action)
+    debrief_box.add_child(debrief_close_button)
+    debrief_panel.visible = false
+    _refresh_after_action_locale()
 
 func _touch_button(parent: Control, text_value: String, x: float, y: float, width: float, move_key: String = "") -> Button:
     var btn := Button.new()
@@ -1123,6 +1176,7 @@ func _layout_hud() -> void:
     guidance_label.add_theme_font_size_override("font_size",11 if narrow else 12)
     telemetry_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
+    threat_label.add_theme_font_size_override("font_size",10 if narrow else 11)
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
@@ -1138,6 +1192,14 @@ func _layout_hud() -> void:
     intro_panel.offset_right = minf(310.0,width*0.45)
     end_panel.offset_left = -minf(300.0,width*0.45)
     end_panel.offset_right = minf(300.0,width*0.45)
+    end_stats.custom_minimum_size.x = minf(500.0,width*0.83-28.0)
+    if debrief_panel != null:
+        var review_half: float = minf(315.0,width*0.45)
+        debrief_panel.offset_left = -review_half
+        debrief_panel.offset_right = review_half
+        debrief_label.custom_minimum_size.x = review_half*2.0-48.0
+        debrief_label.add_theme_font_size_override("font_size",11 if narrow else 13)
+        debrief_title.add_theme_font_size_override("font_size",19 if narrow else 25)
     objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     if radio_panel == null:
         return
