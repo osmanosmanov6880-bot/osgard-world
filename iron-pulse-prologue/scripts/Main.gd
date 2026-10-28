@@ -133,6 +133,7 @@ const COPY := {
 var session: IPCrisisEngine = IPCrisisEngine.new()
 var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
+var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
@@ -699,7 +700,7 @@ func _make_overlays() -> void:
     continue_button.custom_minimum_size = Vector2(0,46)
     continue_button.pressed.connect(_continue_checkpoint)
     start_box.add_child(continue_button)
-    continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint().is_empty()
+    continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
     pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -948,11 +949,8 @@ func _toggle_journal() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED)
     _refresh_radio_ui()
 
-func _save_checkpoint() -> bool:
-    # A headless CI test never writes the shared user checkpoint slot.
-    if DisplayServer.get_name() == "headless" or not started or session.finished():
-        return false
-    var payload: Dictionary = {
+func _checkpoint_payload() -> Dictionary:
+    return {
         "schema":"IRON_PULSE_CAMPAIGN_V6",
         "engine":session.checkpoint(),
         "story":story.checkpoint(),
@@ -963,10 +961,15 @@ func _save_checkpoint() -> bool:
         "player_position":[player.position.x,player.position.y,player.position.z],
         "visited_sectors":visited_sectors.duplicate()
     }
-    return checkpoint_store.save(payload)
+
+func _save_checkpoint() -> bool:
+    # A headless CI test never writes the shared user checkpoint slot.
+    if DisplayServer.get_name() == "headless" or not started or session.finished():
+        return false
+    return checkpoint_store.save(_checkpoint_payload(),checkpoint_path)
 
 func _continue_checkpoint() -> bool:
-    var payload: Dictionary = checkpoint_store.load_checkpoint()
+    var payload: Dictionary = checkpoint_store.load_checkpoint(checkpoint_path)
     if payload.get("schema") != "IRON_PULSE_CAMPAIGN_V6":
         return false
     if not payload.get("engine",null) is Dictionary or not payload.get("story",null) is Dictionary:
@@ -1083,7 +1086,7 @@ func _restart() -> void:
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     if DisplayServer.get_name() != "headless":
-        checkpoint_store.clear()
+        checkpoint_store.clear(checkpoint_path)
     visited_sectors.clear()
     active_sector = "reactor"
     player.position = Vector3(0,1.1,2.0)
@@ -1353,7 +1356,7 @@ func _show_end() -> void:
         return
     end_panel.visible = true
     if DisplayServer.get_name() != "headless":
-        checkpoint_store.clear()
+        checkpoint_store.clear(checkpoint_path)
     end_title.text = _copy("victory") if session.won else _copy("failure")
     var template: String = _copy("stats")
     end_stats.text = template.format({"time":"%.0f" % session.elapsed,"switches":session.switches,"faults":session.faults,"grade":session.grade()})
