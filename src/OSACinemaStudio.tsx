@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, Clapperboard, Film, Globe2, Heart, LockKeyhole, Play, Search, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import { studioCategories as categories, studioWorks as works, type StudioFilter as Category, type StudioLocale as Locale } from './osaCinemaStudioRegistry'
 import OSAStudioContinue from './OSAStudioContinue'
 import { readWatchlist, subscribeWatchlist, writeWatchlist } from './osaCinemaWatchlist'
 import './osaCinemaStudio.css'
+const CollaborationCore = lazy(() => import('./OSACinemaCollaboration'))
 export default function OSACinemaStudio() {
  const [locale,setLocale]=useState<Locale>(()=>new URLSearchParams(window.location.search).get('lang')==='en'?'en':'ru')
  const [category,setCategory]=useState<Category>('all')
@@ -26,6 +27,7 @@ export default function OSACinemaStudio() {
  useEffect(()=>{if(!selected)return;const opener=openerRef.current;const priorOverflow=document.body.style.overflow;document.body.style.overflow='hidden';closeRef.current?.focus();const handleKeys=(event:KeyboardEvent)=>{const dialog=modalRef.current;if(!dialog)return;if(event.key==='Escape'){event.preventDefault();setSelected(null);return}if(event.key!=='Tab')return;const targets=[...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])')].filter(el=>el.getClientRects().length>0);if(!targets.length){event.preventDefault();return}const first=targets[0],last=targets[targets.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}};window.addEventListener('keydown',handleKeys);return()=>{document.body.style.overflow=priorOverflow;window.removeEventListener('keydown',handleKeys);opener?.focus()}},[selected])
  const ru=locale==='ru'
  const label=(a:string,b:string)=>ru?a:b
+ if (window.location.pathname.replace(/\/$/,'')==='/osa-cinema/studio/collaboration') return <CollaborationCore />
  return <main className="osa-studio" lang={locale}>
   <a className="osa-studio-skip" href="#studio-library">{label('Перейти к каталогу','Skip to collection')}</a>
   <header className="osa-studio-header"><a href="/osa-cinema" className="osa-studio-brand" aria-label="OSA CINEMA"><span className="osa-studio-symbol">◈</span><span>OSA <b>CINEMA</b><small>THE ART OF THINKING</small></span></a><nav aria-label={label('Главная навигация','Main navigation')}><a href="#studio-library">{label('Коллекция','Collection')}</a><a href="#studio-production">{label('Производство','Production')}</a><a href="/osa-cinema">{label('Интерактив','Interactive')}</a><a href={'/osa-cinema/studio/library?lang='+locale}>{label('Моя коллекция','My library')}</a><a href={'/osa-cinema/studio/production?lang='+locale}>{label('Производство','Production desk')}</a><a href={'/osa-cinema/studio/press?lang='+locale}>{label('Пресс-центр','Pressroom')}</a><a href={'/osa-cinema/studio/distribution?lang='+locale}>{label('Проверки релиза','Release review')}</a><a href={'/osa-cinema/studio/collaboration?lang='+locale}>{label('Команда Core','Core team')}</a></nav><div className="osa-studio-actions"><span className="osa-studio-edition">WORLDWIDE / 001</span><button className="osa-studio-language" type="button" onClick={()=>setLocale(x=>{const next=x==='ru'?'en':'ru';const url=new URL(window.location.href);url.searchParams.set('lang',next);window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);return next})} aria-label={label('Switch to English','Переключить на русский')}><Globe2 size={15}/>{locale.toUpperCase()}</button></div></header>
