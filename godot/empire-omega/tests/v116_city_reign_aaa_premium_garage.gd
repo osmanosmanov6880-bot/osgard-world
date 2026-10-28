@@ -62,8 +62,30 @@ func _run() -> void:
 		state.locale = lang_old
 		quit(1)
 		return
-	var hud: CanvasLayer = hud_source.new()
-	root.add_child(hud)
+	# The actual HUD's parent must be the real Main game Node3D: its
+	# _do_vehicle callback first checks the true current driving state.
+	# A standalone CanvasLayer under SceneTree.root would have no 'driving'
+	# field and would never meaningfully test an actual real-world purchase.
+	var opened: Error = change_scene_to_file("res://scenes/main.tscn")
+	verify(opened==OK,"real playable 3D CITY REIGN scene opens for purchase QA")
+	if opened!=OK:
+		state.data = original
+		state.locale = lang_old
+		quit(1)
+		return
+	await process_frame
+	await physics_frame
+	var game: Node3D = current_scene as Node3D
+	var hud: CanvasLayer = game.get("hud") as CanvasLayer
+	verify(hud!=null and hud.get_parent()==game and not bool(game.get("driving")),
+		"authentic source HUD has real on-foot parent and true car interaction guard")
+	if hud==null:
+		current_scene.queue_free()
+		await process_frame
+		state.data = original
+		state.locale = lang_old
+		quit(1)
+		return
 	for language in ["ru","en","zh"]:
 		state.locale = language
 		hud.call("_redraw_strategy")
@@ -134,7 +156,7 @@ func _run() -> void:
 	var fuel_status: Dictionary = state.data["garage_status"]["courier"]
 	verify(float(fuel_status["fuel"])>=0 and wallet_after==2000,
 		"existing vehicle fuel / wallet state remains source-of-truth")
-	hud.queue_free()
+	current_scene.queue_free()
 	await process_frame
 	state.data = original
 	state.locale = lang_old
