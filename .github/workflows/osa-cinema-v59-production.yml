@@ -1,0 +1,92 @@
+name: OSA CINEMA V59 Production Control Room
+on:
+  pull_request:
+    branches: [master, feature/osa-cinema-v58-global-library-catalog-20261028]
+    paths:
+      - 'src/OSACinemaProductionDesk.tsx'
+      - 'src/osaCinemaProductionPlan.ts'
+      - 'src/osaCinemaProductionDesk.css'
+      - 'src/OSACinemaStudio.tsx'
+      - 'src/OSACinemaFilm.tsx'
+      - 'src/main.tsx'
+      - 'src/routeSeo.ts'
+      - 'src/osgardRouting.ts'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/osa-cinema-v59-*.mjs'
+      - 'playwright.osa-cinema-v59.config.mjs'
+      - '.github/workflows/osa-cinema-v59-production.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'src/OSACinemaProductionDesk.tsx'
+      - 'src/osaCinemaProductionPlan.ts'
+      - 'src/osaCinemaProductionDesk.css'
+      - 'src/OSACinemaStudio.tsx'
+      - 'src/OSACinemaFilm.tsx'
+      - 'src/main.tsx'
+      - 'src/routeSeo.ts'
+      - 'src/osgardRouting.ts'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/osa-cinema-v59-*.mjs'
+      - 'playwright.osa-cinema-v59.config.mjs'
+      - '.github/workflows/osa-cinema-v59-production.yml'
+permissions:
+  contents: read
+jobs:
+  production-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify strictly local production data and original V53 media NO-GO
+        run: |
+          node --test scripts/osa-cinema-v59-production-contract.test.mjs
+          node --test scripts/osa-cinema-v58-public-catalog.test.mjs
+          node --test scripts/osa-cinema-v58-watchlist.test.mjs
+          node --test scripts/osa-cinema-v55-studio-contract.test.mjs
+      - name: Verify React and TypeScript
+        run: npm run check
+      - name: Build actual site
+        run: npm run build
+      - name: Check direct production desk, old release gates and global frontend budget
+        run: |
+          node scripts/osa-cinema-v59-build-preflight.mjs
+          node scripts/osa-cinema-v58-build-preflight.mjs
+          npm run qa:osa-media-release
+          npm run qa:redesign-build
+  production-browser:
+    needs: production-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install real Chromium testing dependencies
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Browser-test real desktop/mobile scene planner, backups and release NO-GO
+        run: npx playwright test --config playwright.osa-cinema-v59.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v59-real-browser-proof
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn
