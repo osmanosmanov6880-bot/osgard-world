@@ -1745,13 +1745,12 @@ func _show_end() -> void:
         end_panel.offset_top = -206.0
         end_panel.offset_bottom = 206.0
         end_stats.text += "\n" + campaign.summary(locale)
-    else:
-        end_panel.offset_top = -160.0
-        end_panel.offset_bottom = 160.0
         end_button.text = _copy(
             "campaign_replay" if campaign.complete() else
             "campaign_next" if session.won else "campaign_retry")
     else:
+        end_panel.offset_top = -160.0
+        end_panel.offset_bottom = 160.0
         end_button.text = _copy("restart")
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
