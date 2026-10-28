@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent } from 'react'
 import { ArrowLeft, ArrowRight, Check, Download, FileCheck2, Globe2, LockKeyhole, ShieldAlert, ShieldCheck, Trash2, Upload, VideoOff } from 'lucide-react'
 import { type StudioLocale } from './osaCinemaStudioRegistry'
 import {
-  releaseGates,publicReleaseDecision,readReleaseNotes,saveReleaseNotes,
+  publicReleaseDecision,readReleaseNotes,saveReleaseNotes,
   subscribeReleaseNotes,updateReleaseNote,exportReleaseNotes,importReleaseNotes,
   RELEASE_REVIEW_STATES,MAX_RELEASE_BACKUP_BYTES,
   type DistributionProjectId,type ReviewState,type ReleaseNotes
