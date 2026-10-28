@@ -114,6 +114,11 @@ func _run() -> void:
         "Actual visible thermal dial uses detent 1 of 8 and remains unsolved")
     _check(field.rotating_dial.rotation.y > first_angle + 0.60,
         "Original 3D wheel actually rotates, not just status text")
+    _check(ui.field_focused_devices.has("thermal") and ui.field_focus_events == 1,
+        "A genuine near-console action starts a contextual real Camera3D focus")
+    await create_timer(0.40).timeout
+    _check(absf(player.body.rotation.y - PI) > 0.5,
+        "Real actor camera turns from its forward relay view toward the reactor console")
     _check(ui.model.snapshot() == before_game,
         "Mechanical calibration does not secretly issue A7 PUMP/SCAN choices")
     for i in range(5):
