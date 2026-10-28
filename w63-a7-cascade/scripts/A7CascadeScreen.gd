@@ -210,8 +210,11 @@ var quality_button: Button
 var motion_button: Button
 var quality: String = "hero"
 var reduced_motion: bool = false
+var w77_operator_focus_tween: Tween
+var w77_focus_cancelled_by_actual_input: int = 0
 var w76_immersive: bool = false
 var w76_immersive_switches: int = 0
+var top_rail: HFlowContainer
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -365,6 +368,7 @@ func _build() -> void:
     top.add_theme_constant_override("h_separation", 12)
     top.add_theme_constant_override("v_separation", 8)
     body.add_child(top)
+    top_rail = top
     brand_label = _label(top, "", 27, GOLD)
     language_button = _button(top, "EN", _toggle_locale)
     language_button.custom_minimum_size = Vector2(90, 45)
@@ -685,6 +689,13 @@ func _on_action(action: String) -> void:
                 if stage_3d.field_feedback != null:
                     stage_3d.field_feedback.refresh_from_original_equipment()
             _refresh_mission_ui(after)
+            # W77: mission-accepted game event must immediately update the
+            # real bulkhead collider and contextual goal in the SAME frame.
+            # A delayed signal can leave a misleading "LOCKED" label after
+            # Godot has already begun to open the actual passage.
+            if stage_3d.sector_bulkhead != null:
+                stage_3d.sector_bulkhead.refresh_state()
+            _w76_update_goal()
     checkpoint.note("action", action, self)
     if sound_bus != null:
         var cue: String = "action"
@@ -743,8 +754,15 @@ func _w76_update_goal() -> void:
     # a rendered frame, as verified by the native game accept test.
     if stage_3d.mission_wayfinder != null:
         stage_3d.mission_wayfinder._reconcile()
+    if stage_3d.sector_bulkhead != null:
+        stage_3d.sector_bulkhead.refresh_state()
     var label: String = mission.title(locale) if mission != null else ""
     var helper: String = stage_3d.mission_wayfinder.localized_hint(locale) if stage_3d.mission_wayfinder != null else ""
+    if mission != null and mission.active and mission.extended_mode and stage_3d.sector_bulkhead != null:
+        var gate_status: String = ("ЗАТВОР ЗАКРЫТ" if stage_3d.sector_bulkhead.physically_blocked else "ЗАТВОР ОТКРЫТ")
+        if locale == "en":
+            gate_status = "GATE LOCKED" if stage_3d.sector_bulkhead.physically_blocked else "GATE OPEN"
+        helper += "  ·  " + gate_status
     w76_objective_label.text = (label + "   /   " + helper) if mission != null and mission.active else ""
     w76_objective_label.visible = mission != null and mission.active
 
@@ -855,6 +873,13 @@ func _start_extended_mission() -> void:
 # Original first-person context camera: one gentle operator-initiated turn
 # toward the REAL physical device, never a teleport or a fabricated rendering.
 # 3D details remain manipulable even when the player disables camera motion.
+func _w77_cancel_guided_camera_on_manual_input() -> void:
+    # Actual player W/A/S/D, mouse drag and nonzero gamepad stick override
+    # any pending cinematic auto-look. No force-teleport or fake key state.
+    if w77_operator_focus_tween != null and w77_operator_focus_tween.is_running():
+        w77_operator_focus_tween.kill()
+        w77_focus_cancelled_by_actual_input += 1
+
 func _focus_physical_field_device(key: String, target: Vector3) -> void:
     if (field_focused_devices.has(key) or stage_3d == null
             or stage_3d.first_person == null
@@ -878,11 +903,14 @@ func _focus_physical_field_device(key: String, target: Vector3) -> void:
         actor.body.rotation.y = yaw
         actor.head_camera.rotation.x = pitch
         return
-    var old: Tween = create_tween()
-    old.set_parallel(true)
-    old.tween_property(actor.body, "rotation:y", yaw, 0.32).set_trans(
+    _w77_cancel_guided_camera_on_manual_input()
+    w77_operator_focus_tween = create_tween()
+    w77_operator_focus_tween.set_parallel(true)
+    w77_operator_focus_tween.tween_property(
+        actor.body, "rotation:y", yaw, 0.32).set_trans(
         Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-    old.tween_property(actor.head_camera, "rotation:x", pitch, 0.32).set_trans(
+    w77_operator_focus_tween.tween_property(
+        actor.head_camera, "rotation:x", pitch, 0.32).set_trans(
         Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _field_valve(direction: int) -> void:
@@ -978,6 +1006,7 @@ func _toggle_pilot() -> void:
     _render(model.snapshot())
 
 func _pilot_nudge(keycode: int) -> void:
+    _w77_cancel_guided_camera_on_manual_input()
     if stage_3d != null:
         stage_3d.first_person_nudge(keycode)
     call_deferred("_publish_web_accessibility")
@@ -1113,6 +1142,35 @@ func _layout_stage() -> void:
     visual_container.custom_minimum_size = Vector2(0, height)
     visual_container.stretch_shrink = 2 if quality == "eco" else 1
     var compact: bool = size.x < 640.0
+    # W77 real-Chromium mobile art QA: A7 title must be a FIRST ROW,
+    # never a 2-character column that inflates three buttons to 400px.
+    if brand_label != null:
+        brand_label.autowrap_mode = (
+            TextServer.AUTOWRAP_OFF if compact else
+            TextServer.AUTOWRAP_WORD_SMART)
+        brand_label.size_flags_horizontal = (
+            Control.SIZE_SHRINK_BEGIN if compact else
+            Control.SIZE_EXPAND_FILL)
+        brand_label.custom_minimum_size = (
+            Vector2(maxf(150.0,size.x - 52.0),40.0)
+            if compact else Vector2.ZERO)
+        brand_label.add_theme_font_size_override(
+            "font_size",18 if compact else 27)
+        brand_label.text = (
+            ("ПОСЛЕДНИЙ РУБЕЖ" if locale == "ru" else "LAST FRONTIER")
+            if compact else _t("brand"))
+    if top_rail != null:
+        top_rail.add_theme_constant_override(
+            "h_separation",8 if compact else 12)
+    if language_button != null:
+        language_button.custom_minimum_size = (
+            Vector2(62,40) if compact else Vector2(90,45))
+    if w76_play_button != null:
+        w76_play_button.custom_minimum_size = (
+            Vector2(155,40) if compact else Vector2(185,45))
+    if w76_focus_button != null:
+        w76_focus_button.custom_minimum_size = (
+            Vector2(160,40) if compact else Vector2(220,45))
     if stage_3d != null:
         stage_3d.set_compact_view(compact)
     if cinematic_hud != null:
@@ -1135,6 +1193,7 @@ func _unhandled_input(event: InputEvent) -> void:
     if not stage_3d.first_person.piloting:
         return
     if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+        _w77_cancel_guided_camera_on_manual_input()
         stage_3d.first_person.rotate_view((event as InputEventMouseMotion).relative)
         get_viewport().set_input_as_handled()
 
@@ -1143,7 +1202,10 @@ func _input(event: InputEvent) -> void:
     # The analog axis drives the real W70 CharacterBody3D's continuous speed,
     # never fake camera images or a teleported player position.
     if event is InputEventJoypadMotion:
-        if gamepad.route_motion(event as InputEventJoypadMotion,self):
+        var axis_event: InputEventJoypadMotion = event as InputEventJoypadMotion
+        if absf(axis_event.axis_value) >= 0.17:
+            _w77_cancel_guided_camera_on_manual_input()
+        if gamepad.route_motion(axis_event,self):
             _update_gamepad_hint()
             get_viewport().set_input_as_handled()
         return
@@ -1164,6 +1226,8 @@ func _input(event: InputEvent) -> void:
     if (stage_3d != null and stage_3d.first_person != null
             and stage_3d.first_person.piloting
             and [KEY_W, KEY_A, KEY_S, KEY_D].has(key.keycode)):
+        if key.pressed and not key.echo:
+            _w77_cancel_guided_camera_on_manual_input()
         stage_3d.first_person_key(key.keycode, key.pressed)
         get_viewport().set_input_as_handled()
         call_deferred("_publish_web_accessibility")
@@ -1283,7 +1347,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _render(state: Dictionary) -> void:
     if brand_label == null:
         return
-    brand_label.text = _t("brand")
+    brand_label.text = (
+        ("ПОСЛЕДНИЙ РУБЕЖ" if locale == "ru" else "LAST FRONTIER")
+        if size.x < 640.0 else _t("brand"))
     subtitle.text = _t("sub")
     intro.text = _t("intro")
     language_button.text = _t("language")
@@ -1529,6 +1595,12 @@ func _publish_web_accessibility() -> void:
         "w76_true_world_wayfinder_meshes":int(stage_state.get("w76_actual_mission_wayfinder_meshes",0)),
         "w76_actual_wayfinding_target":str(stage_state.get("w76_real_mission_target","none")),
         "w76_world_objective_meters":float(stage_state.get("w76_real_target_distance",-1.0)),
+        "w77_original_physical_sector_bulkhead":bool(stage_state.get("w77_true_physical_bulkhead",false)),
+        "w77_original_mission_gate_locked":bool(stage_state.get("w77_physically_restricted_sector",false)),
+        "w77_true_native_bulkhead_leaves":int(stage_state.get("w77_bulkhead_mesh_count",0)),
+        "w77_true_bulkhead_open_events":int(stage_state.get("w77_real_bulkhead_openings",0)),
+        "w77_native_door_open_ratio":float(stage_state.get("w77_real_door_open_ratio",0.0)),
+        "w77_genuine_player_motion_focus_cancels":w77_focus_cancelled_by_actual_input,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
