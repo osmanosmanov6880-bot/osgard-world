@@ -17,6 +17,7 @@ const REPAIRS: Array[String] = ["","standard","deep_stabilize","rapid_purge","fu
 var archive_path: String = PATH
 var entries: Array[Dictionary] = []
 var next_sequence: int = 1
+var is_corrupt: bool = false
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var review_engine: IPAfterActionReview = IPAfterActionReview.new()
 
@@ -88,39 +89,47 @@ func _valid_entry(raw: Variant) -> bool:
         return false
     return true
 
+func _reject_load() -> bool:
+    # Preserve an invalid original file for deliberate user recovery; never
+    # silently overwrite it when the next game finishes.
+    if FileAccess.file_exists(archive_path):
+        is_corrupt = true
+    return false
+
 func load_archive() -> bool:
     # A rejected/corrupt document must NOT mutate an already loaded archive.
     var data: Dictionary = checkpoint_store.load_checkpoint(archive_path)
     if data.is_empty() or data.get("schema","")!=FORMAT:
-        return false
+        return _reject_load()
     var saved: Variant = data.get("entries",null)
     var sequence: Variant = data.get("next_sequence",null)
     if not saved is Array or saved.size()>MAX_RECORDS:
-        return false
+        return _reject_load()
     if not _whole_valid(sequence,1,MAX_SEQUENCE):
-        return false
+        return _reject_load()
     var checked: Array[Dictionary] = []
     var previous: int = 0
     for raw in saved:
         if not _valid_entry(raw):
-            return false
+            return _reject_load()
         var item: Dictionary = raw
         var number: int = int(item["run_number"])
         if number<=previous or number>=int(sequence):
-            return false
+            return _reject_load()
         previous=number
         checked.append(item.duplicate(true))
     if previous>0 and int(sequence)!=previous+1:
-        return false
+        return _reject_load()
     if previous==0 and int(sequence)!=1:
-        return false
+        return _reject_load()
     entries=checked
     next_sequence=int(sequence)
+    is_corrupt = false
     return true
 
 func record_finished(engine: IPCrisisEngine,campaign: IPCampaignFlow = null) -> bool:
     # Only a genuinely completed original engine session can be recorded.
-    if engine==null or not engine.finished() or next_sequence>=MAX_SEQUENCE:
+    if engine==null or not engine.finished() or is_corrupt or next_sequence>=MAX_SEQUENCE:
         return false
     var report: Dictionary = review_engine.review(engine,campaign)
     if report.is_empty():
@@ -150,6 +159,7 @@ func erase() -> bool:
         return false
     entries.clear()
     next_sequence=1
+    is_corrupt=false
     return true
 
 func readout() -> Dictionary:
@@ -167,6 +177,7 @@ func readout() -> Dictionary:
         "scenario_counts":scenario_counts.duplicate(true),
         "local_only":true,
         "authenticity_certified":false,
+        "corrupt_file_protected":is_corrupt,
         "maximum_records":MAX_RECORDS
     }
 
@@ -188,6 +199,9 @@ func summary(locale: String = "ru") -> String:
     var lines: Array[String]=[]
     lines.append("A7 / OPERATOR RECORDS" if english else "A7 / АРХИВ ОПЕРАТОРА")
     lines.append("LOCAL SAVES / NO ONLINE RANK" if english else "ЛОКАЛЬНЫЕ ЗАПИСИ / БЕЗ ОНЛАЙН-РЕЙТИНГА")
+    if is_corrupt:
+        lines.append("CORRUPTED LOCAL FILE: PRESERVED, NOT OVERWRITTEN." if english else "ОШИБКА ЛОКАЛЬНОГО ФАЙЛА: НЕ ПЕРЕЗАПИСАН.")
+        lines.append("Clear it explicitly if you want to start a new archive." if english else "Для нового архива подтвердите удаление повреждённого файла.")
     var counts: Dictionary=readout()
     lines.append(("RUNS %d/%d   WINS %d   LOSSES %d" if english else "ПРОХОДЫ %d/%d   ПОБЕДЫ %d   ПОРАЖЕНИЯ %d") % [
         int(counts["stored"]),MAX_RECORDS,int(counts["wins"]),int(counts["failures"])])
