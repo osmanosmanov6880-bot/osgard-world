@@ -29,6 +29,7 @@ const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
 const CITY_REIGN_CRISIS = preload("res://scripts/city_reign_crisis_scene.gd")
 const CITY_REIGN_PROPOSALS = preload("res://scripts/city_reign_promise_markers.gd")
 const CITY_REIGN_OPENING_DIRECTOR = preload("res://scripts/city_reign_opening_director.gd")
+const CITY_REIGN_SITE_VISIT = preload("res://scripts/city_reign_live_site_inspection.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
 const TRIAL_MARKER_SCENE = preload("res://scripts/trial_marker.gd")
@@ -853,6 +854,20 @@ func _interact() -> void:
 		else:
 			hud.announce(hud.t("need"))
 		return
+	# B65: an on-foot player can INSPECT completed, physically built
+	# public works at the real pavement site using the original F action.
+	# Active services, street proposals, discoveries, purchases and original
+	# cargo pickup retain their existing higher interaction priority.
+	# This read-only visit creates ZERO rewards, mission credits or save data.
+	if not driving:
+		var inspected: String = CITY_REIGN_SITE_VISIT.near_completed(
+			GameState.data,position_at,false,false)
+		if inspected!="":
+			var inspection: String = CITY_REIGN_SITE_VISIT.report(
+				GameState.data,inspected,GameState.locale)
+			if inspection!="":
+				hud.announce(inspection)
+				return
 	var nearest: String = world.closest_location(position_at,29.0)
 	if nearest == "":
 		if not driving:
