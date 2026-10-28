@@ -102,7 +102,10 @@ func _run() -> void:
         "Actual rejected distant action leaves safety audit trace")
     _check(not mission.inspect_physical("CORE", before_game, player),
         "Spoofed reactor E cannot bypass physical target or actual valve")
-    player.body.position = Vector3(4.10, 1.33, 2.14)
+    # Genuine proximity with a nonzero sightline: stand in front of the
+    # reactor instead of putting the eye EXACTLY on the console's XYZ,
+    # which makes first-person aiming mathematically undefined.
+    player.body.position = Vector3(5.50, 1.33, 2.90)
     ui.pilot_inspect_button.emit_signal("pressed")
     _check(mission.phase == 0,
         "Nearby physical E is still forbidden until dial is actually calibrated")
