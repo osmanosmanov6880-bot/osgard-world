@@ -23,17 +23,19 @@ func _run() -> void:
         quit(2)
         return
     var before: Dictionary = (game.get("data") as Dictionary).duplicate(true)
-    var start := Vector3(0,0.8,0)
+    var start := Vector3(0,0.8,36)
     var route: Array[Vector3] = [
         Vector3(0,0.8,52),Vector3(0,0.8,0),
         Vector3(52,0.8,0),Vector3(52,0.8,-52)
     ]
     var current: Dictionary = NAV.snapshot(route,start)
     check(str(current.get("kind",""))=="right","actual grid corner turn orientation is right")
-    check(absf(float(current.get("turn_m",0))-52.0)<0.01,
+    check(absf(float(current.get("turn_m",0))-36.0)<0.01,
         "distance to turn is along real 52m street, not Euclidean goal")
-    check(absf(float(current.get("remaining_m",0))-104.0)<0.01,
+    check(absf(float(current.get("remaining_m",0))-140.0)<0.01,
         "correct 2-segment path distance to destination")
+    check(NAV.snapshot(route,Vector3(0,0.8,0)).get("kind","")=="right",
+        "turn at a genuine road junction is not silently skipped at exactly zero metres")
     check(NAV.snapshot(route,Vector3(0,0.8,-60)).get("kind","")=="off_route",
         "20 metre graph deviation never gives a fake next turn")
     check(NAV.snapshot(route,Vector3(52,0.8,-48)).get("kind","")=="arrival",

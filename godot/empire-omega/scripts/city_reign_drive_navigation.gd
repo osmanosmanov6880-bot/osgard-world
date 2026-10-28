@@ -65,7 +65,7 @@ static func snapshot(path: Array[Vector3],at: Vector3) -> Dictionary:
         outgoing = outgoing.normalized()
         var angle: float = atan2(incoming.x*outgoing.y-incoming.y*outgoing.x,
             incoming.dot(outgoing))
-        if absf(angle)<MIN_TURN_RADIANS or first_dist<2.0:
+        if absf(angle)<MIN_TURN_RADIANS:
             continue
         var direction: String = "uturn" if absf(angle)>2.78 else ("right" if angle>0.0 else "left")
         return {
