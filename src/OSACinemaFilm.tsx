@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clapperboard, ExternalLink, Film, Globe2, Heart, LockKeyhole, Play, Share2, ShieldCheck, VideoOff } from 'lucide-react'
 import { getStudioWork, isPublicVideoAvailable, studioWorks, type StudioLocale, type GateState } from './osaCinemaStudioRegistry'
+import { readWatchlist, subscribeWatchlist, writeWatchlist } from './osaCinemaWatchlist'
 import './osaCinemaStudio.css'
 import './osaCinemaFilm.css'
 
 type Props = { projectId: string }
-const KEY = 'osa-studio-favorites-v1'
 const stateWord = (state:GateState,ru:boolean) => state==='verified' ? (ru?'Проверено':'Verified') : state==='pending' ? (ru?'В работе':'Pending') : (ru?'Не подтверждено':'Not cleared')
-function readSaved():string[] {
-  try { const data:unknown=JSON.parse(window.localStorage.getItem(KEY)||'[]')
-    return Array.isArray(data)?data.filter((v):v is string=>typeof v==='string'&&studioWorks.some(w=>w.id===v)):[] 
-  } catch { return [] }
-}
 export default function OSACinemaFilm({projectId}:Props) {
   const project=getStudioWork(projectId)
   const [locale,setLocale]=useState<StudioLocale>(()=>new URLSearchParams(window.location.search).get('lang')==='en'?'en':'ru')
@@ -19,7 +14,7 @@ export default function OSACinemaFilm({projectId}:Props) {
   const [shareMessage,setShareMessage]=useState('')
   const ru=locale==='ru'
   const tr=(a:string,b:string)=>ru?a:b
-  useEffect(()=>{setSaved(readSaved().includes(projectId))},[projectId])
+  useEffect(()=>{const sync=()=>setSaved(readWatchlist().includes(projectId));sync();return subscribeWatchlist(sync)},[projectId])
   useEffect(()=>{
     if(!project)return
     const previousTitle=document.title
@@ -35,10 +30,13 @@ export default function OSACinemaFilm({projectId}:Props) {
   }
   const toggleSaved=()=>{
     if(!project)return
-    const next=readSaved()
-    const revised=saved?next.filter(x=>x!==project.id):[...new Set([...next,project.id])]
-    try{window.localStorage.setItem(KEY,JSON.stringify(revised));setSaved(!saved)}
-    catch{setShareMessage(tr('Локальное сохранение недоступно в этом браузере.','Local storage is unavailable in this browser.'))}
+    const next=saved?readWatchlist().filter(x=>x!==project.id):[...readWatchlist(),project.id]
+    if(!writeWatchlist(next)){
+      setShareMessage(tr('Локальное сохранение недоступно в этом браузере.','Local storage is unavailable in this browser.'))
+      return
+    }
+    setSaved(next.includes(project.id))
+    setShareMessage('')
   }
   const share=async()=>{
     try{await navigator.clipboard.writeText(window.location.href);setShareMessage(tr('Ссылка скопирована.','Link copied.'))}
@@ -50,7 +48,7 @@ export default function OSACinemaFilm({projectId}:Props) {
     <a className="osa-studio-skip" href="#osa-film-content">{tr('К описанию проекта','Skip to project details')}</a>
     <header className="osa-studio-header osa-film-header">
       <a className="osa-studio-brand" href={'/osa-cinema/studio?lang='+locale}><span className="osa-studio-symbol" aria-hidden="true">◈</span><span>OSA <b>CINEMA</b><small>ORIGINAL STUDIOS</small></span></a>
-      <nav aria-label={tr('Навигация проекта','Project navigation')}><a href={'/osa-cinema/studio?lang='+locale}><ArrowLeft size={15}/>{tr('Коллекция','Collection')}</a><a href="#osa-film-evidence">{tr('Доказательства','Evidence')}</a><a href="#osa-film-production">{tr('Производство','Production')}</a></nav>
+      <nav aria-label={tr('Навигация проекта','Project navigation')}><a href={'/osa-cinema/studio?lang='+locale}><ArrowLeft size={15}/>{tr('Коллекция','Collection')}</a><a href="#osa-film-evidence">{tr('Доказательства','Evidence')}</a><a href="#osa-film-production">{tr('Производство','Production')}</a><a href={'/osa-cinema/studio/library?lang='+locale}>{tr('Моя коллекция','My library')}</a></nav>
       <button className="osa-studio-language" type="button" aria-label={tr('Switch to English','Переключить на русский')} onClick={setLanguage}><Globe2 size={15}/>{locale.toUpperCase()}</button>
     </header>
     <section className="osa-film-hero" aria-labelledby="osa-film-title">
@@ -64,7 +62,7 @@ export default function OSACinemaFilm({projectId}:Props) {
         <div className="osa-film-actions">
           {project.href?<a className="osa-studio-button" href={project.href+'?lang='+locale}><Play size={17}/>{tr('Открыть интерактивную историю','Enter interactive story')}<ArrowRight size={16}/></a>:<a className="osa-studio-button" href="#osa-film-production"><Clapperboard size={18}/>{tr('Смотреть этапы производства','Explore production stages')}<ArrowRight size={17}/></a>}
           <button type="button" className={'osa-film-utility'+(saved?' active':'')} aria-pressed={saved} onClick={toggleSaved}><Heart size={17} fill={saved?'currentColor':'none'}/>{saved?tr('Сохранено','Saved'):tr('В избранное','Save')}</button>
-          <button type="button" className="osa-film-utility" onClick={()=>void share()}><Share2 size={17}/>{tr('Поделиться','Share')}</button>
+          <button type="button" className="osa-film-utility" onClick={()=>void share()}><Share2 size={17}/>{tr('Поделиться','Share')}</button><a className="osa-film-utility" href={'/osa-cinema/studio/library?lang='+locale}><Heart size={17}/>{tr('Моя коллекция','My library')}</a>
         </div>
         <p className="osa-film-feedback" role="status" aria-live="polite">{shareMessage}</p>
       </div>
