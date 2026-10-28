@@ -8,7 +8,7 @@ const PROJECT_SITES = preload("res://scripts/project_landmarks.gd")
 const PARK_ID: String = "community_park"
 const PARK_PARTICIPATION_MODULUS: int = 4
 const MAX_PARK_VISITORS: int = 9
-const NEAR_ROAD_BORDER: float = 161.0
+const NEAR_ROAD_BORDER: float = 168.5
 const PARK_WALK_Y: float = 0.70
 
 static func park_exists(state: Dictionary) -> bool:
@@ -22,11 +22,12 @@ static func participant(citizen_id: int) -> bool:
 static func park_target(citizen_id: int) -> Vector3:
 	# The genuine 164,-91 municipal park project stands just beside the
 	# existing vertical x=156 and horizontal z=-104 roads. Keep walkers on
-	# the actual open inner block rather than routing into driving lanes.
+	# the actual open pedestrian path BETWEEN paid benches, outside the old
+	# five-metre fountain and outside either source roadway.
 	var site: Vector3 = PROJECT_SITES.POSITIONS[PARK_ID]
 	var lateral: float = float(posmod(citizen_id*7+3,7)-3)*0.86
 	var forward: float = float(posmod(citizen_id*13+5,7)-3)*0.82
-	return Vector3(site.x+3.0+lateral,PARK_WALK_Y,site.z+forward)
+	return Vector3(site.x+10.0+lateral,PARK_WALK_Y,site.z+forward)
 
 static func choose(original: Dictionary,citizen_id: int,state: Dictionary) -> Dictionary:
 	# Never mutate the original daily routine; citizens retain actual home,
