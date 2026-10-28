@@ -218,8 +218,8 @@ func sync_state(state: Dictionary) -> void:
 				built+=clampi(int(buildings.get(key,0)),0,4)
 		var achievements: int = 0
 		for project_id in finished:
-			if CIVIC.PROJECTS.has(str(project_id)) and
-				str(CIVIC.PROJECTS[str(project_id)]["district"])==district:
+			if (CIVIC.PROJECTS.has(str(project_id)) and
+				str(CIVIC.PROJECTS[str(project_id)]["district"])==district):
 				achievements+=1
 		var level: int = built+achievements*2
 		progress_counts[id] = level
@@ -265,8 +265,8 @@ func _update_materials() -> void:
 		material.emission_energy_multiplier = glow
 
 func graphics_are_bounded() -> bool:
-	if site_roots.size()!=4 or facades.size()!=4 or upgrades.size()!=4 or
-		facade_materials.size()!=4 or upgrade_materials.size()!=4:
+	if (site_roots.size()!=4 or facades.size()!=4 or upgrades.size()!=4 or
+		facade_materials.size()!=4 or upgrade_materials.size()!=4):
 		return false
 	if get_child_count()!=4 or not find_children("*","CollisionShape3D",true,false).is_empty():
 		return false
@@ -283,7 +283,7 @@ func graphics_are_bounded() -> bool:
 			return false
 		if upgrade.mesh.surface_get_array_len(0)!=180:
 			return false
-		if facade.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF or
-			upgrade.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+		if (facade.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF or
+			upgrade.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF):
 			return false
 	return true
