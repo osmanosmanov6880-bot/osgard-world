@@ -16,6 +16,10 @@ const ALERT := Color("ee4f53")
 const AMBER := Color("efb970")
 
 var art_kit: A7ArchitecturalDetail
+var cathedral: A7IndustrialCathedral
+var guide_progress: float = 0.0
+var sector_index: int = 0
+var guide_moves: int = 0
 var rotor: Node3D
 var sensor_array: Node3D
 var containment_door: MeshInstance3D
@@ -56,6 +60,9 @@ func _ready() -> void:
     art_kit = A7ArchitecturalDetail.new()
     add_child(art_kit)
     art_kit.build(self)
+    cathedral = A7IndustrialCathedral.new()
+    add_child(cathedral)
+    cathedral.build()
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -63,8 +70,10 @@ func _ready() -> void:
 func _material(tone: Color, metal: float = 0.15, glow: float = 0.0) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
     m.albedo_color = tone
-    m.metallic = metal
-    m.roughness = 0.39 if metal > 0.5 else 0.73
+    # W67 fix: excessive metal without an environment map made most objects black.
+    # A controlled brushed-metal response keeps the room legible in WebGL.
+    m.metallic = minf(metal, 0.23)
+    m.roughness = 0.59 if metal > 0.5 else 0.77
     if glow > 0.0:
         m.emission_enabled = true
         m.emission = tone
@@ -133,7 +142,7 @@ func _construct_facility() -> void:
     settings.background_color = DARK
     settings.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     settings.ambient_light_color = Color("344455")
-    settings.ambient_light_energy = 0.86
+    settings.ambient_light_energy = 1.10
     environment.environment = settings
     add_child(environment)
 
@@ -250,13 +259,17 @@ func _construct_facility() -> void:
 
     camera = Camera3D.new()
     camera.name = "RealGodotHeroCamera"
-    camera.fov = 55
+    camera.fov = 52
     camera.near = 0.1
     camera.far = 70.0
     add_child(camera)
 
 func set_camera(index: int) -> void:
     camera_index = clampi(index, 0, 2)
+    guide_progress = 0.0
+    sector_index = 0
+    if cathedral != null:
+        cathedral.set_sector(0)
     if camera == null:
         return
     var spots := [Vector3(5.6, 4.25, 8.15),
@@ -266,6 +279,40 @@ func set_camera(index: int) -> void:
     camera.look_at(Vector3(0.0, 2.40, -0.95), Vector3.UP)
     camera.current = true
 
+# W67: real spatial inspection between physically modeled reactor and relay
+# spaces, not cycling another decorative 2D image. Movement never issues
+# a command to A7CascadeCore, nor changes puzzle scores or history.
+func set_inspection_sector(index: int) -> void:
+    sector_index = clampi(index, 0, 1)
+    guide_progress = 0.0 if sector_index == 0 else 1.0
+    if cathedral != null:
+        cathedral.set_sector(sector_index)
+    if camera != null:
+        _apply_guide_pose()
+    guide_moves += 1
+
+func step_inspection_route(direction: int) -> void:
+    if direction == 0:
+        return
+    guide_progress = clampf(guide_progress + 0.20 * float(signi(direction)), 0.0, 1.0)
+    sector_index = 1 if guide_progress >= 0.52 else 0
+    if cathedral != null:
+        cathedral.set_sector(sector_index)
+    if camera != null:
+        _apply_guide_pose()
+    guide_moves += 1
+
+func _apply_guide_pose() -> void:
+    # Coordinate-based route lies between two REAL modeled locations:
+    # core chamber (z~0) and power relay room (z~19).
+    var start := Vector3(5.6, 4.25, 8.15)
+    var end := Vector3(8.0, 3.7, 24.15)
+    var look_start := Vector3(0, 2.4, -0.95)
+    var look_end := Vector3(8.0, 2.5, 16.5)
+    camera.position = start.lerp(end, guide_progress)
+    camera.look_at(look_start.lerp(look_end, guide_progress), Vector3.UP)
+    camera.current = true
+
 func set_quality(new_mode: String) -> void:
     mode = "eco" if new_mode == "eco" else "hero"
     if hero_details == null:
@@ -273,6 +320,8 @@ func set_quality(new_mode: String) -> void:
     hero_details.visible = mode == "hero"
     if art_kit != null:
         art_kit.visible = mode == "hero"
+    if cathedral != null:
+        cathedral.set_quality(mode)
     if key_light != null:
         key_light.light_energy = 2.30 if mode == "hero" else 1.25
         fill_light.visible = mode == "hero"
@@ -323,6 +372,8 @@ func apply_snapshot(state: Dictionary) -> void:
         containment_door.position.x = (1.0 - seal) * 1.40
     if art_kit != null:
         art_kit.present(state)
+    if cathedral != null:
+        cathedral.present(state)
     snapshot_count += 1
 
 func _process(delta: float) -> void:
@@ -347,6 +398,11 @@ func qa_readout() -> Dictionary:
         "real_meshes": mesh_count, "real_lights": light_count,
         "original_art_kit": art_kit != null,
         "art_geometry": art_kit.real_geometry_count if art_kit != null else 0,
+        "cathedral_geometry": cathedral.mesh_instances if cathedral != null else 0,
+        "cathedral_two_real_sectors": cathedral != null and cathedral.relay_terminals == 3,
+        "inspection_sector": sector_index,
+        "inspection_progress": guide_progress,
+        "inspection_navigation_moves": guide_moves,
         "camera": camera_index, "quality": mode,
         "reduced_motion": reduced_motion, "snapshots": snapshot_count,
         "heat": heat, "pressure": pressure, "energy": energy,
