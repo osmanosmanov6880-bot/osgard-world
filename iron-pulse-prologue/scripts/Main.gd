@@ -159,6 +159,7 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var kinetic_iris: IPKineticIris
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -327,6 +328,7 @@ func _publish_web_state() -> void:
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["containment_fx"] = containment_fx.readout() if containment_fx != null else {}
+    state["kinetic_iris"] = kinetic_iris.readout() if kinetic_iris != null else {}
     # Read-only native material/geometry facts; Chromium QA never invents art.
     var actual_core: SphereMesh = reactor_core.mesh as SphereMesh
     var support_count: int = 0
@@ -345,6 +347,7 @@ func _publish_web_state() -> void:
         "support_piers":support_count,
         "ring_profiles":ring_profiles,
         "front_light_power":reactor_atrium._lights[1].light_energy,
+        "legacy_neon_over_open_bay":_count_obstructing_corridor_neon(),
         "halo_camera_alignment":absf(normal_front.dot(director_eye))
     }
     state["cinematic_view"] = cinematic_view
@@ -452,6 +455,21 @@ func _box(parent: Node3D, center: Vector3, dimensions: Vector3, mat: Material, s
     holder.add_child(mesh_node)
     return mesh_node
 
+func _count_obstructing_corridor_neon() -> int:
+    # Inspect actual 3D meshes, not a hardcoded claim. A ray toward the
+    # reactor must never intersect a forgotten 12m longitudinal light bar.
+    var blocked: int = 0
+    for node in get_children():
+        if node is MeshInstance3D:
+            var beam: MeshInstance3D = node as MeshInstance3D
+            if beam.mesh is BoxMesh:
+                var dims: Vector3 = (beam.mesh as BoxMesh).size
+                if (dims.x >= 11.5 and absf(beam.position.y-5.86)<0.02 and
+                        beam.position.z > IPReactorAtrium.OPENING_Z_MIN and
+                        beam.position.z < IPReactorAtrium.OPENING_Z_MAX):
+                    blocked += 1
+    return blocked
+
 func _make_complex() -> void:
     var concrete := _metal(Color(0.105,0.133,0.17),0.27)
     var steel := _metal(STEEL)
@@ -476,7 +494,13 @@ func _make_complex() -> void:
         _box(self,Vector3(5.8,0.045,depth),Vector3(0.18,0.09,1.6),polished)
         _box(self,Vector3(-6.3,4.6,depth),Vector3(0.18,0.18,4.0),polished)
         _box(self,Vector3(6.3,4.6,depth),Vector3(0.18,0.18,4.0),polished)
-        _box(self,Vector3(0,5.86,depth),Vector3(12,0.14,0.15),cyan)
+        # The abandoned roof's long neon tube used to extend directly
+        # toward the physical A7 camera through the 22m roof opening,
+        # appearing as a giant cyan bar across the real plasma sphere.
+        # Preserve the original roof lighting ONLY in closed corridors.
+        if depth < IPReactorAtrium.OPENING_Z_MIN or depth > IPReactorAtrium.OPENING_Z_MAX:
+            var ceiling_pulse := _box(self,Vector3(0,5.86,depth),Vector3(12,0.14,0.15),cyan)
+            ceiling_pulse.name = "ClosedRoofPulse_%02d" % index
         _box(self,Vector3(0,0.055,depth),Vector3(5.8,0.04,0.07),_metal(AMBER,0.2,true))
         var lamp := OmniLight3D.new()
         lamp.position = Vector3(0,5.4,depth)
@@ -516,6 +540,9 @@ func _make_complex() -> void:
     add_child(reactor_atrium)
     containment_fx = IPContainmentFX.new()
     add_child(containment_fx)
+    kinetic_iris = IPKineticIris.new()
+    add_child(kinetic_iris)
+    kinetic_iris.bind_reactor_pbr(reactor_atrium._painted)
     if reactor_core != null and reactor_atrium.core_plasma_material != null:
         reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
@@ -992,6 +1019,8 @@ func _layout_hud() -> void:
             reactor_atrium.set_quality("eco")
         if containment_fx != null:
             containment_fx.set_quality("eco")
+        if kinetic_iris != null:
+            kinetic_iris.set_quality("eco")
     # Compact non-overlapping card hierarchy; the center is reserved for 3D.
     header_panel.offset_left = 17.0 if not narrow else 12.0
     header_panel.offset_right = minf(544.0,width-16.0)
@@ -1198,6 +1227,7 @@ func _continue_checkpoint() -> bool:
     world_sectors.set_quality(quality_mode)
     reactor_atrium.set_quality(quality_mode)
     containment_fx.set_quality(quality_mode)
+    kinetic_iris.set_quality(quality_mode)
     exit_gate.position.y = 6.2 if session.override_set else 2.6
     for index in range(legacy_lamps.size()):
         legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
@@ -1379,6 +1409,7 @@ func _input(event: InputEvent) -> void:
             world_sectors.set_quality(quality_mode)
             reactor_atrium.set_quality(quality_mode)
             containment_fx.set_quality(quality_mode)
+            kinetic_iris.set_quality(quality_mode)
             for i in range(legacy_lamps.size()):
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
@@ -1489,6 +1520,10 @@ func _process(delta: float) -> void:
     world_sectors.update_hazard(session.scenario_id,session.heat,session.oxygen,reduced_motion)
     reactor_atrium.update_alarm(session.scenario_id,session.heat,session.oxygen,runtime_seconds,reduced_motion)
     containment_fx.update_from_crisis(
+        session.scenario_id,session.heat,session.oxygen,runtime_seconds,
+        reduced_motion,session.thermal_pulses,session.thermal_shield,
+        started and not paused and not session.finished())
+    kinetic_iris.update_from_crisis(
         session.scenario_id,session.heat,session.oxygen,runtime_seconds,
         reduced_motion,session.thermal_pulses,session.thermal_shield,
         started and not paused and not session.finished())

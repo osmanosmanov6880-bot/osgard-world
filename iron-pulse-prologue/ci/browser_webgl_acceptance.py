@@ -145,6 +145,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "No physical key light illuminates the reactor",hero)
                         assert hero.get("halo_camera_alignment",0.0)>=0.93, (
                             "Camera sees the original 3D containment halo edge-on as a huge cyan obstruction",hero)
+                        assert hero.get("legacy_neon_over_open_bay",999)==0, (
+                            "The exported actual Godot level still draws a giant cyan roof beam through reactor aperture",hero)
                         report.setdefault("v8_4_hero_visual",{})[name]=hero
                         # V8.6: inspect only source-bound Godot scene geometry.
                         # Never fabricate environmental FX or alter gameplay state.
@@ -160,6 +162,24 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert containment.get("vapor_visible") is False and containment.get("spark_burst_visible") is False, (
                             "False catastrophe effects appear on the idle scenario menu",containment)
                         report.setdefault("v8_6_reactive_world",{})[name]=containment
+                        # V9: exact-source real Godot iris is 3D, UV-machined
+                        # and physically located between player camera and core.
+                        iris = idle.get("kinetic_iris",{})
+                        assert iris.get("physical_curved_petals")==8 and iris.get("physical_hinges")==8, (
+                            "Real eight-petal sliding reactor iris not imported into WebGL",iris)
+                        assert iris.get("original_uv_mesh") is True and iris.get("real_steel_material") is True, (
+                            "Iris is flat presentation geometry, not original UV-mapped machinery",iris)
+                        assert iris.get("actual_pbr_maps_bound")==3, (
+                            "Custom real 3D iris material lacks original albedo, roughness and normal maps",iris)
+                        assert iris.get("gpu_bolt_groups")==1 and iris.get("instanced_guide_bolts")==32, (
+                            "Original mechanical bolt detail is not GPU-instanced",iris)
+                        assert abs(float(iris.get("aperture_radius_m",0.0))-2.23)<0.02, (
+                            "Actual calm reactor opening incorrectly blocks existing plasma",iris)
+                        assert iris.get("quality")==("eco" if mobile else "hero"), (
+                            "Iris failed to respect phone vs desktop geometry budget",iris)
+                        assert iris.get("detailed_guides_visible") is (not mobile), (
+                            "Performance profile did not hide extra guidework on phones",iris)
+                        report.setdefault("v9_original_kinetic_reactor",{})[name]=iris
                         assert bay.get("open_core_inspection") is True, (
                             "V8.3 reactor remains obscured by front armour despite successful render",bay)
                         assert bay.get("cinematic_vault") is True, (
@@ -350,6 +370,42 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 "source":"actual_godot_webgl_chromium",
                                 "hdr_overlays_hidden":True
                             }
+                            # Compare identical physical 3D camera in HERO
+                            # and ECO using the existing G input; independent
+                            # raw screenshot isolates source-side art clutter.
+                            page.keyboard.press("g")
+                            deadline=time.monotonic()+20
+                            eco={}
+                            while time.monotonic()<deadline:
+                                eco=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if eco.get("quality_mode")=="eco":
+                                    break
+                                page.wait_for_timeout(150)
+                            assert eco.get("quality_mode")=="eco" and eco.get("kinetic_iris",{}).get("quality")=="eco", (
+                                "G does not change real V9 mechanical detail from original camera",eco)
+                            assert eco.get("active_camera")=="A7_ServiceObservationCamera",eco
+                            page.wait_for_timeout(450)
+                            eco_frame=page.screenshot(timeout=60000,animations="disabled")
+                            eco_stats=frame_metrics(eco_frame)
+                            assert eco_stats["stddev"]>7 and eco_stats["color_bins"]>=12,eco_stats
+                            (output/"cinematic-reactor-eco-desktop.png").write_bytes(eco_frame)
+                            report["v9_artist_review_hero_vs_eco"]={
+                                "hero_image":"cinematic-reactor-desktop.png",
+                                "eco_image":"cinematic-reactor-eco-desktop.png",
+                                "hero":pure_stats,
+                                "eco":eco_stats,
+                                "source":"real Godot C camera plus genuine G graphics key",
+                                "analysis_required":"human visual check for occluding neon bar/foreground"
+                            }
+                            page.keyboard.press("g")
+                            deadline=time.monotonic()+20
+                            restored_hero={}
+                            while time.monotonic()<deadline:
+                                restored_hero=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if restored_hero.get("quality_mode")=="hero":
+                                    break
+                                page.wait_for_timeout(150)
+                            assert restored_hero.get("quality_mode")=="hero",restored_hero
                             page.keyboard.press("c")
                             deadline=time.monotonic()+20
                             restored={}
@@ -443,11 +499,16 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                         break
                                     page.wait_for_timeout(200)
                                 assert state.get(property_name) == expected,(key,property_name,state)
+                                if key=="v":
+                                    assert state.get("kinetic_iris",{}).get("motion_reduced") is True, (
+                                        "Actual player V option does not reach kinetic reactor V9",state.get("kinetic_iris"))
                                 if key=="g":
                                     assert state.get("reactor_atrium",{}).get("quality") == expected, (
                                         "G button did not switch actual V8 vaulted reactor geometry",state.get("reactor_atrium"))
                                     assert state.get("containment_fx",{}).get("quality") == expected, (
                                         "G button did not scale procedural pressure vents/steam",state.get("containment_fx"))
+                                    assert state.get("kinetic_iris",{}).get("quality") == expected, (
+                                        "G key did not toggle real V9 industrial iris detail",state.get("kinetic_iris"))
                                     if expected=="eco":
                                         assert state.get("containment_fx",{}).get("vapor_visible") is False, (
                                             "ECO retained heavyweight vapor rendering",state.get("containment_fx"))
