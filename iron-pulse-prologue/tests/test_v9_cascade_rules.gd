@@ -40,6 +40,9 @@ func _run() -> void:
     _check(blocked.advance_cascade("sync"), "Service-to-evacuation synchronizer is reachable and operable")
     _check(blocked.cascade_phase == 2 and blocked.last_event == "cascade_sync",
         "Synchronized field advances the real mission to final return path")
+    # Measure resource benefits below the 100% capacity cap; in an
+    # already-full life-support reservoir extra oxygen is intentionally clipped.
+    blocked.oxygen = 65.0
     var heat_before: float = blocked.heat
     var air_before: float = blocked.oxygen
     var door_before: float = blocked.door_charge
