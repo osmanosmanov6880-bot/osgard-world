@@ -129,6 +129,31 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "real_relay_positions":positions,
                             "available_slots":2
                         }
+                        # V9: actual 3-sector optional story campaign and final
+                        # physical directive machine must be in the exported
+                        # 3D Godot scene, not an injected HTML representation.
+                        signal = idle.get("signal_campaign",{})
+                        machine = idle.get("signal_sites",{})
+                        assert signal.get("mission")=="SIGNAL_CHAIN" and signal.get("collected_count")==0 and signal.get("directive")=="", (
+                            "New campaign must start unplayed with honest progress",signal)
+                        assert machine.get("real_signal_consoles")==4 and machine.get("hero_precision_fins")==20 and machine.get("actual_curved_receivers")==4, (
+                            "Three signal sources and final 3D machine with curved gyroscopes are missing",machine)
+                        loc = machine.get("physical_sites",[])
+                        assert [p[0] for p in loc] == ["resonance","atmosphere","transit","directive"], (
+                            "Source-bound optional chapter locations differ from Godot scene",loc)
+                        assert len(loc)==4 and abs(loc[0][2]+18)<0.1 and abs(loc[1][2]+42)<0.1 and abs(loc[2][2]+51)<0.1, (
+                            "Three actual sectors do not contain distinct new mission consoles",loc)
+                        assert machine.get("quality")==("eco" if mobile else "hero"), (
+                            "New physical mission geometry ignored player graphic profile",machine)
+                        assert machine.get("final_unlocked") is False and machine.get("final_committed") is False, (
+                            "Optional chapter starts with an unearned final result",machine)
+                        report.setdefault("v9_real_signal_campaign",{})[name] = {
+                            "real_3d_consoles":machine["real_signal_consoles"],
+                            "locations":loc,
+                            "collected":signal["collected_count"],
+                            "final_locked":True,
+                            "quality":machine["quality"]
+                        }
                         # V8 must render a NEW 15m side reactor chamber,
                         # not just rename old corridor meshes or substitute CGI.
                         bay = idle.get("reactor_atrium", {})
