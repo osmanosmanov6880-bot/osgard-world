@@ -193,6 +193,8 @@ var field_valve_controls: HFlowContainer
 var field_relay_controls: HFlowContainer
 var field_sync_controls: HFlowContainer
 var field_buttons: Dictionary = {}
+var field_focused_devices: Dictionary = {}
+var field_focus_events: int = 0
 var mission_title: Label
 var mission_briefing: Label
 var mission_meta: Label
@@ -591,6 +593,7 @@ func _on_action(action: String) -> void:
 
 func _restart() -> void:
     _previewed_action = ""
+    field_focused_devices.clear()
     if stage_3d != null and stage_3d.spatial_mission != null:
         stage_3d.spatial_mission.reset()
     model.reset()
@@ -663,11 +666,42 @@ func _start_extended_mission() -> void:
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
 
+# Original first-person context camera: one gentle operator-initiated turn
+# toward the REAL physical device, never a teleport or a fabricated rendering.
+# 3D details remain manipulable even when the player disables camera motion.
+func _focus_physical_field_device(key: String, target: Vector3) -> void:
+    if field_focused_devices.has(key) or stage_3d == null or
+            stage_3d.first_person == null or not stage_3d.first_person.piloting:
+        return
+    var actor: A7FirstPersonOperator = stage_3d.first_person
+    var eye: Vector3 = actor.body.global_position + Vector3(0, actor.HEAD_HEIGHT, 0)
+    var delta_aim: Vector3 = target - eye
+    var flat: float = Vector2(delta_aim.x, delta_aim.z).length()
+    if flat < 0.10:
+        return
+    field_focused_devices[key] = true
+    field_focus_events += 1
+    var yaw: float = atan2(-delta_aim.x, -delta_aim.z)
+    var pitch: float = clampf(-atan2(delta_aim.y, flat),
+        deg_to_rad(-60.0), deg_to_rad(60.0))
+    if reduced_motion:
+        actor.body.rotation.y = yaw
+        actor.head_camera.rotation.x = pitch
+        return
+    var old: Tween = create_tween()
+    old.set_parallel(true)
+    old.tween_property(actor.body, "rotation:y", yaw, 0.32).set_trans(
+        Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+    old.tween_property(actor.head_camera, "rotation:x", pitch, 0.32).set_trans(
+        Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
 func _field_valve(direction: int) -> void:
     if stage_3d == null or stage_3d.field_operations == null:
         return
     var ok: bool = stage_3d.field_operations.rotate_valve(
         direction, stage_3d.first_person)
+    if ok:
+        _focus_physical_field_device("thermal", A7FieldOperations.CORE + Vector3(0, 1.0, 0))
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -677,6 +711,8 @@ func _field_relay(index: int) -> void:
         return
     var ok: bool = stage_3d.field_operations.toggle_relay(
         index, stage_3d.first_person)
+    if ok:
+        _focus_physical_field_device("relay", A7FieldOperations.RELAY + Vector3(0, 0.93, 0))
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -686,6 +722,8 @@ func _field_sync(index: int) -> void:
         return
     var ok: bool = stage_3d.field_operations.sync_connector(
         index, stage_3d.first_person, model.snapshot())
+    if ok:
+        _focus_physical_field_device("sync", A7FieldOperations.CORE + Vector3(1.02, 1.45, 0))
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -1138,6 +1176,8 @@ func _publish_web_accessibility() -> void:
         "w72_sync_solved": stage_3d.field_operations.sync_solved if stage_3d.field_operations != null else false,
         "w72_actual_mechanic_meshes": int(stage_state.get("w72_true_mechanic_meshes", 0)),
         "w72_physically_rejected_actions": stage_3d.field_operations.rejected_far_uses if stage_3d.field_operations != null else 0,
+        "w72_contextual_real_camera_focuses": field_focus_events,
+        "w72_thermal_camera_focused": field_focused_devices.has("thermal"),
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
