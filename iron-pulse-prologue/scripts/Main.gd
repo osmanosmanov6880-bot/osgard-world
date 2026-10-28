@@ -18,7 +18,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора    P — следующий план\nH — показать / скрыть 3D-цель\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора    P — следующий план    F3 — диагностика\nH — показать / скрыть 3D-цель\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -92,7 +92,7 @@ const COPY := {
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera    P — next shot\nH — show / hide 3D objective\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera    P — next shot    F3 — diagnostics\nH — show / hide 3D objective\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -171,6 +171,7 @@ var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var campaign: IPCampaignFlow = IPCampaignFlow.new()
+var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
 const CAMPAIGN_RECORD_PATH: String = "user://iron_pulse_campaign_progress_v9.json"
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
@@ -245,6 +246,8 @@ var end_stats: Label
 var end_button: Button
 var touch_ui: Control
 var touch_shot_button: Button
+var diagnostic_panel: PanelContainer
+var diagnostic_label: Label
 var touch_moves: Dictionary = {"forward":false, "back":false, "left":false, "right":false}
 var started: bool = false
 var paused: bool = false
@@ -375,6 +378,9 @@ func _publish_web_state() -> void:
     }
     state["cinematic_view"] = cinematic_view
     state["director_shot_index"] = reactor_atrium.director_shot_index
+    state["performance_audit"] = performance_audit.telemetry()
+    state["release_gate"] = performance_audit.release_gate()
+    state["diagnostics_visible"] = diagnostic_panel != null and diagnostic_panel.visible
     state["cinematic_hud_hidden"] = cinematic_view and not header_panel.visible and not side_panel.visible and not prompt_panel.visible and not crosshair.visible
     var active_camera: Camera3D = get_viewport().get_camera_3d()
     state["active_camera"] = active_camera.name if active_camera != null else ""
@@ -811,6 +817,11 @@ func _make_hud() -> void:
     _make_overlays()
     _make_touch_controls()
     _make_radio_ui()
+    diagnostic_panel = _panel(hud_root,Rect2(-365,295,-15,485),Rect2(1,0,1,0),Color(0.015,0.027,0.045,0.94))
+    diagnostic_panel.name = "V12_RealFrameDiagnostics"
+    diagnostic_label = _label(diagnostic_panel,"",12,WHITE)
+    diagnostic_label.name = "ExactLocalFrameTelemetry"
+    diagnostic_panel.visible = false
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
 
@@ -1419,6 +1430,8 @@ func _toggle_language() -> void:
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
     campaign_echoes.sync(campaign,locale)
+    if diagnostic_panel.visible:
+        diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
     _announce("language")
     _refresh_hud()
     _refresh_radio_ui()
@@ -1480,6 +1493,11 @@ func _input(event: InputEvent) -> void:
             reduced_motion = not reduced_motion
             walking_phase = 0.0
             _announce("motion_reduced" if reduced_motion else "motion_normal")
+            return
+        if event.keycode == KEY_F3:
+            diagnostic_panel.visible = not diagnostic_panel.visible
+            if diagnostic_panel.visible:
+                diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
             return
         if event.keycode == KEY_H and started and not paused and not session.finished():
             _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
@@ -1581,6 +1599,7 @@ func _physics_process(delta: float) -> void:
         _show_end()
 
 func _process(delta: float) -> void:
+    performance_audit.observe(delta,started and not paused,quality_mode)
     runtime_seconds += delta
     if OS.has_feature("web") and runtime_seconds - _last_web_resize_check >= 0.4:
         _last_web_resize_check = runtime_seconds
@@ -1644,6 +1663,8 @@ func _process(delta: float) -> void:
     if hud_elapsed > 0.12:
         hud_elapsed = 0.0
         _refresh_hud()
+        if diagnostic_panel.visible:
+            diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
 
 func _nearest_terminal() -> Dictionary:
     if player == null:
