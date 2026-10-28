@@ -276,8 +276,8 @@ func geometry_is_bounded() -> bool:
 		return false
 	for id in ORDER:
 		var visual: MeshInstance3D = facades[id]
-		if visual==null or visual.get_parent()!=self or
-			visual.position!=sites[id]["position"]:
+		if (visual==null or visual.get_parent()!=self or
+			visual.position!=sites[id]["position"]):
 			return false
 		if visual.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
 			return false
