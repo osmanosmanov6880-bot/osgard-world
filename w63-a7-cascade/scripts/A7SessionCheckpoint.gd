@@ -78,7 +78,7 @@ func note(kind: String, value: Variant, ui: A7CascadeScreen) -> void:
     events.append({
         "kind":kind,
         "value":value,
-        "proof":_proof(ui),
+        "proof_sha256":JSON.stringify(_proof(ui)).sha256_text(),
     })
 
 func _snapshot(ui: A7CascadeScreen) -> Dictionary:
@@ -86,7 +86,7 @@ func _snapshot(ui: A7CascadeScreen) -> Dictionary:
     var pos: Vector3 = actor.body.position
     return {
         "events":events.duplicate(true),
-        "proof":_proof(ui),
+        "proof_sha256":JSON.stringify(_proof(ui)).sha256_text(),
         "world_position":[pos.x,pos.y,pos.z],
         "world_yaw":actor.body.rotation.y,
         "world_pitch":actor.head_camera.rotation.x,
@@ -97,11 +97,11 @@ func _snapshot(ui: A7CascadeScreen) -> Dictionary:
     }
 
 func create_packet(ui: A7CascadeScreen) -> Dictionary:
-    var content: Dictionary = _snapshot(ui)
+    var content: String = JSON.stringify(_snapshot(ui))
     return {
         "schema":SCHEMA,
-        "content":content,
-        "sha256":JSON.stringify(content).sha256_text(),
+        "payload":content,
+        "sha256":content.sha256_text(),
         "integrity_kind":"SHA256_CORRUPTION_ONLY_NOT_SECURITY",
         "fictional_offline_only":true,
     }
@@ -131,16 +131,20 @@ func _verify_packet(raw: String) -> Dictionary:
     if not (outer is Dictionary):
         return {}
     var p: Dictionary = outer as Dictionary
-    if str(p.get("schema","")) != SCHEMA or not (p.get("content") is Dictionary):
+    if str(p.get("schema","")) != SCHEMA or not (p.get("payload") is String):
         return {}
-    var content: Dictionary = p["content"]
+    var stored_payload: String = str(p["payload"])
     if str(p.get("sha256","")).length() != 64 or (
-            JSON.stringify(content).sha256_text() != str(p["sha256"])):
+            stored_payload.sha256_text() != str(p["sha256"])):
         return {}
+    var decoded: Variant = JSON.parse_string(stored_payload)
+    if not (decoded is Dictionary):
+        return {}
+    var content: Dictionary = decoded
     if not (content.get("events") is Array) or (
             content["events"] as Array).size() > MAX_EVENTS:
         return {}
-    if not (content.get("proof") is Dictionary):
+    if str(content.get("proof_sha256","")).length() != 64:
         return {}
     if not (content.get("world_position") is Array) or (
             content["world_position"] as Array).size() != 3:
@@ -149,7 +153,7 @@ func _verify_packet(raw: String) -> Dictionary:
     for i in range(3):
         if not (coords[i] is float or coords[i] is int):
             return {}
-        if not is_finite(float(coords[i])):
+        if is_inf(float(coords[i])) or is_nan(float(coords[i])):
             return {}
     # Physical world bounds (never read a loaded position outside facility).
     if absf(float(coords[0])) > 18.0 or (
@@ -166,6 +170,10 @@ func _verify_packet(raw: String) -> Dictionary:
     if absf(float(content["world_yaw"])) > 10000.0 or (
             absf(float(content["world_pitch"])) > 2.0):
         return {}
+    if is_nan(float(content["world_yaw"])) or (
+            is_nan(float(content["world_pitch"]))):
+        return {}
+        return {}
     if not (content.get("piloting") is bool) or (
             not (content.get("reduced_motion") is bool)):
         return {}
@@ -174,7 +182,7 @@ func _verify_packet(raw: String) -> Dictionary:
             return {}
         var e: Dictionary = item
         if not _valid_event(str(e.get("kind","")),e.get("value")) or (
-                not (e.get("proof") is Dictionary)):
+                str(e.get("proof_sha256","")).length() != 64):
             return {}
     return content
 
@@ -229,7 +237,8 @@ func _play_event(ui: A7CascadeScreen, e: Dictionary) -> bool:
     else:
         return false
     var after: Dictionary = _proof(ui)
-    return after != before and JSON.stringify(after) == JSON.stringify(e["proof"])
+    return after != before and (
+        JSON.stringify(after).sha256_text() == str(e["proof_sha256"]))
 
 func _replay_to(ui: A7CascadeScreen, content: Dictionary) -> bool:
     var local_checkpoint: A7SessionCheckpoint = ui.checkpoint
@@ -244,7 +253,9 @@ func _replay_to(ui: A7CascadeScreen, content: Dictionary) -> bool:
             ok = false
             break
         checked_steps += 1
-    if ok and JSON.stringify(_proof(ui)) != JSON.stringify(content["proof"]):
+    if ok and (
+            JSON.stringify(_proof(ui)).sha256_text() !=
+            str(content["proof_sha256"])):
         ok = false
     if ok:
         var xyz: Array = content["world_position"]
