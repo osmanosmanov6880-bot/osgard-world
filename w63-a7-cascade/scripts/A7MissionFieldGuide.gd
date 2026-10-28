@@ -2,7 +2,7 @@ extends Control
 class_name A7MissionFieldGuide
 ## W85: source-driven mission field guide. It reads the ORIGINAL A7 mission,
 ## actual physics-body distance, real equipment gates and native A7 state.
-## No auto-walk, model.choose, fake progress, altered body or teleport.
+## No automatic choices, fabricated progress or movement teleports.
 
 signal opened_changed(is_open: bool)
 
