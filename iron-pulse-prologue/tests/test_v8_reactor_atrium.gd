@@ -49,6 +49,10 @@ func _run() -> void:
         "Original animated game reactor and three legacy rings still exist")
     _check(game.reactor_core.global_position.x > 10.0,
         "The actual legacy reactor was relocated into the newly opened hall")
+    var player_forward: Vector3 = -game.camera.global_transform.basis.z
+    var reactor_direction: Vector3 = (game.reactor_core.global_position-game.camera.global_position).normalized()
+    _check(player_forward.dot(reactor_direction) > 0.96,
+        "Initial player camera genuinely frames the monumental reactor in view")
     _check(int(d.get("monumental_geometry",0)) >= 125,
         "New high-scale reactor machine has real repeated original mesh structures")
     _check(int(d.get("instanced_fasteners",0)) == 216,
