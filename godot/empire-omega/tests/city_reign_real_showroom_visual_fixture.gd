@@ -45,5 +45,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_4: panel.call("preview_vehicle","utility")
 		KEY_Q: panel.call("rotate_model",-1)
 		KEY_E: panel.call("rotate_model",1)
+		KEY_L: panel.call("toggle_lighting")
 		_: return
 	get_viewport().set_input_as_handled()

@@ -90,5 +90,18 @@ test('CITY REIGN original Godot vehicle studio paints real 3D and reacts to body
   })
   expect(turn.meanMaxRgbDelta,'interactive real 3D turntable must move rendered car pixels').toBeGreaterThan(0.65)
   expect(turn.changedFraction).toBeGreaterThan(0.018)
+  // A different source-native LED/studio lighting state must alter actual
+  // car pixels, not just a 2D text caption or an unstored UI setting.
+  await page.keyboard.press('l')
+  await page.waitForTimeout(1400)
+  const night=(await captureAnimatedWebGLViewport(page)).png
+  const lighting=actualPixelMovement(rotated,night)
+  await info.attach('original-godot-car-night-studio.png',{body:night,contentType:'image/png'})
+  await info.attach('original-godot-real-lighting-evidence.json',{
+    body:Buffer.from(JSON.stringify({lighting,source:'actual standalone Godot World3D lights'},null,2)),
+    contentType:'application/json'
+  })
+  expect(lighting.meanMaxRgbDelta,'night mode must actually change car and stage pixels').toBeGreaterThan(0.45)
+  expect(lighting.changedFraction).toBeGreaterThan(0.017)
   expect(errors).toEqual([])
 })
