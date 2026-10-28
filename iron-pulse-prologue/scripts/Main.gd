@@ -1698,8 +1698,7 @@ func _announce(key: String) -> void:
     if audio_director == null or not started:
         return
     match key:
-        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired",
-        "suit_critical", "suit_failure", "field_enter_reactor", "field_enter_service", "field_enter_evacuation":
+        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired", "suit_critical", "suit_failure", "field_enter_reactor", "field_enter_service", "field_enter_evacuation":
             audio_director.cue("surge")
         "crew_evacuated":
             audio_director.cue("victory")
