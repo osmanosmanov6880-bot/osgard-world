@@ -147,6 +147,7 @@
     locale = locale==="ru" ? "en" : "ru";
     try { localStorage.setItem("iron-pulse-world-locale",locale); } catch (_) { /* no forced cookies */ }
     sync();
+    document.dispatchEvent(new Event("iron-pulse:locale"));
   });
   // Optional PWA install affordance only appears when host/browser supplies a
   // real beforeinstallprompt; no inert "Install" control for unsupported users.
