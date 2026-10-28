@@ -450,3 +450,88 @@ native CI also requires existing R47 walking-predictor regression.
    significantly below the Matrix/GTA/Forza benchmark.
 6. Keep PR #627 draft; **do not merge or deploy to master** until exact-head
    native, WebGL, performance, art and player signoffs all pass.
+
+
+---
+
+## B63–B66 — a real paid community park, resident journeys, source 3D inspection
+
+**Physical world + actual behavior on the original playable CITY REIGN Godot scene.**
+Previously a finished community park created an original procedural project landmark
+but did not substantially alter daily walking destinations. Now all additions
+remain downstream of the genuine saved `GameState.projects_done` transaction.
+
+### B63 · Residents actually reroute after the purchased park
+
+- `city_reign_park_routine.gd` reads the same project ID and actual
+  `ProjectLandmarks.POSITIONS["community_park"] = Vector3(164,0,-91)`.
+- At genuine 17:00–21:00 leisure time, at most **9 of the existing 34
+  pedestrian agents** choose deterministic safe-sidewalk destinations in the
+  completed park. Unfunded and under-construction projects attract none.
+- `pedestrian_agent.gd` still calls the original `ROUTER.find_route()`,
+  `TRAJECTORY.should_yield()`, `R47_CROSSING.clearance()` indirectly through
+  source traffic agents, and reuses its existing walking meshes/gait. No
+  teleporting, fake crowd, replacement road graph, new physics bodies or
+  daily player-reward grant. It now detects change of **destination**, not
+  only change of daily activity, so a newly opened park can take effect
+  while a resident is already spending leisure time outside.
+
+### B64 · Completed-only original 3D street furniture
+
+- `city_reign_park_furniture.gd` draws **six original wood/steel benches**
+  and **eight real shared-mesh park lanterns**, all aligned with the real
+  residential block next to the existing project park sculpture. Each family
+  uses ONE bounded MultiMesh draw group. No colliders/shadows/state writes.
+- The existing `WorldBuilder` owns park art creation, saved-state refresh,
+  visual quality and powered day/night updates. There is no standalone fake
+  viewport. Essential benches persist on LOW; luxury lamps are omitted at
+  LOW. Only a completed paid park turns public furniture on. Blackout makes
+  its emissive lamps dark.
+
+### B65 · Player F: read-only on-foot inspection at REAL built sites
+
+- `city_reign_live_site_inspection.gd` checks player location against the
+  actual completed roadside crossings, original stone budget pavilion, or
+  commissioned public-park bench entrance. Vehicle/interior, distant and
+  unfunded encounters are ignored.
+- The shipping `main.gd` calls this from its real `_interact` F action only
+  **after** priority services, active deliveries, city decisions,
+  exploration and property purchases. The action displays the real
+  project title and the exact saved treasury/trust, 4 paid crossings/NPC
+  speed, or park time-of-day interpretation, localized RU/EN/ZH.
+- This F inspection **cannot** grant credits, missions, XP, teleport, build
+  projects or write a new save field. It never calls `GameState.start_initiative`.
+
+### B66 · Actual native + WebGL QA, plus original crisis handling
+
+- `v130_city_reign_community_park_live.gd`: genuine resource debit,
+  authentic **3 construction turns**, real city incident **resolved through
+  `GameState.resolve_incident(true)` with actual relief spending**, installed
+  3D benches/lanterns, actual resident A* route, 8:00 vs 18:00 behavior,
+  powered/blackout material, durable save/load and nonduplicating refresh.
+- `v131_city_reign_real_site_inspection.gd`: source player F proximity,
+  after-delivery-only status, 3-language actual finance, vehicle exclusion,
+  traffic safety, and unchanged saved campaign.
+- Original R123 walking gait and R47 predictive crossing tests remain in the
+  same native workflow. Stage-specific tests explicitly **reject fake
+  immediate construction** and fake resumption of an unresolved crisis.
+- Original Godot WebGL test-only camera now offers a third real scene
+  `show_park()`, finances real `community_park` for 3 valid city turns,
+  and captures original WebGL PNG BEFORE and AFTER; both committed core
+  `main.tscn` and all published build routes remain unchanged.
+- Original source-locked SHA browser evidence now checks crosswalk, budget
+  pavilion and park as 3 meaningfully different municipal developments.
+
+**Status:** B57–B62 exact source previously passed both native and Chromium
+source QA on commit `7ec5e04c`. New B63–B66 commits require their OWN
+exact-source Godot + browser verdict. The pull request stays DRAFT until
+the latest source passes them, hardware/performance, independent gameplay
+and professional reference-art gates.
+
+### Non-negotiable 8K/AAA honesty
+
+The player-visible game is still a procedural Godot prototype, not a
+photogrammetric 8K world or commercial GTA VI/Forza quality. Actual premium
+cars/city assets, character animation, sound/motion capture, cinematic
+lighting, gameplay pacing and real consumer GPU/phone benchmarks remain
+unfulfilled. No publication or release claim until those measurable gates.
