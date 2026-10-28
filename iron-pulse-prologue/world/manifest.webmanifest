@@ -1,0 +1,20 @@
+{
+  "name": "IRON PULSE WORLD",
+  "short_name": "IRON PULSE",
+  "description": "Original Godot 3D reactor-emergency puzzle campaign. Software preview.",
+  "lang": "en",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090d11",
+  "theme_color": "#090d11",
+  "icons": [
+    {
+      "src": "./assets/iron-pulse-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
