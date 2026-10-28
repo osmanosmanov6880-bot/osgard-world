@@ -7,7 +7,7 @@ test('V58 private cinema library: save, export, clear, restore and cross-tab per
  await page.goto('/osa-cinema/studio?lang=en')
  await expect(page.locator('main.osa-studio')).toBeVisible()
  await page.getByRole('button',{name:'Add to favorites'}).first().click()
- const libraryLink=page.locator('.osa-studio-header a[href^="/osa-cinema/studio/library"]')
+ const libraryLink=page.locator('.osa-studio-hero-cta a[href^="/osa-cinema/studio/library"]')
  await libraryLink.click()
  const library=page.locator('main.osa-library-page')
  await expect(library).toBeVisible()
