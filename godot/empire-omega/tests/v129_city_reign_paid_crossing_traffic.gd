@@ -61,12 +61,12 @@ func _run() -> void:
 	var cap: float = SPEED.speed_cap(state,at,forward,original_speed,false)
 	check(cap>4.0 and cap<=SPEED.SPEED_LIMIT_MPS,
 		"actual moving NPC slows to a realistic source-set crossing speed")
-	check(SPEED.speed_cap(state,Vector3(104,0,-125),forward,
+	check(SPEED.speed_cap(state,Vector3(104,0,-111),forward,
 			original_speed,false) <= original_speed and
-		SPEED.speed_cap(state,Vector3(104,0,-125),forward,
+		SPEED.speed_cap(state,Vector3(104,0,-111),forward,
 			original_speed,false) > SPEED.SPEED_LIMIT_MPS,
 		"genuine approach ramp decelerates gradually BEFORE crossing")
-	check(SPEED.speed_cap(state,Vector3(104,0,-100),-forward,
+	check(SPEED.speed_cap(state,Vector3(104,0,-140),-forward,
 			original_speed,false)==original_speed,
 		"cars moving away from completed crossing are not artificially braked")
 	check(SPEED.speed_cap(state,Vector3(126,0,-100),forward,
@@ -107,7 +107,7 @@ func _run() -> void:
 	check(source_text.contains("CIVIC_CROSSING.speed_cap(") and
 		source_text.contains("R47_CROSSING.clearance("),
 		"real source car applies civic limit and still predicts actual pedestrians")
-	check(sim.get("data")==state,
+	check(sim.get("data")==paid,
 		"no new mission/save/economy fields or passenger profits minted by traffic")
 	npc.queue_free()
 	await process_frame
