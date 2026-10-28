@@ -658,6 +658,8 @@ func _on_action(action: String) -> void:
             if stage_3d.field_operations != null:
                 stage_3d.field_operations.observe_phase(
                     stage_3d.spatial_mission.phase, after)
+                if stage_3d.field_feedback != null:
+                    stage_3d.field_feedback.refresh_from_original_equipment()
             _refresh_mission_ui(after)
     checkpoint.note("action", action, self)
     if sound_bus != null:
