@@ -191,6 +191,20 @@ jobs:
           timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_6_reactive_containment.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           grep -q '^IRON PULSE V8.6 REACTIVE CONTAINMENT PASS:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"; then exit 1; fi
+      - name: V9 systemic 3-stage hazard physics, irreversible field choices and validated save migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v9_containment_rules.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-rules.log"
+          grep -q '^IRON PULSE V9 SPATIAL CONTAINMENT PASS:' "$RUNNER_TEMP/iron-pulse-v9-rules.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v9-rules.log"; then exit 1; fi
+      - name: V9 real playable 3D hazard corridors, controller/keyboard input and atomic legacy save QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v9_physical_campaign.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-scene.log"
+          grep -q '^IRON PULSE V9 PHYSICAL CAMPAIGN PASS:' "$RUNNER_TEMP/iron-pulse-v9-scene.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v9-scene.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
