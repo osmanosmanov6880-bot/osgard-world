@@ -29,3 +29,8 @@ At actual 22:00, ONLY physically earned upper-front material bars emit source-co
 Separate exact-SHA Godot import, real WebGL Chromium and human visual review are still required before staging integration. This is an original low-to-medium-poly cinematic art pass, NOT licensed AAA photorealism. Real-world buyer-approved textured hero architecture, high-resolution PBR/UVs, true animations, actual measured desktop+phone performance, 30-minute independent playtests and visual-art direction approval are NOT done.
 
 **Release:** unpublished R90 ONLY. No master, public R87, live SSH or paid store publish.
+
+## A26 actual original street-captured WebGL pixel proof
+Test-only `city_reign_real_hero_building_pixel_fixture.gd/.tscn` instantiates the **original full `WorldBuilder`**, with original 25m City Hall physical 3D landmark and actual source-authored hero facade. Camera sits on the original south street, not in a recreated art studio. Chromium exports the same Godot WASM and tests raw RGB pixels before and AFTER the REAL original `GameState.build("council")` budget-paid construction action. It then toggles LOW graphics and requires the original source-drawn architectural detail actually disappear. No fake SVG/HTML screenshot, unearned reward or production entrypoint change.
+
+Live commercial acceptance is still gated on independent art review, production assets and physical target-device frame measurements.

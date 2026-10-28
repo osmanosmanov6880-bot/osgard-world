@@ -108,3 +108,96 @@ jobs:
           path: city-reign-native-landmark-evidence/
           if-no-files-found: warn
           retention-days: 14
+
+  real-original-city-civic-architecture-pixels:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Source head identity and local-only test
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          mkdir -p city-reign-hero-browser-evidence
+          printf '%s\n' "$SOURCE_SHA" > city-reign-hero-browser-evidence/source-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Strict actual original city source import then private TEST-ONLY scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-hero-browser-evidence/real-game-import.log
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('godot/empire-omega/project.godot')
+          s=p.read_text()
+          old='run/main_scene="res://scenes/main.tscn"'
+          assert s.count(old)==1,'No unreviewed source scene replacement'
+          p.write_text(s.replace(old,
+            'run/main_scene="res://tests/city_reign_real_hero_building_pixel_fixture.tscn"'))
+          PY
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --import \
+            | tee city-reign-hero-browser-evidence/ci-visual-import.log
+          godot --headless --path godot/empire-omega --export-release Web \
+            "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install original Chromium software Mesa
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Serve true 3D city source ONLY on private loopback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4176 --bind 127.0.0.1 \
+            --directory godot/empire-omega/.build-web \
+            > /tmp/city-reign-hero-original-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4176/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/city-reign-hero-original-http.log
+          exit 1
+      - name: Demand actual original city screenshot change after REAL PAID budget build
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' npx playwright test \
+            --config playwright.city-reign-landmarks.config.mjs \
+            --workers=1 --retries=0
+      - name: Upload raw original Godot 3D paid-investment screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-hero-actual-3d-city-${{ github.run_id }}
+          path: |
+            city-reign-hero-browser-evidence/
+            city-reign-hero-visual-report/
+            city-reign-hero-visual-results/
+          if-no-files-found: warn
+          retention-days: 14
