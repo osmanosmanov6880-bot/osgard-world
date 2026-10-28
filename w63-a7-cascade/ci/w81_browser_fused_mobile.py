@@ -246,6 +246,9 @@ def run(export, evidence, sha):
                 "w81-06-844x390-genuine-landscape-world-centered-controls.png")
             require(Image.open(io.BytesIO(landscape)).size==(844,390),
                     "Real 844x390 original WebGL framebuffer, not fake screen")
+            require(wide["w80_true_native_menu"][3]>=43 and
+                    wide["w80_true_native_language"][3]>=43,
+                    "Genuine in-game MENU/RU-EN targets must be >=44px-class touch controls")
             mx,my=center(wide["w80_true_native_menu"])
             page.mouse.click(mx,my)
             wait_state(page,{

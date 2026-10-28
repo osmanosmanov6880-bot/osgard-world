@@ -267,6 +267,11 @@ func _ready() -> void:
     w80_full_bleed = A7FullBleedViewport.new()
     add_child(w80_full_bleed)
     w80_full_bleed.build(stage_shell)
+    # W81 real touch accessibility: the W80 native MENU/RU-EN had only a
+    # 37px button in a 40px bar. Enlarge the actual Godot targets without
+    # altering W80 fullscreen class or original physics/mission authority.
+    w80_full_bleed.exit_button.custom_minimum_size.y = 44.0
+    w80_full_bleed.language_button.custom_minimum_size.y = 44.0
     w80_full_bleed.exit_requested.connect(_w76_toggle_immersive)
     w80_full_bleed.language_requested.connect(_toggle_locale)
     sound_bus = A7ProceduralAudio.new()
