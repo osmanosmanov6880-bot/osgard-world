@@ -52,6 +52,21 @@ const COPY := {
         "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
         "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
         "relay_budget": "ЛИМИТ: доступны только две станции спасения.",
+        "field_reactor": "ГЕРМОСТВОРКА / РЕАКТОР", "field_service": "ГЕРМОСТВОРКА / СЕРВИС",
+        "field_evacuation": "ГЕРМОСТВОРКА / ШЛЮЗ",
+        "field_hint": "{name}  {distance} м / [E] ИЗОЛИРОВАТЬ",
+        "field_closed": "{name} / КОНТУР ЗАКРЫТ",
+        "field_budget": "Доступны лишь две защитные створки.",
+        "field_seal_reactor": "РЕАКТОРНЫЙ СЕКТОР ЗАЩИЩЁН. Потрачено 7 с и 6% кислорода.",
+        "field_seal_service": "ТЕХНИЧЕСКИЙ СЕКТОР ЗАЩИЩЁН. Потрачено 7 с и 6% кислорода.",
+        "field_seal_evacuation": "ШЛЮЗ ЗАЩИЩЁН. Потрачено 7 с и 6% кислорода.",
+        "suit_critical": "КРИТИЧЕСКИЙ ИЗНОС КОСТЮМА. Покиньте опасную область!",
+        "suit_failure": "КОСТЮМ РАЗРУШЕН. ОПЕРАТОР ПОТЕРЯН.",
+        "field_enter_reactor": "ОПАСНО: РЕАКТОРНАЯ ЗОНА.",
+        "field_enter_service": "ОПАСНО: ТЕХНИЧЕСКИЙ СЕКТОР.",
+        "field_enter_evacuation": "ОПАСНО: ЭВАКУАЦИОННЫЙ ШЛЮЗ.",
+        "suit_readout": "КОСТЮМ  {value}%    /    СТВОРКИ {used}/2",
+        "suit_final": "Костюм: {value}%  /  Изолировано: {used}/2",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -119,6 +134,21 @@ const COPY := {
         "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
         "relay_uplink": "UPLINK: additional evacuation time secured.",
         "relay_budget": "CAPACITY LIMIT: only two rescue stations may run.",
+        "field_reactor": "REACTOR SAFETY SEAL", "field_service": "SERVICE SAFETY SEAL",
+        "field_evacuation": "EVACUATION SAFETY SEAL",
+        "field_hint": "{name}  {distance} m / [E] ISOLATE",
+        "field_closed": "{name} / CIRCUIT LOCKED",
+        "field_budget": "Only two emergency field seals can be authorized.",
+        "field_seal_reactor": "REACTOR CORRIDOR ISOLATED. Cost: 7s and 6% oxygen.",
+        "field_seal_service": "SERVICE SPINE ISOLATED. Cost: 7s and 6% oxygen.",
+        "field_seal_evacuation": "EVACUATION LOCK ISOLATED. Cost: 7s and 6% oxygen.",
+        "suit_critical": "SUIT INTEGRITY CRITICAL. EXIT THE HAZARD ZONE!",
+        "suit_failure": "SUIT COLLAPSE. OPERATOR SIGNAL LOST.",
+        "field_enter_reactor": "WARNING: REACTOR EXPOSURE ZONE.",
+        "field_enter_service": "WARNING: SERVICE EXPOSURE ZONE.",
+        "field_enter_evacuation": "WARNING: EVACUATION HAZARD ZONE.",
+        "suit_readout": "SUIT  {value}%    /    SEALS {used}/2",
+        "suit_final": "Suit: {value}%  /  Isolated: {used}/2",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -159,6 +189,7 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var containment_run: IPContainmentRun
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -192,6 +223,7 @@ var warning_veil: ColorRect
 var objective_label: Label
 var telemetry_label: Label
 var allocation_label: Label
+var suit_label: Label
 var feedback_label: Label
 var interaction_label: Label
 var footer_label: Label
@@ -327,6 +359,7 @@ func _publish_web_state() -> void:
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["containment_fx"] = containment_fx.readout() if containment_fx != null else {}
+    state["containment_run"] = containment_run.readout() if containment_run != null else {}
     # Read-only native material/geometry facts; Chromium QA never invents art.
     var actual_core: SphereMesh = reactor_core.mesh as SphereMesh
     var support_count: int = 0
@@ -516,6 +549,8 @@ func _make_complex() -> void:
     add_child(reactor_atrium)
     containment_fx = IPContainmentFX.new()
     add_child(containment_fx)
+    containment_run = IPContainmentRun.new()
+    add_child(containment_run)
     if reactor_core != null and reactor_atrium.core_plasma_material != null:
         reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
@@ -746,6 +781,7 @@ func _make_hud() -> void:
     side.add_child(metrics)
     telemetry_label = _label(metrics,"",15,WHITE)
     allocation_label = _label(metrics,"",16,CYAN)
+    suit_label = _label(metrics,"",15,WHITE)
     vitals_panel = _panel(hud_root,Rect2(-365,17,-17,276),Rect2(1,0,1,0),Color(0.014,0.029,0.048,0.92))
     var vitals := VBoxContainer.new()
     vitals.add_theme_constant_override("separation",4)
@@ -992,6 +1028,8 @@ func _layout_hud() -> void:
             reactor_atrium.set_quality("eco")
         if containment_fx != null:
             containment_fx.set_quality("eco")
+        if containment_run != null:
+            containment_run.set_quality("eco")
     # Compact non-overlapping card hierarchy; the center is reserved for 3D.
     header_panel.offset_left = 17.0 if not narrow else 12.0
     header_panel.offset_right = minf(544.0,width-16.0)
@@ -1013,6 +1051,7 @@ func _layout_hud() -> void:
     guidance_label.add_theme_font_size_override("font_size",11 if narrow else 12)
     telemetry_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
+    suit_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
@@ -1131,7 +1170,8 @@ func _checkpoint_payload() -> Dictionary:
         "quality":quality_mode,
         "reduced_motion":reduced_motion,
         "player_position":[player.position.x,player.position.y,player.position.z],
-        "visited_sectors":visited_sectors.duplicate()
+        "visited_sectors":visited_sectors.duplicate(),
+        "field_state":containment_run.checkpoint()
     }
 
 func _save_checkpoint() -> bool:
@@ -1198,6 +1238,7 @@ func _continue_checkpoint() -> bool:
     world_sectors.set_quality(quality_mode)
     reactor_atrium.set_quality(quality_mode)
     containment_fx.set_quality(quality_mode)
+    containment_run.set_quality(quality_mode)
     exit_gate.position.y = 6.2 if session.override_set else 2.6
     for index in range(legacy_lamps.size()):
         legacy_lamps[index].visible = quality_mode == "hero" or index % 3 == 0
@@ -1234,6 +1275,7 @@ func _select_scenario(next_scenario: String) -> void:
     story.reset(next_scenario)
     radio_ttl = 0.0
     notice_time = 0.0
+    containment_run.reset()
     _update_scenario_picker()
     _refresh_hud()
 
@@ -1241,6 +1283,7 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    containment_run.reset()
     cinematic_view = false
     _apply_cinematic_view()
     story.reset(selected_scenario)
@@ -1259,6 +1302,7 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    containment_run.reset()
     cinematic_view = false
     _apply_cinematic_view()
     session.reset(selected_scenario)
@@ -1379,6 +1423,7 @@ func _input(event: InputEvent) -> void:
             world_sectors.set_quality(quality_mode)
             reactor_atrium.set_quality(quality_mode)
             containment_fx.set_quality(quality_mode)
+            containment_run.set_quality(quality_mode)
             for i in range(legacy_lamps.size()):
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
