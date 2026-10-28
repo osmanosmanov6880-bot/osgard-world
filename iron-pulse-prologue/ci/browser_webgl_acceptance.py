@@ -283,6 +283,46 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "source":"actual_godot_webgl_chromium",
                             "not_a_render_mockup":True
                         }
+                        # V8: a cinematic frame must come from actual real-input
+                        # Godot gameplay with the HUD removed through the player's
+                        # C key, not from a generated render or altered screenshot.
+                        if not mobile:
+                            page.keyboard.press("c")
+                            deadline=time.monotonic()+20
+                            clean={}
+                            while time.monotonic()<deadline:
+                                clean=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if clean.get("cinematic_view") is True:
+                                    break
+                                page.wait_for_timeout(150)
+                            assert clean.get("cinematic_view") is True and clean.get("cinematic_hud_hidden") is True, (
+                                "C did not genuinely remove the in-game HUD",clean)
+                            # Move real pointer to the right to inspect the
+                            # observation aperture from the real first-person camera.
+                            page.mouse.move(680,380)
+                            page.mouse.move(905,380,steps=6)
+                            page.wait_for_timeout(900)
+                            pure_image=page.screenshot(timeout=60000,animations="disabled")
+                            pure_stats=frame_metrics(pure_image)
+                            assert pure_stats["color_bins"] >= 12 and pure_stats["stddev"] > 7, pure_stats
+                            (output/"cinematic-reactor-desktop.png").write_bytes(pure_image)
+                            report["v8_cinematic_camera_proof"]={
+                                **pure_stats,
+                                "image":"cinematic-reactor-desktop.png",
+                                "input":"actual keyboard C + first-person mouse movement",
+                                "source":"actual_godot_webgl_chromium",
+                                "hdr_overlays_hidden":True
+                            }
+                            page.keyboard.press("c")
+                            deadline=time.monotonic()+20
+                            restored={}
+                            while time.monotonic()<deadline:
+                                restored=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if restored.get("cinematic_view") is False:
+                                    break
+                                page.wait_for_timeout(150)
+                            assert restored.get("cinematic_view") is False and restored["started"] is True, (
+                                "C did not restore the working real HUD",restored)
                         # Verify both opening and closing the actual journal.
                         if mobile:
                             journal_rect = state["touch_button_rects"]["J / LOG"]
