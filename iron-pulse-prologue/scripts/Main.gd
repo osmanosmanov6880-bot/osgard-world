@@ -20,6 +20,10 @@ const COPY := {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
         "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
+        "campaign_on":"КАМПАНИЯ / 3 ГЛАВЫ  ✓", "campaign_off":"КАМПАНИЯ / 3 ГЛАВЫ",
+        "campaign_new":"НАЧАТЬ КАМПАНИЮ ЗАНОВО",
+        "campaign_start":"НАЧАТЬ ГЛАВУ", "campaign_next":"СЛЕДУЮЩАЯ ГЛАВА",
+        "campaign_replay":"ПРОЙТИ КАМПАНИЮ ЗАНОВО",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
         "brief_thermal": "ТЕПЛОВОЙ КАСКАД: опасный перегрев и повторные импульсы. E — долгий ремонт, Q — быстрый сброс ценой кислорода и здоровья.",
@@ -87,6 +91,10 @@ const COPY := {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
         "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
+        "campaign_on":"3-CHAPTER CAMPAIGN  ✓", "campaign_off":"3-CHAPTER CAMPAIGN",
+        "campaign_new":"REPLAY FULL CAMPAIGN",
+        "campaign_start":"BEGIN CHAPTER", "campaign_next":"NEXT CHAPTER",
+        "campaign_replay":"REPLAY FULL CAMPAIGN",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
         "brief_thermal": "THERMAL CASCADE: dangerous heat and recurring pulses. E — careful 15s repair; Q — rapid purge with resource loss.",
@@ -156,6 +164,9 @@ var session: IPCrisisEngine = IPCrisisEngine.new()
 var story: IPStoryDirector = IPStoryDirector.new()
 var checkpoint_store: IPCheckpointStore = IPCheckpointStore.new()
 var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
+var campaign_progress_path: String = IPCampaignDirector.PROGRESS_PATH
+var campaign: IPCampaignDirector = IPCampaignDirector.new()
+var campaign_enabled: bool = false
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
@@ -213,6 +224,7 @@ var journal_close_button: Button
 var radio_ttl: float = 0.0
 var checkpoint_clock: float = 0.0
 var scenario_buttons: Dictionary = {}
+var campaign_button: Button
 var scenario_brief: Label
 var selected_scenario: String = "blackout"
 var active_sector: String = "reactor"
@@ -247,6 +259,9 @@ var _browser_css_size: Vector2i = Vector2i.ZERO
 var _last_web_resize_check: float = -99.0
 
 func _ready() -> void:
+    var recorded: Dictionary = checkpoint_store.load_checkpoint(campaign_progress_path)
+    if not recorded.is_empty():
+        campaign.restore(recorded)
     session.reset()
     story.reset(session.scenario_id)
     _make_environment()
@@ -304,6 +319,11 @@ func _publish_web_state() -> void:
         return
     var state: Dictionary = session.diagnostic_snapshot()
     state["scene"] = "IRON_PULSE_BLACKOUT"
+    state["campaign_enabled"] = campaign_enabled
+    state["campaign"] = campaign.readout()
+    if campaign_button != null:
+        state["campaign_button_rect"] = _hud_rect(campaign_button)
+        state["campaign_button_visible"] = campaign_button.visible
     state["started"] = started
     state["paused"] = paused
     state["locale"] = locale
@@ -823,6 +843,12 @@ func _make_overlays() -> void:
         choice.pressed.connect(_select_scenario.bind(scenario_key))
         scenario_row.add_child(choice)
         scenario_buttons[scenario_key] = choice
+    campaign_button = Button.new()
+    campaign_button.name = "ThreeActCampaignSwitch"
+    campaign_button.custom_minimum_size = Vector2(0,42)
+    campaign_button.add_theme_font_size_override("font_size",15)
+    campaign_button.pressed.connect(_toggle_campaign_mode)
+    start_box.add_child(campaign_button)
     scenario_brief = _label(start_box,"",12,AMBER)
     scenario_brief.custom_minimum_size = Vector2(0,44)
     var intro_scroll := ScrollContainer.new()
