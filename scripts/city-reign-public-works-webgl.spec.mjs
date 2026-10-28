@@ -68,9 +68,9 @@ test('Original paid civic choices become genuinely distinct 3D city infrastructu
     'Real debited, built, visible zebra crossings MUST change WebGL city pixels')
     .toBeGreaterThan(0.002)
   await page.keyboard.press('4')
-  const powered=await frame('03-original-earned-crossings-22h-powered')
+  const powered=await frame('03-original-earned-crossings-22h-powered',false)
   await page.keyboard.press('5')
-  const powerless=await frame('04-original-earned-crossings-night-blackout')
+  const powerless=await frame('04-original-earned-crossings-night-blackout',false)
   const powerDiff=pixelsChanged(powered,powerless)
   // Powered stud difference can be microscopic on SwiftShader; source
   // native asserts exact emissive material state and forbids fake lights.
