@@ -464,9 +464,9 @@ func _count_obstructing_corridor_neon() -> int:
             var beam: MeshInstance3D = node as MeshInstance3D
             if beam.mesh is BoxMesh:
                 var dims: Vector3 = (beam.mesh as BoxMesh).size
-                if dims.x >= 11.5 and absf(beam.position.y-5.86)<0.02 and
+                if (dims.x >= 11.5 and absf(beam.position.y-5.86)<0.02 and
                         beam.position.z > IPReactorAtrium.OPENING_Z_MIN and
-                        beam.position.z < IPReactorAtrium.OPENING_Z_MAX:
+                        beam.position.z < IPReactorAtrium.OPENING_Z_MAX):
                     blocked += 1
     return blocked
 
