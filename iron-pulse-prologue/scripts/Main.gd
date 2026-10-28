@@ -1547,6 +1547,18 @@ func _process(delta: float) -> void:
         reduced_motion,session.thermal_pulses,session.thermal_shield,
         started and not paused and not session.finished())
     if started and not paused and not session.finished():
+        var field_event: String = containment_run.step(delta,player.global_position,session,reduced_motion)
+        if field_event != "":
+            if field_event == "suit_failure":
+                if session.fail_suit_integrity():
+                    previous_event = session.last_event
+                    _story_event(session.last_event)
+                    _announce(session.last_event)
+                    _show_end()
+            else:
+                _story_event(field_event)
+                _announce(field_event)
+    if started and not paused and not session.finished():
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
             active_sector = sector
@@ -1667,13 +1679,14 @@ func _announce(key: String) -> void:
     if audio_director == null or not started:
         return
     match key:
-        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired":
+        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired",
+        "suit_critical", "suit_failure", "field_enter_reactor", "field_enter_service", "field_enter_evacuation":
             audio_director.cue("surge")
         "crew_evacuated":
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink", "field_seal_reactor", "field_seal_service", "field_seal_evacuation":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -1695,6 +1708,9 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    end_stats.text += "\n" + _copy("suit_final").format({
+        "value":int(ceilf(containment_run.suit_integrity)),
+        "used":containment_run.seals.size()})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1722,6 +1738,11 @@ func _refresh_hud() -> void:
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
         _copy("rescue_count").format({"used":session.relays_activated.size()})]
+    suit_label.text = _copy("suit_readout").format({
+        "value":int(ceilf(containment_run.suit_integrity)),
+        "used":containment_run.seals.size()})
+    suit_label.add_theme_color_override("font_color",
+        RED if containment_run.suit_integrity < 30.0 else AMBER if containment_run.suit_integrity < 60.0 else WHITE)
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
