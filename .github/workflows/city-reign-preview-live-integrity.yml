@@ -1,0 +1,66 @@
+name: CITY REIGN public preview - pinned WebGL SHA after each OSgard frontend release
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/city-reign-preview-pinned-release.json'
+      - '.github/workflows/city-reign-preview-live-integrity.yml'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['OSGARD frontend deploy']
+    types: [completed]
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-city-reign-preview-readonly-integrity
+  cancel-in-progress: true
+
+jobs:
+  verify-real-public-webgl-bytes-and-unchanged-omega:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          persist-credentials: false
+      - name: Source-locked checks for real CITY REIGN native WASM/PCK and original R87
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p city-reign-published-integrity
+          python3 scripts/omega-live-integrity.py --self-test
+          python3 - <<'PY'
+          import json,pathlib
+          path=pathlib.Path('scripts/city-reign-preview-pinned-release.json')
+          release=json.loads(path.read_text())
+          assert release['source_commit']=='a49d2b6b5e26c1c0125b4a5ea45900573bc382d4'
+          assert release['release_proof_run_id']==40748659428
+          assert release['release_channel']=='CITY_REIGN_PUBLIC_PREVIEW'
+          assert release['published_path']=='/games/city-reign-preview/'
+          assert len(release['files'])==7
+          assert all(len(digest)==64 for digest in release['files'].values())
+          PY
+          python3 scripts/omega-live-integrity.py \
+            --expected scripts/city-reign-preview-pinned-release.json \
+            --base https://osgard.world/games/city-reign-preview \
+            --nonce "post-frontend-${{ github.run_id }}" \
+            | tee city-reign-published-integrity/PUBLIC-CITY-REIGN-SHA.json
+          python3 scripts/omega-live-integrity.py \
+            --expected public/games/omega-3d-preview/release.json \
+            --base https://osgard.world/games/omega-3d-preview \
+            --nonce "untouched-r87-${{ github.run_id }}" \
+            | tee city-reign-published-integrity/PUBLIC-ORIGINAL-OMEGA-R87-SHA.json
+      - name: Keep independent checksum evidence after every frontend deployment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-public-post-frontend-immutable-qa-${{ github.run_id }}
+          path: city-reign-published-integrity/
+          if-no-files-found: warn
+          retention-days: 21
