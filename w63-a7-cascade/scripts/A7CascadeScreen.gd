@@ -77,6 +77,14 @@ const RU := {
     "field_sync_c": "O  /  ИМПУЛЬС 3",
     "field_far": "ПОДОЙДИТЕ К АКТИВНОМУ ПУЛЬТУ И ВКЛЮЧИТЕ РЕЖИМ ОПЕРАТОРА (P).",
     "field_gate": "ЗАВЕРШИТЕ НАСТРОЙКУ ПУЛЬТА ПЕРЕД ОСМОТРОМ (E).",
+    "world_use": "G / ПРИМЕНИТЬ ИНСТРУМЕНТ",
+    "world_aim": "НАВЕДИТЕ ПРИЦЕЛ НА НАСТОЯЩИЙ УЗЕЛ",
+    "save_game": "СОХРАНИТЬ СМЕНУ / F5",
+    "load_game": "ВОССТАНОВИТЬ / F9",
+    "save_done": "СМЕНА СОХРАНЕНА ЛОКАЛЬНО",
+    "load_done": "СМЕНА ВОССТАНОВЛЕНА ПО ПРОВЕРЕННЫМ СОБЫТИЯМ",
+    "save_fail": "НЕ УДАЛОСЬ СОХРАНИТЬ",
+    "load_fail": "ФАЙЛ ПОВРЕЖДЕН ИЛИ СОБЫТИЯ НЕ ПРОХОДЯТ ПРОВЕРКУ",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
@@ -141,10 +149,22 @@ const EN := {
     "field_sync_c": "O  /  PULSE 3",
     "field_far": "MOVE NEAR THE ACTIVE CONSOLE AND ENTER OPERATOR MODE (P).",
     "field_gate": "COMPLETE THE STATION MECHANIC BEFORE INSPECTION (E).",
+    "world_use": "G / USE WORLD TOOL",
+    "world_aim": "AIM DIRECTLY AT THE REAL MACHINE",
+    "save_game": "SAVE SHIFT / F5",
+    "load_game": "RESTORE SESSION / F9",
+    "save_done": "SHIFT SAVED LOCALLY",
+    "load_done": "SESSION RESTORED FROM VALIDATED REAL ACTIONS",
+    "save_fail": "LOCAL SAVE FAILED",
+    "load_fail": "CORRUPT FILE OR INVALID SESSION JOURNAL",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
 var model: A7CascadeCore = A7CascadeCore.new()
+var checkpoint: A7SessionCheckpoint = A7SessionCheckpoint.new()
+var save_button: Button
+var load_button: Button
+var checkpoint_status_label: Label
 var locale: String = "ru"
 var brand_label: Label
 var subtitle: Label
@@ -193,6 +213,10 @@ var field_valve_controls: HFlowContainer
 var field_relay_controls: HFlowContainer
 var field_sync_controls: HFlowContainer
 var field_buttons: Dictionary = {}
+var world_use_button: Button
+var world_reticle: Label
+var world_aim_hint: Label
+var world_aim_elapsed: float = 0.0
 var field_focused_devices: Dictionary = {}
 var field_focus_events: int = 0
 var mission_title: Label
@@ -343,6 +367,38 @@ func _build() -> void:
     visual_container.stretch_shrink = 1
     visual_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
     stage_shell.add_child(visual_container)
+    # Actual Godot controls on top of the live SubViewport, not a 2D proxy
+    # for machine-selection. The hit comes exclusively from a physics ray.
+    world_reticle = Label.new()
+    world_reticle.name = "W73RealGodot3DCrosshair"
+    world_reticle.text = "+"
+    world_reticle.add_theme_font_size_override("font_size",26)
+    world_reticle.add_theme_color_override("font_color", MINT)
+    world_reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    world_reticle.anchor_left = 0.5
+    world_reticle.anchor_right = 0.5
+    world_reticle.anchor_top = 0.5
+    world_reticle.anchor_bottom = 0.5
+    world_reticle.offset_left = -8
+    world_reticle.offset_right = 14
+    world_reticle.offset_top = -17
+    world_reticle.offset_bottom = 17
+    world_reticle.visible = false
+    stage_shell.add_child(world_reticle)
+    world_aim_hint = Label.new()
+    world_aim_hint.name = "W73SingleLowLoadNativeWorldRaycastHint"
+    world_aim_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    world_aim_hint.add_theme_font_size_override("font_size",13)
+    world_aim_hint.add_theme_color_override("font_color", GOLD)
+    world_aim_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    world_aim_hint.anchor_left = 0.08
+    world_aim_hint.anchor_right = 0.92
+    world_aim_hint.anchor_top = 1.0
+    world_aim_hint.anchor_bottom = 1.0
+    world_aim_hint.offset_top = -40
+    world_aim_hint.offset_bottom = -10
+    world_aim_hint.visible = false
+    stage_shell.add_child(world_aim_hint)
     sub_viewport = SubViewport.new()
     sub_viewport.name = "A7WorldRender"
     sub_viewport.own_world_3d = true
@@ -412,6 +468,10 @@ func _build() -> void:
         pilot_nudge_buttons[keycode] = button
     pilot_inspect_button = _button(pilot_rail, "", _pilot_inspect)
     pilot_inspect_button.custom_minimum_size = Vector2(148, 40)
+    world_use_button = _button(pilot_rail, "", _world_use)
+    world_use_button.name = "W73Actual3DAimedPhysicalTool"
+    world_use_button.custom_minimum_size = Vector2(230,40)
+    world_use_button.visible = false
     pilot_status_label = _label(cinema, "", 11, MINT)
     pilot_rail.visible = false
     pilot_status_label.visible = false
@@ -561,6 +621,11 @@ func _build() -> void:
     bottom.add_theme_constant_override("v_separation", 10)
     body.add_child(bottom)
     restart_button = _button(bottom, "", _restart)
+    save_button = _button(bottom, "", _save_checkpoint)
+    save_button.custom_minimum_size = Vector2(194,46)
+    load_button = _button(bottom, "", _load_checkpoint)
+    load_button.custom_minimum_size = Vector2(194,46)
+    checkpoint_status_label = _label(body, "", 11, GOLD)
     footnote = _label(body, "", 12, MUTED)
     _label(body, "A7 CASCADE / EXPERIMENTAL VERTICAL-SLICE MECHANIC / SOFTWARE-ONLY", 11, GOLD)
 
@@ -580,6 +645,7 @@ func _on_action(action: String) -> void:
                 stage_3d.field_operations.observe_phase(
                     stage_3d.spatial_mission.phase, after)
             _refresh_mission_ui(after)
+    checkpoint.note("action", action, self)
     if sound_bus != null:
         var cue: String = "action"
         if str(after["status"]) == "won":
@@ -593,6 +659,7 @@ func _on_action(action: String) -> void:
 
 func _restart() -> void:
     _previewed_action = ""
+    checkpoint.clear()
     field_focused_devices.clear()
     if stage_3d != null and stage_3d.spatial_mission != null:
         stage_3d.spatial_mission.reset()
@@ -602,6 +669,16 @@ func _restart() -> void:
     if stage_3d != null:
         stage_3d.recent_action = ""
         stage_3d.pulse = 0.0
+
+func _save_checkpoint() -> void:
+    var ok: bool = checkpoint.write_packet(self)
+    checkpoint_status_label.text = _t("save_done" if ok else "save_fail")
+    call_deferred("_publish_web_accessibility")
+
+func _load_checkpoint() -> void:
+    var ok: bool = checkpoint.restore_into(self)
+    checkpoint_status_label.text = _t("load_done" if ok else "load_fail")
+    call_deferred("_publish_web_accessibility")
 
 func _toggle_sound() -> void:
     if sound_bus != null:
@@ -650,7 +727,9 @@ func _start_spatial_mission() -> void:
     if stage_3d == null or stage_3d.spatial_mission == null:
         return
     var mission: A7SpatialMission = stage_3d.spatial_mission
-    if not mission.start(model.snapshot()):
+    if mission.start(model.snapshot()):
+        checkpoint.note("start_normal", 0, self)
+    else:
         mission_meta.text = _t("mission_wait")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -661,7 +740,9 @@ func _start_extended_mission() -> void:
         return
     var ok: bool = stage_3d.spatial_mission.start_extended(
         model.snapshot(), stage_3d.field_operations)
-    if not ok:
+    if ok:
+        checkpoint.note("start_extended", 0, self)
+    else:
         mission_meta.text = _t("mission_wait")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -683,7 +764,10 @@ func _focus_physical_field_device(key: String, target: Vector3) -> void:
     field_focused_devices[key] = true
     field_focus_events += 1
     var yaw: float = atan2(-delta_aim.x, -delta_aim.z)
-    var pitch: float = clampf(-atan2(delta_aim.y, flat),
+    # Godot Camera3D looks along LOCAL -Z; positive X pitch aims UP.
+    # Earlier W72 used -atan2 and wrongly pitched the real operator below
+    # machines higher than eye-level. W73 raycast regression reproduces it.
+    var pitch: float = clampf(atan2(delta_aim.y, flat),
         deg_to_rad(-60.0), deg_to_rad(60.0))
     if reduced_motion:
         actor.body.rotation.y = yaw
@@ -703,6 +787,7 @@ func _field_valve(direction: int) -> void:
         direction, stage_3d.first_person)
     if ok:
         _focus_physical_field_device("thermal", A7FieldOperations.CORE + Vector3(0, 1.0, 0))
+        checkpoint.note("valve", direction, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -714,6 +799,7 @@ func _field_relay(index: int) -> void:
         index, stage_3d.first_person)
     if ok:
         _focus_physical_field_device("relay", A7FieldOperations.RELAY + Vector3(0, 0.93, 0))
+        checkpoint.note("relay", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -725,6 +811,7 @@ func _field_sync(index: int) -> void:
         index, stage_3d.first_person, model.snapshot())
     if ok:
         _focus_physical_field_device("sync", A7FieldOperations.CORE + Vector3(1.02, 1.45, 0))
+        checkpoint.note("sync", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
@@ -785,6 +872,7 @@ func _pilot_inspect() -> void:
     pilot_status_label.text = _t("pilot_core") if target == "CORE" else (
         _t("pilot_relay") if target == "RELAY" else _t("pilot_far"))
     if stage_3d.spatial_mission != null and stage_3d.first_person != null:
+        var before_inspections: int = stage_3d.spatial_mission.real_inspections
         var did_advance: bool = stage_3d.spatial_mission.inspect_physical(
             target, model.snapshot(), stage_3d.first_person)
         if (not did_advance and target != ""
@@ -793,8 +881,55 @@ func _pilot_inspect() -> void:
         if stage_3d.field_operations != null:
             stage_3d.field_operations.observe_phase(
                 stage_3d.spatial_mission.phase, model.snapshot())
+        if (target in ["CORE","RELAY"] and stage_3d.spatial_mission.active
+                and (did_advance or
+                stage_3d.spatial_mission.real_inspections > before_inspections)):
+            checkpoint.note("inspect", target, self)
         _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
+
+func _world_use() -> void:
+    if (stage_3d == null or stage_3d.world_interaction == null
+            or stage_3d.spatial_mission == null
+            or not stage_3d.spatial_mission.extended_mode):
+        return
+    var result: Dictionary = stage_3d.world_interaction.interact(model.snapshot())
+    if result.is_empty():
+        return
+    var kind: String = str(result["kind"])
+    if kind == "valve":
+        _focus_physical_field_device("thermal",
+            A7FieldOperations.CORE + Vector3(0,1.0,0))
+    elif kind == "relay":
+        _focus_physical_field_device("relay",
+            A7FieldOperations.RELAY + Vector3(0,0.93,0))
+    elif kind == "sync":
+        _focus_physical_field_device("sync",
+            A7FieldOperations.CORE + Vector3(1.02,1.45,0))
+    checkpoint.note(kind if kind in ["relay","sync"] else "valve",
+        int(result["index"]) if kind in ["relay","sync"] else 1, self)
+    _refresh_mission_ui(model.snapshot())
+    _refresh_world_reticle()
+    call_deferred("_publish_web_accessibility")
+
+func _refresh_world_reticle() -> void:
+    if world_reticle == null or stage_3d == null:
+        return
+    var enabled: bool = (stage_3d.first_person != null
+        and stage_3d.first_person.piloting
+        and stage_3d.spatial_mission != null
+        and stage_3d.spatial_mission.extended_mode
+        and stage_3d.world_interaction != null)
+    world_reticle.visible = enabled
+    world_aim_hint.visible = enabled
+    world_use_button.visible = enabled
+    if not enabled:
+        return
+    var hit: Dictionary = stage_3d.world_interaction.look_at_active_target()
+    world_reticle.add_theme_color_override("font_color",MINT if not hit.is_empty() else MUTED)
+    world_aim_hint.text = stage_3d.world_interaction.hint(locale)
+    world_use_button.text = _t("world_use")
+    world_use_button.disabled = hit.is_empty()
 
 func _toggle_inspection_focus() -> void:
     if stage_3d != null:
@@ -896,6 +1031,18 @@ func _unhandled_key_input(event: InputEvent) -> void:
     var key: InputEventKey = event as InputEventKey
     if not key.pressed or key.echo:
         return
+    if key.keycode == KEY_F5:
+        _save_checkpoint()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_F9:
+        _load_checkpoint()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_G:
+        _world_use()
+        get_viewport().set_input_as_handled()
+        return
     if key.keycode == KEY_Y:
         _start_extended_mission()
         get_viewport().set_input_as_handled()
@@ -986,6 +1133,8 @@ func _render(state: Dictionary) -> void:
     intro.text = _t("intro")
     language_button.text = _t("language")
     restart_button.text = _t("reset")
+    save_button.text = _t("save_game")
+    load_button.text = _t("load_game")
     var story: Dictionary = A7IncidentDirector.describe(locale, state)
     narrative_title.text = str(story.get("title", ""))
     narrative_body.text = str(story.get("body", ""))
@@ -1008,6 +1157,7 @@ func _render(state: Dictionary) -> void:
     for keycode in pilot_nudge_buttons.keys():
         (pilot_nudge_buttons[keycode] as Button).text = _t(str(pilot_strings[keycode]))
     pilot_inspect_button.text = _t("pilot_inspect")
+    _refresh_world_reticle()
     cycle_label.text = "%s %02d / 06" % [_t("round"), mini(6, int(state["shift"]) + 1)]
     actions_label.text = "%s: %d / 2" % [_t("actions"), int(state["actions_left"])]
     var result: String = str(state["status"])
@@ -1089,6 +1239,10 @@ func _create_web_accessibility() -> void:
 # Browser QA is passive: it may observe an actual moving physics body but
 # cannot fabricate or move it. Limit DOM state updates while the player walks.
 func _process(delta: float) -> void:
+    world_aim_elapsed += delta
+    if world_aim_elapsed >= 0.21:
+        world_aim_elapsed = 0.0
+        _refresh_world_reticle()
     if not OS.has_feature("web") or stage_3d == null or stage_3d.first_person == null:
         return
     if not stage_3d.first_person.piloting:
@@ -1179,6 +1333,17 @@ func _publish_web_accessibility() -> void:
         "w72_physically_rejected_actions": stage_3d.field_operations.rejected_far_uses if stage_3d.field_operations != null else 0,
         "w72_contextual_real_camera_focuses": field_focus_events,
         "w72_thermal_camera_focused": field_focused_devices.has("thermal"),
+        "w73_real_native_world_raycast": bool(stage_state.get("w73_true_eye_raycast", false)),
+        "w73_real_collider_target_count": int(stage_state.get("w73_real_ray_targets", 0)),
+        "w73_actual_world_ray_target": stage_3d.world_interaction.qa_readout()["actual_active_ray_target"] if stage_3d.world_interaction != null else "",
+        "w73_actual_ray_physics_debug": stage_3d.world_interaction.qa_readout() if stage_3d.world_interaction != null else {},
+        "w73_real_raycast_uses": stage_3d.world_interaction.accepted_world_uses if stage_3d.world_interaction != null else 0,
+        "w73_rejected_world_uses": stage_3d.world_interaction.rejected_world_uses if stage_3d.world_interaction != null else 0,
+        "w73_checkpoint_events": checkpoint.events.size(),
+        "w73_checkpoint_saves": checkpoint.saves,
+        "w73_checkpoint_restores": checkpoint.successful_restores,
+        "w73_checkpoint_rejected": checkpoint.rejected_loads,
+        "w73_checkpoint_status": checkpoint.last_status,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1215,6 +1380,10 @@ func _publish_web_accessibility() -> void:
         "mission_start": _web_rect(mission_button),
         "extended_start": _web_rect(field_start_button),
         "field_help": _web_rect(field_help),
+        "world_use": _web_rect(world_use_button),
+        "world_reticle": _web_rect(world_reticle),
+        "checkpoint_save": _web_rect(save_button),
+        "checkpoint_load": _web_rect(load_button),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),
         "walk_back": _web_rect(route_buttons[0]),

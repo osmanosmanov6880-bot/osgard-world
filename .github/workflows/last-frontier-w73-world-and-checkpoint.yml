@@ -1,0 +1,248 @@
+name: LAST FRONTIER W73 REAL 3D RAYCAST AND TRANSACTIONAL CHECKPOINT (DRAFT)
+
+on:
+  pull_request:
+    branches:
+      - game/last-frontier-w72-field-operations-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W73_WORLD_INTERACTION_CHECKPOINT.md'
+      - '.github/workflows/last-frontier-w73-world-and-checkpoint.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w73-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  pinned-original-world:
+    name: Exact accepted W72 base, original game and physics unchanged, limited W73 source
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Enforce W72 original 3D mechanics source and original A7 physics invariants
+        shell: bash
+        env:
+          W73_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w73-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='b3d25a5004a1a1b26e280094580090043e45f2d7'
+          head=os.environ['W73_SHA']
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch(r'[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          expected={
+              'w63-a7-cascade/scripts/A7WorldInteraction.gd',
+              'w63-a7-cascade/scripts/A7SessionCheckpoint.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w73_world_and_checkpoint.gd',
+              'w63-a7-cascade/ci/w73_browser_raycast.py',
+              '.github/workflows/last-frontier-w73-world-and-checkpoint.yml',
+              'docs/LAST_FRONTIER_W73_WORLD_INTERACTION_CHECKPOINT.md',
+          }
+          assert changed==expected,{'missing':sorted(expected-changed),
+                                    'unapproved':sorted(changed-expected)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirector.gd',
+              'w63-a7-cascade/scripts/A7ProceduralAudio.gd',
+              'w63-a7-cascade/scripts/A7CinematicHud.gd',
+              'w63-a7-cascade/scripts/A7CinematicHeroSet.gd',
+              'w63-a7-cascade/scripts/A7CinematicMaterialLab.gd',
+              'w63-a7-cascade/scripts/A7ArchitecturalDetail.gd',
+              'w63-a7-cascade/scripts/A7IndustrialCathedral.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirection.gd',
+              'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+              'w63-a7-cascade/scripts/A7FieldOperations.gd',
+              'w63-a7-cascade/scripts/A7SpatialMission.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w64_real_3d_stage.gd',
+              'w63-a7-cascade/tests/test_w65_story_audio.gd',
+              'w63-a7-cascade/tests/test_w67_cinematic_sectors.gd',
+              'w63-a7-cascade/tests/test_w68_industrial_cinema.gd',
+              'w63-a7-cascade/tests/test_w69_incident_direction.gd',
+              'w63-a7-cascade/tests/test_w70_first_person_operator.gd',
+              'w63-a7-cascade/tests/test_w71_spatial_mission.gd',
+              'w63-a7-cascade/tests/test_w72_field_operations.gd',
+              'w63-a7-cascade/ci/w64_browser_acceptance.py',
+              'w63-a7-cascade/ci/w65_browser_story_audio.py',
+              'w63-a7-cascade/ci/w67_browser_sectors.py',
+              'w63-a7-cascade/ci/w68_browser_art.py',
+              'w63-a7-cascade/ci/w69_browser_incident.py',
+              'w63-a7-cascade/ci/w70_browser_operator.py',
+              'w63-a7-cascade/ci/w71_browser_mission.py',
+              'w63-a7-cascade/ci/w72_browser_field_ops.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+              '.github/workflows/last-frontier-w72-real-field-ops.yml',
+          ]
+          hashes={}
+          for path in protected:
+              old=git('rev-parse',base+':'+path)
+              new=git('rev-parse',head+':'+path)
+              assert old==new,'Original W72 world or game physics changed: '+path
+              hashes[path]=new
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          ray=Path('w63-a7-cascade/scripts/A7WorldInteraction.gd').read_text()
+          save=Path('w63-a7-cascade/scripts/A7SessionCheckpoint.gd').read_text()
+          for target in ['RayCast3D.new()','StaticBody3D.new()',
+                         'ray.force_raycast_update()','get_collision_point()']:
+              assert target in ray,'Actual in-engine ray required: '+target
+          for target in ['FileAccess.open','user://','JSON.parse_string',
+                         'sha256_text','A7CascadeScreen.new()','_replay_to']:
+              assert target in save,'True local audited save required: '+target
+          assert 'JavaScriptBridge' not in save
+          assert 'HTTPClient' not in ray and 'HTTPClient' not in save
+          Path('w73-evidence/W73_EXACT_SOURCE.json').write_text(
+              json.dumps({
+                  'schema':'LAST_FRONTIER_W73_EXACT_GIT_GAMEPLAY_SOURCE_V1',
+                  'head_sha':head,'base_sha':base,'status':'PASS',
+                  'changed_paths':sorted(changed),'immutable_original_blobs':hashes,
+                  'network_writes':False,'physical_industrial_control':False,
+                  'checkpoint_SHA_is_unkeyed_and_not_anti_tamper':True,
+                  'human_measured_15min_campaign':False,
+                  'production_signoff':False,
+              },indent=2)+'\n')
+          print('W73 exact immutable original W72 Godot + 3D source PASS')
+          PY
+      - name: Keep exact source QA even after failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w73-source-${{ github.event.pull_request.head.sha }}
+          path: w73-evidence/W73_EXACT_SOURCE.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  true-3d-game-save-and-webgl:
+    name: Ten genuine Godot suites including real ray and local save replay, two Chromium worlds and 16 PNG
+    runs-on: ubuntu-latest
+    needs: pinned-original-world
+    timeout-minutes: 115
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import entire real Godot 4.4.1 first person game with strict GDScript compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w73-evidence
+          timeout --signal=TERM --kill-after=5s 280s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w73-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w73-evidence/import.log; then exit 1; fi
+      - name: Native W63-W73 original ten suites, W73 true RayCast3D seven collision targets and transactional full game file restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w64_real_3d_stage test_w65_story_audio test_w67_cinematic_sectors test_w68_industrial_cinema test_w69_incident_direction test_w70_first_person_operator test_w71_spatial_mission test_w72_field_operations test_w73_world_and_checkpoint; do
+            echo "W73 original native Godot suite: $test"
+            timeout --signal=TERM --kill-after=5s 480s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w73-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w73-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w73-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W64 REAL NATIVE 3D CINEMATIC GAME PASS:' w73-evidence/test_w64_real_3d_stage.log
+          grep -q 'LAST FRONTIER W65 ORIGINAL GAME CAUSAL STORY + SYNTH AUDIO PASS:' w73-evidence/test_w65_story_audio.log
+          grep -q 'LAST FRONTIER W67 REAL TWO-ZONE INDUSTRIAL CINEMA PASS:' w73-evidence/test_w67_cinematic_sectors.log
+          grep -q 'LAST FRONTIER W68 REAL ORIGINAL PBR HERO AND COMPLETE GODOT GAME PASS:' w73-evidence/test_w68_industrial_cinema.log
+          grep -q 'LAST FRONTIER W69 TRUE CINEMATIC INCIDENT/OPTICS/WIN PASS:' w73-evidence/test_w69_incident_direction.log
+          grep -q 'LAST FRONTIER W70 REAL CHARACTERBODY FIRST PERSON PHYSICS PASS:' w73-evidence/test_w70_first_person_operator.log
+          grep -q 'LAST FRONTIER W71 TRUE SPATIAL FIVE-OBJECTIVE GODOT GAME PASS:' w73-evidence/test_w71_spatial_mission.log
+          grep -q 'LAST FRONTIER W72 TRUE THREE PHYSICAL INDUSTRIAL PUZZLES PASS:' w73-evidence/test_w72_field_operations.log
+          grep -q 'LAST FRONTIER W73 TRUE WORLD RAYCAST AND TRANSACTIONAL CHECKPOINT PASS:' w73-evidence/test_w73_world_and_checkpoint.log
+      - name: Export original actual playable native Godot WebAssembly
+        shell: bash
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w73-evidence/export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w73-evidence/export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install real Chromium/WebGL/Pillow to launch original exported game
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w73
+          /tmp/a7-w73/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w73/bin/python -m playwright install --with-deps chromium
+      - name: Real W72 3D valve browser regression, then W73 actual eye ray, G physically aimed target and mobile bilingual WebGL
+        shell: bash
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 1180s /tmp/a7-w73/bin/python w63-a7-cascade/ci/w72_browser_field_ops.py --export w63-a7-cascade/build/web --evidence w73-evidence/w72-chromium-regression --sha "$SHA" 2>&1 | tee w73-evidence/w72-chromium.log
+          grep -q 'LAST FRONTIER W72 REAL GODOT FIELD MECHANICS CHROMIUM PASS:' w73-evidence/w72-chromium.log
+          timeout --signal=TERM --kill-after=10s 1180s /tmp/a7-w73/bin/python w63-a7-cascade/ci/w73_browser_raycast.py --export w63-a7-cascade/build/web --evidence w73-evidence/w73-real-3d-ray --sha "$SHA" 2>&1 | tee w73-evidence/w73-chromium.log
+          grep -q 'LAST FRONTIER W73 TRUE GODOT RAYCAST PHYSICAL WORLD CHROMIUM PASS:' w73-evidence/w73-chromium.log
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          sha=os.environ['SHA']
+          root=Path('w73-evidence/w73-real-3d-ray')
+          data=json.loads((root/'W73_REAL_GODOT_BROWSER_PROOF.json').read_text())
+          assert data['result']=='PASS' and data['source_commit']==sha
+          assert data['native_RayCast3D_hit_required_for_G']
+          assert data['new_world_target_manipulates_original_W72_mechanic']
+          assert len(data['real_original_frames'])==7
+          for p in data['real_original_frames']:
+              actual=(root/p['name']).read_bytes()
+              assert len(actual)>12000 and hashlib.sha256(actual).hexdigest()==p['sha256']
+          assert not data['human_15min_session_measured']
+          assert not data['production_released']
+          print('W73 real 3D raycast game plus checkpoint native QA PASS')
+          PY
+      - name: Preserve original executable WebGL plus all true native/GPU-rendered screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w73-real-world-raycast-and-save-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w73-evidence/
+          retention-days: 45
+          if-no-files-found: warn
+
+  no-premature-aaa-ship:
+    name: Software review only — no untested console/mobile/AAA art or store release
+    runs-on: ubuntu-latest
+    needs: [pinned-original-world, true-3d-game-save-and-webgl]
+    if: always()
+    steps:
+      - name: Require actual exact-head Godot gameplay and Chromium before PASS
+        shell: bash
+        env:
+          SOURCE: ${{ needs.pinned-original-world.result }}
+          GAME: ${{ needs.true-3d-game-save-and-webgl.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$GAME" = success
+          echo 'W73 actual world physics + source-bound native checkpoint GAME CODE PASS'
+          echo 'RELEASE HOLD: real 10-15 minute player sessions, authored cinematography, GPUs, save across physical mobile devices and trademark not certified'

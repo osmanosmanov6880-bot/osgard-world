@@ -22,6 +22,7 @@ var incident_cinema: A7IncidentDirection
 var first_person: A7FirstPersonOperator
 var spatial_mission: A7SpatialMission
 var field_operations: A7FieldOperations
+var world_interaction: A7WorldInteraction
 var inspection_focus: bool = false
 var focus_switches: int = 0
 var guide_progress: float = 0.0
@@ -85,6 +86,9 @@ func _ready() -> void:
     field_operations = A7FieldOperations.new()
     add_child(field_operations)
     field_operations.build(hero_art.surface_lab)
+    world_interaction = A7WorldInteraction.new()
+    add_child(world_interaction)
+    world_interaction.build(first_person, field_operations)
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -543,6 +547,9 @@ func qa_readout() -> Dictionary:
         "w72_true_mechanic_meshes": field_operations.real_prop_meshes if field_operations != null else 0,
         "w72_native_relay_switches": field_operations.relay_switches.size() if field_operations != null else 0,
         "w72_actual_valve": field_operations.rotating_dial != null if field_operations != null else false,
+        "w73_real_ray_targets": world_interaction.targets.size() if world_interaction != null else 0,
+        "w73_true_eye_raycast": world_interaction.ray is RayCast3D if world_interaction != null else false,
+        "w73_aimed_real_device": world_interaction.actual_aim.get("kind", "") if world_interaction != null else "",
         "cathedral_two_real_sectors": cathedral != null and cathedral.relay_terminals == 3,
         "inspection_sector": sector_index,
         "inspection_progress": guide_progress,
