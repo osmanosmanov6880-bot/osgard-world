@@ -20,6 +20,8 @@ const EVENT_LABELS: Dictionary = {
     "relay_medbay":["Медблок подключён","Medbay activated"],
     "relay_quench":["Гаситель подключён","Quench activated"],
     "relay_uplink":["Связь подключена","Uplink activated"],
+    "field_sink":["Тепловой якорь: потрачен воздух","Heat sink: air sacrificed"],
+    "field_air":["Резерв воздуха: цена — перегрев","Air buffer: reactor heat cost"],
     "bus_switched":["Линия питания переключена","Power bus switched"],
     "surge":["Скачок напряжения","Power surge"],
     "thermal_pulse":["Тепловой импульс","Thermal pulse"],
@@ -83,6 +85,7 @@ func review(engine: IPCrisisEngine,campaign: IPCampaignFlow = null) -> Dictionar
         "faults":engine.faults,
         "priority":engine.priority_id,
         "repair":engine.repair_method,
+        "field_protocol":engine.field_protocol,
         "relays":engine.relays_activated.duplicate(),
         "history":history,
         "total_event_count":engine.event_log.size(),
@@ -111,6 +114,9 @@ func localized(report: Dictionary,locale: String = "ru") -> String:
     lines.append(("POWER SWITCHES" if english else "ПЕРЕКЛЮЧЕНИЯ") + "  %d" % int(report["switches"]))
     lines.append(("DENIED ACTIONS" if english else "ОТКЛОНЁННЫЕ ДЕЙСТВИЯ") + "  %d" % int(report["faults"]))
     lines.append(("REPAIR" if english else "РЕМОНТ") + "  " + str(report["repair"]).to_upper())
+    var protocol: String = str(report.get("field_protocol",""))
+    var protocol_name: String = "HEAT SINK" if protocol == "sink" else "AIR BUFFER" if protocol == "air" else "NONE" if english else "НЕТ"
+    lines.append(("FIELD PROTOCOL" if english else "ПОЛЕВОЙ ПРОТОКОЛ") + "  " + protocol_name)
     var relays: Array = report["relays"]
     lines.append(("RELAYS" if english else "СТАНЦИИ") + "  " + (", ".join(PackedStringArray(relays)) if not relays.is_empty() else "—"))
     if bool(report["campaign"]):
