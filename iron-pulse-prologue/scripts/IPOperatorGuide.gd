@@ -151,6 +151,13 @@ func guidance(engine: IPCrisisEngine, locale: String = "ru") -> String:
             if tier >= 3:
                 lines.append("The crew wins only when you activate the exit at the site." if en
                     else "Экипаж будет спасён только после действия у шлюза.")
+    if tier >= 3 and stage in ["repair","charge"]:
+        var protocol: String=engine.field_protocol
+        if protocol == "":
+            lines.append("OPTIONAL: two real consoles — SINK in SERVICE or AIR BUFFER near EVACUATION. Only one can be used." if en
+                else "ДОПОЛНИТЕЛЬНО: два пульта — SINK в техсекторе и AIR BUFFER у шлюза. Доступен только один.")
+        else:
+            lines.append(("FIELD PROTOCOL LOCKED: " if en else "ПОЛЕВОЙ ПРОТОКОЛ ВЫБРАН: ") + protocol.to_upper())
     if tier >= 2:
         lines.append("")
         lines.append("A: %s  /  B: %s  /  DOOR: %.0f%%" % [
