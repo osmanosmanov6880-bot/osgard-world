@@ -162,11 +162,18 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             obsidian.get("batched_instances",0)>=190 and
                             obsidian.get("draw_batches")==2),(
                             "Actual authored PBR architecture/MultiMesh geometry not in Godot WebGL",name,obsidian)
+                        # G4 corrected the original narrow-screen code path:
+                        # actual new Obsidian HERO geometry now follows the
+                        # already-established ECO profile on compact devices.
+                        # Unlike decorative meshes, critical physical signs
+                        # and three actual hazard lights MUST remain visible.
+                        expected_initial_quality="eco" if mobile else "hero"
                         assert obsidian.get("sign_count")==3 and (
                             obsidian.get("light_count")==3 and
                             obsidian.get("safety_visible") is True and
-                            obsidian.get("hero_visible") is True),(
-                            "Original three-sector Obsidian navigation/safety architecture missing",name,obsidian)
+                            obsidian.get("quality")==expected_initial_quality and
+                            obsidian.get("hero_visible") is (not mobile)),(
+                            "Real mobile ECO must disable heavy art but preserve all 3 safety lamps",name,obsidian)
                         actual_lamps=obsidian.get("physical_lamp_positions",[])
                         assert len(actual_lamps)==3 and (
                             abs(float(actual_lamps[0][2])+13.8)<.15 and
