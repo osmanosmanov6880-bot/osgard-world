@@ -53,6 +53,7 @@ test('V63 real binary upload, sha256 browser download, viewer access and revoke'
  const [download]=await Promise.all([page.waitForEvent('download'),item.getByRole('button',{name:'Verify & download'}).click()])
  expect(download.suggestedFilename()).toBe('screenplay.pdf')
  expect(readFileSync(await download.path()).equals(pdf)).toBe(true)
+ await page.screenshot({path:info.outputPath('osa-v63-vault-desktop.png'),fullPage:true,animations:'disabled'})
  const spaces=await request.get(api+'cinema/spaces',{headers:{Authorization:'Bearer '+owner.token}})
  const workspaceId=(await spaces.json()).spaces[0].id
  const endpoint=api+'cinema/spaces/'+workspaceId+'/vault'
@@ -82,7 +83,7 @@ test('V63 real binary upload, sha256 browser download, viewer access and revoke'
  await expect(other.locator('.osa-vault-remove')).toHaveCount(0)
  const [viewerDownload]=await Promise.all([other.waitForEvent('download'),other.getByRole('button',{name:'Verify & download'}).click()])
  expect(readFileSync(await viewerDownload.path()).equals(pdf)).toBe(true)
- await page.screenshot({path:info.outputPath('osa-v63-vault-desktop.png'),fullPage:true,animations:'disabled'})
+ await page.screenshot({path:info.outputPath('osa-v63-team-access-desktop.png'),fullPage:true,animations:'disabled'})
  await app.getByRole('tab',{name:'Team'}).click()
  await app.locator('.osa-collab-people').getByRole('button',{name:'Remove'}).click()
  await app.locator('.osa-collab-people').getByRole('button',{name:'Confirm removal'}).click()
