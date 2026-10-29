@@ -250,6 +250,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 210s godot --headless --path iron-pulse-prologue --script res://tests/test_g2_physical_field_protocols.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g2-physical-protocols.log"
           grep -q '^IRON PULSE G2 PHYSICAL FIELD PROTOCOLS PASS:' "$RUNNER_TEMP/iron-pulse-g2-physical-protocols.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g2-physical-protocols.log"; then exit 1; fi
+      - name: G3 genuine Obsidian industrial architecture, material PBR, 3D hazard safety, source truth, RU/EN and ECO checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 190s godot --headless --path iron-pulse-prologue --script res://tests/test_g3_obsidian_architecture.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g3-obsidian-architecture.log"
+          grep -q '^IRON PULSE G3 OBSIDIAN ARCHITECTURE PASS:' "$RUNNER_TEMP/iron-pulse-g3-obsidian-architecture.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g3-obsidian-architecture.log"; then exit 1; fi
       - name: V13 safe world-link contract to actual story campaign and original mission
         shell: bash
         run: |
