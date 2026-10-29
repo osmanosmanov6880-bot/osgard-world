@@ -98,9 +98,9 @@ func observe(delta: float,state: Dictionary,menu_open: bool=false,
 		completed_at=elapsed_active
 
 func full_run_observed() -> bool:
-	return started and first_run and contiguous and
+	return (started and first_run and contiguous and
 		last_step>=FIRST_SIX and events.size()==FIRST_SIX and
-		completed_at>=0.0 and not over_budget
+		completed_at>=0.0 and not over_budget)
 
 func report() -> Dictionary:
 	var verified: bool=full_run_observed()
