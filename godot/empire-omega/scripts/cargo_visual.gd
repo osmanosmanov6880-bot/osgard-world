@@ -14,7 +14,7 @@ var native_case: ArrayMesh
 var freight_pbr: StandardMaterial3D
 var quality: String="standard"
 var current_language: String="ru"
-var last_projection: Dictionary={}
+var last_projection: Dictionary=SOURCE.snapshot({},"ru")
 var current_active: Dictionary={}
 var grade_ready: bool=false
 
