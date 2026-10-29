@@ -11,6 +11,7 @@ const R90_SPEED = preload("res://scripts/horizon_r90_speed_dial.gd")
 const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
 const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
+const R171_GOAL = preload("res://scripts/city_reign_goal_fabric.gd")
 const R170_EPISODE = preload("res://scripts/city_reign_episode_sequence.gd")
 const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_premium_garage.gd")
@@ -866,7 +867,8 @@ func _restore_strategy_scroll(offset: int) -> void:
 
 func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true,
         drive_nav: Dictionary = {}, drive_warning: Dictionary = {},
-        indicator_mode: String = "off",brake_response: float = 0.0) -> void:
+        indicator_mode: String = "off",brake_response: float = 0.0,
+        objective_source: String = "") -> void:
 	if map != null:
 		map.player_world = player_at
 		map.vehicle_world = vehicle_at
@@ -905,6 +907,12 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 			if goal_available:
 				var travel_distance: float = Vector2(player_at.x-goal_at.x,player_at.z-goal_at.z).length()
 				mission_distance_label.text = _v08("ДО ЦЕЛИ","DISTANCE TO GOAL","目标距离") + ": %d м" % roundi(travel_distance)
+				# Only the real active task's name, not a fabricated satellite
+				# ETA. Compact phones keep their original minimal mission card.
+				if not compact_hud:
+					var source_name: String=R171_GOAL.localized(objective_source,GameState.locale)
+					if not source_name.is_empty():
+						mission_distance_label.text = source_name+" · "+mission_distance_label.text
 			else:
 				mission_distance_label.text = MISSION_NAV.hud_hint(str(MissionManager.get_mission().get("id","complete")),GameState.locale,DisplayServer.is_touchscreen_available())
 	if speed_panel != null:

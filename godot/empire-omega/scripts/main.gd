@@ -26,6 +26,8 @@ const LANDMARKS_SCENE = preload("res://scripts/project_landmarks.gd")
 const SIGNALS_SCENE = preload("res://scripts/traffic_signal_controller.gd")
 const ROADWORKS_SCENE = preload("res://scripts/roadworks_visual.gd")
 const MISSION_NAV = preload("res://scripts/horizon_mission_navigation.gd")
+const R171_GOAL = preload("res://scripts/city_reign_goal_fabric.gd")
+const R171_ROUTE = preload("res://scripts/city_reign_route_integrity.gd")
 const MOBILITY = preload("res://scripts/city_mobility.gd")
 const SOUND_SCENE = preload("res://scripts/city_soundscape.gd")
 const SKID_SCENE = preload("res://scripts/horizon_skid_trails.gd")
@@ -75,6 +77,7 @@ var autosave_accumulator := 0.0
 var last_position := Vector3.ZERO
 var route_refresh := 0.0
 var last_route_goal := Vector3.ZERO
+var last_route_source: String = "none"
 var pedestrians: Array = []
 var ambient_cars: Array = []
 var lod_timer := 0.0
@@ -507,13 +510,24 @@ func _physics_process(delta: float) -> void:
 		var property_id: String = world.closest_property(protagonist,20.0)
 		if property_id != "":
 			near_name = str(GameState.REAL_ESTATE.PROPERTIES[property_id]["name"].get(GameState.locale,"Property"))
-	var goal: Vector3 = world.objective_position()
-	var mission_action: String = str(MissionManager.get_mission().get("id","complete"))
-	var goal_visible: bool = MISSION_NAV.has_world_goal(mission_action,
-		not GameState.data.get("driving_trial",{}).is_empty(),
-		not ContractManager.active_contract().is_empty(),
-		not GameState.data.get("neighborhood_active",{}).is_empty(),
-		not GameState.data.get("service_active",{}).is_empty())
+		var mission_action: String = str(MissionManager.get_mission().get("id","complete"))
+	var service_session: Dictionary=GameState.data.get("service_active",{})
+	var service_target: Vector3=GameState.SERVICE.LOCATIONS.get(
+		str(service_session.get("destination","")),Vector3.ZERO)
+	var resident_id: String=GameState.NEIGHBORHOOD.goal_location(GameState.data)
+	var resident_target: Vector3=ContractManager.POSITIONS.get(resident_id,Vector3.ZERO)
+	# One truthful source for minimap, world waypoint, real road A* and
+	# localized objective cues. No new nav thread, locator or quest budget.
+	var live_objective: Dictionary=R171_GOAL.resolve(GameState.data,mission_action,
+		ContractManager.current_offer(),ContractManager.POSITIONS,car.global_position,
+		GameState.TRIALS.target(GameState.data),resident_target,service_target)
+	var goal: Vector3=live_objective["point"]
+	var goal_visible: bool=bool(live_objective["active"]) and
+		MISSION_NAV.has_world_goal(mission_action,
+			not GameState.data.get("driving_trial",{}).is_empty(),
+			not ContractManager.active_contract().is_empty(),
+			not GameState.data.get("neighborhood_active",{}).is_empty(),
+			not GameState.data.get("service_active",{}).is_empty())
 	world.update_waypoint(goal,goal_visible)
 	lod_timer += delta
 	diagnostic_timer += delta
@@ -538,10 +552,18 @@ func _physics_process(delta: float) -> void:
 		if hud.map != null: hud.map.route.clear()
 		if road_guidance != null: road_guidance.clear_route()
 		if route_chevron != null: route_chevron.clear_turn()
-	if route_allowed and (route_refresh >= 1.25 or last_route_goal.distance_to(goal) > 2.0):
+		var new_source: String=str(live_objective["source"]) if goal_visible else "none"
+	var source_changed: bool=new_source!=last_route_source
+	if source_changed: last_route_source=new_source
+	var off_road: bool=str(drive_nav_status.get("kind",""))=="off_route"
+	var goal_changed: bool=last_route_goal.distance_to(goal)>2.0
+	if route_allowed and R171_ROUTE.should_recalculate(route_refresh,goal_changed,source_changed,off_road):
 		route_refresh = 0.0
 		last_route_goal = goal
-		var ground_route: Array[Vector3] = ROUTER.find_route(protagonist,goal,GameState.data)
+		var original_route: Array[Vector3] = ROUTER.find_route(protagonist,goal,GameState.data)
+		var ground_route: Array[Vector3] = R171_ROUTE.verified(original_route,protagonist,goal)
+		# Every 2D/3D cue receives EXACTLY the same independently verified
+		# real A* segment list. Rejected/stale paths never paint fake roads.
 		if hud.map != null: hud.map.route = ground_route
 		if road_guidance != null:
 			road_guidance.sync_route(ground_route,protagonist,true,adaptive_graphics.effective_quality())
@@ -569,7 +591,7 @@ func _physics_process(delta: float) -> void:
 		hud.map.case_active = case_site != "" and world.locations.has(case_site)
 		if hud.map.case_active: hud.map.case_world = world.locations[case_site]["position"]
 	if Engine.get_physics_frames() % 3 == 0:
-		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y,goal_visible,drive_nav_status,drive_warning_status,car.indicator_mode,car.brake_response)
+		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y,goal_visible,drive_nav_status,drive_warning_status,car.indicator_mode,car.brake_response,str(live_objective["source"]))
 	# Patrols use shared physical roads and do not warp while pursuing the player.
 	if patrols != null:
 		var heat: int = int(GameState.data.get("law",{}).get("heat",0))
@@ -1125,7 +1147,9 @@ func _on_alert(message: String) -> void:
 		hud.announce(message)
 
 func _on_contract_changed(_message_id: String) -> void:
-	world.update_waypoint(world.objective_position())
+	# The next native physics frame re-resolves the real contract dropoff
+	# and recalculates BOTH on-road 3D and map A* without a stale waypoint.
+	route_refresh = 2.0
 
 func _on_mission_done(_stage: int, reward: int) -> void:
 	if soundscape != null: soundscape.play_success()
