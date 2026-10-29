@@ -48,6 +48,13 @@ jobs:
             echo '::error::Unexpected external access in offline gameplay slice'
             exit 1
           fi
+      - name: G5 independent reproducible ZIP tamper, security and CAS rollback tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 iron-pulse-prologue/ci/test_release_vault_g5.py 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g5-unit.log"
+          grep -q 'Ran 5 tests' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
+          grep -q '^OK$' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
@@ -350,13 +357,6 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/iron-pulse-world-v13-browser.log"
           grep -q '"status": "PASS"' iron-pulse-prologue/build/world-evidence/world-portal-evidence.json
           grep -q '"genuine_webgl_launch": true' iron-pulse-prologue/build/world-evidence/world-portal-evidence.json
-      - name: G5 independent reproducible ZIP tamper, security and CAS rollback tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 iron-pulse-prologue/ci/test_release_vault_g5.py 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g5-unit.log"
-          grep -q 'Ran 5 tests' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
-          grep -q '^OK$' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
       - name: G5 source-bound actual Windows/WebGL release bundle and offline stage NO activation
         shell: bash
         run: |
