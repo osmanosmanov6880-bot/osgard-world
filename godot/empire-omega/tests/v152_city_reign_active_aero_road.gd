@@ -46,27 +46,27 @@ func _run() -> void:
 	var speed: float=car.speed
 	check(speed>10.0 and speed<30.0,
 		"true original car accelerates with real Godot W control and road collision")
-	check(art.aero_angle<0.002,
+	check(float(art.get("aero_angle"))<0.002,
 		"spoiler never invents aerodynamic braking on active acceleration")
 	Input.action_press("move_backward")
 	for i in range(25): await physics_frame
 	Input.action_release("move_backward")
-	var raised: float=art.aero_angle
+	var raised: float=float(art.get("aero_angle"))
 	check(car.brake_response>0.95 and raised>0.010 and raised<=0.22,
 		"actual S brake at 10m/s+ visibly lifts existing source spoiler")
 	check(spoiler.transform!=original_pose and spoiler.mesh==original_spoiler_mesh,
 		"actual spoiler uses original mesh and native scene transform, not extra draw")
 	for i in range(50): await physics_frame
-	check(art.aero_angle<raised*0.20,
+	check(float(art.get("aero_angle"))<raised*0.20,
 		"release of the actual brake smoothly lowers spoiler without game physics mutation")
-	art.sync_aero_feedback(27.0,1.0,0.1,false)
-	var normal_aero: float=art.aero_angle
-	art.sync_aero_feedback(27.0,1.0,0.1,true)
-	check(art.aero_angle<normal_aero,
+	art.call("sync_aero_feedback",27.0,1.0,0.1,false)
+	var normal_aero: float=float(art.get("aero_angle"))
+	art.call("sync_aero_feedback",27.0,1.0,0.1,true)
+	check(float(art.get("aero_angle"))<normal_aero,
 		"reduced-motion accessibility stops animated aerodynamic signals")
 	for i in range(120):
-		art.sync_aero_feedback(29.0,1.0,1.0/60.0,false)
-	check(art.aero_angle<=0.221 and art.aero_angle>=0.0,
+		art.call("sync_aero_feedback",29.0,1.0,1.0/60.0,false)
+	check(float(art.get("aero_angle"))<=0.221 and float(art.get("aero_angle"))>=0.0,
 		"long gameplay stays bounded and deterministic at maximum vehicle speed")
 	check(spoiler.mesh==original_spoiler_mesh and trim.mesh==original_trim_mesh and
 		art.get_child_count()==scene_children,

@@ -50,6 +50,9 @@ var apex_torque_factor: float = 1.0
 var rotor_heat: Vector2 = Vector2.ZERO
 var rotor_energy_proxy: float = 0.0
 var last_longitudinal_accel: float = 0.0
+## The gameplay camera/controller publishes an accessibility setting.
+## No direct dependency from car physics onto UI/autoload script globals.
+var visual_reduced_motion: bool = false
 var handbrake_on := false
 var steering_filter := 0.0
 var speed := 0.0
@@ -389,7 +392,7 @@ func _physics_process(delta: float) -> void:
 		# R167: existing machined spoiler provides speed/brake visual feedback
 		# after spring animation; no authoritative physics values change.
 		horizon_visual.call("sync_aero_feedback",speed,brake_response,delta,
-			GameSettings.reduced_motion)
+			visual_reduced_motion)
 	_update_drift_score(delta)
 	for wheel in wheel_nodes:
 		wheel.rotate_x(spin)

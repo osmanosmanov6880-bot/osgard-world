@@ -406,6 +406,9 @@ func _on_benchmark_export() -> void:
 
 func _physics_process(delta: float) -> void:
 	if player == null or car == null or camera == null: return
+	# Scene/UI own accessibility settings; physics car only receives its
+	# read-only visual hint, never imports a GameSettings singleton.
+	car.visual_reduced_motion=GameSettings.reduced_motion
 	# R33: actual 4 wheel-ground ray contacts instead of the car centre.
 	# LOW disables transparent pixels, not physical grip. The fallback
 	# samples the centre only before the first authentic wheel probe.
