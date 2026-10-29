@@ -103,6 +103,9 @@ jobs:
               unchanged[file]=after
           subprocess.run(['git','diff','--check',base,head],check=True)
           coach=Path('w63-a7-cascade/scripts/A7FirstRunCoach.gd').read_text()
+          browser=Path('w63-a7-cascade/ci/w86_browser_first_contact.py').read_text()
+          assert "'W86_REAL_SOURCE_ONBOARDING_BROWSER.json'" in browser, (
+              'W86 source browser must write the exact CI-manifest filename')
           screen=Path('w63-a7-cascade/scripts/A7CascadeScreen.gd').read_text()
           for required in ['class_name A7FirstRunCoach',
               'const LESSON_TOTAL: int = 7','source_started_distance',
