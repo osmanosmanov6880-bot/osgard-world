@@ -1,0 +1,105 @@
+name: OSA CINEMA V62 Evidence Room & Peer Review
+on:
+  pull_request:
+    branches: [master, feature/osa-cinema-v61-collaboration-core-20261029]
+    paths:
+      - 'server/core_server.py'
+      - 'server/core_cinema.py'
+      - 'server/core_cinema_evidence.py'
+      - 'src/OSACinemaCollaboration.tsx'
+      - 'src/OSACinemaEvidenceRoom.tsx'
+      - 'src/osaCinemaCollaboration.css'
+      - 'src/osaCinemaEvidenceRoom.css'
+      - 'scripts/core-cinema-v62-evidence-smoke.py'
+      - 'scripts/osa-cinema-v62-*.mjs'
+      - 'playwright.osa-cinema-v62.config.mjs'
+      - '.github/workflows/osa-cinema-v62-evidence.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'server/core_server.py'
+      - 'server/core_cinema_evidence.py'
+      - 'src/OSACinemaCollaboration.tsx'
+      - 'src/OSACinemaEvidenceRoom.tsx'
+      - 'scripts/core-cinema-v62-evidence-smoke.py'
+      - 'scripts/osa-cinema-v62-*.mjs'
+      - 'playwright.osa-cinema-v62.config.mjs'
+      - '.github/workflows/osa-cinema-v62-evidence.yml'
+permissions:
+  contents: read
+jobs:
+  evidence-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and validate Core Cinema database schema
+        run: python3 -m compileall -q server/core_cinema.py server/core_cinema_evidence.py server/core_server.py
+      - name: Real SQLite HTTP peer review with Core and V61 regressions
+        run: python3 scripts/core-cinema-v62-evidence-smoke.py
+  evidence-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Existing OSA CINEMA V55-V60 contracts
+        run: |
+          node --test scripts/osa-cinema-v60-world-contract.test.mjs
+          node --test scripts/osa-cinema-v59-production-contract.test.mjs
+          node --test scripts/osa-cinema-v58-public-catalog.test.mjs
+          node --test scripts/osa-cinema-v58-watchlist.test.mjs
+          node --test scripts/osa-cinema-v55-studio-contract.test.mjs
+      - name: TypeScript checks
+        run: npm run check
+      - name: Build actual public and private route shells
+        run: npm run build
+      - name: Evidence room privacy, existing studio contracts, media NO-GO and global bundle budget
+        run: |
+          node scripts/osa-cinema-v62-build-preflight.mjs
+          node scripts/osa-cinema-v61-build-preflight.mjs
+          node scripts/osa-cinema-v60-build-preflight.mjs
+          node scripts/osa-cinema-v59-build-preflight.mjs
+          npm run qa:osa-media-release
+          npm run qa:redesign-build
+  evidence-browser:
+    needs: [evidence-http, evidence-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install real Chromium/Chrome
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Real browser peer review with authenticated Core, SQLite and 320px mobile
+        run: npx playwright test --config playwright.osa-cinema-v62.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v62-real-peer-review-browser-proof
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn
