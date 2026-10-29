@@ -286,6 +286,7 @@ var forecast_label: Label
 var forecast_close_button: Button
 var touch_forecast_button: Button
 var touch_guide_button: Button
+var touch_navigation_button: Button
 var guide_panel: PanelContainer
 var guide_label: Label
 var guide_next_button: Button
@@ -1202,6 +1203,9 @@ func _make_touch_controls() -> void:
     touch_guide_button = _touch_button(touch_ui,"GUIDE / ?",6,-357,94)
     touch_guide_button.add_theme_font_size_override("font_size",15)
     touch_guide_button.pressed.connect(_toggle_operator_guide)
+    touch_navigation_button = _touch_button(touch_ui,"NAV / H",6,-414,94)
+    touch_navigation_button.add_theme_font_size_override("font_size",15)
+    touch_navigation_button.pressed.connect(_toggle_wayfinding)
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1402,6 +1406,8 @@ func _apply_cinematic_view() -> void:
         touch_forecast_button.visible = not cinematic_view and touch_ui.visible
     if touch_guide_button != null:
         touch_guide_button.visible = not cinematic_view and touch_ui.visible
+    if touch_navigation_button != null:
+        touch_navigation_button.visible = not cinematic_view and touch_ui.visible
     if cinematic_view and guide_panel != null:
         guide_panel.visible = false
     if cinematic_view and forecast_panel != null:
@@ -1444,6 +1450,14 @@ func _refresh_operator_guide_locale() -> void:
 func _close_operator_guide() -> void:
     if guide_panel != null:
         guide_panel.visible = false
+    _publish_web_state()
+
+func _toggle_wayfinding() -> void:
+    if not started or paused or session.finished() or cinematic_view or wayfinder == null:
+        return
+    _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
+    _save_checkpoint()
+    _refresh_hud()
     _publish_web_state()
 
 func _toggle_operator_guide() -> void:
@@ -2008,10 +2022,8 @@ func _input(event: InputEvent) -> void:
         if event.keycode == KEY_O:
             _toggle_run_archive()
             return
-        if event.keycode == KEY_H and started and not paused and not session.finished():
-            _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
-            _save_checkpoint()
-            _refresh_hud()
+        if event.keycode == KEY_H:
+            _toggle_wayfinding()
             return
         if event.keycode == KEY_K:
             _toggle_auto_quality()
