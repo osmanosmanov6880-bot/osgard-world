@@ -66,6 +66,7 @@ func _run() -> void:
 		world.sun.shadow_enabled==world.sun.shadow_enabled,
 		"mobile LOW retains sky without new fog/render graph")
 	world.queue_free()
+	sun.free()  # Unparented native sun owns one RenderingServer RID; release it.
 	await process_frame
 	print("CITY REIGN R168 ACTUAL SKY: %d PASS %d FAIL" % [passed,failed])
 	quit(0 if failed==0 else 1)
