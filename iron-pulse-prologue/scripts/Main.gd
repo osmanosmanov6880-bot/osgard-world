@@ -2511,14 +2511,14 @@ func _refresh_hud() -> void:
     var show_field: bool = not field.is_empty() and field_dist < minf(main_dist,rescue_dist)
     var show_rescue: bool = not rescue.is_empty() and rescue_dist < main_dist and rescue_dist <= field_dist
     if started and not session.finished() and show_field:
-        var available: bool = session.core_scanned and session.field_protocol == "" and not session.override_set
-        var text_key: String = "field_hint" if available else "field_spent"
+        var field_ready: bool = session.core_scanned and session.field_protocol == "" and not session.override_set
+        var text_key: String = "field_hint" if field_ready else "field_spent"
         interaction_label.text = _copy(text_key).format({
             "name":_copy(str(field["key"])),"distance":"%.1f" % field_dist})
     elif started and not session.finished() and show_rescue:
         var relay_dist: float = _physical_distance(rescue["position"])
-        var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
-        var rescue_key: String = "rescue_hint" if available else "rescue_spent"
+        var relay_ready: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
+        var rescue_key: String = "rescue_hint" if relay_ready else "rescue_spent"
         interaction_label.text = _copy(rescue_key).format({
             "name":_copy(str(rescue["key"])),"distance":"%.1f" % relay_dist})
     elif not nearby.is_empty() and started and not session.finished():
