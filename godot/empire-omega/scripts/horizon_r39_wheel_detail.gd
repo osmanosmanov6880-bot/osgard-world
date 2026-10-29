@@ -7,6 +7,8 @@ const TREAD_COUNT: int = 24
 var rotor: MeshInstance3D
 var bolts: MultiMeshInstance3D
 var tread: MultiMeshInstance3D
+var normalized_heat: float = 0.0
+const THERMAL = preload("res://scripts/city_reign_rotor_thermal.gd")
 
 func configure(side: float) -> void:
 	name = "R39RollingWheelPBRDetails"
@@ -25,6 +27,11 @@ func configure(side: float) -> void:
 	rotor_mat.albedo_color = Color("87919a")
 	rotor_mat.roughness = 0.32
 	rotor_mat.metallic = 0.82
+	# Material is configured ONCE; runtime heat changes only material
+	# properties. No new meshes, point lights or shader reallocation.
+	rotor_mat.emission_enabled = true
+	rotor_mat.emission = Color("ff6d3c")
+	rotor_mat.emission_energy_multiplier = 0.0
 	rotor.material_override = rotor_mat
 	add_child(rotor)
 	var bolt_mesh := SphereMesh.new()
@@ -72,6 +79,16 @@ func configure(side: float) -> void:
 	tread.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(tread)
 	set_quality("standard")
+
+func apply_brake_heat(heat: float) -> void:
+	if rotor==null or not is_finite(heat):
+		return
+	normalized_heat = clampf(heat,0.0,1.0)
+	var mat: StandardMaterial3D = rotor.material_override as StandardMaterial3D
+	if mat!=null:
+		var glow: float = THERMAL.visible_glow(normalized_heat)
+		mat.albedo_color = Color("87919a").lerp(Color("bf704f"),glow*0.72)
+		mat.emission_energy_multiplier = glow*2.0
 
 func set_quality(tier: String) -> void:
 	var quality: String = tier if ["low","standard","cinematic"].has(tier) else "standard"
