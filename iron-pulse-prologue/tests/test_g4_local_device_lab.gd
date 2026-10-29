@@ -42,7 +42,13 @@ func _run() -> void:
         "No report, user:// file or upload before a real opt-in session")
     _assert(lab.begin("hero","ru",size,true) and lab.state=="recording",
         "Player opt-in starts bounded source-client main-loop measurement")
-    for i in range(2500):
+    var empty_live: Dictionary=lab.snapshot()
+    _assert(empty_live["frames_captured"]==0,
+        "A recording must begin with zero true samples, not fake FPS")
+    lab.observe(0.040,true,"hero",size)
+    _assert(lab.snapshot()["frames_captured"]==1 and lab.snapshot()["p95_ms"]==40.0,
+        "First accepted frame becomes visible immediately in a slow software WebGL client")
+    for i in range(2499):
         lab.observe(0.040,true,"hero",size)
     var live: Dictionary=lab.snapshot(true)
     _assert(live["frames_captured"]==2500 and live["active_seconds"]>=99.9,
