@@ -147,6 +147,42 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             g2_world.get("telemetry_uploaded") is False),(
                             "Optional field choice must not be pre-selected or fabricated",name,g2_world)
                         report.setdefault("g2_actual_3d_field_consoles",{})[name]="2 source-bound 3D stations, locked until real scan PASS"
+                        # G3: test real Godot MeshInstance3D/MultiMesh3D source
+                        # and physically placed danger signs. These fields are
+                        # read-only, never injected JS meshes or painted screenshots.
+                        obsidian=idle.get("g3_obsidian_architecture",{})
+                        assert obsidian.get("schema")=="IRON_PULSE_OBSIDIAN_ARCHITECTURE_G3" and (
+                            obsidian.get("world_geometry_authentic") is True and
+                            obsidian.get("source_simulation_changed") is False and
+                            obsidian.get("no_external_assets") is True and
+                            obsidian.get("telemetry_uploaded") is False),(
+                            "G3 industrial set is missing or claims fake gameplay",name,obsidian)
+                        assert obsidian.get("hero_mesh_count",0)>=70 and (
+                            obsidian.get("persistent_mesh_count",0)>=9 and
+                            obsidian.get("batched_instances",0)>=190 and
+                            obsidian.get("draw_batches")==2),(
+                            "Actual authored PBR architecture/MultiMesh geometry not in Godot WebGL",name,obsidian)
+                        assert obsidian.get("sign_count")==3 and (
+                            obsidian.get("light_count")==3 and
+                            obsidian.get("safety_visible") is True and
+                            obsidian.get("hero_visible") is True),(
+                            "Original three-sector Obsidian navigation/safety architecture missing",name,obsidian)
+                        actual_lamps=obsidian.get("physical_lamp_positions",[])
+                        assert len(actual_lamps)==3 and (
+                            abs(float(actual_lamps[0][2])+13.8)<.15 and
+                            abs(float(actual_lamps[1][2])+35.0)<.15 and
+                            abs(float(actual_lamps[2][2])+51.2)<.15),(
+                            "G3 readout has fake instead of real physical hazard positions",name,actual_lamps)
+                        assert len(obsidian.get("sign_text",[]))==3 and (
+                            "РЕАКТОР" in obsidian["sign_text"][0]) and (
+                            obsidian.get("light_energy",0)>0 and obsidian.get("emission_multiplier",0)>0),(
+                            "Actual RU sector labels or real emissive lighting missing",name,obsidian)
+                        report.setdefault("g3_true_pbr_3d_stage",{})[name]={
+                            "hero_meshes":obsidian["hero_mesh_count"],
+                            "gpu_instances":obsidian["batched_instances"],
+                            "real_lamps":actual_lamps,
+                            "source_scene":True
+                        }
                         # V8 must render a NEW 15m side reactor chamber,
                         # not just rename old corridor meshes or substitute CGI.
                         bay = idle.get("reactor_atrium", {})
@@ -892,6 +928,12 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                         "G button did not switch actual V8 vaulted reactor geometry",state.get("reactor_atrium"))
                                     assert state.get("containment_fx",{}).get("quality") == expected, (
                                         "G button did not scale procedural pressure vents/steam",state.get("containment_fx"))
+                                    g3_quality=state.get("g3_obsidian_architecture",{})
+                                    assert g3_quality.get("quality")==expected and (
+                                        g3_quality.get("hero_visible") is (expected=="hero")) and (
+                                        g3_quality.get("safety_visible") is True and
+                                        g3_quality.get("light_count")==3),(
+                                        "Real G3 PBR geometry must turn off in ECO without hiding physical hazard safety",name,g3_quality)
                                     if expected=="eco":
                                         assert state.get("containment_fx",{}).get("vapor_visible") is False, (
                                             "ECO retained heavyweight vapor rendering",state.get("containment_fx"))
@@ -906,6 +948,12 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                     break
                                 page.wait_for_timeout(200)
                             assert state["locale"] == "en", state
+                            translated_art=state.get("g3_obsidian_architecture",{})
+                            assert translated_art.get("quality")=="hero" and (
+                                translated_art.get("hero_visible") is True and
+                                translated_art.get("safety_visible") is True and
+                                translated_art.get("sign_text",[])[1].find("SERVICE")>=0),(
+                                "Actual live 3D sector signs failed to localize or HERO restore",name,translated_art)
                             page.keyboard.press("Escape")
                             deadline = time.monotonic() + 20
                             while time.monotonic() < deadline:
