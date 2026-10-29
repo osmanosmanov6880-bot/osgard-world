@@ -2504,10 +2504,18 @@ func _refresh_hud() -> void:
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
     var nearby: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
-    var show_rescue: bool = not rescue.is_empty()
-    if show_rescue and not nearby.is_empty():
-        show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
-    if started and not session.finished() and show_rescue:
+    var field: Dictionary = _nearest_field_station()
+    var main_dist: float = _physical_distance(nearby["position"]) if not nearby.is_empty() else 999.0
+    var rescue_dist: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+    var field_dist: float = _physical_distance(field["position"]) if not field.is_empty() else 999.0
+    var show_field: bool = not field.is_empty() and field_dist < minf(main_dist,rescue_dist)
+    var show_rescue: bool = not rescue.is_empty() and rescue_dist < main_dist and rescue_dist <= field_dist
+    if started and not session.finished() and show_field:
+        var available: bool = session.core_scanned and session.field_protocol == "" and not session.override_set
+        var text_key: String = "field_hint" if available else "field_spent"
+        interaction_label.text = _copy(text_key).format({
+            "name":_copy(str(field["key"])),"distance":"%.1f" % field_dist})
+    elif started and not session.finished() and show_rescue:
         var relay_dist: float = _physical_distance(rescue["position"])
         var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
         var rescue_key: String = "rescue_hint" if available else "rescue_spent"
@@ -2571,3 +2579,9 @@ func _update_terminal_highlights(objective_key: String) -> void:
         var material: StandardMaterial3D = _relay_done_material if activated else _relay_ready_material
         if indicator.material_override != material:
             indicator.material_override = material
+    for station in field_stations:
+        var lamp: MeshInstance3D = station["indicator"]
+        var chosen: bool = session.field_protocol == str(station["id"])
+        var status_mat: StandardMaterial3D = _field_done_material if chosen else _field_ready_material
+        if lamp.material_override != status_mat:
+            lamp.material_override = status_mat
