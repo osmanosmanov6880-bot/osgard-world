@@ -35,6 +35,7 @@ const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
 const CITY_REIGN_CRISIS = preload("res://scripts/city_reign_crisis_scene.gd")
 const CITY_REIGN_PROPOSALS = preload("res://scripts/city_reign_promise_markers.gd")
 const CITY_REIGN_OPENING_DIRECTOR = preload("res://scripts/city_reign_opening_director.gd")
+const R170_EPISODE = preload("res://scripts/city_reign_episode_sequence.gd")
 const CITY_REIGN_SITE_VISIT = preload("res://scripts/city_reign_live_site_inspection.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
@@ -1128,7 +1129,15 @@ func _on_contract_changed(_message_id: String) -> void:
 
 func _on_mission_done(_stage: int, reward: int) -> void:
 	if soundscape != null: soundscape.play_success()
-	hud.announce("ЗАДАНИЕ ВЫПОЛНЕНО · +%d ₽" % reward if GameState.locale == "ru" else "MISSION COMPLETE · +%d ₽" % reward)
+	var message: String = _three(
+		"ЗАДАНИЕ ВЫПОЛНЕНО","MISSION COMPLETE","任务完成")+" · +%d ₽" % reward
+	if _stage<R170_EPISODE.TOTAL_STEPS:
+		var next: Dictionary = R170_EPISODE.first_six(GameState.data,
+			ContractManager.current_offer(),ContractManager.POSITIONS,GameState.locale)
+		# Only actual MissionManager completion events trigger this notice;
+		# the director never awards money or writes GameState.
+		message+="  ·  "+str(next["progress"])
+	hud.announce(message)
 
 func _on_chapter_done(_chapter_id: String, reward: int) -> void:
 	# New localized one-time chapter finale is driven by a completed LIVE
