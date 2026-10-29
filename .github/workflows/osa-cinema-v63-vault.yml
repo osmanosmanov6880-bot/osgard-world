@@ -1,0 +1,106 @@
+name: OSA CINEMA V63 Private Byte Vault
+on:
+  pull_request:
+    branches: [master, feature/osa-cinema-v62-evidence-room-20261029]
+    paths:
+      - 'server/core_server.py'
+      - 'server/core_cinema_vault.py'
+      - 'src/coreClient.ts'
+      - 'src/OSACinemaCollaboration.tsx'
+      - 'src/OSACinemaAssetVault.tsx'
+      - 'src/osaCinemaAssetVault.css'
+      - 'src/osaCinemaCollaboration.css'
+      - 'scripts/core-cinema-v63-vault-smoke.py'
+      - 'scripts/osa-cinema-v63-*.mjs'
+      - 'playwright.osa-cinema-v63.config.mjs'
+      - '.github/workflows/osa-cinema-v63-vault.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'server/core_server.py'
+      - 'server/core_cinema_vault.py'
+      - 'src/coreClient.ts'
+      - 'src/OSACinemaAssetVault.tsx'
+      - 'scripts/core-cinema-v63-vault-smoke.py'
+      - 'scripts/osa-cinema-v63-*.mjs'
+      - 'playwright.osa-cinema-v63.config.mjs'
+      - '.github/workflows/osa-cinema-v63-vault.yml'
+permissions:
+  contents: read
+jobs:
+  vault-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile actual private Core and SQLite binary Vault
+        run: python3 -m compileall -q server/core_server.py server/core_cinema.py server/core_cinema_evidence.py server/core_cinema_vault.py
+      - name: Real HTTP/SQLite byte integrity, auth, replay, size and Core regressions
+        run: python3 scripts/core-cinema-v63-vault-smoke.py
+  vault-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Existing OSA Cinema public media NO-GO and UI contracts
+        run: |
+          node --test scripts/osa-cinema-v60-world-contract.test.mjs
+          node --test scripts/osa-cinema-v59-production-contract.test.mjs
+          node --test scripts/osa-cinema-v58-public-catalog.test.mjs
+          node --test scripts/osa-cinema-v58-watchlist.test.mjs
+          node --test scripts/osa-cinema-v55-studio-contract.test.mjs
+      - name: Typecheck entire OSGARD TypeScript
+        run: npm run check
+      - name: Compile authentic Vite production app
+        run: npm run build
+      - name: Verify real private shell and byte safety, previous contracts and performance budget
+        run: |
+          node scripts/osa-cinema-v63-build-preflight.mjs
+          node scripts/osa-cinema-v62-build-preflight.mjs
+          node scripts/osa-cinema-v61-build-preflight.mjs
+          node scripts/osa-cinema-v60-build-preflight.mjs
+          node scripts/osa-cinema-v59-build-preflight.mjs
+          npm run qa:osa-media-release
+          npm run qa:redesign-build
+  vault-browser:
+    needs: [vault-http, vault-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Prepare actual Chrome or install Chromium
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Test real PDF/MP4 upload, SHA256-verified download, viewer revocation, RU/EN and 320px
+        run: npx playwright test --config playwright.osa-cinema-v63.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v63-real-binary-vault-browser-evidence
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn
