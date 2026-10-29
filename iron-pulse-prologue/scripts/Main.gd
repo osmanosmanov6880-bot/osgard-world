@@ -1124,12 +1124,12 @@ func _refresh_device_lab_ui() -> void:
         return
     var english: bool = locale == "en"
     device_lab_label.text = device_lab.panel_text(locale)
-    device_lab_start_button.text = "F7 / START MEASUREMENT" if english else "F7 / НАЧАТЬ ИЗМЕРЕНИЕ"
+    device_lab_start_button.text = "F9 / START MEASUREMENT" if english else "F9 / НАЧАТЬ ИЗМЕРЕНИЕ"
     if device_lab.state == "recording":
-        device_lab_start_button.text = "F7 / STOP AND REVIEW" if english else "F7 / ОСТАНОВИТЬ И ПРОВЕРИТЬ"
+        device_lab_start_button.text = "F9 / STOP AND REVIEW" if english else "F9 / ОСТАНОВИТЬ И ПРОВЕРИТЬ"
     device_lab_export_button.text = "SAVE LOCAL JSON / TRY COPY" if english else "СОХРАНИТЬ JSON / КОПИРОВАТЬ"
     device_lab_export_button.disabled = device_lab.state != "complete"
-    device_lab_close_button.text = "RETURN TO GAME / F6" if english else "ВЕРНУТЬСЯ В ИГРУ / F6"
+    device_lab_close_button.text = "RETURN TO GAME / F8" if english else "ВЕРНУТЬСЯ В ИГРУ / F8"
     if device_lab_export_note.text == "":
         device_lab_export_note.text = (
             "No uploads. Physical hardware testing is not certified." if english
@@ -1444,7 +1444,7 @@ func _make_touch_controls() -> void:
     touch_navigation_button = _touch_button(touch_ui,"NAV / H",6,-414,94)
     touch_navigation_button.add_theme_font_size_override("font_size",15)
     touch_navigation_button.pressed.connect(_toggle_wayfinding)
-    touch_device_lab_button = _touch_button(touch_ui,"LAB / F6",6,-471,94)
+    touch_device_lab_button = _touch_button(touch_ui,"LAB / F8",6,-471,94)
     touch_device_lab_button.add_theme_font_size_override("font_size",14)
     touch_device_lab_button.pressed.connect(_toggle_device_lab)
 
@@ -2246,10 +2246,10 @@ func _input(event: InputEvent) -> void:
         _gamepad_button(event.button_index)
         return
     if event is InputEventKey and event.pressed and not event.echo:
-        if event.keycode == KEY_F6:
+        if event.keycode == KEY_F8:
             _toggle_device_lab()
             return
-        if event.keycode == KEY_F7:
+        if event.keycode == KEY_F9:
             _device_lab_toggle_record()
             return
         if device_lab_panel != null and device_lab_panel.visible:
@@ -2398,7 +2398,7 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
     var gameplay_active: bool = started and not paused and not session.finished()
     performance_audit.observe(delta,gameplay_active,quality_mode)
-    # Actual client-frame evidence, explicitly started by F7 or native
+    # Actual client-frame evidence, explicitly started by F9 or native
     # button. Pause/intro/overlay frames are never treated as gameplay.
     var viewport_size: Vector2 = get_viewport().get_visible_rect().size
     device_lab.observe(delta,gameplay_active,quality_mode,
