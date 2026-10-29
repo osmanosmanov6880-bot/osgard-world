@@ -49,8 +49,11 @@ func _run() -> void:
 	var transform: Transform3D=mesh.multimesh.get_instance_transform(0)
 	check(transform.basis.y.normalized().dot(road_normal)>0.99,
 		"pooled rubber quad lies along the actual sloped road normal")
-	check(absf(transform.basis.z.normalized().dot(road_normal))<0.02,
-		"tyre segment tangent follows the real asphalt plane")
+	var tangent_dot: float = transform.basis.z.normalized().dot(road_normal)
+	print("R166 SLOPE DIAGNOSTICS: road=",road_normal," quadY=",transform.basis.y,
+		" quadZ=",transform.basis.z," dot=",tangent_dot)
+	check(absf(tangent_dot)<0.02,
+		"tyre segment tangent follows the real asphalt plane; measured dot "+str(tangent_dot))
 	check(mesh.multimesh.instance_count==SKID.CAPACITY and
 		mesh.multimesh.visible_instance_count==1,
 		"existing fixed GPU ring does not grow per frame")
