@@ -31,7 +31,7 @@ func _run() -> void:
 	# The actual scene replacement is deferred to IDLE, not a physics tick.
 	# This is the same Godot pattern as inherited v121 real-city tests.
 	await process_frame
-	await physics_frame
+	for i in range(4): await physics_frame
 	var main: Node3D=current_scene as Node3D
 	check(main!=null,"real original main.tscn became the active SceneTree scene")
 	if main==null:
@@ -44,7 +44,18 @@ func _run() -> void:
 	var hud: CanvasLayer=main.get("hud") as CanvasLayer
 	check(car!=null and world!=null and hud!=null,
 		"real native drivable car, city world and original HUD remain")
-	check(str(main.get("last_route_source"))=="vehicle",
+	# MainScene activation can consume the first physics tick while its
+	# authoritative GameState and world are finishing _ready(). Wait for
+	# actual *observed* native frame state rather than one arbitrary tick.
+	var first_car_seen: bool=false
+	for i in range(24):
+		if str(main.get("last_route_source"))=="vehicle":
+			first_car_seen=true
+			break
+		await physics_frame
+	print("R171 initial source=",main.get("last_route_source"),
+		" career=",sim.data.get("mission",-1))
+	check(first_car_seen,
 		"the current actual car is first genuine on-road GPS objective")
 	var initial_nav: Dictionary=GOAL.resolve(sim.data,"enter_vehicle",cargo.current_offer(),
 		cargo.POSITIONS,car.global_position,Vector3.ZERO,Vector3.ZERO,Vector3.ZERO)
