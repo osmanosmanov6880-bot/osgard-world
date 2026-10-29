@@ -1,0 +1,107 @@
+/* OSA CINEMA V61 / COLLABORATION CORE — genuine application UI, not a storyboard. */
+main.osa-studio.osa-collab-page{background:#090b0d;color:#f4e9d9;min-height:100vh}
+.osa-collab-page *{box-sizing:border-box}
+.osa-collab-page button,.osa-collab-page input,.osa-collab-page select,.osa-collab-page textarea{font:inherit}
+.osa-collab-page button:focus-visible,.osa-collab-page a:focus-visible,.osa-collab-page input:focus-visible,.osa-collab-page select:focus-visible,.osa-collab-page textarea:focus-visible{outline:2px solid #e6bf84;outline-offset:3px}
+.osa-collab-page button:disabled{opacity:.49;cursor:not-allowed}
+.osa-collab-hero{position:relative;display:flex;align-items:center;min-height:540px;padding:90px clamp(24px,7vw,135px) 100px;background:radial-gradient(ellipse at 79% 36%,#3a2a1a 0,#15191a 48%,#090b0d 84%);border-bottom:1px solid #5d4c35;isolation:isolate;overflow:hidden}
+.osa-collab-hero>div{max-width:920px;position:relative;z-index:1}
+.osa-collab-hero h1{font:400 clamp(62px,8vw,120px)/.91 Georgia,'Times New Roman',serif;letter-spacing:-.065em;color:#f4e5d3;margin:28px 0 31px}
+.osa-collab-hero h1 em{font-weight:400;color:#e1bb80}
+.osa-collab-lead{font:400 clamp(16px,1.5vw,20px)/1.7 Georgia,serif;color:#d7c4b0;max-width:690px}
+.osa-collab-server-mark{display:inline-flex;align-items:center;gap:10px;padding:13px 17px;border:1px solid #806242;color:#edd0a3;background:#211c16;margin-top:31px;font:11px/1.6 monospace}
+.osa-collab-hero-glyph{font:400 clamp(190px,29vw,450px)/.65 Georgia,serif;position:absolute;right:-6%;bottom:-16%;color:#e7ba8210;transform:rotate(-10deg);pointer-events:none}
+.osa-collab-truth{display:flex;gap:24px;align-items:center;max-width:1510px;margin:40px auto 0;padding:27px 33px;background:#261d18;border:1px solid #936b48}
+.osa-collab-truth svg{color:#eab08b;flex:none}
+.osa-collab-truth>div{flex:1}
+.osa-collab-truth strong{font:400 clamp(23px,2.5vw,36px) Georgia,serif;color:#f5d9bf}
+.osa-collab-truth p{font:12px/1.8 'Segoe UI',sans-serif;color:#d5bdab;margin-top:9px}
+.osa-collab-truth>span{font:11px monospace;color:#f0aa90;border:1px solid #b17866;padding:9px 12px;white-space:nowrap}
+.osa-collab-body{max-width:1510px;margin:0 auto;padding:75px clamp(23px,4vw,70px) 110px}
+.osa-collab-state{display:flex;flex-direction:column;align-items:center;justify-content:center;max-width:880px;margin:0 auto;min-height:355px;border:1px solid #6f573d;background:#151718;padding:44px clamp(23px,5vw,68px);text-align:center}
+.osa-collab-state h2{font:400 clamp(35px,4vw,60px) Georgia,serif;color:#f2ddc4;margin:18px 0}
+.osa-collab-state p:not(.osa-studio-eyebrow){color:#cbb8a4;font:13px/1.8 'Segoe UI',sans-serif;max-width:650px}
+.osa-collab-state>a{font:12px 'Segoe UI',sans-serif;color:#e4c194;text-decoration:underline;text-underline-offset:6px;margin-top:26px}
+.osa-collab-state-icon{color:#e5ba7e;margin-bottom:19px}
+.osa-collab-state-actions{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:25px;flex-wrap:wrap}
+.osa-collab-state-actions button{min-height:50px;display:flex;gap:10px;align-items:center;padding:13px 17px;border:1px solid #a9885d;background:#2c241d;color:#f0d7b7;cursor:pointer;font-size:12px}
+.osa-collab-subhead{display:flex;justify-content:space-between;align-items:end;gap:28px;margin-bottom:36px}
+.osa-collab-subhead h2{font:400 clamp(35px,4vw,63px) Georgia,serif;color:#f3e4d2;margin:15px 0}
+.osa-collab-subhead p:not(.osa-studio-eyebrow){font:12px/1.7 'Segoe UI',sans-serif;color:#c5b6a2}
+.osa-collab-subhead strong{color:#e9c798}
+.osa-collab-subhead>button,.osa-collab-workspace-head>button{display:inline-flex;align-items:center;gap:9px;background:#201c18;color:#eac994;border:1px solid #816344;padding:12px 15px;min-height:44px;font:12px 'Segoe UI',sans-serif;white-space:nowrap;cursor:pointer}
+.osa-collab-selector{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:15px;margin-bottom:30px}
+.osa-collab-selector>button{display:flex;flex-direction:column;gap:12px;text-align:left;min-height:142px;align-items:start;border:1px solid #64513b;background:#171a1a;padding:23px 27px;color:#eacda5;cursor:pointer}
+.osa-collab-selector>button:hover,.osa-collab-selector>button.selected{background:#2a251e;border-color:#e4bb80}
+.osa-collab-selector>button.selected{box-shadow:inset 3px 0 #e5bb7c}
+.osa-collab-selector>button span,.osa-collab-selector>button small{font:10px/1.5 monospace;letter-spacing:.07em;color:#d1a874}
+.osa-collab-selector>button strong{font:400 30px Georgia,serif;color:#f5e1c6;overflow-wrap:anywhere}
+.osa-collab-selector>button small{color:#bda98e}
+.osa-collab-empty{background:#141717;border:1px solid #66523b;padding:55px 25px;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center;color:#dbba86;grid-column:1/-1}
+.osa-collab-empty strong,.osa-collab-empty h3{font:400 26px Georgia,serif;color:#f2dfc4}
+.osa-collab-empty p{color:#bba994;font:12px/1.7 'Segoe UI',sans-serif}
+.osa-collab-columns{display:grid;grid-template-columns:minmax(270px,.62fr) minmax(0,1.58fr);gap:21px;align-items:start}
+.osa-collab-new{border:1px solid #665039;background:#151818;padding:35px clamp(20px,2.5vw,37px)}
+.osa-collab-new h3{font:400 37px Georgia,serif;color:#f1e2ce;margin:14px 0 20px}
+.osa-collab-new>p:not(.osa-studio-eyebrow){font:12px/1.8 'Segoe UI',sans-serif;color:#c8b7a3}
+.osa-collab-new form,.osa-collab-task-form{display:flex;flex-direction:column;gap:20px;margin-top:29px}
+.osa-collab-new label,.osa-collab-task-form label,.osa-collab-filter label,.osa-collab-task-actions label{display:flex;flex-direction:column;gap:8px;color:#d7bd92;font:12px/1.5 'Segoe UI',sans-serif}
+.osa-collab-new input,.osa-collab-new select,.osa-collab-task-form input,.osa-collab-task-form select,.osa-collab-task-form textarea,.osa-collab-filter select,.osa-collab-task-actions select{width:100%;min-width:0;border:1px solid #70583d;background:#101314;color:#f4e6d3;min-height:44px;padding:11px 13px;font:13px 'Segoe UI',sans-serif}
+.osa-collab-task-form input[type=date]{color-scheme:dark}
+.osa-collab-task-form textarea{min-height:90px;resize:vertical;line-height:1.6}
+.osa-collab-new form>button,.osa-collab-task-form>button{display:flex;gap:10px;align-items:center;justify-content:center;cursor:pointer;min-height:51px;padding:12px 18px;border:1px solid #e1bb85;background:#d4ad74;color:#20160e;font:12px/1.5 'Segoe UI',sans-serif}
+.osa-collab-new .osa-collab-muted{font:11px/1.75 'Segoe UI',sans-serif;color:#a99b8c;margin-top:25px}
+.osa-collab-workspace{border:1px solid #66523b;background:#121515;min-height:390px;min-width:0}
+.osa-collab-workspace-head{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:36px clamp(22px,3vw,42px)}
+.osa-collab-workspace-head h3{font:400 clamp(28px,3vw,46px) Georgia,serif;letter-spacing:-.02em;color:#f1e0c9;margin:13px 0}
+.osa-collab-workspace-head p:not(.osa-studio-eyebrow){font:11px monospace;color:#c8b294}
+.osa-collab-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid #66523b;border-bottom:1px solid #66523b}
+.osa-collab-kpis>div{padding:25px clamp(10px,2vw,25px);display:flex;flex-direction:column;gap:10px;border-right:1px solid #574734}
+.osa-collab-kpis>div:last-child{border-right:0;background:#30201b}
+.osa-collab-kpis strong{color:#e5c494;font:400 clamp(27px,3vw,47px)/1 Georgia,serif}
+.osa-collab-kpis>div:last-child strong{font:400 clamp(19px,2.4vw,32px) Georgia,serif;color:#efa88e}
+.osa-collab-kpis span{font:10px/1.6 monospace;color:#c2b29e}
+.osa-collab-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid #6b5136;background:#171919}
+.osa-collab-tabs button{border:0;border-bottom:2px solid transparent;background:transparent;color:#bba68d;font:12px 'Segoe UI',sans-serif;cursor:pointer;min-height:57px}
+.osa-collab-tabs button[aria-selected=true]{color:#f4d09f;border-bottom-color:#e5b87c;background:#241f18}
+.osa-collab-tabpanel{padding:30px clamp(18px,3vw,43px) 42px}
+.osa-collab-filter{display:flex;gap:15px;align-items:end;flex-wrap:wrap;margin-bottom:24px}
+.osa-collab-filter label{min-width:170px;flex:1}
+.osa-collab-tasks{display:grid;gap:10px}
+.osa-collab-task{display:flex;justify-content:space-between;align-items:start;gap:22px;border:1px solid #554737;background:#1a1c1b;padding:25px;min-width:0}
+.osa-collab-task>div:first-child{min-width:0;flex:1}
+.osa-collab-task h4{font:400 clamp(22px,2.3vw,32px) Georgia,serif;color:#f5e3cb;margin:9px 0}
+.osa-collab-task small{font:10px monospace;letter-spacing:.1em;color:#d4a872}
+.osa-collab-task p{font:12px/1.7 'Segoe UI',sans-serif;color:#c8b6a2;white-space:pre-wrap;overflow-wrap:anywhere}
+.osa-collab-task span{display:inline-block;font:10px/1.7 monospace;color:#baa890;margin-top:10px}
+.osa-collab-task-actions{display:flex;flex-direction:column;align-items:end;gap:14px;min-width:200px}
+.osa-collab-task-actions label{width:100%}
+.osa-collab-task-actions button,.osa-collab-people button{display:inline-flex;gap:8px;align-items:center;min-height:40px;padding:8px 12px;border:1px solid #ab7e6d;background:#2b1d1c;color:#edb5a4;font:12px 'Segoe UI',sans-serif;cursor:pointer}
+.osa-collab-task-form{padding:30px;margin-top:28px;border:1px solid #755b3e;background:#1e1d19}
+.osa-collab-task-form h4{font:400 30px Georgia,serif;color:#f0daba}
+.osa-collab-task-form>p:not(.osa-studio-eyebrow){font:12px/1.7 'Segoe UI',sans-serif;color:#c8b8a5}
+.osa-collab-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.osa-collab-people{display:grid;gap:11px}
+.osa-collab-people>div{display:flex;align-items:center;justify-content:space-between;gap:13px;flex-wrap:wrap;border-bottom:1px solid #5a4c3a;padding:18px 4px}
+.osa-collab-people>div span{display:flex;align-items:center;gap:11px;color:#e2c396;flex-wrap:wrap}
+.osa-collab-people>div strong{color:#f3dfc3;font:15px 'Segoe UI',sans-serif}
+.osa-collab-people>div small{font:10px monospace;color:#bb9c70}
+.osa-collab-audit{display:grid}
+.osa-collab-audit>div{display:flex;align-items:center;gap:14px;padding:17px 0;border-bottom:1px solid #514332}
+.osa-collab-audit svg{color:#e3bd87}
+.osa-collab-audit>div span{display:flex;flex-direction:column;gap:5px;flex:1}
+.osa-collab-audit strong{font:13px 'Segoe UI',sans-serif;color:#eed9bc}
+.osa-collab-audit small{font:10px monospace;color:#a99e90}
+.osa-collab-audit code{color:#b49b7d;font-size:10px}
+.osa-collab-muted{font:12px/1.8 'Segoe UI',sans-serif;color:#ad9e8c}
+.osa-collab-feedback{padding:20px 0}
+.osa-collab-feedback p{display:flex;align-items:center;gap:11px;border-left:3px solid #c3a075;background:#2b241b;padding:18px 22px;color:#f0d9b8;font:13px/1.6 sans-serif}
+.osa-collab-feedback p[role=alert]{border-color:#dfa08b;background:#38221e}
+.osa-collab-legal{display:flex;gap:21px;align-items:start;border:1px solid #956549;background:#251b18;padding:29px;margin-top:65px}
+.osa-collab-legal svg{color:#e9ac90;flex:none}
+.osa-collab-legal p{color:#d0bba9;font:12px/1.85 'Segoe UI',sans-serif}
+@media(max-width:1050px){.osa-collab-truth{margin:30px 23px 0}.osa-collab-columns{grid-template-columns:1fr}.osa-collab-new{max-width:none}.osa-collab-new form{display:grid;grid-template-columns:1fr 1.5fr;gap:15px}.osa-collab-new form>button{grid-column:1/-1}}
+@media(max-width:720px){.osa-collab-hero{min-height:480px;padding:75px 22px 68px}.osa-collab-hero h1{font-size:clamp(46px,10vw,69px)}.osa-collab-hero-glyph{display:none}.osa-collab-truth{margin:24px 16px 0;padding:22px 18px;gap:13px;align-items:start}.osa-collab-truth>span{display:none}.osa-collab-body{padding:60px 17px 75px}.osa-collab-subhead{align-items:start;flex-direction:column}.osa-collab-new form{display:flex}.osa-collab-new h3{font-size:33px}.osa-collab-workspace-head{padding:25px 18px}.osa-collab-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.osa-collab-kpis>div{padding:19px 16px}.osa-collab-kpis>div:nth-child(2){border-right:0}.osa-collab-kpis>div:nth-child(-n+2){border-bottom:1px solid #574734}.osa-collab-tabpanel{padding:24px 17px}.osa-collab-task{padding:19px;flex-direction:column}.osa-collab-task-actions{width:100%;min-width:0;align-items:start}.osa-collab-form-grid{grid-template-columns:1fr}.osa-collab-legal{padding:24px 18px;gap:12px}.osa-collab-state{padding:35px 20px}}
+@media(max-width:350px){.osa-collab-hero h1{font-size:39px}.osa-collab-workspace-head h3{font-size:27px}.osa-collab-selector>button strong{font-size:25px}.osa-collab-tabs button{font-size:11px}.osa-collab-kpis strong{font-size:29px}}
+@media(prefers-reduced-motion:reduce){.osa-collab-page *, .osa-collab-page *::before,.osa-collab-page *::after{animation:none!important;transition:none!important}}
+@media print{.osa-collab-page{background:white!important;color:black!important}.osa-collab-page header,.osa-collab-page footer,.osa-collab-new,.osa-collab-tabs,.osa-collab-task-form,.osa-collab-state-actions,.osa-collab-task-actions{display:none!important}.osa-collab-hero{min-height:0;background:white!important;padding:20px!important}.osa-collab-hero h1,.osa-collab-page h2,.osa-collab-page h3,.osa-collab-page h4{color:#111!important}.osa-collab-columns{display:block}.osa-collab-workspace{border:0}.osa-collab-task{break-inside:avoid}}

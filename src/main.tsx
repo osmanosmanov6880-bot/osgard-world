@@ -121,7 +121,7 @@ function RoutedContent({ path, href }: { path: string; href: string }) {
   if (path === '/osa-cinema/studio/production') return <><Seo path={path} /><OSACinemaProductionDesk /></>
   if (path === '/osa-cinema/studio/library') return <><Seo path={path} /><OSACinemaLibrary /></>
   if (path.startsWith('/osa-cinema/studio/films/')) return <><Seo path={path} /><OSACinemaFilm projectId={path.slice('/osa-cinema/studio/films/'.length)} /></>
-  if (path === '/osa-cinema/studio') return <><Seo path={path} /><OSACinemaStudio /></>
+  if (path === '/osa-cinema/studio' || path === '/osa-cinema/studio/collaboration') return <><Seo path={path} /><OSACinemaStudio /></>
   if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>
   if (path === '/miniapp') return <MiniApp />
   if (path === '/games/time' || path === '/games/time-empire') return <><Seo path="/games/time" /><TimePrototype /></>
