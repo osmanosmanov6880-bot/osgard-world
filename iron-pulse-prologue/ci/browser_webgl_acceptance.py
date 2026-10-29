@@ -434,6 +434,101 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             g2_after_start.get("available") is False), (
                             "New player received field resources without a real scanner",name,g2_after_start)
 
+                        # G4: actual exported Godot keyboard/touch lab.
+                        # Read-only DOM is a mirror; only physical F8/F9/taps
+                        # start/stop the true _process frame capture.
+                        lab_initial=state.get("g4_device_lab",{})
+                        assert lab_initial.get("schema")=="IRON_PULSE_DEVICE_LAB_G4" and (
+                            lab_initial.get("status")=="idle" and
+                            lab_initial.get("frames_captured")==0 and
+                            lab_initial.get("telemetry_uploaded") is False and
+                            lab_initial.get("hardware_physically_verified") is False),(
+                            "G4 must not silently sample or falsify hardware",name,lab_initial)
+                        page.keyboard.press("F9")
+                        deadline=time.monotonic()+30
+                        recording={}
+                        while time.monotonic()<deadline:
+                            recording=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if (recording.get("g4_device_lab",{}).get("status")=="recording" and
+                                    recording["g4_device_lab"].get("frames_captured",0)>=3):
+                                break
+                            page.wait_for_timeout(250)
+                        g4_active=recording.get("g4_device_lab",{})
+                        assert g4_active.get("status")=="recording" and (
+                            g4_active.get("frames_captured",0)>=3 and
+                            g4_active.get("source")=="actual_current_client_main_loop_delta" and
+                            g4_active.get("telemetry_uploaded") is False),(
+                            "F9 did not record REAL Godot browser frame deltas",name,g4_active)
+                        page.keyboard.press("F9")
+                        deadline=time.monotonic()+20
+                        measured={}
+                        while time.monotonic()<deadline:
+                            measured=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if (measured.get("g4_device_lab",{}).get("status")=="complete" and
+                                    measured["g4_device_lab"].get("panel_visible") is True):
+                                break
+                            page.wait_for_timeout(180)
+                        g4_finished=measured.get("g4_device_lab",{})
+                        assert g4_finished.get("status")=="complete" and (
+                            g4_finished.get("frames_captured",0)>=3 and
+                            g4_finished.get("p95_ms",0)>0 and
+                            g4_finished.get("panel_visible") is True and
+                            measured.get("paused") is True and
+                            g4_finished.get("comparable_local_run") is False and
+                            g4_finished.get("hardware_physically_verified") is False),(
+                            "Short test cannot be a certified device benchmark",name,g4_finished)
+                        page.keyboard.press("Escape")
+                        deadline=time.monotonic()+18
+                        resumed={}
+                        while time.monotonic()<deadline:
+                            resumed=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if (resumed.get("g4_device_lab",{}).get("panel_visible") is False and
+                                    resumed.get("paused") is False):
+                                break
+                            page.wait_for_timeout(180)
+                        assert resumed.get("paused") is False and (
+                            resumed.get("g4_device_lab",{}).get("panel_visible") is False and
+                            resumed.get("scanned") is False),(
+                            "Returning from real device lab must not mutate or scan game",name,resumed)
+                        if mobile:
+                            rect=resumed.get("touch_button_rects",{}).get("LAB / F8")
+                            assert rect and rect[2]>=44 and rect[3]>=44,(
+                                "G4 lacks an actual large native mobile LAB button",name,rect)
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            px=bounds["x"]+(rect[0]+rect[2]/2)*bounds["width"]/resumed["viewport"][0]
+                            py=bounds["y"]+(rect[1]+rect[3]/2)*bounds["height"]/resumed["viewport"][1]
+                            assert 0<=px<=size["width"] and 0<=py<=size["height"],(
+                                "Real mobile Device Lab button clips outside the touch screen",name,rect)
+                            page.touchscreen.tap(px,py)
+                            deadline=time.monotonic()+18
+                            mobile_lab={}
+                            while time.monotonic()<deadline:
+                                mobile_lab=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if mobile_lab.get("g4_device_lab",{}).get("panel_visible") is True:
+                                    break
+                                page.wait_for_timeout(200)
+                            assert mobile_lab.get("g4_device_lab",{}).get("panel_visible") is True and (
+                                mobile_lab.get("paused") is True), (
+                                "Actual mobile tap fails to open genuine local device report",name,mobile_lab)
+                            page.keyboard.press("Escape")
+                            deadline=time.monotonic()+15
+                            while time.monotonic()<deadline:
+                                mobile_lab=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if mobile_lab.get("paused") is False and (
+                                        mobile_lab.get("g4_device_lab",{}).get("panel_visible") is False):
+                                    break
+                                page.wait_for_timeout(180)
+                            assert mobile_lab.get("paused") is False, (
+                                "Cannot leave touch Device Lab to continue play",name,mobile_lab)
+                        report.setdefault("g4_local_device_lab",{})[name]={
+                            "actual_recorded_frames":g4_finished["frames_captured"],
+                            "real_p95_main_loop_ms":g4_finished["p95_ms"],
+                            "physical_device_certified":False,
+                            "scenario_unchanged":True,
+                            "local_only":True
+                        }
+
                         # G1: prove that the real Godot operator guide opens
                         # through the actual keyboard and mobile touch inputs.
                         # No JavaScript method injects an objective or victory.
