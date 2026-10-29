@@ -2,6 +2,7 @@ extends SceneTree
 ## R171 safe original source-driven live episode guidance unit acceptance.
 const COACH=preload("res://scripts/city_reign_episode_live_coach.gd")
 const CARGO=preload("res://scripts/cargo_logistics.gd")
+var locations: Dictionary={}
 var passed:=0
 var failed:=0
 func check(ok: bool,why: String) -> void:
@@ -14,7 +15,7 @@ func _initialize() -> void:
 func advice(s: Dictionary,offer: Dictionary,at: Vector3,car: Vector3,
 		driving: bool=false,speed: float=0.0,fuel: float=100.0,
 		health: float=100.0,menu: bool=false,language: String="en") -> Dictionary:
-	return COACH.recommend(s,offer,ContractManager.POSITIONS,language,
+	return COACH.recommend(s,offer,locations,language,
 		at,car,driving,speed,fuel,health,menu,500)
 func _run() -> void:
 	var sim: Node=root.get_node_or_null("GameState")
@@ -23,6 +24,7 @@ func _run() -> void:
 	if sim==null or contracts==null:
 		quit(2)
 		return
+	locations=contracts.POSITIONS
 	var original: Dictionary=sim.data.duplicate(true)
 	sim.data=sim.new_game()
 	var state: Dictionary=sim.data
