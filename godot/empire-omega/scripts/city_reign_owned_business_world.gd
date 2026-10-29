@@ -194,9 +194,8 @@ func sync_state(state: Dictionary,language: String,catalog: Dictionary) -> void:
 		var spec: Dictionary=catalog.get(id,{})
 		var amount: int=int(spec.get("income",0)) if active else int(spec.get("cost",0))
 		var category: String=caption_words["base"] if active else caption_words["price"]
-		label.text=str(caption_words[id])+"\n"+str(
-			caption_words["owned"] if active else caption_words["available"])+
-			"\n"+str(category)+" · "+str(amount)
+		var status: String=str(caption_words["owned"] if active else caption_words["available"])
+		label.text=str(caption_words[id])+"\n"+status+"\n"+str(category)+" · "+str(amount)
 		label.modulate=Color("f1dfbd") if active else Color("a6bcc5")
 	update_power(clock,grid_power)
 	update_view(last_focus)
@@ -235,8 +234,7 @@ func graphics_are_bounded() -> bool:
 	for id in INSIGNIAS:
 		var model: MeshInstance3D=models[id]
 		var label: Label3D=captions[id]
-		if model.mesh==null or model.mesh.get_surface_count()!=1 or
-				model.mesh.surface_get_array_len(0)>MAX_VERTICES_PER_SIGN:
+		if model.mesh==null or model.mesh.get_surface_count()!=1 or model.mesh.surface_get_array_len(0)>MAX_VERTICES_PER_SIGN:
 			return false
 		if model.get_child_count()!=0 or label.get_child_count()!=0:
 			return false
