@@ -80,6 +80,11 @@ def canonical(obj: dict) -> bytes:
                        separators=(",", ":")) + "\n").encode("utf-8")
 
 
+def magic(path: Path, length: int) -> bytes:
+    with path.open("rb") as source:
+        return source.read(length)
+
+
 def safe_file(path: Path, root: Path) -> Path:
     # Reject symlinks in every path component, not just the final file.
     root = root.absolute()
@@ -121,11 +126,11 @@ def inputs_from_build(site: Path, web: Path, windows: Path,
             "Godot WebAssembly export is absent")
     require(outputs["windows/IRON_PULSE_BLACKOUT.exe"].stat().st_size > 10_000_000,
             "Real Windows executable is absent")
-    require(outputs["site/play/index.wasm"].open("rb").read(4) == b"\0asm",
+    require(magic(outputs["site/play/index.wasm"], 4) == b"\0asm",
             "Expected actual WebAssembly magic")
-    require(outputs["windows/IRON_PULSE_BLACKOUT.exe"].open("rb").read(2) == b"MZ",
+    require(magic(outputs["windows/IRON_PULSE_BLACKOUT.exe"], 2) == b"MZ",
             "Expected actual PE executable header")
-    require(outputs["windows/IRON_PULSE_BLACKOUT.pck"].open("rb").read(4) == b"GDPC",
+    require(magic(outputs["windows/IRON_PULSE_BLACKOUT.pck"], 4) == b"GDPC",
             "Expected Godot package header")
     proof_manifest = json.loads(
         outputs["site/assets/build-proof.json"].read_text(encoding="utf-8"))
@@ -363,7 +368,14 @@ def _verified_staged(root: Path, sha: str) -> dict:
     records = manifest.get("files", {})
     require(isinstance(records, dict) and REQUIRED.issubset(records) and
             set(records).issubset(ALLOWED), "Unsafe or incomplete stage")
-    staged_paths = {p.relative_to(dest).as_posix() for p in dest.rglob("*") if p.is_file()}
+    # Reject even dangling symlinks, device-file tricks and unexpected files.
+    # A broken symlink is not Path.is_file() and must not escape our audit.
+    staged_paths = set()
+    for item in dest.rglob("*"):
+        require(not item.is_symlink(), "A staged release contains a symlink")
+        require(item.is_file() or item.is_dir(), "Non-regular staged entry")
+        if item.is_file():
+            staged_paths.add(item.relative_to(dest).as_posix())
     require(staged_paths == set(records) | {MANIFEST_NAME},
             "Unexpected, missing or unsafe files in staged release")
     for relative, record in records.items():
@@ -407,6 +419,10 @@ def stage(path: Path, root: Path, source_sha: str, bundle_hash: str) -> dict:
             require(output.stat().st_size == record["bytes"] and
                     digest(output) == record["sha256"],
                     "Staging produced altered payload: " + name)
+        # The trusted externally pinned input may have been replaced between
+        # the first verification and decompression; reject TOCTOU swaps.
+        require(digest(path) == bundle_hash,
+                "Pinned source archive changed during offline staging")
         os.replace(working, target)
         receipt_path.write_bytes(canonical({
             "schema": SCHEMA, "source_sha": source_sha,
@@ -460,6 +476,11 @@ def activate(root: Path, source_sha: str, expected_current: str) -> dict:
     root = vault_dir(root)
     current = _pointer(root)
     _compare_expected(current, expected_current)
+    # A normal forward switch is prohibited if the currently selected
+    # on-disk version was damaged. Rollback, conversely, must remain
+    # possible to a verified clean previous version when current is bad.
+    if current["current"] is not None:
+        _verified_staged(root, current["current"])
     release = _verified_staged(root, source_sha)
     require(current["current"] != source_sha, "This release is already selected")
     next_pointer = {
