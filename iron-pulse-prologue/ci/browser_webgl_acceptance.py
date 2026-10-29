@@ -783,6 +783,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "Actual radio journal could not be closed",name,state)
                         report.setdefault("v6_real_radio",{})[name] = "original localized subtitles and native journal PASS"
                         if mobile:
+                            assert state.get("mouse_captured") is False, (
+                                "Physical touch input wrongly remains pointer-locked after radio journal",name)
                             # Actual touch buttons, no native method injection.
                             for button_label,target_index,target_camera in [
                                 ("CAM / C",0,"A7_ServiceObservationCamera"),
