@@ -406,7 +406,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ssh -o BatchMode=yes -i ~/.ssh/city_reign_preview_key \
-            "$DEPLOY_USER@$DEPLOY_HOST" \
-            "bash -s -- cleanup '$RUN_ID' '$SOURCE_SHA'" \
-            < scripts/deploy-city-reign-ssh-remote.sh
+          # R170: public source and WebGL already verified above. Retry
+          # ONLY idempotent temporary transport cleanup on transient SSH reset.
+          # Never touch the live game or previous-release rollback directory.
+          for try in 1 2 3 4 5; do
+            if ssh -o BatchMode=yes -o ConnectTimeout=15 \
+                -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
+                -i ~/.ssh/city_reign_preview_key \
+                "$DEPLOY_USER@$DEPLOY_HOST" \
+                "bash -s -- cleanup '$RUN_ID' '$SOURCE_SHA'" \
+                < scripts/deploy-city-reign-ssh-remote.sh; then
+              echo "R170: release temporary transport cleanup PASS"
+              exit 0
+            fi
+            if [ "$try" = 5 ]; then break; fi
+            sleep $((5*try))
+          done
+          echo "::error::Release publicly verified, but temporary archive cleanup failed after bounded retries"
+          exit 1

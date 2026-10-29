@@ -43,6 +43,13 @@ func _run() -> void:
 		var done: Dictionary=EP.first_six(state,offer,contract.POSITIONS,lang)
 		check(done["completed"] and done["action"]=="" and not done["goal_available"] and
 			done["progress"]=="6/6","first actual complete original chapter is acknowledged, no further fake objective")
+	state["mission"]=4
+	state["active_contract"]=offer.duplicate(true)
+	var prior: Dictionary=EP.first_six(state,offer,contract.POSITIONS,"en")
+	check(prior["status"]=="existing_contract" and
+		prior["goal"]==contract.POSITIONS[str(offer["dropoff"])] and
+		str(prior["title"]).contains("active delivery"),
+		"existing earlier cargo must be finished before another pickup is available")
 	state["mission"]=5
 	state["active_contract"]={}
 	var missing: Dictionary=EP.first_six(state,offer,contract.POSITIONS,"en")

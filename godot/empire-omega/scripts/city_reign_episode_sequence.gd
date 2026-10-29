@@ -16,6 +16,7 @@ const TEXTS = {
 		"market":"Доставьте первый заказ на рынок","market_body":"Проедьте через городской трафик до Торговой галереи. Остановитесь у входа и подтвердите доставку.","market_hint":"WASD — движение · S — тормоз · F — доставка",
 		"business":"Приобретите городскую компанию","business_body":"У Торговой галереи оформите первую настоящую покупку бизнеса. Баланс и доход обновляются только через GameState.","business_hint":"B — купить бизнес вблизи рынка",
 		"turn":"Проведите первый городской такт","turn_body":"Вернитесь к городскому управлению: откройте кабинет и завершите экономический такт. Решения реально меняют бюджет.","turn_hint":"Tab — управление · N — следующий такт",
+		"busy":"Завершите предыдущий коммерческий груз","busy_body":"Контракт уже активен. Доставьте прежний груз к реальной точке назначения, затем возьмите следующий груз для прохождения текущей карьерной миссии.","busy_hint":"Сначала реальная разгрузка · F · затем новый груз",
 		"pickup":"Заберите первый коммерческий груз","pickup_body":"Езжайте к пункту погрузки из текущего настоящего контракта. Машина должна находиться рядом.","pickup_hint":"F — принять груз у указанного терминала",
 		"dropoff":"Доставьте коммерческий груз","dropoff_body":"Доставьте груз по живым улицам с учётом пробега, состояния машины, погоды и расстояния. Остановитесь у пункта выдачи.","dropoff_hint":"Маршрут по карте · F — разгрузить после остановки",
 		"recover":"Груз не активен · заберите новую перевозку","recover_body":"Если рейс прерван, вернитесь к реальному пункту погрузки. Получите новый контракт, затем завершите доставку.","recover_hint":"К терминалу · F — новый груз · затем доставка",
@@ -29,6 +30,7 @@ const TEXTS = {
 		"market":"Deliver your first market order","market_body":"Drive through real city traffic to Market Gallery. Stop at the entrance to complete delivery.","market_hint":"WASD — drive · S — brake · F — deliver",
 		"business":"Acquire your first company","business_body":"Make an actual business purchase near Market Gallery. Only the authoritative GameState changes your money.","business_hint":"B — acquire the market business",
 		"turn":"Advance your first city turn","turn_body":"Open city government and advance a real economic turn. Decisions affect actual city resources.","turn_hint":"Tab — city management · N — next turn",
+		"busy":"Finish the already active delivery","busy_body":"A commercial contract is already active. Deliver it to the real destination, then collect a fresh cargo to advance the current career mission.","busy_hint":"Unload current cargo · F · then collect another",
 		"pickup":"Collect your first commercial cargo","pickup_body":"Drive to the pickup from the actual current contract. Your real vehicle must be nearby.","pickup_hint":"F — accept cargo at the correct depot",
 		"dropoff":"Deliver the commercial cargo","dropoff_body":"Transport goods over the genuine road network. Mileage, condition and stopping distance affect completion.","dropoff_hint":"Follow the route · stop · F — unload",
 		"recover":"Cargo interrupted · collect a new contract","recover_body":"Return to the authentic pickup point if a delivery is no longer active. Accept another job, then complete it.","recover_hint":"Drive to depot · F — new cargo · complete delivery",
@@ -42,6 +44,7 @@ const TEXTS = {
 		"market":"完成首次市场配送","market_body":"穿过真实城市交通前往贸易中心。停车后确认配送。","market_hint":"WASD 驾驶 · S 刹车 · F 配送",
 		"business":"收购第一家企业","business_body":"在市场附近进行真实企业交易。资金只能由游戏状态系统更新。","business_hint":"B 购买市场企业",
 		"turn":"推进首个城市回合","turn_body":"打开市政管理并推进真实经济回合，决策会改变城市资源。","turn_hint":"Tab 管理 · N 下一回合",
+		"busy":"先完成当前商业配送","busy_body":"已有商业合同进行中。请先将货物运往真实目的地，再接新货物推进当前任务。","busy_hint":"先卸当前货物 F · 然后领取新货物",
 		"pickup":"领取首个商业货物","pickup_body":"驾驶真实车辆前往当前合同的取货点，并将车停在附近。","pickup_hint":"在正确地点按 F 接货",
 		"dropoff":"完成商业货运","dropoff_body":"沿城市道路运输货物，驾驶里程、车辆状态和停车位置影响完成条件。","dropoff_hint":"跟随路线 · 停车 · F 卸货",
 		"recover":"货物已中断 · 重新取货","recover_body":"如果配送已中断，请返回真实取货点，重新领取合同后完成运输。","recover_hint":"前往仓库 · F 取货 · 继续配送",
@@ -95,6 +98,11 @@ static func first_six(state: Dictionary,offer: Dictionary,locations: Dictionary,
 			if stage==5 and not pending:
 				key="recover"
 				result["status"]="recover"
+			elif stage==4 and pending:
+				# Do not advertise a new pickup while another genuine cargo is
+				# still physically in transit. Finish it first, then accept new.
+				key="busy"
+				result["status"]="existing_contract"
 			var entry: Dictionary=active if pending else offer
 			var place: String=str(entry.get("dropoff","")) if pending else str(entry.get("pickup",""))
 			var physical: Variant=locations.get(place,Vector3.ZERO)

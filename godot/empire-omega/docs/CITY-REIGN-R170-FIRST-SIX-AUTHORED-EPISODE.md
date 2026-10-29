@@ -13,3 +13,7 @@ The existing original CITY REIGN journal now hosts a compact, scrollable six-ste
 v159 projects all six mission states + valid/missing cargo/role/language without touching original saves; v160 real native journal and source-root UI state/controls; v161 original 3D playable world and genuine six-action mission manager integration. Inherited R169 through R164, 40 original missions/corruption, real Chromium WebGL2 and original compiled SHA accepted ONLY after passing QA.
 
 **Production acceptance still outstanding:** verified human 5–10 minute playthrough, retry usability and real physical phone frame time. The 5–10-minute runtime is a TARGET, not measured gameplay. Shipping this episode requires independent QA and the same protected SSH process as R169.
+
+## R170 source-side reliability correction
+- If an older active courier contract exists before the "accept first cargo" career stage, the episode now explicitly guides the player to complete that existing real contract before accepting another. This avoids a false pickup hint and uses the actual contract destination.
+- The future canonical SSH release workflow retries **only idempotent per-run temporary transport cleanup** 5 times with bounded delays after independent live verification. This fixes the transient SSH-reset failure observed on published R169 without weakening SHA-256, public Chromium, rollback or source-commit gates. The historical R169 release workflow remains marked failed at its original cleanup step; separate guarded recovery run 40876237523 succeeded.
