@@ -38,7 +38,11 @@ jobs:
           test -f iron-pulse-prologue/Main.tscn
           test -f iron-pulse-prologue/scripts/CrisisEngine.gd
           test -f iron-pulse-prologue/scripts/Main.gd
-          test -f w33-godot-native/project.godot
+          # Integrated game must be self-contained on the current master.
+          # Never require unrelated W33 project files from a divergent branch.
+          test -f iron-pulse-prologue/project.godot
+          test -f iron-pulse-prologue/scripts/IPOperatorGuide.gd
+          test -f iron-pulse-prologue/tests/test_g1_operator_onboarding.gd
           # Refuse unlicensed external assets, arbitrary device APIs or remote dependencies.
           if grep -R -nE 'HTTPClient|HTTPRequest|OS\.execute|FileAccess\.open\("res://\.\./' iron-pulse-prologue/scripts; then
             echo '::error::Unexpected external access in offline gameplay slice'
