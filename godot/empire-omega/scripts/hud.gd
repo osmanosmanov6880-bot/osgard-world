@@ -13,6 +13,7 @@ const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
 const R171_GOAL = preload("res://scripts/city_reign_goal_fabric.gd")
 const R170_EPISODE = preload("res://scripts/city_reign_episode_sequence.gd")
+const R172_COACH = preload("res://scripts/city_reign_action_readiness.gd")
 const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_premium_garage.gd")
 const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
@@ -480,6 +481,8 @@ func _make_hud() -> void:
 	objective.add_child(objective_stack)
 	mission_chapter_label = _label(objective_stack,_v08("ВАША ЦЕЛЬ","YOUR OBJECTIVE","当前目标"),15,true)
 	mission_label = _label(objective_stack,"",22)
+	mission_label.max_lines_visible = 1
+	mission_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	mission_distance_label = _label(objective_stack,"",16,true)
 	# R132: one REAL 46px touch/keyboard target opens the source journal.
 	# A second full text row cannot fit the genuine compact 320px mission card.
@@ -949,6 +952,29 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 	else:
 		speed_label.text = ""
 		hint_label.text = ((_v08("РЯДОМ: ","NEAR: ","附近: ")+nearest.left(24)) if nearest != "" else _v08("АВТО · ИДТИ · ДЕЙСТВИЯ","CAR · WALK · ACTIONS","车辆 · 行走 · 操作")) if compact_hud else (("F: "+nearest) if nearest != "" else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志"))
+
+
+	# R172: one authentic next input, only for the original six career actions.
+	# Active side jobs and unsafe/invalid physical positions keep the
+	# R171 authoritative navigation and original safety/trial messages.
+	var live_step: Dictionary=R172_COACH.project(GameState.data,
+		ContractManager.current_offer(),ContractManager.POSITIONS,
+		player_at,vehicle_at,is_driving,speed,open,GameState.locale)
+	if bool(live_step.get("active",false)):
+		mission_chapter_label.text=str(live_step["progress"])+" · "+_v08(
+			"СЛЕДУЮЩЕЕ ДЕЙСТВИЕ","NEXT ACTION","下一步")
+		mission_label.text=str(live_step["title"])+" · "+str(live_step["key"])
+		mission_label.add_theme_color_override("font_color",
+			R90_STYLE.GOLD if bool(live_step["ready"]) else R90_STYLE.SILVER)
+		if r170_episode_controls!=null:
+			r170_episode_controls.text=str(live_step["detail"])
+	else:
+		mission_chapter_label.text=MissionManager.chapter_title(GameState.locale,compact_hud)
+		mission_label.add_theme_color_override("font_color",R90_STYLE.SILVER)
+		if r170_episode_controls!=null:
+			var episode: Dictionary=R170_EPISODE.first_six(GameState.data,
+				ContractManager.current_offer(),ContractManager.POSITIONS,GameState.locale)
+			r170_episode_controls.text=str(episode["hint"])
 
 func _request_benchmark_start() -> void:
 	benchmark_start_requested.emit()
@@ -1797,8 +1823,8 @@ func _apply_responsive_layout() -> void:
 		mission_chapter_label.add_theme_font_size_override("font_size",13 if portrait_slim else 15)
 		header_value.add_theme_font_size_override("font_size",16)
 		meters_label.add_theme_font_size_override("font_size",13)
-		mission_label.add_theme_font_size_override("font_size",14 if portrait_slim else 16)
-		mission_distance_label.add_theme_font_size_override("font_size",12 if portrait_slim else 13)
+		mission_label.add_theme_font_size_override("font_size",17 if portrait_slim else 18)
+		mission_distance_label.add_theme_font_size_override("font_size",14 if portrait_slim else 15)
 		toast_label.add_theme_font_size_override("font_size",14 if portrait_slim else 18)
 		speed_label.add_theme_font_size_override("font_size",15)
 		hint_label.add_theme_font_size_override("font_size",13)
