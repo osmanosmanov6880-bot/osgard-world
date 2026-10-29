@@ -25,11 +25,11 @@ const LABELS = {
   }
 }
 const WALK_BACK_LABELS = {"ru":"НАЗАД","en":"BACK","zh":"后退"}
-const QUICK_ACTIONS = ["drive_trial","show_map","governor","field_journal","diagnostics","save_game","language","camera_cycle","indicator_left","indicator_right","hazard_lights"]
+const QUICK_ACTIONS = ["drive_trial","show_map","governor","buy_business","field_journal","diagnostics","save_game","language","camera_cycle","indicator_left","indicator_right","hazard_lights"]
 const QUICK_LABELS = {
-  "ru":["АВТОШКОЛА · T","КАРТА · M","УПРАВЛЕНИЕ ГОРОДОМ","ЖУРНАЛ · H","FPS · КАДРЫ","СОХРАНИТЬ · F5","ЯЗЫК · L","КАМЕРА · V","◀ ЛЕВЫЙ ПОВОРОТ","ПРАВЫЙ ПОВОРОТ ▶","⚠ АВАРИЙКА"],
-  "en":["DRIVING TRIAL · T","CITY MAP · M","GOVERN CITY","JOURNAL · H","FPS · STATS","SAVE · F5","LANGUAGE · L","CAMERA · V","◀ LEFT SIGNAL","RIGHT SIGNAL ▶","⚠ HAZARDS"],
-  "zh":["驾驶考核 · T","地图 · M","城市管理","日志 · H","帧率 · 统计","保存 · F5","语言 · L","镜头 · V","◀ 左转向","右转向 ▶","⚠ 危险警示灯"]
+  "ru":["АВТОШКОЛА · T","КАРТА · M","УПРАВЛЕНИЕ ГОРОДОМ","КУПИТЬ БИЗНЕС · B","ЖУРНАЛ · H","FPS · КАДРЫ","СОХРАНИТЬ · F5","ЯЗЫК · L","КАМЕРА · V","◀ ЛЕВЫЙ ПОВОРОТ","ПРАВЫЙ ПОВОРОТ ▶","⚠ АВАРИЙКА"],
+  "en":["DRIVING TRIAL · T","CITY MAP · M","GOVERN CITY","BUY BUSINESS · B","JOURNAL · H","FPS · STATS","SAVE · F5","LANGUAGE · L","CAMERA · V","◀ LEFT SIGNAL","RIGHT SIGNAL ▶","⚠ HAZARDS"],
+  "zh":["驾驶考核 · T","地图 · M","城市管理","购买企业 · B","日志 · H","帧率 · 统计","保存 · F5","语言 · L","镜头 · V","◀ 左转向","右转向 ▶","⚠ 危险警示灯"]
 }
 
 var _buttons: Dictionary = {}
