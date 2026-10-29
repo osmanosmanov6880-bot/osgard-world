@@ -181,6 +181,7 @@ var adaptive_performance: IPAdaptivePerformance = IPAdaptivePerformance.new()
 var adaptive_sampling_clock: float = 0.0
 var threat_radar: IPThreatRadar = IPThreatRadar.new()
 var after_action_review: IPAfterActionReview = IPAfterActionReview.new()
+var operator_guide: IPOperatorGuide = IPOperatorGuide.new()
 var black_box_report: Dictionary = {}
 var run_archive: IPRunArchive = IPRunArchive.new()
 var archive_last_save_ok: bool = false
@@ -284,6 +285,11 @@ var forecast_panel: PanelContainer
 var forecast_label: Label
 var forecast_close_button: Button
 var touch_forecast_button: Button
+var touch_guide_button: Button
+var guide_panel: PanelContainer
+var guide_label: Label
+var guide_next_button: Button
+var guide_close_button: Button
 var touch_moves: Dictionary = {"forward":false, "back":false, "left":false, "right":false}
 var started: bool = false
 var paused: bool = false
@@ -484,6 +490,14 @@ func _publish_web_state() -> void:
         "report":black_box_report.duplicate(true) if debrief_panel != null and debrief_panel.visible else {},
         "open_rect":_hud_rect(debrief_button) if debrief_button != null else [],
         "close_rect":_hud_rect(debrief_close_button) if debrief_close_button != null else []
+    }
+    state["operator_guide"] = {
+        "visible":guide_panel != null and guide_panel.visible,
+        "report":operator_guide.readout(session,locale) if guide_panel != null and guide_panel.visible else {},
+        "text":guide_label.text if guide_label != null and guide_panel.visible else "",
+        "open_rect":_hud_rect(touch_guide_button) if touch_guide_button != null else [],
+        "next_rect":_hud_rect(guide_next_button) if guide_next_button != null else [],
+        "close_rect":_hud_rect(guide_close_button) if guide_close_button != null else []
     }
     state["decision_forecast"] = {
         "visible":forecast_panel != null and forecast_panel.visible,
@@ -935,6 +949,31 @@ func _make_hud() -> void:
     forecast_close_button.pressed.connect(_toggle_decision_forecast)
     forecast_stack.add_child(forecast_close_button)
     forecast_panel.visible = false
+    guide_panel = _panel(hud_root,Rect2(-310,-247,310,247),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.021,0.030,0.992))
+    guide_panel.name = "G1_ActualGameplayOperatorGuide"
+    guide_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+    var guide_stack := VBoxContainer.new()
+    guide_stack.add_theme_constant_override("separation",10)
+    guide_panel.add_child(guide_stack)
+    var guide_scroll := ScrollContainer.new()
+    guide_scroll.name = "RealSourceGuidanceScroll"
+    guide_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    guide_scroll.custom_minimum_size = Vector2(0,330)
+    guide_stack.add_child(guide_scroll)
+    guide_label = _label(guide_scroll,"",14,WHITE)
+    guide_label.name = "GenuineCurrentObjectiveHelp"
+    guide_next_button = Button.new()
+    guide_next_button.name = "MoreAuthenticGuidance"
+    guide_next_button.custom_minimum_size = Vector2(0,52)
+    guide_next_button.pressed.connect(_toggle_operator_guide)
+    guide_stack.add_child(guide_next_button)
+    guide_close_button = Button.new()
+    guide_close_button.name = "CloseOperatorGuide"
+    guide_close_button.custom_minimum_size = Vector2(0,52)
+    guide_close_button.pressed.connect(_close_operator_guide)
+    guide_stack.add_child(guide_close_button)
+    guide_panel.visible = false
+    _refresh_operator_guide_locale()
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
 
@@ -1160,6 +1199,9 @@ func _make_touch_controls() -> void:
     touch_shot_button.visible = false
     touch_forecast_button = _touch_button(touch_ui,"PLAN / T",6,-299,94)
     touch_forecast_button.pressed.connect(_toggle_decision_forecast)
+    touch_guide_button = _touch_button(touch_ui,"GUIDE / ?",6,-357,94)
+    touch_guide_button.add_theme_font_size_override("font_size",15)
+    touch_guide_button.pressed.connect(_toggle_operator_guide)
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1262,6 +1304,12 @@ func _layout_hud() -> void:
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
+    if guide_panel != null:
+        var help_half: float = minf(310.0,width*0.45)
+        guide_panel.offset_left = -help_half
+        guide_panel.offset_right = help_half
+        guide_label.custom_minimum_size.x = help_half*2.0-50.0
+        guide_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     if forecast_panel != null:
         forecast_panel.anchor_left = 0.0 if narrow else 1.0
         forecast_panel.anchor_right = 0.0 if narrow else 1.0
@@ -1352,6 +1400,10 @@ func _apply_cinematic_view() -> void:
         touch_shot_button.visible = cinematic_view and touch_ui.visible
     if touch_forecast_button != null:
         touch_forecast_button.visible = not cinematic_view and touch_ui.visible
+    if touch_guide_button != null:
+        touch_guide_button.visible = not cinematic_view and touch_ui.visible
+    if cinematic_view and guide_panel != null:
+        guide_panel.visible = false
     if cinematic_view and forecast_panel != null:
         forecast_panel.visible = false
 
