@@ -304,6 +304,16 @@ button { cursor: pointer; }
 .obsidian-sample p { font-size:12px; color:#a5b3b7; margin:11px 0 0; line-height:1.7; }
 .obsidian-material-note { font-size:12px; line-height:1.7; margin:24px 0 0; color:#94a3a5; }
 @media(max-width:700px){ .obsidian-material-specimens { grid-template-columns:1fr; } .obsidian-swatch{ height:42px; } }
+.device-lab { margin-top:16px; border:1px solid #41535a; padding:clamp(26px,4vw,50px); background:linear-gradient(135deg,#0e1519,#0b1014 65%,#132126); }
+.device-lab h3 { font-size:clamp(26px,3.2vw,44px); max-width:840px; margin:16px 0 18px; letter-spacing:-.047em; line-height:1.09; }
+.device-lab-intro { max-width:790px; font-size:14px; line-height:1.8; color:#c0c9cb; }
+.device-lab-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:28px; }
+.device-lab-step { min-width:0; border:1px solid #334750; background:#0a1115; padding:23px 20px 25px; }
+.device-lab-step>span { display:block; font-size:11px; color:#91a9b0; letter-spacing:.13em; margin-bottom:21px; }
+.device-lab-step strong { font-size:14px; color:#edf0f0; line-height:1.45; display:block; letter-spacing:.01em; }
+.device-lab-step p { margin:13px 0 0; color:#adbabe; line-height:1.75; font-size:12px; }
+.device-lab-proof { max-width:820px; font-size:12px; color:#97adb2; line-height:1.8; margin:22px 0 0; }
+@media (max-width:780px) { .device-lab-steps { grid-template-columns:1fr; } .device-lab-step { padding:20px; } }
 .world-evidence-note { margin: 35px 0 0; padding: 20px 24px; border-left: 2px solid var(--accent-soft); background: #192025; color: #b8c4c5; font-size: 13px; line-height: 1.8; max-width: 840px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
