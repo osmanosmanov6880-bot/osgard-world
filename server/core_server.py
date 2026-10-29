@@ -32,6 +32,7 @@ import core_inherit
 import core_cinema
 import core_cinema_evidence
 import core_cinema_vault
+import core_cinema_ops
 from core_model import Fault, require, text, initial, patch, action, economics, simulation, metrics, now, uid
 
 SCHEMA='''
@@ -142,6 +143,9 @@ class Store:
             commerce_project=re.fullmatch(r'projects/([a-f0-9]{32})/commerce',route)
             if commerce_project:return self.commerce.project_orders(db,commerce_project[1],actor)
             if route=='cinema/spaces':return core_cinema.listing(db,actor)
+            if route=='cinema/storage/overview':return core_cinema_ops.owner_storage(db,actor)
+            integrity_route=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/vault/integrity',route)
+            if integrity_route:return core_cinema_ops.verify(db,integrity_route[1],actor)
             vault_route=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/vault',route)
             if vault_route:return core_cinema_vault.listing(db,vault_route[1],actor)
             evidence_route=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/evidence',route)

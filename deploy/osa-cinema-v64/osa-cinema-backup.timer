@@ -1,0 +1,11 @@
+[Unit]
+Description=OSA CINEMA daily private SQLite backup verification (operator opt-in)
+
+[Timer]
+OnCalendar=*-*-* 02:40:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=osa-cinema-backup.service
+
+[Install]
+WantedBy=timers.target

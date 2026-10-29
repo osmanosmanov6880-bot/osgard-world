@@ -1,0 +1,104 @@
+name: OSA CINEMA V64 Reliability and Real Vault Integrity
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'server/core_cinema_ops.py'
+      - 'server/core_cinema_vault.py'
+      - 'server/core_server.py'
+      - 'src/OSACinemaAssetVault.tsx'
+      - 'src/osaCinemaAssetVault.css'
+      - 'scripts/core-cinema-v64-ops-smoke.py'
+      - 'scripts/osa-cinema-v64-*'
+      - 'playwright.osa-cinema-v64.config.mjs'
+      - 'deploy/osa-cinema-v64/**'
+      - '.github/workflows/osa-cinema-v64-reliability.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'server/core_cinema_ops.py'
+      - 'server/core_cinema_vault.py'
+      - 'server/core_server.py'
+      - 'src/OSACinemaAssetVault.tsx'
+      - 'scripts/core-cinema-v64-ops-smoke.py'
+      - 'scripts/osa-cinema-v64-*'
+      - 'playwright.osa-cinema-v64.config.mjs'
+      - '.github/workflows/osa-cinema-v64-reliability.yml'
+permissions:
+  contents: read
+jobs:
+  reliability-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Core V64 and real backup verification CLI
+        run: python3 -m compileall -q server/core_cinema_ops.py server/core_cinema_vault.py server/core_server.py scripts/osa-cinema-v64-recovery-drill.py
+      - name: Authenticated HTTP/SQLite byte integrity, quotas, corruption, recovery and inherited Core tests
+        run: python3 scripts/core-cinema-v64-ops-smoke.py
+  reliability-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Existing verified V55-V63 film product contracts
+        run: |
+          node --test scripts/osa-cinema-v60-world-contract.test.mjs
+          node --test scripts/osa-cinema-v59-production-contract.test.mjs
+          node --test scripts/osa-cinema-v58-public-catalog.test.mjs
+          node --test scripts/osa-cinema-v58-watchlist.test.mjs
+          node --test scripts/osa-cinema-v55-studio-contract.test.mjs
+      - name: Validate actual TypeScript
+        run: npm run check
+      - name: Compile actual Vite production bundle
+        run: npm run build
+      - name: Actual files, private routes, ops manifests, performance and strict media NO-GO
+        run: |
+          node scripts/osa-cinema-v64-build-preflight.mjs
+          node scripts/osa-cinema-v63-build-preflight.mjs
+          node scripts/osa-cinema-v62-build-preflight.mjs
+          node scripts/osa-cinema-v61-build-preflight.mjs
+          npm run qa:osa-media-release
+          npm run qa:redesign-build
+  reliability-browser:
+    needs: [reliability-http, reliability-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install real Chrome or Chromium
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Check real owner-only SHA256 dashboard, quotas, mobile 320px and release NO-GO
+        run: npx playwright test --config playwright.osa-cinema-v64.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v64-real-integrity-chromium-proof
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn

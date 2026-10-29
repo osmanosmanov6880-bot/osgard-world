@@ -1,0 +1,15 @@
+# OSA CINEMA V64 — example for a real domain, NOT a deployed configuration.
+# Change cinema.example.com and the matching --public-origin before use.
+# Caddy obtains HTTPS certificates only if the server/domain are reachable.
+cinema.example.com {
+    encode zstd gzip
+    @api path /api/core/*
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "same-origin"
+    }
+    header @api Cache-Control "no-store"
+    reverse_proxy 127.0.0.1:4173
+}

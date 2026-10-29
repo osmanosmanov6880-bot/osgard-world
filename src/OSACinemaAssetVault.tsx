@@ -6,7 +6,8 @@ import './osaCinemaAssetVault.css'
 
 type Role='owner'|'editor'|'viewer'
 type Item={id:string;spaceId:string;evidenceId:string|null;name:string;mime:string;bytes:number;actualSha256:string;checksumComputedFromBytes:true;malwareScanned:false;rightsIndependentlyVerified:false;filmReleaseAuthorized:false;uploader:string;createdAt:string}
-type List={spaceId:string;spaceVersion:number;role:Role;assets:Item[];usedBytes:number;limits:{maxAssetBytes:number;maxSpaceBytes:number;maxAssets:number};scope:string;releaseAuthorized:false;publicVideoUrl:null;publicStreamingEnabled:false;encryptionAtRest:false;serverAntivirus:false}
+type List={spaceId:string;spaceVersion:number;role:Role;assets:Item[];usedBytes:number;ownerUsedBytes:number|null;ownerRemainingBytes:number|null;ownerQuotaEnforced:true;limits:{maxAssetBytes:number;maxSpaceBytes:number;maxAssets:number;maxOwnerBytes:number};scope:string;releaseAuthorized:false;publicVideoUrl:null;publicStreamingEnabled:false;encryptionAtRest:false;serverAntivirus:false}
+type Integrity={status:'PASS'|'FAIL';checkedAt:string;filesChecked:number;filesFailed:number;storedByteIntegrity:boolean;scope:string;assets:{assetId:string;name:string;match:boolean;bytes:number}[];encryptionAtRest:false;serverAntivirus:false;legalRightsClearance:false;professionalCustodyVerification:false;publicFilmReleaseAuthorized:false;productionReady:false}
 type Evidence={id:string;title:string;sceneId:string}
 type Props={spaceId:string;role:Role;version:number;locale:StudioLocale;onChanged:()=>Promise<void>}
 const sizeText=(n:number)=>n<1024?`${n} B`:n<1024*1024?`${(n/1024).toLocaleString('en-US',{maximumFractionDigits:1})} KiB`:`${(n/(1024*1024)).toLocaleString('en-US',{maximumFractionDigits:1})} MiB`
@@ -22,10 +23,12 @@ export default function OSACinemaAssetVault({spaceId,role,version,locale,onChang
  const [error,setError]=useState('')
  const [notice,setNotice]=useState('')
  const [confirmDelete,setConfirmDelete]=useState('')
+ const [integrity,setIntegrity]=useState<Integrity|null>(null)
  const pending=useRef<{signature:string;key:string}|null>(null)
  const inputRef=useRef<HTMLInputElement|null>(null)
  const editable=role==='owner'||role==='editor'
- const remaining=useMemo(()=>list?Math.max(0,list.limits.maxSpaceBytes-list.usedBytes):0,[list])
+ const remaining=useMemo(()=>list?Math.max(0,Math.min(list.limits.maxSpaceBytes-list.usedBytes,
+  role==='owner'&&list.ownerRemainingBytes!==null?list.ownerRemainingBytes:Number.MAX_SAFE_INTEGER)):0,[list,role])
  const endpoint='cinema/spaces/'+spaceId+'/vault'
  async function refresh(){
   setLoading(true)
@@ -38,7 +41,14 @@ export default function OSACinemaAssetVault({spaceId,role,version,locale,onChang
   }catch(e){setError(e instanceof Error?e.message:tr('Реестр файлов недоступен.','File vault is unavailable.'))}
   finally{setLoading(false)}
  }
- useEffect(()=>{setList(null);setAsset(null);setLinked('');setConfirmDelete('');void refresh()},[spaceId,version])
+ useEffect(()=>{setList(null);setAsset(null);setLinked('');setConfirmDelete('');setIntegrity(null);void refresh()},[spaceId,version])
+ async function verifyBytes(){
+  if(role!=='owner'||busy)return
+  setBusy(true);setError('');setIntegrity(null)
+  try{setIntegrity(await coreRequest<Integrity>(endpoint+'/integrity'))}
+  catch(e){setError(e instanceof Error?e.message:tr('Не удалось сверить байты.','Byte integrity check unavailable.'))}
+  finally{setBusy(false)}
+ }
  async function upload(e:FormEvent){
   e.preventDefault()
   if(!editable||busy||!asset||!list)return
@@ -82,18 +92,21 @@ export default function OSACinemaAssetVault({spaceId,role,version,locale,onChang
   finally{setBusy(false)}
  }
  return <section className="osa-vault" aria-labelledby="osa-vault-heading" data-private-vault="binary-sqlite">
-  <header className="osa-vault-hero"><div><p className="osa-studio-eyebrow">OSA CINEMA / V63 / BYTE VAULT</p><h3 id="osa-vault-heading">{tr('ЧАСТНЫЙ АРХИВ.','PRIVATE ASSET VAULT.')}</h3><p>{tr('Настоящие байты файлов хранятся в SQLite вне публичной папки сайта. Каждый скачанный файл проверяется по SHA-256. Ни один файл не становится публичной премьерой.','Real file bytes are held inside private Core SQLite, outside the public website. Every download is checked against SHA-256. No file is a public premiere.')}</p></div><button type="button" disabled={busy||loading} onClick={()=>void refresh()}><RefreshCw size={16}/>{tr('Обновить','Refresh')}</button></header>
+  <header className="osa-vault-hero"><div><p className="osa-studio-eyebrow">OSA CINEMA / V64 / INTEGRITY CORE</p><h3 id="osa-vault-heading">{tr('ЧАСТНЫЙ АРХИВ.','PRIVATE ASSET VAULT.')}</h3><p>{tr('Настоящие байты файлов хранятся в SQLite вне публичной папки сайта. Каждый скачанный файл проверяется по SHA-256. Ни один файл не становится публичной премьерой.','Real file bytes are held inside private Core SQLite, outside the public website. Every download is checked against SHA-256. No file is a public premiere.')}</p></div><button type="button" disabled={busy||loading} onClick={()=>void refresh()}><RefreshCw size={16}/>{tr('Обновить','Refresh')}</button></header>
   <div className="osa-vault-warning"><ShieldAlert size={22}/><div><strong>{tr('Пилот, не хранилище юридических оригиналов','Pilot, not a legal evidence vault')}</strong><p>{tr('Нет шифрования файлов на уровне приложения, антивирусного сканирования, независимой проверки прав или CDN. Не загружайте персональные документы и секреты. MP4 разрешён только как небольшой закрытый рабочий прокси-файл.','No application-level encryption, antivirus scan, independent rights review or CDN. Do not upload personal documents or secrets. MP4 is permitted only as a small, private working proxy.')}</p></div><span>NO PUBLIC MEDIA</span></div>
   {loading&&<p className="osa-vault-empty" role="status"><RefreshCw size={18}/>{tr('Читаем закрытое хранилище Core…','Loading actual private Core assets…')}</p>}
   {list&&!loading&&<>
     <div className="osa-vault-metrics"><div><strong>{list.assets.length} / {list.limits.maxAssets}</strong><span>{tr('Файлы в архиве','Private assets')}</span></div><div><strong>{sizeText(list.usedBytes)}</strong><span>{tr('Занято','Stored bytes')}</span></div><div><strong>{sizeText(remaining)}</strong><span>{tr('Осталось места','Remaining quota')}</span></div><div><strong>NO-GO</strong><span>{tr('Публичная премьера','Public release')}</span></div></div>
+    {role==='owner'&&list.ownerUsedBytes!==null&&<div className="osa-vault-owner-quota" data-owner-storage-quota="enforced"><HardDrive size={18}/><div><strong>{tr('Общая квота владельца: ','Owner-wide storage: ')}{sizeText(list.ownerUsedBytes)} / {sizeText(list.limits.maxOwnerBytes)}</strong><p>{tr('Все файлы во всех ваших кинопространствах, в том числе загруженные редакторами.','Includes uploads by editors across every film workspace you own.')}</p></div></div>}
+    {role==='owner'&&<div className="osa-vault-integrity-area"><div><p className="osa-studio-eyebrow">CORE / SHA-256 / OWNER ONLY</p><h4>{tr('Сверка сохранённых байтов','Stored-byte integrity check')}</h4><p>{tr('Повторный расчёт SHA-256 из настоящей SQLite. Это не антивирус и не независимая проверка прав.','Recompute SHA-256 from real SQLite contents. This is not antivirus scanning or independent rights verification.')}</p></div><button type="button" disabled={busy||loading} onClick={()=>void verifyBytes()}><ShieldCheck size={18}/>{tr('Проверить целостность','Check stored bytes')}</button></div>}
+    {integrity&&<div className={'osa-vault-integrity-result '+(integrity.status==='PASS'?'osa-vault-integrity-pass':'osa-vault-integrity-fail')} data-integrity-status={integrity.status} role="status"><strong>{integrity.status==='PASS'?tr('Байты совпадают','Stored bytes match'):tr('Обнаружено повреждение','Byte mismatch detected')}</strong><p>{tr('Файлов проверено: ','Files checked: ')}{integrity.filesChecked} · {tr('Ошибок: ','Failed: ')}{integrity.filesFailed} · {integrity.checkedAt}</p><small>{tr('Не проверены: лицензии, вирусы, подлинность происхождения и готовность к премьере.','Not verified: licenses, malware, source authenticity, or film-release readiness.')}</small>{integrity.assets.some(a=>!a.match)&&<ul>{integrity.assets.filter(a=>!a.match).map(a=><li key={a.assetId}>{a.name} · {a.assetId.slice(0,8)} · FAIL</li>)}</ul>}</div>}
     <div className="osa-vault-list">{list.assets.length===0&&<div className="osa-vault-empty"><Archive size={27}/><strong>{tr('Нет загруженных файлов.','No files uploaded.')}</strong><p>{tr('Тестовые, вымышленные медиафайлы не создаются.','No fake media assets are generated.')}</p></div>}
     {list.assets.map(item=><article className="osa-vault-asset" key={item.id}>
       <div className="osa-vault-file-icon"><FileArchive size={25}/></div>
       <div className="osa-vault-file-info"><small>{item.mime.toUpperCase()} · {sizeText(item.bytes)} · {item.createdAt}</small><h4>{item.name}</h4><p>{tr('Загрузил: ','Uploaded by: ')}{item.uploader}{item.evidenceId?' · '+tr('Связано с записью','Linked to evidence')+' '+item.evidenceId.slice(0,8):''}</p><details><summary><FileCheck2 size={15}/>{tr('Реальная SHA-256','Computed file SHA-256')}</summary><code>{item.actualSha256}</code><p>{tr('Хеш вычислен из байтов в Core. Подлинность источника, лицензия и отсутствие вирусов не проверялись.','Computed from actual bytes in Core. Source authenticity, licenses and malware status remain unverified.')}</p></details></div>
       <div className="osa-vault-buttons"><button disabled={busy} type="button" onClick={()=>void download(item)}><Download size={15}/>{tr('Скачать и проверить','Verify & download')}</button>{editable&&<button disabled={busy} className="osa-vault-remove" type="button" onClick={()=>void remove(item)}><Trash2 size={14}/>{confirmDelete===item.id?tr('Подтвердить удаление','Confirm deletion'):tr('Удалить','Delete')}</button>}</div>
      </article>)}</div>
-    {editable&&<form className="osa-vault-form" onSubmit={e=>void upload(e)}><div className="osa-vault-form-title"><UploadCloud size={28}/><div><p className="osa-studio-eyebrow">REAL BINARY UPLOAD / HTTPS + SQLITE</p><h4>{tr('Добавить производственный файл','Upload a working production file')}</h4></div></div><p>{tr('PDF, TXT, PNG, JPEG, WebP или MP4 размером до 8 МиБ. Лимит пространства — 32 МиБ и 16 файлов. Исходники фильмов и личные документы сюда не загружать.','PDF, TXT, PNG, JPEG, WebP or MP4 up to 8 MiB. Limits: 32 MiB and 16 assets per workspace. Do not upload film masters or personal documents.')}</p>
+    {editable&&<form className="osa-vault-form" onSubmit={e=>void upload(e)}><div className="osa-vault-form-title"><UploadCloud size={28}/><div><p className="osa-studio-eyebrow">REAL BINARY UPLOAD / HTTPS + SQLITE</p><h4>{tr('Добавить производственный файл','Upload a working production file')}</h4></div></div><p>{tr('PDF, TXT, PNG, JPEG, WebP или MP4 размером до 8 МиБ. Лимит пространства — 32 МиБ и 16 файлов; владельца — 64 МиБ. Исходники фильмов и личные документы сюда не загружать.','PDF, TXT, PNG, JPEG, WebP or MP4 up to 8 MiB. Limits: 32 MiB and 16 assets per workspace; 64 MiB per owner. Do not upload film masters or personal documents.')}</p>
       <label>{tr('Выберите локальный файл','Choose a local file')}<input ref={inputRef} type="file" accept=".pdf,.txt,.png,.jpg,.jpeg,.webp,.mp4" disabled={busy} onChange={e=>{setAsset(e.target.files?.[0]||null);pending.current=null}}/></label>
       {asset&&<p className="osa-vault-selection"><HardDrive size={16}/>{asset.name} — {sizeText(asset.size)}</p>}
       <label>{tr('Связать с записью V62 (необязательно)','Link to an existing V62 record (optional)')}<select value={linked} disabled={busy} onChange={e=>{setLinked(e.target.value);pending.current=null}}><option value="">{tr('Без связи','No link')}</option>{evidence.map(entry=><option key={entry.id} value={entry.id}>{entry.sceneId} · {entry.title}</option>)}</select></label>

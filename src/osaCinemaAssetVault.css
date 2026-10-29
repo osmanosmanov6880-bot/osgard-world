@@ -59,3 +59,24 @@
 @media(max-width:380px){.osa-vault-hero h3{font-size:29px}.osa-vault-asset{padding:15px}.osa-vault-metrics>div{padding:18px 12px}.osa-vault-metrics strong{font-size:24px}.osa-vault-file-icon{width:39px;height:39px}.osa-vault-buttons{flex-direction:column}.osa-vault-form{padding:17px}.osa-vault-footer svg:last-child{display:none}}
 @media(prefers-reduced-motion:reduce){.osa-vault *, .osa-vault *::before, .osa-vault *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{.osa-vault-buttons,.osa-vault-form,.osa-vault-hero>button{display:none!important}.osa-vault-asset{break-inside:avoid}}
+
+
+/* V64 OPERATIONS: a real owner-wide quota and owner-only stored-byte audit */
+.osa-vault-owner-quota{display:flex;align-items:start;gap:14px;border:1px solid #776a4d;background:#23271f;padding:20px;margin-top:25px}
+.osa-vault-owner-quota>svg{flex:none;color:#c7d0a4}
+.osa-vault-owner-quota strong{font:400 clamp(16px,2vw,22px)/1.35 Georgia,serif;color:#e5dfbd;overflow-wrap:anywhere}
+.osa-vault-owner-quota p{font:11px/1.8 'Segoe UI',sans-serif;color:#c5c5ae;margin-top:7px}
+.osa-vault-integrity-area{display:flex;justify-content:space-between;align-items:center;gap:22px;padding:26px 24px;border:1px solid #95754f;background:linear-gradient(110deg,#25231d,#191e1d);margin-top:24px}
+.osa-vault-integrity-area>div{min-width:0;flex:1}
+.osa-vault-integrity-area h4{font:400 clamp(23px,2.7vw,35px)/1.18 Georgia,serif;color:#f5dfbc;margin:11px 0}
+.osa-vault-integrity-area p:not(.osa-studio-eyebrow){font:11px/1.7 'Segoe UI',sans-serif;color:#c7b9a4}
+.osa-vault-integrity-area button{display:flex;align-items:center;justify-content:center;gap:10px;flex:none;min-height:48px;background:#e2c18c;border:1px solid #e9d2a4;color:#281d13;padding:11px 17px;font:12px/1.5 'Segoe UI',sans-serif}
+.osa-vault-integrity-result{border:1px solid #719f7d;background:#223328;padding:20px 23px;margin-top:15px}
+.osa-vault-integrity-result.osa-vault-integrity-fail{background:#392622;border-color:#bb796b}
+.osa-vault-integrity-result strong{font:400 23px Georgia,serif;color:#cee9d1}
+.osa-vault-integrity-fail strong{color:#f3b5a4}
+.osa-vault-integrity-result p{font:12px/1.8 'Segoe UI',sans-serif;color:#c9dbc8;margin-top:10px}
+.osa-vault-integrity-result small{font:10px/1.7 monospace;color:#b8c5b7;display:block;margin-top:8px}
+.osa-vault-integrity-result ul{margin-top:13px;padding-left:18px;font:11px/1.8 monospace;color:#f3bcaa;overflow-wrap:anywhere}
+@media(max-width:680px){.osa-vault-integrity-area{align-items:stretch;flex-direction:column;padding:20px 16px}.osa-vault-integrity-area button{width:100%}.osa-vault-owner-quota{padding:17px 14px}}
+@media print{.osa-vault-integrity-area button{display:none!important}}
