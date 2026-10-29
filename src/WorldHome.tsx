@@ -212,7 +212,7 @@ export default function WorldHome({ development = false }: { development?: boole
       <div className="omega-copy">
         <div className="world-locale-row"><p className="brand-eyebrow omega-command-eyebrow">OSGARD WORLD <span>/ {tx("ЦИФРОВАЯ ВСЕЛЕННАЯ")}</span></p><button type="button" className="world-language-toggle" onClick={changeLocale} aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}><Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}</button></div>
         <h1 id="world-title">{locale === 'ru' ? <>ТЕХНОЛОГИИ,<br/><span>КОТОРЫЕ</span><br/>СОЕДИНЯЮТ<br/>МИРЫ</> : <>TECHNOLOGY<br/><span>THAT</span><br/>CONNECTS<br/>WORLDS</>}<span className="omega-period">.</span></h1>
-        <p className="brand-lead">{tx("Искусственный интеллект, интерактивные миры и создание цифровых продуктов. Три понятных направления — одна вселенная OSGARD.")}</p>
+        <p className="brand-lead">{tx("ИИ, интерактивные миры и цифровые продукты — три направления одной вселенной OSGARD.")}</p>
         <div className="brand-actions omega-command-actions">
           <a className="brand-button primary" href="#products">{tx("Исследовать экосистему")} <span aria-hidden="true">↗</span></a>
           <a className="brand-button omega-command-secondary" href="/play">{tx("Перейти в Play")} <span aria-hidden="true">↗</span></a>
@@ -284,12 +284,12 @@ export default function WorldHome({ development = false }: { development?: boole
     </section>
     </>}
     <section id="cases" className="brand-section" aria-labelledby="world-cases-title">
-      <div className="brand-section-heading"><p className="brand-eyebrow">{tx("02 / ИЗБРАННЫЕ ПРОЕКТЫ")}</p><h2 id="world-cases-title">{locale === 'ru' ? <>У каждой задачи<br />свой характер.</> : <>EVERY PROJECT<br />HAS ITS OWN CHARACTER.</>}</h2><p>{tx("Откройте кейс: посмотрите интерфейс, доступные возможности и стадию проекта. Статус указан на каждой карточке.")}</p></div>
+      <div className="brand-section-heading"><p className="brand-eyebrow">{tx("02 / ИЗБРАННЫЕ ПРОЕКТЫ")}</p><h2 id="world-cases-title">{locale === 'ru' ? <>У каждой задачи<br />свой характер.</> : <>EVERY PROJECT<br />HAS ITS OWN CHARACTER.</>}</h2><p>{tx("Изучите интерфейс, возможности и стадию каждого проекта.")}</p></div>
       <div className="world-case-grid">{cases.map((item, index) => <a href={item.href} className="world-case" key={item.id}>
         <div className="world-case-art" style={item.visual === 'screenshot' ? { aspectRatio: '3 / 2' } : undefined}><img src={item.art} alt={(item.visual === 'screenshot' ? tx("Снимок публичной страницы кейса ") : tx("Визуальное превью ")) + item.name} width="1200" height={item.visual === 'screenshot' ? 800 : 630} loading="lazy" decoding="async" /><span className="brand-status">{locale === 'en' ? txCase(item.id, 'type') || item.type : item.type}</span></div>
         <div className="world-case-title"><span>0{index + 1} / {locale === 'en' ? txCase(item.id, 'category') || item.category : item.category}</span><h3>{item.name} <span aria-hidden="true">↗</span></h3><p>{locale === 'en' ? txCase(item.id, 'description') || item.description : item.description}</p><span className="world-case-open">{tx("Открыть кейс")} <span aria-hidden="true">→</span></span></div>
       </a>)}</div>
-      <p className="world-case-legend"><strong>{tx("Как читать статусы.")}</strong> {tx("Концепт показывает направление. Демо позволяет попробовать сценарий. Прототип проверяет часть продукта. Коммерческий запуск требует отдельного подтверждения. PHANTOM, TEDES и MERAKKI — снимки публичных страниц; ESSENTIA — превью. Снимки не подтверждают работу сервера или коммерческий запуск.")}</p>
+      <p className="world-case-legend"><strong>{tx("Как читать статусы.")}</strong> {tx("Концепт задаёт направление, демо позволяет испытать сценарий, прототип — часть продукта. Коммерческий запуск подтверждается отдельно. PHANTOM, TEDES и MERAKKI — снимки страниц, ESSENTIA — превью. Это не доказательство продаж или работы серверов.")}</p>
     </section>
 
     <section id="approach" className="brand-section" aria-labelledby="world-approach-title">
@@ -299,7 +299,7 @@ export default function WorldHome({ development = false }: { development?: boole
 
     <section id="about" className="brand-section world-about" aria-labelledby="world-about-title">
       <p className="brand-eyebrow">{tx("04 / О СТУДИИ И РЕЗУЛЬТАТАХ")}</p><h2 id="world-about-title">{locale === 'ru' ? <>Работу можно<br />проверить.</> : <>WORK YOU CAN<br />VERIFY.</>}</h2>
-      <div><p>{tx("OSGARD объединяет разработку цифровых продуктов, обучение и интерактивные эксперименты. Для каждого направления мы показываем доступный сценарий и его ограничения.")}</p>
+      <div><p>{tx("OSGARD объединяет продукты, обучение и интерактивные эксперименты. Мы показываем доступные сценарии и ограничения.")}</p>
         <ul><li><a href="/learning/project">{tx("Редактор учебного проекта")}</a> — {tx("цель, план, локальное сохранение и перенос в JSON.")}</li><li><a href="/tedes/project/">{tx("Проектная спецификация TEDES")}</a> — {tx("подбор и сохранение конфигурации в браузере.")}</li><li><a href="/play/world/vector-zero">VECTOR//ZERO</a> — {tx("одиночный игровой клиент с инструкцией и управлением.")}</li></ul>
         <p>{tx("Откройте сценарий и попробуйте действие. Доступность конкретной функции указана на её странице.")}</p><a className="brand-text-link" href="/quality">{tx("Состояние функций и сборки")} <span aria-hidden="true">→</span></a>
       </div>
