@@ -20,7 +20,9 @@ static func brake_run(grip: float,hz: int) -> Vector2:
 	var heat: Vector2 = Vector2.ZERO
 	var dt: float = 1.0/float(hz)
 	var contacts: Array[bool] = [true,true,true,true]
-	for i in range(hz*2):
+	# Measure early braking before both normalized heat gauges saturate at 1.0.
+	# A later explicit bound check proves that the long-term limit remains safe.
+	for i in range(roundi(float(hz)*0.48)):
 		var old: float = speed
 		speed = MOTION.speed_step(speed,-1.0,grip,1.0,29.0,9.0,9.5,10.5,2.4,false,dt)
 		heat = THERMAL.step(heat,old,speed,1.0,grip,0.61,contacts,dt)
