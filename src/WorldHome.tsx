@@ -149,7 +149,7 @@ export default function WorldHome({ development = false }: { development?: boole
         <div className="omega-dev-intro signature-intro">
           <div className="world-locale-row"><p className="brand-eyebrow">OSGARD / DEVELOPMENT / DIGITAL CRAFT</p><button type="button" className="world-language-toggle" onClick={changeLocale} aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}><Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}</button></div>
           <h1 id="world-title">{locale === 'ru' ? <>СОЗДАЁМ<br /><span>ЦИФРОВЫЕ</span><br />РЕШЕНИЯ.</> : <>WE BUILD<br /><span>DIGITAL</span><br />PRODUCTS.</>}</h1>
-          <p className="brand-lead">{tx("От первых сценариев до открытых демонстраций. Показываем настоящие интерфейсы, рабочие действия и честный статус каждого проекта.")}</p>
+          <p className="brand-lead">{tx("От первых сценариев до демо: реальные интерфейсы, действия и проверяемые статусы.")}</p>
           <div className="brand-actions signature-hero-actions">
             <a className="brand-button primary" href="#cases">{tx("Смотреть проекты")} <span aria-hidden="true">↗</span></a>
             <a className="brand-button signature-secondary" href="#contact">{tx("Обсудить разработку")} <span aria-hidden="true">→</span></a>
@@ -182,11 +182,11 @@ export default function WorldHome({ development = false }: { development?: boole
               <b aria-hidden="true">↗</b>
             </a>)}
           </div>
-          <p className="signature-showcase-note">{tx("Снимки публичных страниц. Демо не подтверждает работу серверов, продаж или коммерческий запуск.")}</p>
+          <p className="signature-showcase-note">{tx("Снимки страниц не доказывают продажи, работу серверов или запуск.")}</p>
         </div>
       </section>
       <section id="products" className="brand-section omega-dev-capabilities" aria-labelledby="dev-capabilities-title">
-        <div className="brand-section-heading"><p className="brand-eyebrow">{tx("01 / ЧТО МЫ ДЕЛАЕМ")}</p><h2 id="dev-capabilities-title">{locale === 'ru' ? <>АРХИТЕКТУРА. <span>ДИЗАЙН. КОД.</span></> : <>ARCHITECTURE. <span>DESIGN. CODE.</span></>}</h2><p>{tx("Начинаем с задачи, показываем логику продукта и доступную реализацию. Без выдуманных результатов и обещаний несуществующих функций.")}</p></div>
+        <div className="brand-section-heading"><p className="brand-eyebrow">{tx("01 / ЧТО МЫ ДЕЛАЕМ")}</p><h2 id="dev-capabilities-title">{locale === 'ru' ? <>АРХИТЕКТУРА. <span>ДИЗАЙН. КОД.</span></> : <>ARCHITECTURE. <span>DESIGN. CODE.</span></>}</h2><p>{tx("От задачи к понятной логике и рабочей реализации. Без вымышленных результатов.")}</p></div>
         <div className="omega-dev-capability-grid">
           <a href="#cases"><span>01 / UX & PRODUCT</span><strong>{tx("Интерфейсы и сценарии")}</strong><p>{tx("Понятная структура, удобная навигация, адаптация и доступность.")}</p><em>{tx("Смотреть кейсы")} ↗</em></a>
           <a href="/development/tedes/"><span>02 / PROTOTYPES</span><strong>{tx("Конфигураторы и инструменты")}</strong><p>{tx("Изучите демонстрацию TEDES с локальной проектной спецификацией.")}</p><em>{tx("Открыть TEDES")} ↗</em></a>
@@ -248,7 +248,7 @@ export default function WorldHome({ development = false }: { development?: boole
             <button type="button" aria-pressed={omegaMode === 'hybrid'} onClick={() => setOmegaMode('hybrid')}>{tx("Гибрид")}</button>
           </div>
           <p className="omega-mode-description" aria-live="polite">{(locale === 'ru' ? omegaHelpRu : omegaHelpEn)[omegaMode]}</p>
-          {stillWorld && <p className="omega-mode-description" role="status">{tx("Режим экономии ресурсов: отображается фотография Земли. 3D станет доступно, когда в устройстве и OSGARD разрешено движение и выключена экономия трафика.")}</p>}
+          {stillWorld && <p className="omega-mode-description" role="status">{tx("Экономный режим: фото Земли вместо 3D. Для 3D разрешите движение и отключите экономию трафика.")}</p>}
           <div className="omega-quality-switch">
             <label htmlFor="omega-quality">{tx("Детализация 3D")}</label>
             <select id="omega-quality" value={omegaQuality} disabled={stillWorld} onChange={event => setOmegaQuality(event.target.value as GlobeQuality)}
@@ -274,7 +274,7 @@ export default function WorldHome({ development = false }: { development?: boole
       </details>
     </section>
     <section id="products" className="brand-section omega-products" aria-labelledby="world-products-title">
-      <div className="brand-section-heading"><p className="brand-eyebrow">{tx("01 / НАПРАВЛЕНИЯ OSGARD")}</p><h2 id="world-products-title">{locale === 'ru' ? <>ТРИ МИРА. <span>ОДНА ВСЕЛЕННАЯ.</span></> : <>THREE WORLDS. <span>ONE ECOSYSTEM.</span></>}</h2><p>{tx("Выбери свой путь. Каждое направление показывает конкретные возможности, доступные действия и ограничения.")}</p></div>
+      <div className="brand-section-heading"><p className="brand-eyebrow">{tx("01 / НАПРАВЛЕНИЯ OSGARD")}</p><h2 id="world-products-title">{locale === 'ru' ? <>ТРИ МИРА. <span>ОДНА ВСЕЛЕННАЯ.</span></> : <>THREE WORLDS. <span>ONE ECOSYSTEM.</span></>}</h2><p>{tx("Выберите направление и изучите его реальные возможности и ограничения.")}</p></div>
       <div className="omega-cards">
         <a href="/intelligence" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-osa.svg" alt={tx("Голографическое интеллектуальное ядро с нейронными связями")} loading="lazy"/><small>01 / {tx("ИНТЕЛЛЕКТ")}</small></div><div className="omega-card-content"><h3>OSA <span>Intelligence</span></h3><p>{tx("Разберись в возможностях ИИ, научись проверять ответы и применять знания на практике.")}</p><strong>{tx("Начать обучение")} <span aria-hidden="true">↗</span></strong></div></a>
         <a href="/play" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-play.svg" alt={tx("Футуристический цифровой город и игровой портал")} loading="lazy"/><small>02 / {tx("ИГРОВЫЕ МИРЫ")}</small></div><div className="omega-card-content"><h3>OSGARD <span>Play</span></h3><p>{tx("Исследуй интерактивные миры, открывай доступные игры и игровые эксперименты.")}</p><strong>{tx("Исследовать игры")} <span aria-hidden="true">↗</span></strong></div></a>
@@ -289,7 +289,7 @@ export default function WorldHome({ development = false }: { development?: boole
         <div className="world-case-art" style={item.visual === 'screenshot' ? { aspectRatio: '3 / 2' } : undefined}><img src={item.art} alt={(item.visual === 'screenshot' ? tx("Снимок публичной страницы кейса ") : tx("Визуальное превью ")) + item.name} width="1200" height={item.visual === 'screenshot' ? 800 : 630} loading="lazy" decoding="async" /><span className="brand-status">{locale === 'en' ? txCase(item.id, 'type') || item.type : item.type}</span></div>
         <div className="world-case-title"><span>0{index + 1} / {locale === 'en' ? txCase(item.id, 'category') || item.category : item.category}</span><h3>{item.name} <span aria-hidden="true">↗</span></h3><p>{locale === 'en' ? txCase(item.id, 'description') || item.description : item.description}</p><span className="world-case-open">{tx("Открыть кейс")} <span aria-hidden="true">→</span></span></div>
       </a>)}</div>
-      <p className="world-case-legend"><strong>{tx("Как читать статусы.")}</strong> {tx("Концепт задаёт направление, демо позволяет испытать сценарий, прототип — часть продукта. Коммерческий запуск подтверждается отдельно. PHANTOM, TEDES и MERAKKI — снимки страниц, ESSENTIA — превью. Это не доказательство продаж или работы серверов.")}</p>
+      <p className="world-case-legend"><strong>{tx("Как читать статусы.")}</strong> {tx("Концепт — идея, демо — пробный сценарий, прототип — проверка части продукта. Коммерческий запуск требует отдельного доказательства. PHANTOM, TEDES и MERAKKI — снимки страниц, ESSENTIA — превью; это не подтверждение продаж.")}</p>
     </section>
 
     <section id="approach" className="brand-section" aria-labelledby="world-approach-title">
@@ -299,17 +299,17 @@ export default function WorldHome({ development = false }: { development?: boole
 
     <section id="about" className="brand-section world-about" aria-labelledby="world-about-title">
       <p className="brand-eyebrow">{tx("04 / О СТУДИИ И РЕЗУЛЬТАТАХ")}</p><h2 id="world-about-title">{locale === 'ru' ? <>Работу можно<br />проверить.</> : <>WORK YOU CAN<br />VERIFY.</>}</h2>
-      <div><p>{tx("OSGARD объединяет продукты, обучение и интерактивные эксперименты. Мы показываем доступные сценарии и ограничения.")}</p>
+      <div><p>{tx("OSGARD объединяет продукты, обучение и эксперименты с понятными ограничениями.")}</p>
         <ul><li><a href="/learning/project">{tx("Редактор учебного проекта")}</a> — {tx("цель, план, локальное сохранение и перенос в JSON.")}</li><li><a href="/tedes/project/">{tx("Проектная спецификация TEDES")}</a> — {tx("подбор и сохранение конфигурации в браузере.")}</li><li><a href="/play/world/vector-zero">VECTOR//ZERO</a> — {tx("одиночный игровой клиент с инструкцией и управлением.")}</li></ul>
-        <p>{tx("Откройте сценарий и попробуйте действие. Доступность конкретной функции указана на её странице.")}</p><a className="brand-text-link" href="/quality">{tx("Состояние функций и сборки")} <span aria-hidden="true">→</span></a>
+        <p>{tx("Откройте сценарий. Доступность функций указана на странице.")}</p><a className="brand-text-link" href="/quality">{tx("Состояние функций и сборки")} <span aria-hidden="true">→</span></a>
       </div>
     </section>
 
     <section id="contact" className="brand-section world-contact" aria-labelledby="world-contact-title">
       <div><p className="brand-eyebrow">{tx("05 / СЛЕДУЮЩИЙ ШАГ")}</p><h2 id="world-contact-title">{locale === 'ru' ? <>Начнём<br />с вашей задачи.</> : <>LET’S START<br />WITH YOUR PROJECT.</>}</h2>
-        <p>{tx("Опишите цель, аудиторию и желаемый результат. Скачайте бриф и приложите его к письму на адрес ниже. Это подготовка заявки: форма сама ничего не отправляет.")}</p>
+        <p>{tx("Опишите проект, скачайте бриф и приложите его к письму: форма сама ничего не отправляет.")}</p>
         <a href="mailto:osman.osmanov0099@gmail.com" onClick={() => recordBrandEvent('contact_opened')}>osman.osmanov0099@gmail.com <span aria-hidden="true">↗</span></a>
-        <p className="world-contact-next">{tx("Первое обсуждение — задача, объём и следующий шаг. Сроки и стоимость определяются после разбора брифа.")}</p>
+        <p className="world-contact-next">{tx("Сначала определяем задачу и объём. Сроки и стоимость — после анализа брифа.")}</p>
       </div>
       <form noValidate onSubmit={async event => { event.preventDefault(); try { const { validateEnquiry, formatEnquiry } = await import('./projectEnquiry'); const problem = validateEnquiry(brief, contact); if (problem) { setError(problem); briefInput.current?.focus(); return } download(formatEnquiry(brief, contact)) } catch { setError(locale === 'ru' ? 'Не удалось подготовить файл. Скопируйте описание и отправьте его на указанный адрес.' : 'Could not prepare the file. Copy your description and email it to the address above.') } }}>
         <label htmlFor="project-brief">{tx("Что хотите создать?")}</label>

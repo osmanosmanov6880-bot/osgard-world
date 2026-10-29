@@ -1,0 +1,99 @@
+name: OSA CINEMA V60 World Press and Distribution Truth
+on:
+  pull_request:
+    branches: [master, feature/osa-cinema-v59-production-control-20261028]
+    paths:
+      - 'src/OSACinemaPressRoom.tsx'
+      - 'src/osaCinemaPressRoom.css'
+      - 'src/OSACinemaDistributionDesk.tsx'
+      - 'src/osaCinemaDistributionDesk.css'
+      - 'src/osaCinemaDistribution.ts'
+      - 'src/OSACinemaStudio.tsx'
+      - 'src/OSACinemaFilm.tsx'
+      - 'src/main.tsx'
+      - 'src/osgardRouting.ts'
+      - 'src/routeSeo.ts'
+      - 'public/sitemap.xml'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/osa-cinema-v60-*.mjs'
+      - 'playwright.osa-cinema-v60.config.mjs'
+      - '.github/workflows/osa-cinema-v60-world.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'src/OSACinemaPressRoom.tsx'
+      - 'src/osaCinemaPressRoom.css'
+      - 'src/OSACinemaDistributionDesk.tsx'
+      - 'src/osaCinemaDistributionDesk.css'
+      - 'src/osaCinemaDistribution.ts'
+      - 'src/main.tsx'
+      - 'src/osgardRouting.ts'
+      - 'src/routeSeo.ts'
+      - 'public/sitemap.xml'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/osa-cinema-v60-*.mjs'
+      - 'playwright.osa-cinema-v60.config.mjs'
+      - '.github/workflows/osa-cinema-v60-world.yml'
+permissions:
+  contents: read
+jobs:
+  world-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: V60 independent film release evidence and world press contracts
+        run: |
+          node --test scripts/osa-cinema-v60-world-contract.test.mjs
+          node --test scripts/osa-cinema-v59-production-contract.test.mjs
+          node --test scripts/osa-cinema-v58-watchlist.test.mjs
+          node --test scripts/osa-cinema-v58-public-catalog.test.mjs
+          node --test scripts/osa-cinema-v55-studio-contract.test.mjs
+      - name: Typecheck international and local React routes
+        run: npm run check
+      - name: Compile production site
+        run: npm run build
+      - name: Verify truthful public press distribution and independent private local review
+        run: |
+          node scripts/osa-cinema-v60-build-preflight.mjs
+          node scripts/osa-cinema-v59-build-preflight.mjs
+          node scripts/osa-cinema-v58-build-preflight.mjs
+          node scripts/osa-cinema-v55-route-shell-preflight.mjs
+          npm run qa:osa-media-release
+          npm run qa:redesign-build
+  world-browser:
+    needs: world-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install real Chromium and Playwright
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Verify real RU/EN press files, evidence gates and safe planning at desktop/mobile
+        run: npx playwright test --config playwright.osa-cinema-v60.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v60-real-world-browser-evidence
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn

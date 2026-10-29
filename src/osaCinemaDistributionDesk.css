@@ -1,0 +1,67 @@
+/* V60 — distribution integrity, immutable evidence on the left and local user annotations on right. */
+main.osa-studio.osa-distribution-page{background:#08090b;color:#f4eadd;min-height:100vh}
+.osa-distribution-page *{box-sizing:border-box}
+.osa-distribution-page button:focus-visible,.osa-distribution-page select:focus-visible,.osa-distribution-page textarea:focus-visible,.osa-distribution-page a:focus-visible,.osa-distribution-page input:focus-visible{outline:2px solid #e8c391;outline-offset:3px}
+.osa-distribution-hero{position:relative;isolation:isolate;min-height:530px;overflow:hidden;display:flex;align-items:center;padding:80px clamp(23px,7vw,125px) 90px;border-bottom:1px solid #65533d;background:radial-gradient(ellipse at 76% 36%,#35291d,#111516 45%,#090a0d 88%)}
+.osa-distribution-hero-inner{max-width:930px}
+.osa-distribution-hero h1{font:400 clamp(55px,7vw,116px)/.92 Georgia,serif;letter-spacing:-.06em;color:#f2e8dc;margin:28px 0 31px}
+.osa-distribution-hero h1 em{font-weight:400;color:#dfbd88}
+.osa-distribution-hero-inner>p:not(.osa-studio-eyebrow){font:400 clamp(15px,1.5vw,20px)/1.76 Georgia,serif;color:#d1bfaa;max-width:710px}
+.osa-distribution-privacy{display:inline-flex;gap:10px;align-items:center;margin-top:30px;border:1px solid #796146;color:#e2c396;font:11px/1.6 monospace;padding:12px 16px;background:#171818}
+.osa-distribution-stamp{font:400 clamp(200px,33vw,500px)/.72 Georgia,serif;letter-spacing:-.08em;color:#d9aa670c;position:absolute;right:-2%;bottom:-20%;z-index:-1;pointer-events:none;transform:rotate(-12deg)}
+.osa-distribution-selector{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:0 clamp(23px,7vw,125px);background:#121415}
+.osa-distribution-selector button{border:0;border-right:1px solid #66533d;border-bottom:2px solid #554332;background:#131516;text-align:left;display:flex;flex-direction:column;gap:11px;align-items:start;padding:32px clamp(22px,4vw,50px);cursor:pointer;color:#ceb99b}
+.osa-distribution-selector button:first-child{border-left:1px solid #66533d}
+.osa-distribution-selector button.active{background:#302519;border-bottom-color:#e7bb80}
+.osa-distribution-selector button>span{font:10px monospace;letter-spacing:.12em;color:#c7a171}
+.osa-distribution-selector button strong{font:400 clamp(26px,3vw,43px) Georgia,serif;color:#f4e1c6}
+.osa-distribution-selector button small{font:12px 'Segoe UI',sans-serif;color:#bba790}
+.osa-distribution-content{max-width:1560px;margin:auto;padding:100px clamp(22px,5vw,80px) 105px}
+.osa-distribution-page .osa-studio-section-head h2{color:#f2e4cf}
+.osa-distribution-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid #64513c;margin:49px 0 45px;background:#121416}
+.osa-distribution-overview>div{display:flex;flex-direction:column;gap:12px;padding:31px clamp(15px,3vw,40px);border-right:1px solid #64513c}
+.osa-distribution-overview>div:last-child{border-right:0}
+.osa-distribution-overview strong{font:400 clamp(42px,5vw,72px)/.85 Georgia,serif;color:#e7c48f}
+.osa-distribution-overview span{font:11px/1.6 monospace;letter-spacing:.04em;color:#c5b4a0}
+.osa-distribution-overview-no{background:#31211c;justify-content:center}
+.osa-distribution-overview-no svg,.osa-distribution-overview-no strong{color:#f1ae94}
+.osa-distribution-overview-no strong{font-size:36px}
+.osa-distribution-gates{display:grid;gap:15px}
+.osa-distribution-gate{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border:1px solid #5f4d3a;background:#121416;min-width:0}
+.osa-distribution-evidence{border-right:1px solid #5f4d3a;padding:35px clamp(22px,3.5vw,51px)}
+.osa-distribution-gate-code{font:10px monospace;letter-spacing:.13em;color:#bd9b69}
+.osa-distribution-evidence-status{display:flex;align-items:center;gap:9px;margin:25px 0 18px;font:10px/1.5 monospace;text-transform:uppercase;color:#d8a779}
+.osa-distribution-evidence-status.is-verified{color:#b2d5ba}
+.osa-distribution-evidence-status.is-blocked{color:#e9a08b}
+.osa-distribution-evidence h3{color:#f0dfc9;font:400 clamp(25px,3vw,43px)/1.12 Georgia,serif;letter-spacing:-.025em;max-width:550px}
+.osa-distribution-evidence p{font:13px/1.8 'Segoe UI',sans-serif;color:#c9b9a6;margin-top:18px;max-width:560px}
+.osa-distribution-note{padding:35px clamp(22px,3.5vw,51px);background:#181917;display:flex;flex-direction:column;gap:17px}
+.osa-distribution-note label{font:12px/1.5 'Segoe UI',sans-serif;color:#dec295;display:flex;flex-direction:column;gap:8px}
+.osa-distribution-note select,.osa-distribution-note textarea{background:#111313;border:1px solid #816748;color:#f3e3ce;padding:13px 14px;font:13px/1.5 'Segoe UI',sans-serif;width:100%}
+.osa-distribution-note textarea{resize:vertical;min-height:84px}
+.osa-distribution-note-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:auto}
+.osa-distribution-note-actions button{display:flex;align-items:center;gap:9px;cursor:pointer;background:#d2ab74;color:#1d1710;border:1px solid #dbba88;font:12px sans-serif;padding:12px 16px;min-height:44px}
+.osa-distribution-note-actions .osa-distribution-note-delete{background:transparent;border:0;border-bottom:1px solid #b58070;color:#e2a792}
+.osa-distribution-data{border-top:1px solid #6d573e;border-bottom:1px solid #6d573e;padding:95px 0;margin-top:78px;display:grid;grid-template-columns:1fr 1fr;gap:7vw}
+.osa-distribution-data h2{font:400 clamp(36px,4vw,58px)/1.12 Georgia,serif;color:#f2e2c9;margin:18px 0 23px}
+.osa-distribution-data>div>p:not(.osa-studio-eyebrow){font:13px/1.8 'Segoe UI',sans-serif;color:#cbbba8;max-width:600px}
+.osa-distribution-data-warning{display:flex;align-items:start;gap:11px;margin-top:23px;color:#e2c69e!important}
+.osa-distribution-data-warning svg{flex:none}
+.osa-distribution-tools{display:grid;grid-template-columns:1fr 1fr;align-content:center;gap:12px}
+.osa-distribution-tools button,.osa-distribution-tools label{border:1px solid #836748;background:#1d1d1a;color:#f0d8b7;display:flex;align-items:center;gap:12px;min-height:70px;cursor:pointer;padding:16px 19px;text-align:left;font:12px/1.5 'Segoe UI',sans-serif}
+.osa-distribution-tools button:hover,.osa-distribution-tools label:hover{border-color:#e2b67d;background:#31271e}
+.osa-distribution-tools button.warning{border-color:#c77d68;color:#f0b1a0}
+.osa-distribution-tools input[type=file]{width:1px;height:1px;clip-path:inset(50%);position:absolute;overflow:hidden}
+.osa-distribution-tools input[type=file]:focus-visible+label{outline:2px solid #e8c391;outline-offset:3px}
+.osa-distribution-feedback{padding:19px 0;min-height:30px}
+.osa-distribution-feedback p{display:flex;align-items:center;gap:12px;border-left:2px solid #b49c75;background:#292119;color:#eddbc5;font-size:12px;padding:17px 20px}
+.osa-distribution-feedback p[role=alert]{border-left-color:#d38b72}
+.osa-distribution-reminder{display:flex;gap:22px;align-items:start;padding:35px clamp(20px,3vw,45px);background:#261a16;border:1px solid #ac7057;margin-top:50px}
+.osa-distribution-reminder svg{color:#e6a187;flex:none}
+.osa-distribution-reminder strong{font:400 clamp(24px,2.5vw,35px) Georgia,serif;color:#f3d6be}
+.osa-distribution-reminder p{font:12px/1.8 'Segoe UI',sans-serif;color:#d1bcaa;margin-top:11px}
+@media(max-width:960px){.osa-distribution-hero{min-height:460px}.osa-distribution-overview>div{padding:24px 18px}.osa-distribution-evidence,.osa-distribution-note{padding:27px 24px}.osa-distribution-data{grid-template-columns:1fr;gap:35px}.osa-distribution-selector{padding:0 20px}}
+@media(max-width:700px){.osa-distribution-hero{min-height:480px;padding:80px 22px 65px}.osa-distribution-hero h1{font-size:clamp(36px,8.4vw,62px);letter-spacing:-.04em}.osa-distribution-stamp{display:none}.osa-distribution-selector{padding:0 15px}.osa-distribution-selector button{padding:22px 13px}.osa-distribution-selector button strong{font-size:24px}.osa-distribution-content{padding:65px 18px}.osa-distribution-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.osa-distribution-overview>div:nth-child(2){border-right:0}.osa-distribution-overview>div:nth-child(-n+2){border-bottom:1px solid #64513c}.osa-distribution-overview strong{font-size:43px}.osa-distribution-gate{grid-template-columns:1fr}.osa-distribution-evidence{border-right:0;border-bottom:1px solid #5f4d3a}.osa-distribution-data{padding:70px 0}.osa-distribution-tools{grid-template-columns:1fr}.osa-distribution-reminder{padding:24px 18px;gap:12px}}
+@media(max-width:350px){.osa-distribution-hero h1{font-size:30px}.osa-distribution-selector button strong{font-size:20px}.osa-distribution-overview span{font-size:10px}.osa-distribution-evidence h3{font-size:27px}}
+@media(prefers-reduced-motion:reduce){.osa-distribution-page *, .osa-distribution-page *::before,.osa-distribution-page *::after{transition:none!important;animation:none!important}}
+@media print{main.osa-distribution-page{background:#fff!important;color:#111!important}.osa-distribution-page header,.osa-distribution-page footer,.osa-distribution-tools,.osa-distribution-note{display:none!important}.osa-distribution-hero,.osa-distribution-selector,.osa-distribution-evidence,.osa-distribution-gate{background:#fff!important;color:#111!important}.osa-distribution-hero{min-height:0;padding:20px}.osa-distribution-hero h1,.osa-distribution-page h2,.osa-distribution-page h3,.osa-distribution-page strong{color:#111!important}.osa-distribution-gate{display:block;break-inside:avoid}}

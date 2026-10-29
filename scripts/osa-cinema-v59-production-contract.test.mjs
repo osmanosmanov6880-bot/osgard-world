@@ -103,7 +103,7 @@ test('Production desk uses private SPA route, no-index shell and real user-state
  assert.match(app,/path === '\/osa-cinema\/studio\/production'/)
  assert.match(routing,/\/osa-cinema\/studio\/production/)
  assert.match(builder,/osa-cinema\/studio\/production/)
- assert.match(builder,/osa-cinema\/studio\/production'\]\.includes\(path\)/)
+ assert.match(builder,/const privateRoute=\[[^\n]*'osa-cinema\/studio\/production'[^\n]*\]\.includes\(path\)/)
  assert.match(seo,/\/osa-cinema\/studio\/production/)
  assert.match(ui,/data-studio-release="no-go"/)
  assert.match(ui,/saveProductionPlan/)

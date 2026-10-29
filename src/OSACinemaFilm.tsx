@@ -48,7 +48,7 @@ export default function OSACinemaFilm({projectId}:Props) {
     <a className="osa-studio-skip" href="#osa-film-content">{tr('К описанию проекта','Skip to project details')}</a>
     <header className="osa-studio-header osa-film-header">
       <a className="osa-studio-brand" href={'/osa-cinema/studio?lang='+locale}><span className="osa-studio-symbol" aria-hidden="true">◈</span><span>OSA <b>CINEMA</b><small>ORIGINAL STUDIOS</small></span></a>
-      <nav aria-label={tr('Навигация проекта','Project navigation')}><a href={'/osa-cinema/studio?lang='+locale}><ArrowLeft size={15}/>{tr('Коллекция','Collection')}</a><a href="#osa-film-evidence">{tr('Доказательства','Evidence')}</a><a href="#osa-film-production">{tr('Производство','Production')}</a><a href={'/osa-cinema/studio/library?lang='+locale}>{tr('Моя коллекция','My library')}</a></nav>
+      <nav aria-label={tr('Навигация проекта','Project navigation')}><a href={'/osa-cinema/studio?lang='+locale}><ArrowLeft size={15}/>{tr('Коллекция','Collection')}</a><a href="#osa-film-evidence">{tr('Доказательства','Evidence')}</a><a href="#osa-film-production">{tr('Производство','Production')}</a><a href={'/osa-cinema/studio/library?lang='+locale}>{tr('Моя коллекция','My library')}</a><a href={'/osa-cinema/studio/press?lang='+locale}>{tr('Пресс-центр','Pressroom')}</a></nav>
       <button className="osa-studio-language" type="button" aria-label={tr('Switch to English','Переключить на русский')} onClick={setLanguage}><Globe2 size={15}/>{locale.toUpperCase()}</button>
     </header>
     <section className="osa-film-hero" aria-labelledby="osa-film-title">
@@ -62,7 +62,7 @@ export default function OSACinemaFilm({projectId}:Props) {
         <div className="osa-film-actions">
           {project.href?<a className="osa-studio-button" href={project.href+'?lang='+locale}><Play size={17}/>{tr('Открыть интерактивную историю','Enter interactive story')}<ArrowRight size={16}/></a>:<a className="osa-studio-button" href="#osa-film-production"><Clapperboard size={18}/>{tr('Смотреть этапы производства','Explore production stages')}<ArrowRight size={17}/></a>}
           <button type="button" className={'osa-film-utility'+(saved?' active':'')} aria-pressed={saved} onClick={toggleSaved}><Heart size={17} fill={saved?'currentColor':'none'}/>{saved?tr('Сохранено','Saved'):tr('В избранное','Save')}</button>
-          <button type="button" className="osa-film-utility" onClick={()=>void share()}><Share2 size={17}/>{tr('Поделиться','Share')}</button><a className="osa-film-utility" href={'/osa-cinema/studio/library?lang='+locale}><Heart size={17}/>{tr('Моя коллекция','My library')}</a>{project.id==='zero-window'&&<a className="osa-film-utility" href={'/osa-cinema/studio/production?lang='+locale}><Clapperboard size={17}/>{tr('Планировать производство','Production desk')}</a>}
+          <button type="button" className="osa-film-utility" onClick={()=>void share()}><Share2 size={17}/>{tr('Поделиться','Share')}</button><a className="osa-film-utility" href={'/osa-cinema/studio/library?lang='+locale}><Heart size={17}/>{tr('Моя коллекция','My library')}</a><a className="osa-film-utility" href={'/osa-cinema/studio/press?lang='+locale}><Film size={17}/>{tr('Пресс-материалы','Press materials')}</a>{project.id==='zero-window'&&<a className="osa-film-utility" href={'/osa-cinema/studio/production?lang='+locale}><Clapperboard size={17}/>{tr('Планировать производство','Production desk')}</a>}
         </div>
         <p className="osa-film-feedback" role="status" aria-live="polite">{shareMessage}</p>
       </div>

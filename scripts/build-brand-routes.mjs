@@ -1,11 +1,14 @@
 import { readFile,writeFile,mkdir } from 'node:fs/promises'
 import { build } from 'esbuild'
 import { createPublicCinemaCatalog } from './osa-cinema-public-catalog.mjs'
+import { makePressKit, renderPressText } from './osa-cinema-v60-press-kit.mjs'
 const catalogBundle=await build({entryPoints:['src/redesignCatalog.ts'],bundle:true,write:false,format:'esm',platform:'node'})
 const {playGames}=await import('data:text/javascript;base64,'+Buffer.from(catalogBundle.outputFiles[0].text).toString('base64'))
 const studioBundle=await build({entryPoints:['src/osaCinemaStudioRegistry.ts'],bundle:true,write:false,format:'esm',platform:'node'})
 const {studioWorks}=await import('data:text/javascript;base64,'+Buffer.from(studioBundle.outputFiles[0].text).toString('base64'))
 const studioRoutes=new Map(studioWorks.map(work=>['osa-cinema/studio/films/'+work.id,work]))
+const distributionBundle=await build({entryPoints:['src/osaCinemaDistribution.ts'],bundle:true,write:false,format:'esm',platform:'node'})
+const {publicReleaseDecision}=await import('data:text/javascript;base64,'+Buffer.from(distributionBundle.outputFiles[0].text).toString('base64'))
 const template=await readFile('dist/index.html','utf8')
 const routes=[
  ['teams','OSGARD Core — команды','Командные пространства, роли и подключение проектов.','world'],
@@ -32,6 +35,8 @@ const routes=[
  ['osa-cinema/studio','OSA CINEMA STUDIO — оригинальные истории и производство','Двуязычная коллекция оригинальных интерактивных историй и проверяемая история производства OSA CINEMA.','intelligence'],
  ['osa-cinema/studio/library','Моя коллекция — OSA CINEMA','Локальное избранное OSA CINEMA, экспорт и импорт личной библиотеки. Данные остаются на устройстве.','intelligence'],
  ['osa-cinema/studio/production','Производственный кабинет — OSA CINEMA','Локальное планирование 13 сцен: задачи по направлениям, CSV и JSON черновики без подтверждения съёмок.','intelligence'],
+ ['osa-cinema/studio/press','OSA CINEMA — Международный пресс-центр','Двуязычный пресс-пакет по оригинальным кинопроектам, документированные статусы, ссылки на первичные производственные акты.','intelligence'],
+ ['osa-cinema/studio/distribution','OSA CINEMA — Локальный контроль дистрибуции','Локальный черновик сбора подтверждений для независимой проверки прав, производства, безопасности и доставки видео.','intelligence'],
  ...studioWorks.map(work=>['osa-cinema/studio/films/'+work.id,work.title+' — OSA CINEMA',work.description,'intelligence']),
  ['portal','OSGARD — портал экосистемы','Сохранённый портал направлений OSGARD.','world'],
  ['learning','OSA — ваша карта знаний','Учебные маршруты, прогресс и история самопроверки.','intelligence'],
@@ -46,7 +51,7 @@ for(const [path,title,description,theme] of routes){
  const studioWork=studioRoutes.get(path)
  const studioPreview=studioWork?'https://osgard.world/osa-cinema/reference/'+studioWork.artwork:null
  let html=template.replace(/<title>.*?<\/title>/,`<title>${esc(title)}</title>`)
- const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer','learning/enrollment','osa-cinema/studio/library','osa-cinema/studio/production'].includes(path)
+ const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer','learning/enrollment','osa-cinema/studio/library','osa-cinema/studio/production','osa-cinema/studio/distribution'].includes(path)
  for(const [selector,value] of [['name="robots"',privateRoute?'noindex,follow':'index,follow'],['name="description"',description],['name="twitter:card"','summary_large_image'],['property="og:image:alt"',title],['property="og:title"',title],['property="og:description"',description],['property="og:url"','https://osgard.world/'+path],['property="og:image"',studioPreview||'https://osgard.world/brand/preview-'+theme+'.png'],['name="twitter:title"',title],['name="twitter:description"',description],['name="twitter:image"',studioPreview||'https://osgard.world/brand/preview-'+theme+'.png']]){
   const regex=new RegExp(`(<meta ${selector} content=")[^"]*("[^>]*>)`);html=regex.test(html)?html.replace(regex,(_,a,b)=>a+esc(value)+b):html.replace('</head>',`<meta ${selector} content="${esc(value)}"/>\n</head>`)
  }
@@ -63,4 +68,9 @@ for(const [path,title,description,theme] of routes){
 }
 const publicCatalog=createPublicCinemaCatalog(studioWorks)
 await writeFile('dist/osa-cinema/studio/catalog.v1.json',JSON.stringify(publicCatalog,null,2)+'\n')
-console.log('Brand route shells: '+routes.length+' titles, descriptions, canonicals and PNG previews; international film catalog: '+publicCatalog.total+' verified records')
+const originalV53=JSON.parse(await readFile('docs/OSA_CINEMA_V53_CONCEPT_EVIDENCE_20261028.json','utf8'))
+const press=makePressKit(studioWorks,originalV53,[publicReleaseDecision('zero-window'),publicReleaseDecision('threshold')])
+await writeFile('dist/osa-cinema/studio/press/press.v1.json',JSON.stringify(press,null,2)+'\n')
+await writeFile('dist/osa-cinema/studio/press/press.ru.txt',renderPressText(press,'ru'))
+await writeFile('dist/osa-cinema/studio/press/press.en.txt',renderPressText(press,'en'))
+console.log('Brand route shells: '+routes.length+' titles, descriptions, canonicals and previews; film catalog: '+publicCatalog.total+'; press documents: 3; film release NO_GO')
