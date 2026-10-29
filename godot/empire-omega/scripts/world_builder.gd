@@ -71,6 +71,7 @@ var r127_shelters: MultiMeshInstance3D
 var streetlight_focus: Vector3 = Vector3.ZERO
 const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
 const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
+const R168_ATMOSPHERE = preload("res://scripts/city_reign_atmospheric_optics.gd")
 const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
 const R37_MATERIAL_PACK = preload("res://scripts/horizon_facade_material_pack.gd")
 const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
@@ -773,6 +774,13 @@ func _apply_lighting() -> void:
 		return
 	LIGHT_GRADE.apply_to(sky_environment.environment,sun,atmosphere,weather_mode,visual_budget,daylight_brightness)
 	LIGHT_GRADE.apply_night_overlay(sky_environment.environment,sun,atmosphere,ambience_time)
+	# R168: actual solar direction and existing-sky PBR response, no SSR.
+	R168_ATMOSPHERE.apply_sky(sky_environment.environment,sun,atmosphere,
+		ambience_time,weather_mode,visual_budget)
+	R168_ATMOSPHERE.apply_road_finish(asphalt_pbr,weather_mode,visual_budget)
+	R168_ATMOSPHERE.apply_road_finish(concrete_pbr,weather_mode,visual_budget)
+	if road_puddles != null:
+		road_puddles.set_reflective_grade(ambience_time,visual_budget)
 	if city_reign_facades != null:
 		city_reign_facades.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	if city_reign_street_architecture != null:
@@ -924,9 +932,9 @@ func objective_position() -> Vector3:
 
 func update_daynight(day_clock: float) -> void:
 	ambience_time = fposmod(day_clock,24.0) if is_finite(day_clock) else 12.0
-	var phase := (ambience_time - 7.0) / 24.0 * TAU
-	sun.rotation_degrees.x = -55.0 + 70.0 * sin(phase)
-	daylight_brightness = clampf(0.70 + 0.55 * maxf(0.0,cos(phase)),0.70,1.25)
+	# R168: correct noon elevation / continuous sunrise and sunset azimuth.
+	# The same light is rotated by _apply_lighting(), not an added light.
+	daylight_brightness = R168_ATMOSPHERE.daylight_brightness(ambience_time)
 	_apply_lighting()
 	_update_windows(ambience_time,int(GameState.data["energy"]))
 	if horizon_scenic != null:
