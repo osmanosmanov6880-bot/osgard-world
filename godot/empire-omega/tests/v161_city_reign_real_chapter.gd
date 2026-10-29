@@ -1,7 +1,7 @@
 extends SceneTree
 ## R170 real saved original mission authority, physically drivable scene remains.
 const EP=preload("res://scripts/city_reign_episode_sequence.gd")
-const CAR=preload("res://scripts/vehicle_controller.gd")
+# Main car script depends on runtime GameState autoload; load after initialize.
 var passed:=0
 var failed:=0
 func check(ok: bool,why: String) -> void:

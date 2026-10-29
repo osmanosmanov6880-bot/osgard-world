@@ -1,6 +1,6 @@
 extends SceneTree
 ## R170 original player HUD with real native journal and zero extra overlays.
-const HUD=preload("res://scripts/hud.gd")
+# HUD script depends on autoload GameState; only load once SceneTree is ready.
 const EP=preload("res://scripts/city_reign_episode_sequence.gd")
 var passed:=0
 var failed:=0
@@ -17,7 +17,15 @@ func _run() -> void:
 	var old: Dictionary=sim.data.duplicate(true)
 	var old_lang: String=str(sim.locale)
 	sim.data=sim.new_game()
-	var hud: CanvasLayer=HUD.new()
+	var hud_script: Variant=load("res://scripts/hud.gd")
+	check(hud_script is Script and hud_script.can_instantiate(),
+		"true original Godot HUD loads after GameState autoload")
+	if not (hud_script is Script and hud_script.can_instantiate()):
+		sim.data=old
+		sim.locale=old_lang
+		quit(2)
+		return
+	var hud: CanvasLayer=hud_script.new()
 	root.add_child(hud)
 	for lang in ["ru","en","zh"]:
 		sim.locale=lang
