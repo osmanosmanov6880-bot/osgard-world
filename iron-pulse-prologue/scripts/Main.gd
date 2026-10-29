@@ -214,6 +214,9 @@ var exit_gate: MeshInstance3D
 var reactor_rings: Array[Node3D] = []
 var terminals: Array[Dictionary] = []
 var relay_terminals: Array[Dictionary] = []
+var field_stations: Array[Dictionary] = []
+var _field_ready_material: StandardMaterial3D
+var _field_done_material: StandardMaterial3D
 var _relay_ready_material: StandardMaterial3D
 var _relay_done_material: StandardMaterial3D
 var hud_root: Control
@@ -665,6 +668,7 @@ func _make_complex() -> void:
     _build_reactor()
     _build_terminals()
     _build_rescue_relays()
+    _build_field_stations()
     _build_bulkhead()
     art_stage = IPCinematicStage.new()
     add_child(art_stage)
@@ -799,6 +803,42 @@ func _build_rescue_relays() -> void:
             "id":info["id"],"key":info["key"],
             "position":info["point"],"indicator":indicator,
             "node":relay
+        })
+
+func _build_field_stations() -> void:
+    # G2: two physically different optional stations across two sectors.
+    # Both are actually reachable in the existing collidable 3D hallway.
+    var locations: Array[Dictionary] = [
+        {"id":"sink","key":"field_sink_terminal","point":Vector3(-4.2,1.0,-32.5)},
+        {"id":"air","key":"field_air_terminal","point":Vector3(4.2,1.0,-49.0)}
+    ]
+    _field_ready_material = _metal(Color(0.91,0.63,0.32),0.18,true)
+    _field_done_material = _metal(Color(0.19,0.76,0.63),0.18,true)
+    for info in locations:
+        var station := Node3D.new()
+        station.name = "G2_PhysicalProtocol_" + str(info["id"])
+        station.position = info["point"]
+        add_child(station)
+        _box(station,Vector3(0,-0.02,0),Vector3(1.65,1.66,0.52),_metal(METAL))
+        _box(station,Vector3(0,0.02,0.29),Vector3(1.48,1.25,0.05),_metal(NIGHT,0.1))
+        # Different industrial shapes, no external textures or fake sprites.
+        for col in range(4):
+            var x: float = -0.57 + float(col)*0.38
+            _box(station,Vector3(x,-0.40,0.34),Vector3(0.07,0.18,0.045),_metal(STEEL))
+        var indicator: MeshInstance3D = _box(
+            station,Vector3(0,0.53,0.35),Vector3(1.38,0.11,0.06),_field_ready_material)
+        indicator.name = "PhysicalFieldProtocolIndicator"
+        var label3d := Label3D.new()
+        label3d.name = "PhysicalFieldProtocolSign"
+        label3d.text = "SINK" if info["id"]=="sink" else "AIR BUFFER"
+        label3d.font_size = 42
+        label3d.pixel_size = 0.0025
+        label3d.position = Vector3(0,0.04,0.39)
+        label3d.modulate = WHITE
+        station.add_child(label3d)
+        field_stations.append({
+            "id":info["id"],"key":info["key"],
+            "position":info["point"],"indicator":indicator,"node":station
         })
 
 func _build_bulkhead() -> void:
@@ -2244,6 +2284,19 @@ func _nearest_terminal() -> Dictionary:
             nearest = dist
             closest = terminal
     return closest
+
+func _nearest_field_station() -> Dictionary:
+    if player == null:
+        return {}
+    var chosen: Dictionary = {}
+    var nearest: float = 2.85
+    for field in field_stations:
+        var where: Vector3 = field["position"]
+        var dist: float = Vector2(where.x,where.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
+        if dist < nearest:
+            nearest = dist
+            chosen = field
+    return chosen
 
 func _nearest_relay() -> Dictionary:
     if player == null:
