@@ -1,5 +1,6 @@
 import { readFile,writeFile,mkdir } from 'node:fs/promises'
 import { build } from 'esbuild'
+import { createPublicCinemaCatalog } from './osa-cinema-public-catalog.mjs'
 const catalogBundle=await build({entryPoints:['src/redesignCatalog.ts'],bundle:true,write:false,format:'esm',platform:'node'})
 const {playGames}=await import('data:text/javascript;base64,'+Buffer.from(catalogBundle.outputFiles[0].text).toString('base64'))
 const studioBundle=await build({entryPoints:['src/osaCinemaStudioRegistry.ts'],bundle:true,write:false,format:'esm',platform:'node'})
@@ -29,6 +30,7 @@ const routes=[
  ['academy','OSA — Академия','Практика, учебные маршруты и проекты OSA.','intelligence'],
  ['osa-cinema','OSA Original — интерактивный курс','Восемь сцен, выборы и самопроверка. Прогресс сохраняется в браузере.','intelligence'],
  ['osa-cinema/studio','OSA CINEMA STUDIO — оригинальные истории и производство','Двуязычная коллекция оригинальных интерактивных историй и проверяемая история производства OSA CINEMA.','intelligence'],
+ ['osa-cinema/studio/library','Моя коллекция — OSA CINEMA','Локальное избранное OSA CINEMA, экспорт и импорт личной библиотеки. Данные остаются на устройстве.','intelligence'],
  ...studioWorks.map(work=>['osa-cinema/studio/films/'+work.id,work.title+' — OSA CINEMA',work.description,'intelligence']),
  ['portal','OSGARD — портал экосистемы','Сохранённый портал направлений OSGARD.','world'],
  ['learning','OSA — ваша карта знаний','Учебные маршруты, прогресс и история самопроверки.','intelligence'],
@@ -43,7 +45,7 @@ for(const [path,title,description,theme] of routes){
  const studioWork=studioRoutes.get(path)
  const studioPreview=studioWork?'https://osgard.world/osa-cinema/reference/'+studioWork.artwork:null
  let html=template.replace(/<title>.*?<\/title>/,`<title>${esc(title)}</title>`)
- const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer','learning/enrollment'].includes(path)
+ const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer','learning/enrollment','osa-cinema/studio/library'].includes(path)
  for(const [selector,value] of [['name="robots"',privateRoute?'noindex,follow':'index,follow'],['name="description"',description],['name="twitter:card"','summary_large_image'],['property="og:image:alt"',title],['property="og:title"',title],['property="og:description"',description],['property="og:url"','https://osgard.world/'+path],['property="og:image"',studioPreview||'https://osgard.world/brand/preview-'+theme+'.png'],['name="twitter:title"',title],['name="twitter:description"',description],['name="twitter:image"',studioPreview||'https://osgard.world/brand/preview-'+theme+'.png']]){
   const regex=new RegExp(`(<meta ${selector} content=")[^"]*("[^>]*>)`);html=regex.test(html)?html.replace(regex,(_,a,b)=>a+esc(value)+b):html.replace('</head>',`<meta ${selector} content="${esc(value)}"/>\n</head>`)
  }
@@ -58,4 +60,6 @@ for(const [path,title,description,theme] of routes){
  html=routeSchema.test(html)?html.replace(routeSchema,()=>schemaScript):html.replace('</head>',schemaScript+'\n</head>')
  await mkdir('dist/'+path,{recursive:true});await writeFile('dist/'+path+'/index.html',html)
 }
-console.log('Brand route shells: '+routes.length+' titles, descriptions, canonicals and PNG previews')
+const publicCatalog=createPublicCinemaCatalog(studioWorks)
+await writeFile('dist/osa-cinema/studio/catalog.v1.json',JSON.stringify(publicCatalog,null,2)+'\n')
+console.log('Brand route shells: '+routes.length+' titles, descriptions, canonicals and PNG previews; international film catalog: '+publicCatalog.total+' verified records')

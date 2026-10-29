@@ -294,7 +294,7 @@ export default function WorldHome({ development = false }: { development?: boole
 
     <section id="approach" className="brand-section" aria-labelledby="world-approach-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">{tx("03 / ПОДХОД")}</p><h2 id="world-approach-title">{locale === 'ru' ? <>Сначала смысл.<br />Потом — каждый пиксель.</> : <>MEANING FIRST.<br />THEN EVERY PIXEL.</>}</h2></div>
-      <ol className="world-process">{(locale === 'ru' ? process : [['Strategy', 'Clarify the audience, problem and success criteria.'], ['Structure', 'Map user journeys and the main action on each screen.'], ['Design', 'Choose a visual language that serves the product.'], ['Development', 'Build the interface, states and data persistence.'], ['Launch', 'Check the build, dependencies and infrastructure readiness.']]).map(([name, description], index) => <li key={name}><span>0{index + 1}</span><h3>{name}</h3><p>{description}</p></li>)}</ol>
+      <ol className="world-process">{process.map(([name, description], index) => <li key={name}><span>0{index + 1}</span><h3>{tx(name)}</h3><p>{tx(description)}</p></li>)}</ol>
     </section>
 
     <section id="about" className="brand-section world-about" aria-labelledby="world-about-title">

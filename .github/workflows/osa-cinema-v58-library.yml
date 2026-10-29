@@ -1,0 +1,94 @@
+name: OSA CINEMA V58 Global Library and Public Catalogue
+on:
+  pull_request:
+    branches: [master, feature/osa-cinema-world-studio-v54-20261028]
+    paths:
+      - 'src/OSACinemaLibrary.tsx'
+      - 'src/osaCinemaLibrary.css'
+      - 'src/osaCinemaWatchlist.ts'
+      - 'src/OSACinemaStudio.tsx'
+      - 'src/OSACinemaFilm.tsx'
+      - 'src/main.tsx'
+      - 'src/osgardRouting.ts'
+      - 'src/routeSeo.ts'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/osa-cinema-public-catalog.mjs'
+      - 'scripts/osa-cinema-v58-*.mjs'
+      - 'playwright.osa-cinema-v58.config.mjs'
+      - '.github/workflows/osa-cinema-v58-library.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'src/OSACinemaLibrary.tsx'
+      - 'src/osaCinemaLibrary.css'
+      - 'src/osaCinemaWatchlist.ts'
+      - 'src/OSACinemaStudio.tsx'
+      - 'src/OSACinemaFilm.tsx'
+      - 'src/main.tsx'
+      - 'src/osgardRouting.ts'
+      - 'src/routeSeo.ts'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/osa-cinema-public-catalog.mjs'
+      - 'scripts/osa-cinema-v58-*.mjs'
+      - 'playwright.osa-cinema-v58.config.mjs'
+      - '.github/workflows/osa-cinema-v58-library.yml'
+permissions:
+  contents: read
+jobs:
+  library-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify strict watchlist export/import and multilingual public catalog
+        run: |
+          node --test scripts/osa-cinema-v58-watchlist.test.mjs
+          node --test scripts/osa-cinema-v58-public-catalog.test.mjs
+          node --test scripts/osa-cinema-v55-studio-contract.test.mjs
+      - name: Type-check all React routes
+        run: npm run check
+      - name: Compile all static film routes
+        run: npm run build
+      - name: Verify public JSON catalogue, safe watchlist shell, and no invented premieres
+        run: |
+          node scripts/osa-cinema-v55-route-shell-preflight.mjs
+          node scripts/osa-cinema-v58-build-preflight.mjs
+          npm run qa:osa-media-release
+      - name: Protect existing landing performance and route budget
+        run: npm run qa:redesign-build
+  library-browser:
+    needs: library-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install real Chrome browser test runner
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Desktop and mobile real interaction tests (including export/import and cross-tab)
+        run: npx playwright test --config playwright.osa-cinema-v58.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v58-browser-proof
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn

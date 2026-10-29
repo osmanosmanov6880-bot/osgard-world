@@ -1,0 +1,51 @@
+/* V58 / OSA CINEMA: private local library, no global OSGARD shell. */
+/* Override the shared studio main selector with the library-specific charcoal surface. */
+main.osa-studio.osa-library-page{background:#08090b;color:#f5eee3}
+.osa-library-page{background:#08090b;color:#f5eee3}
+.osa-library-hero{isolation:isolate;min-height:510px;display:flex;align-items:end;justify-content:space-between;gap:32px;padding:80px clamp(22px,7vw,115px) 62px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 76% 43%,#3d2d20,#131517 44%,#08090b 82%);border-bottom:1px solid rgba(215,172,106,.23)}
+.osa-library-orbit{position:absolute;inset:-45% -17% -55% 42%;z-index:-1;pointer-events:none;border:1px solid #c8a47426;border-radius:50%;box-shadow:0 0 0 68px #c8a47408,0 0 0 138px #c8a47405,0 0 0 240px #c8a47403;transform:rotate(-32deg)}
+.osa-library-hero-inner{position:relative;max-width:780px}
+.osa-library-hero h1{font:400 clamp(60px,7.7vw,122px)/.88 Georgia,serif;letter-spacing:-.063em;color:#f6ebda;margin:22px 0 28px}
+.osa-library-hero h1 em{font-weight:400;color:#ddbd88}
+.osa-library-hero-inner>p:not(.osa-studio-eyebrow){max-width:490px;color:#c3b7a7;line-height:1.75;font-size:15px}
+.osa-library-count{display:flex;flex-direction:column;align-items:start;min-width:180px;color:#f0d5a8}
+.osa-library-count strong{font:400 clamp(82px,11vw,158px)/.75 Georgia,serif;letter-spacing:-.08em}
+.osa-library-count span{font:10px/1.6 monospace;letter-spacing:.14em;text-transform:uppercase;margin-top:27px;color:#d7c1a1}
+.osa-library-content{max-width:1530px;margin:auto;padding:85px clamp(22px,6vw,95px) 120px}
+.osa-library-empty{border:1px solid #6d5741;background:radial-gradient(circle at 80% 30%,#231e18,#101113 70%);padding:65px clamp(22px,6vw,80px);display:flex;flex-direction:column;align-items:start;gap:17px;color:#d6b887}
+.osa-library-empty h3{color:#f3eadc;font:400 clamp(30px,3vw,48px) Georgia,serif}
+.osa-library-empty p{color:#bbafa2;max-width:520px;line-height:1.7;font-size:13px}
+.osa-library-empty .osa-studio-button{margin-top:10px}
+.osa-library-grid{display:grid;gap:18px}
+.osa-library-item{border:1px solid #463a2e;display:grid;grid-template-columns:minmax(220px,.76fr) minmax(0,1.6fr);min-height:260px;background:#111315;transition:border-color .2s}
+.osa-library-item:hover{border-color:#c9a16c}
+.osa-library-cover{position:relative;background-color:#202020;background-size:cover;background-position:center;min-height:260px}
+.osa-library-cover span{position:absolute;top:20px;left:20px;font:10px monospace;letter-spacing:.14em;color:#fff0d3;text-shadow:0 1px 8px #000}
+.osa-library-item-copy{padding:32px clamp(22px,3vw,48px);display:flex;flex-direction:column;align-items:start;gap:12px;min-width:0}
+.osa-library-category{font:10px monospace;color:#d7b885;letter-spacing:.15em}
+.osa-library-item h3{font:400 clamp(32px,3.5vw,60px)/1.1 Georgia,serif;color:#f6ebdd;letter-spacing:-.03em}
+.osa-library-item p{font-size:13px;line-height:1.7;color:#c5b7a5}
+.osa-library-item-actions{margin-top:auto;width:100%;display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+.osa-library-item-actions a,.osa-library-item-actions button{display:inline-flex;align-items:center;gap:10px;min-height:44px;font-size:12px;color:#e7c695;background:transparent;border:0;border-bottom:1px solid #786046;padding:9px 0}
+.osa-library-item-actions button{color:#c3ada1}
+.osa-library-backup{border-top:1px solid rgba(219,179,124,.25);border-bottom:1px solid rgba(219,179,124,.25);padding:80px clamp(22px,7vw,115px);display:grid;grid-template-columns:1fr 1fr;gap:7vw;background:#101113}
+.osa-library-backup h2{font:400 clamp(35px,4.2vw,62px)/1.1 Georgia,serif;color:#f4e4d0;margin:18px 0 26px;letter-spacing:-.03em}
+.osa-library-backup p:not(.osa-studio-eyebrow){max-width:510px;color:#c4b7a8;font-size:13px;line-height:1.8}
+.osa-library-security{display:flex;align-items:flex-start;gap:12px;color:#c9bead}
+.osa-library-security svg{flex:none;color:#d4b581}
+.osa-library-tools{display:flex;flex-direction:column;align-items:start;gap:19px;justify-content:center}
+.osa-library-tools-row{display:grid;gap:12px;width:100%}
+.osa-library-tools-row button,.osa-library-upload{cursor:pointer;width:100%;display:flex;align-items:center;gap:16px;justify-content:space-between;text-align:left;min-height:84px;padding:21px;background:#171716;border:1px solid #725d42;color:#f1dcc0;font-size:13px}
+.osa-library-tools-row button>span,.osa-library-upload>span{flex:1;display:flex;flex-direction:column;gap:6px}
+.osa-library-tools-row small{font:10px monospace;color:#b7a892}
+.osa-library-tools-row button:hover,.osa-library-upload:hover{background:#24201b;border-color:#d5b17c}
+.osa-library-tools-row input[type=file]{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.osa-library-tools-row input[type=file]:focus-visible+.osa-library-upload{outline:2px solid #f3d29e;outline-offset:3px}
+.osa-library-clear,.osa-library-cancel{border:0;border-bottom:1px solid #826c5b;background:transparent;color:#c8afa1;display:inline-flex;gap:9px;align-items:center;font-size:12px;padding:12px 0}
+.osa-library-clear.confirm{color:#f0af99;border-color:#ef9984}
+.osa-library-feedback{padding:0 clamp(22px,7vw,115px);font-size:13px}
+.osa-library-feedback p{display:flex;gap:10px;align-items:center;border-left:2px solid #bd9c71;padding:15px 20px;background:#201c17;margin:15px 0;color:#eddbc1}
+.osa-library-feedback p[role=alert]{border-left-color:#ed9983}
+@media(max-width:900px){.osa-library-hero{min-height:440px}.osa-library-backup{grid-template-columns:1fr;gap:28px}.osa-library-count{min-width:120px}.osa-library-count strong{font-size:95px}}
+@media(max-width:650px){.osa-library-hero{min-height:490px;padding:72px 22px 45px;display:block}.osa-library-hero h1{font-size:clamp(58px,13vw,80px)}.osa-library-count{margin-top:40px;align-items:center;flex-direction:row;gap:22px}.osa-library-count strong{font-size:68px}.osa-library-count span{margin-top:5px}.osa-library-content{padding:65px 18px}.osa-library-item{grid-template-columns:1fr}.osa-library-cover{min-height:210px}.osa-library-item-copy{padding:25px 22px}.osa-library-item h3{font-size:36px}.osa-library-backup{padding:60px 20px}.osa-library-backup h2{font-size:41px}}
+@media(prefers-reduced-motion:reduce){.osa-library-page *, .osa-library-page *::before,.osa-library-page *::after{transition:none!important;animation:none!important}}
