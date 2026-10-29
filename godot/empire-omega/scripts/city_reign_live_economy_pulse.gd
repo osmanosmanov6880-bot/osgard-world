@@ -209,7 +209,11 @@ func _ready() -> void:
 		captions[id]=words
 	ready_once=true
 	set_quality(graphic_tier)
-	sync_state(GameState.data,GameState.locale)
+	var game_source: Node=get_node_or_null("/root/GameState")
+	if game_source != null:
+		var saved: Variant=game_source.get("data")
+		if saved is Dictionary:
+			sync_state(saved,str(game_source.get("locale")))
 	update_view(last_observer)
 
 func sync_state(state: Dictionary,language: String) -> void:
