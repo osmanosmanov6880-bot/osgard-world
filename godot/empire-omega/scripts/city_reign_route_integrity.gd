@@ -36,7 +36,8 @@ static func usable(path: Array[Vector3],origin: Vector3,goal: Vector3) -> bool:
 static func verified(path: Array[Vector3],origin: Vector3,goal: Vector3) -> Array[Vector3]:
 	if usable(path,origin,goal):
 		return path
-	return [] as Array[Vector3]
+	var cleared: Array[Vector3]=[]
+	return cleared
 
 static func should_recalculate(elapsed: float,goal_changed: bool,source_changed: bool,
 		off_route: bool) -> bool:

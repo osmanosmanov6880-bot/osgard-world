@@ -510,7 +510,7 @@ func _physics_process(delta: float) -> void:
 		var property_id: String = world.closest_property(protagonist,20.0)
 		if property_id != "":
 			near_name = str(GameState.REAL_ESTATE.PROPERTIES[property_id]["name"].get(GameState.locale,"Property"))
-		var mission_action: String = str(MissionManager.get_mission().get("id","complete"))
+	var mission_action: String = str(MissionManager.get_mission().get("id","complete"))
 	var service_session: Dictionary=GameState.data.get("service_active",{})
 	var service_target: Vector3=GameState.SERVICE.LOCATIONS.get(
 		str(service_session.get("destination","")),Vector3.ZERO)
@@ -552,7 +552,7 @@ func _physics_process(delta: float) -> void:
 		if hud.map != null: hud.map.route.clear()
 		if road_guidance != null: road_guidance.clear_route()
 		if route_chevron != null: route_chevron.clear_turn()
-		var new_source: String=str(live_objective["source"]) if goal_visible else "none"
+	var new_source: String=str(live_objective["source"]) if goal_visible else "none"
 	var source_changed: bool=new_source!=last_route_source
 	if source_changed: last_route_source=new_source
 	var off_road: bool=str(drive_nav_status.get("kind",""))=="off_route"
