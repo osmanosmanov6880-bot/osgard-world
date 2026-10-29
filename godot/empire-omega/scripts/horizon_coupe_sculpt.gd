@@ -54,7 +54,7 @@ static func _bounded_section(profile: Array,segment: int,t: float) -> Vector4:
 	if t<=0.0: return first
 	if t>=1.0: return last
 	var prev: Vector4 = profile[maxi(segment-1,0)]
-	var next: Vector4 = profile[mini(segment+2,sections.size()-1)]
+	var next: Vector4 = profile[mini(segment+2,profile.size()-1)]
 	var m0: Vector4 = (last-prev)*0.5
 	var m1: Vector4 = (next-first)*0.5
 	var t2: float = t*t
