@@ -297,6 +297,17 @@ func set_cockpit_data(forward_speed: float,steering: float,braking: float = 0.0)
 	if cockpit_interior != null and cockpit_interior.active:
 		cockpit_interior.set_live_data(forward_speed,steering,braking)
 
+func sync_rotor_heat(axle_heat: Vector2) -> void:
+	# Real front/rear loads drive existing wheel rotors. Pooled meshes and
+	# materials survive arbitrary graphics-tier and camera switches.
+	if not axle_heat.is_finite():
+		return
+	for i in range(wheel_detail_nodes.size()):
+		var detail: Node3D = wheel_detail_nodes[i]
+		if is_instance_valid(detail):
+			# Wheel rigs are [left front,left rear,right front,right rear].
+			detail.call("apply_brake_heat",axle_heat.x if i%2==0 else axle_heat.y)
+
 func set_detail_quality(tier: String) -> void:
 	for item in wheel_detail_nodes:
 		if is_instance_valid(item):

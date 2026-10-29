@@ -20,6 +20,10 @@ var _has_last: Array[bool] = [false,false]
 var _last: Array[Vector3] = [Vector3.ZERO,Vector3.ZERO]
 var _age_accumulator: float = 0.0
 var emitted_segments: int = 0
+## Last actual source transform submitted to headless/WebGL MultiMesh.
+## Some Godot headless renderers cannot read back 3D instance transforms;
+## test this truthful CPU submission in addition to GPU pool cardinality.
+var last_record_transform: Transform3D = Transform3D.IDENTITY
 
 func _ready() -> void:
 	name = "HorizonSkidMarkPool"
@@ -82,11 +86,15 @@ func active_marks() -> int:
 			total += 1
 	return total
 
-func _record_track(side: int, world_contact: Vector3, strength: float, spacing: float) -> bool:
+func _record_track(side: int, world_contact: Vector3, strength: float, spacing: float,
+		road_normal: Vector3 = Vector3.UP) -> bool:
 	if not world_contact.is_finite():
 		_has_last[side] = false
 		return false
-	var next: Vector3 = world_contact+Vector3(0.0,0.028,0.0)
+	var normal: Vector3 = road_normal.normalized() if road_normal.is_finite() and road_normal.length_squared()>0.25 else Vector3.UP
+	if normal.y<0.45:
+		normal = Vector3.UP
+	var next: Vector3 = world_contact+normal*0.028
 	if not _has_last[side]:
 		_last[side] = next
 		_has_last[side] = true
@@ -101,8 +109,16 @@ func _record_track(side: int, world_contact: Vector3, strength: float, spacing: 
 		# A teleport, respawn or physics jump must never draw a long rubber line.
 		return false
 	var center: Vector3 = previous.lerp(next,0.5)
-	var angle: float = atan2(travel.x,travel.z)
-	var transform := Transform3D(Basis(Vector3.UP,angle).scaled(Vector3(1.0,1.0,distance)),center)
+	# R166: align original pooled skid quads to the measured physical
+	# asphalt normal, rather than drawing horizontal floating decals on
+	# sloped roads. Keep the exact original instance ring and quad mesh.
+	var projected: Vector3 = travel-normal*travel.dot(normal)
+	if projected.length_squared()<0.0001:
+		return false
+	var forward: Vector3 = projected.normalized()
+	var lateral: Vector3 = normal.cross(forward).normalized()
+	var transform := Transform3D(Basis(lateral,normal,forward*distance),center)
+	last_record_transform = transform
 	_ring.set_instance_transform(_write,transform)
 	_ring.set_instance_color(_write,Color(1.0,1.0,1.0,strength))
 	_lifetimes[_write] = LIFETIME
@@ -134,6 +150,7 @@ func update_trails(vehicle: CharacterBody3D, driving: bool, quality: String, dt:
 		sampled = SURFACE.probe(vehicle)
 	var grounded: Array[bool] = sampled["grounded"]
 	var points: Array[Vector3] = sampled["points"]
+	var normals: Array[Vector3] = sampled["normals"]
 	var strength: float = mark_opacity(float(vehicle.get("traction_factor")))
 	var spacing: float = 0.30 if quality == "standard" else MIN_SEGMENT
 	var count := 0
@@ -142,6 +159,7 @@ func update_trails(vehicle: CharacterBody3D, driving: bool, quality: String, dt:
 		if wheel_index>=grounded.size() or not grounded[wheel_index]:
 			_has_last[side] = false
 			continue
-		if _record_track(side,points[wheel_index],strength,spacing):
+		var normal: Vector3 = normals[wheel_index] if normals.size()>wheel_index else Vector3.UP
+		if _record_track(side,points[wheel_index],strength,spacing,normal):
 			count += 1
 	return count

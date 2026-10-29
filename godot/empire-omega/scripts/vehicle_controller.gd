@@ -15,6 +15,7 @@ const R46_LOAD_TRANSFER = preload("res://scripts/horizon_r46_load_transfer.gd")
 const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
 const SIGNAL_CANCEL = preload("res://scripts/city_reign_signal_cancel.gd")
 const APEX_RESPONSE = preload("res://scripts/city_reign_brake_response.gd")
+const ROTOR_THERMAL = preload("res://scripts/city_reign_rotor_thermal.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -45,6 +46,10 @@ var brake_lights_on := false
 var brake_response: float = 0.0
 var brake_estimated_stop_m: float = 0.0
 var apex_torque_factor: float = 1.0
+## R166 cosmetic *normalized* axle energy (not a sensed brake temperature).
+var rotor_heat: Vector2 = Vector2.ZERO
+var rotor_energy_proxy: float = 0.0
+var last_longitudinal_accel: float = 0.0
 var handbrake_on := false
 var steering_filter := 0.0
 var speed := 0.0
@@ -363,16 +368,24 @@ func _physics_process(delta: float) -> void:
 	mileage += covered
 	var spin: float = covered / 0.44 * signf(speed)
 	var longitudinal_acceleration: float = (speed-prior_speed)/maxf(delta,0.001)
+	last_longitudinal_accel = clampf(longitudinal_acceleration,-60.0,60.0)
 	var wheel_support: Dictionary = _sample_wheel_contacts()
 	last_wheel_support = wheel_support
 	r46_brake_diagnostics = R46_LOAD_TRANSFER.diagnostics(speed,longitudinal_acceleration,traction_factor,wheel_support["grounded"])
 	r46_front_load_ratio = float(r46_brake_diagnostics["front_axle_load_ratio"])
 	brake_estimated_stop_m = R46_LOAD_TRANSFER.estimated_brake_distance(speed,r46_brake_grip)
+	# Never infer heat from a collision, throttle lift or a floating wheel.
+	# Read the CURRENT actual four-ray wheel contacts and driver brake input.
+	var wheel_grounded: Array[bool] = wheel_support["grounded"]
+	rotor_energy_proxy = ROTOR_THERMAL.dissipated_energy(prior_speed,speed,brake_response)
+	rotor_heat = ROTOR_THERMAL.step(rotor_heat,prior_speed,speed,
+		brake_response,traction_factor,r46_front_load_ratio,wheel_grounded,delta)
 	if horizon_visual != null:
 		horizon_visual.call("roll_wheels",covered * signf(speed),applied_steering)
 		horizon_visual.call("simulate_chassis",speed,current_yaw_rate,longitudinal_acceleration,traction_factor,handbrake_on,wheel_support["travel"],delta,wheel_support["grounded"])
 		# Existing brake lens is animated by actual sampled pedal response.
 		horizon_visual.call("sync_brake_response",brake_response,brake_lights_on,delta)
+		horizon_visual.call("sync_rotor_heat",rotor_heat)
 	_update_drift_score(delta)
 	for wheel in wheel_nodes:
 		wheel.rotate_x(spin)
