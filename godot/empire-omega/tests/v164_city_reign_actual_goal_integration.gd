@@ -28,8 +28,17 @@ func _run() -> void:
 		sim.locale=locale
 		quit(2)
 		return
-	for i in range(4): await physics_frame
+	# The actual scene replacement is deferred to IDLE, not a physics tick.
+	# This is the same Godot pattern as inherited v121 real-city tests.
+	await process_frame
+	await physics_frame
 	var main: Node3D=current_scene as Node3D
+	check(main!=null,"real original main.tscn became the active SceneTree scene")
+	if main==null:
+		sim.data=original
+		sim.locale=locale
+		quit(2)
+		return
 	var car: CharacterBody3D=main.get("car") as CharacterBody3D
 	var world: Node3D=main.get("world") as Node3D
 	var hud: CanvasLayer=main.get("hud") as CanvasLayer
