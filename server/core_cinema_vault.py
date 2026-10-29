@@ -11,6 +11,7 @@ from pathlib import PurePath
 from urllib.parse import unquote
 import re
 import core_cinema
+import core_cinema_ops
 from core_model import Fault, require, now, uid
 
 SCHEMA = '''
@@ -97,9 +98,14 @@ def listing(db,space_id,actor):
                    FROM cinema_vault_assets a JOIN users u ON u.id=a.uploader_id
                    WHERE a.space_id=? ORDER BY a.rowid DESC LIMIT 16''',(space_id,)).fetchall()
     assets=[snapshot(row) for row in rows]
+    owner_quota=core_cinema_ops.owner_usage(db,space['owner_id'])
     return dict(spaceId=space_id,spaceVersion=space['version'],role=space['role'],
                 assets=assets,usedBytes=sum(a['bytes'] for a in assets),
-                limits=dict(maxAssetBytes=MAX_ASSET_BYTES,maxSpaceBytes=MAX_SPACE_BYTES,maxAssets=MAX_ASSETS),
+                limits=dict(maxAssetBytes=MAX_ASSET_BYTES,maxSpaceBytes=MAX_SPACE_BYTES,
+                            maxAssets=MAX_ASSETS,maxOwnerBytes=core_cinema_ops.MAX_OWNER_BYTES),
+                ownerUsedBytes=owner_quota['usedBytes'] if space['role']=='owner' else None,
+                ownerRemainingBytes=owner_quota['remainingBytes'] if space['role']=='owner' else None,
+                ownerQuotaEnforced=True,
                 scope='Authenticated local SQLite BLOB storage; unencrypted and not antivirus scanned.',
                 releaseAuthorized=False,publicVideoUrl=None,publicStreamingEnabled=False,
                 encryptionAtRest=False,serverAntivirus=False)
@@ -138,6 +144,10 @@ def upload(store,space_id,actor,content,encoded_name,mime,key,expected_version,e
         require(count<MAX_ASSETS,'Максимум 16 файлов в пространстве пилота.','quota',409)
         require(total+len(content)<=MAX_SPACE_BYTES,
                 'Ограничение пространства: максимум 32 МиБ.','quota',409)
+        owner_used=core_cinema_ops.owner_usage(db,space['owner_id'])['usedBytes']
+        require(owner_used+len(content)<=core_cinema_ops.MAX_OWNER_BYTES,
+                'Общая квота владельца: максимум 64 МиБ для всех кинопространств.',
+                'owner_quota',409)
         if evidence_id:
             link=db.execute('SELECT id FROM cinema_evidence WHERE id=? AND space_id=?',
                             (evidence_id,space_id)).fetchone()
