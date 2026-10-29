@@ -118,9 +118,12 @@ func _percentile(sorted: Array[float],fraction: float) -> float:
     return sorted[index]
 
 func snapshot(force: bool = false) -> Dictionary:
-    # Recalculate at most every 60 accepted frames unless a user explicitly
-    # finishes/exports. Read-only WebGL diagnostics don't sort each frame.
-    if not force and not _cached.is_empty() and _frames_since_summary < 60:
+    # The first frames matter when a REAL browser's software renderer is
+    # slow. A stale zero-sample cache must never hide real captured data.
+    # The first 60 frames are cheap to summarize individually; after warmup
+    # throttle large sorts to one per 60 accepted frames.
+    var refresh_every: int = 1 if total_frames < 60 else 60
+    if not force and not _cached.is_empty() and _frames_since_summary < refresh_every:
         return _cached.duplicate(true)
     _frames_since_summary = 0
     var ordered: Array[float] = frames_ms.duplicate()
