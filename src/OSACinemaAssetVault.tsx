@@ -9,7 +9,7 @@ type Item={id:string;spaceId:string;evidenceId:string|null;name:string;mime:stri
 type List={spaceId:string;spaceVersion:number;role:Role;assets:Item[];usedBytes:number;limits:{maxAssetBytes:number;maxSpaceBytes:number;maxAssets:number};scope:string;releaseAuthorized:false;publicVideoUrl:null;publicStreamingEnabled:false;encryptionAtRest:false;serverAntivirus:false}
 type Evidence={id:string;title:string;sceneId:string}
 type Props={spaceId:string;role:Role;version:number;locale:StudioLocale;onChanged:()=>Promise<void>}
-const sizeText=(n:number)=>(n/1024).toLocaleString('en-US',{maximumFractionDigits:1})+' KiB'
+const sizeText=(n:number)=>n<1024?`${n} B`:n<1024*1024?`${(n/1024).toLocaleString('en-US',{maximumFractionDigits:1})} KiB`:`${(n/(1024*1024)).toLocaleString('en-US',{maximumFractionDigits:1})} MiB`
 export default function OSACinemaAssetVault({spaceId,role,version,locale,onChanged}:Props){
  const ru=locale==='ru'
  const tr=(a:string,b:string)=>ru?a:b
