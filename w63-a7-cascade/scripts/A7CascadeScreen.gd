@@ -1304,7 +1304,7 @@ func _layout_stage() -> void:
         w85_field_guide.set_context(touch_context and w76_immersive and
             stage_3d.first_person.piloting,locale,size,model.snapshot())
     if w86_coach != null and stage_3d != null:
-        w86_coach.set_context(w76_immersive and
+        w86_coach.set_context(w76_immersive,
             stage_3d.first_person.piloting,locale,size)
     _w84_sync_modal_input()
     if w82_nav_cockpit != null:
@@ -1593,7 +1593,7 @@ func _render(state: Dictionary) -> void:
         w85_field_guide.set_context(_w81_touch_context() and w76_immersive and
             stage_3d.first_person.piloting,locale,size,state)
     if w86_coach != null and stage_3d != null:
-        w86_coach.set_context(w76_immersive and
+        w86_coach.set_context(w76_immersive,
             stage_3d.first_person.piloting,locale,size)
     _w84_sync_modal_input()
     restart_button.text = _t("reset")
