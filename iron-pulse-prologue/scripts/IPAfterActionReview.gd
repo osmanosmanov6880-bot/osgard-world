@@ -115,7 +115,11 @@ func localized(report: Dictionary,locale: String = "ru") -> String:
     lines.append(("DENIED ACTIONS" if english else "ОТКЛОНЁННЫЕ ДЕЙСТВИЯ") + "  %d" % int(report["faults"]))
     lines.append(("REPAIR" if english else "РЕМОНТ") + "  " + str(report["repair"]).to_upper())
     var protocol: String = str(report.get("field_protocol",""))
-    var protocol_name: String = "HEAT SINK" if protocol == "sink" else "AIR BUFFER" if protocol == "air" else "NONE" if english else "НЕТ"
+    var protocol_name: String = "NONE" if english else "НЕТ"
+    if protocol == "sink":
+        protocol_name = "HEAT SINK" if english else "ТЕПЛОВОЙ ЯКОРЬ"
+    elif protocol == "air":
+        protocol_name = "AIR BUFFER" if english else "РЕЗЕРВ ВОЗДУХА"
     lines.append(("FIELD PROTOCOL" if english else "ПОЛЕВОЙ ПРОТОКОЛ") + "  " + protocol_name)
     var relays: Array = report["relays"]
     lines.append(("RELAYS" if english else "СТАНЦИИ") + "  " + (", ".join(PackedStringArray(relays)) if not relays.is_empty() else "—"))
