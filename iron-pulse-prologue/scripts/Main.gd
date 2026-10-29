@@ -213,6 +213,7 @@ var containment_fx: IPContainmentFX
 var wayfinder: IPWayfinding
 var campaign_echoes: IPCampaignEchoes
 var world_sectors: IPWorldSectors
+var obsidian_world: IPObsidianArchitecture
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
 var reduced_motion: bool = false
@@ -354,6 +355,10 @@ func _ready() -> void:
     _make_complex()
     world_sectors = IPWorldSectors.new()
     add_child(world_sectors)
+    # G3 source-bound materials and persistent safety cues; no scene collisions.
+    obsidian_world = IPObsidianArchitecture.new()
+    add_child(obsidian_world)
+    obsidian_world.set_locale(locale)
     wayfinder = IPWayfinding.new()
     add_child(wayfinder)
     wayfinder.configure(terminals)
@@ -492,6 +497,7 @@ func _publish_web_state() -> void:
     state["world_sector"] = active_sector
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
+    state["g3_obsidian_architecture"] = obsidian_world.readout() if obsidian_world != null else {}
     state["story"] = story.diagnostic()
     state["campaign"] = campaign.diagnostic()
     state["world_launch"] = {
@@ -1789,6 +1795,8 @@ func _continue_checkpoint() -> bool:
         visited_sectors.append(active_sector)
     art_stage.set_quality(quality_mode)
     world_sectors.set_quality(quality_mode)
+    if obsidian_world != null:
+        obsidian_world.set_quality(quality_mode)
     reactor_atrium.set_quality(quality_mode)
     containment_fx.set_quality(quality_mode)
     exit_gate.position.y = 6.2 if session.override_set else 2.6
@@ -1965,6 +1973,8 @@ func _toggle_language() -> void:
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
     campaign_echoes.sync(campaign,locale)
+    if obsidian_world != null:
+        obsidian_world.set_locale(locale)
     if diagnostic_panel.visible:
         diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
     _announce("language")
@@ -1981,6 +1991,8 @@ func _apply_graphics_profile(next_mode: String) -> void:
     quality_mode = next_mode
     art_stage.set_quality(quality_mode)
     world_sectors.set_quality(quality_mode)
+    if obsidian_world != null:
+        obsidian_world.set_quality(quality_mode)
     reactor_atrium.set_quality(quality_mode)
     containment_fx.set_quality(quality_mode)
     for index in range(legacy_lamps.size()):
@@ -2249,6 +2261,8 @@ func _process(delta: float) -> void:
         camera.fov = lerpf(camera.fov,fov_target,minf(delta*4.0,1.0))
     art_stage.update_danger(session.heat,session.oxygen,runtime_seconds,reduced_motion)
     world_sectors.update_hazard(session.scenario_id,session.heat,session.oxygen,reduced_motion)
+    if obsidian_world != null:
+        obsidian_world.update_hazard(session.scenario_id,session.heat,session.oxygen,runtime_seconds,reduced_motion)
     reactor_atrium.update_alarm(session.scenario_id,session.heat,session.oxygen,runtime_seconds,reduced_motion)
     containment_fx.update_from_crisis(
         session.scenario_id,session.heat,session.oxygen,runtime_seconds,
