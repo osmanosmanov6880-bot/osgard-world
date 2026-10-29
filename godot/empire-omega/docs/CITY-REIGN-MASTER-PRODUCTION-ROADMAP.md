@@ -1,7 +1,7 @@
 # CITY REIGN — WORLD PRODUCTION ROADMAP
 Date: 2026-10-29
 Engine: existing Godot 4.4.1 GL Compatibility / WebGL2
-Canonical published baseline: R163, c2daff6b501be16fd292f9dc06989e4e02736dd0
+Canonical published baseline: R166, 539c9fbe8dcb6fd853946841d56cac67f216924d (SSH verification 40839742690)
 Canonical game URL: https://osgard.world/games/city-reign/
 This is an engineering plan and acceptance contract, not evidence of completed features.
 
@@ -73,4 +73,4 @@ Engine systems and infrastructure can be iterated in code. World-class photoreal
 ## Tracking / status
 R163: verified and published with original Godot build, SSH and independent public Chromium PASS.
 R164: published at canonical site (767a64fe, SSH run 40789722171, original 3D cockpit and public Chromium PASS).
-R165: verified and publicly published at canonical site (8b32c055, SSH run 40820474382, 3428 native checks, real public Chromium PASS). R166: original road contact craft under private native + Chromium QA, NOT shipped until exact SHA SSH and independent live browser PASS. R167-R200 planned only.
+R165: publicly published (8b32c055, SSH 40820474382). R166: original road contact craft publicly published (539c9fbe, SSH 40839742690, 3593 native assertions, public Chromium PASS). R167: precision sculpt + PBR optics + real aero feedback in source; NOT shipped until native/Chromium/SSH PASS. R168-R200 planned only.
