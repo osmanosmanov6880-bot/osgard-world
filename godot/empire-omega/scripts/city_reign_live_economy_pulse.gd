@@ -269,8 +269,8 @@ func update_view(focus: Vector3) -> void:
 		var at: Vector3=SITE_ANCHORS[id]
 		var dx: float=last_observer.x-at.x
 		var dz: float=last_observer.z-at.z
-		var is_near: bool=graphic_tier!="low" and
-			dx*dx+dz*dz<=REVEAL_DISTANCE_M*REVEAL_DISTANCE_M
+		var is_near: bool=(graphic_tier!="low" and
+			dx*dx+dz*dz<=REVEAL_DISTANCE_M*REVEAL_DISTANCE_M)
 		for element in [foundations.get(id),rotors.get(id),captions.get(id)]:
 			if element is Node3D: (element as Node3D).visible=is_near
 		if is_near: visible_sites+=1

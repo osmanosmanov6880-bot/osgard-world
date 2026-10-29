@@ -759,6 +759,9 @@ func _apply_preferences() -> void:
 	if world == null: return
 	adaptive_graphics.configure(GameSettings.graphics,OS.has_feature("web") and DisplayServer.is_touchscreen_available())
 	_apply_visual_budget()
+	# Native Reduced Motion must stop all optional economic rotor animation.
+	if world.city_reign_live_economy != null:
+		world.city_reign_live_economy.call("set_reduced_motion",GameSettings.reduced_motion)
 
 func _apply_visual_budget() -> void:
 	if world == null: return
