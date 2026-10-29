@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d11">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="IRON PULSE WORLD — кинематографическая 3D-игра об авариях на реакторе. Три настоящие миссии. Играйте в браузере на Godot.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="IRON PULSE WORLD — THREE ACTS">
+  <meta property="og:description" content="An original reactor-emergency puzzle adventure. Three real missions, one life-or-death system.">
+  <link rel="icon" href="./assets/iron-pulse-mark.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./preflight.css">
+  <title>IRON PULSE WORLD — THREE ACTS</title>
+  <script src="./app.js" defer></script>
+  <script src="./preflight.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main" data-i18n="skip">К содержанию</a>
+  <div class="ambient-top" aria-hidden="true"></div>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="#top" class="wordmark" aria-label="IRON PULSE WORLD">
+        <span class="mark" aria-hidden="true"><span class="mark-slice"></span></span>
+        <span class="wordmark-name">IRON <b>PULSE</b><small>WORLD</small></span>
+      </a>
+      <nav class="desktop-nav" aria-label="Main navigation">
+        <a href="#missions" data-i18n="navMissions">Миссии</a>
+        <a href="#experience" data-i18n="navWorld">Мир игры</a>
+        <a href="#how-to-play" data-i18n="navControls">Управление</a>
+      </nav>
+      <div class="header-actions">
+        <button class="language-control" id="language" type="button" aria-label="Switch site language" title="RU / EN">
+          <span id="language-value">RU</span><span class="language-slash">/</span><span id="language-other">EN</span>
+        </button>
+        <a class="mini-play" data-play href="./play/?scenario=blackout&amp;lang=ru"><span data-i18n="navPlay">Играть</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero section-shell" id="top" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="status-dot" aria-hidden="true"></span><span data-i18n="eyebrow">A7 / ORIGINAL INTERACTIVE EXPERIENCE</span><span class="eyebrow-index">001—003</span></div>
+        <h1 id="hero-title">IRON<span class="hero-second">PULSE<span class="hero-period">.</span></span></h1>
+        <p class="hero-lead" data-i18n="heroLead">РЕАКТОР УМИРАЕТ.<br>РЕШЕНИЕ — ЗА ТОБОЙ.</p>
+        <p class="hero-summary" data-i18n="heroSummary">Три аварии. Два контура питания. Один экипаж. Зайди внутрь разрушающегося комплекса, решай настоящие инженерные головоломки и выбирай, кого спасать.</p>
+        <div class="hero-ctas">
+          <a class="button button-primary" data-play href="./play/?scenario=blackout&amp;lang=ru"><span data-i18n="heroPlay">НАЧАТЬ ОПЕРАЦИЮ</span><span class="button-arrow" aria-hidden="true">↗</span></a>
+          <a class="button button-campaign" id="campaign-play" data-campaign-play href="./play/index.html?campaign=1&amp;lang=ru"><span data-i18n="fullCampaign">СЮЖЕТНАЯ КАМПАНИЯ</span><span aria-hidden="true">↗</span></a>
+          <a class="button button-quiet" href="#missions"><span data-i18n="exploreMissions">ИЗУЧИТЬ МИССИИ</span><span aria-hidden="true">↓</span></a>
+        </div>
+        <p class="hero-disclaimer"><span class="hairline" aria-hidden="true"></span><span data-i18n="preview">ПРЕДВАРИТЕЛЬНАЯ ИГРОВАЯ ВЕРСИЯ · НЕ ФИНАЛЬНЫЙ РЕЛИЗ</span></p>
+      </div>
+      <div class="hero-stage" aria-label="Original reactor visual motif">
+        <div class="hero-stage-grid" aria-hidden="true"></div>
+        <div class="stage-lockup" aria-hidden="true">
+          <div class="energy-halo halo-back"></div>
+          <div class="energy-halo halo-front"></div>
+          <div class="energy-spine"><div class="energy-core"></div></div>
+          <div class="stage-caption">A7 // REACTOR CONTAINMENT</div>
+        </div>
+        <div class="stage-annotations" aria-hidden="true">
+          <span>FACILITY / A7</span><span>03 SYSTEMS / 02 BUSES</span>
+        </div>
+        <div class="side-coordinate" aria-hidden="true">IRON PULSE — ORIGINAL WORLD · 2026</div>
+      </div>
+    </section>
+
+    <section class="metrics section-shell" aria-label="Gameplay facts">
+      <div><strong>03</strong><span data-i18n="metricMissions">РЕАЛЬНЫЕ МИССИИ</span></div>
+      <div><strong>02/03</strong><span data-i18n="metricChoices">СТАНЦИИ СПАСЕНИЯ</span></div>
+      <div><strong>RU / EN</strong><span data-i18n="metricLang">ДВА ЯЗЫКА</span></div>
+      <div><strong>100%</strong><span data-i18n="metricReal">РЕАЛЬНЫЙ GODOT WEBGL</span></div>
+    </section>
+
+    <section id="missions" class="missions section-shell" aria-labelledby="mission-heading">
+      <div class="section-heading">
+        <div><p class="overline" data-i18n="missionOverline">001 / CAMPAIGN</p><h2 id="mission-heading" data-i18n="missionHeading">ТРИ ОПЕРАЦИИ.<br>ОДНА КАТАСТРОФА.</h2></div>
+        <p data-i18n="missionIntro">Не рекламные мини-игры. Три сценария в одной настоящей 3D-системе, с различными угрозами и последствиями решений.</p>
+      </div>
+      <div class="missions-layout">
+        <div class="mission-selector" role="group" aria-label="Choose a playable mission">
+          <button type="button" class="mission-option is-selected" data-scenario="blackout" aria-pressed="true">
+            <span class="option-number">01</span><span class="option-content"><strong>GRID / BLACKOUT</strong><small data-i18n="gridSmall">ОТКЛЮЧЕНИЕ ПИТАНИЯ</small></span><span class="option-arrow" aria-hidden="true">↗</span>
+          </button>
+          <button type="button" class="mission-option" data-scenario="thermal" aria-pressed="false">
+            <span class="option-number">02</span><span class="option-content"><strong>HEAT / CASCADE</strong><small data-i18n="heatSmall">ТЕПЛОВАЯ КАТАСТРОФА</small></span><span class="option-arrow" aria-hidden="true">↗</span>
+          </button>
+          <button type="button" class="mission-option" data-scenario="breach" aria-pressed="false">
+            <span class="option-number">03</span><span class="option-content"><strong>AIR / BREACH</strong><small data-i18n="airSmall">РАЗГЕРМЕТИЗАЦИЯ</small></span><span class="option-arrow" aria-hidden="true">↗</span>
+          </button>
+          <div class="mission-footnote" data-i18n="allPlayable">Все три операции доступны в игре. Прогресс сохраняется на вашем устройстве.</div>
+        </div>
+        <article class="mission-detail" aria-live="polite">
+          <p class="overline"><span data-i18n="activeMission">ВЫБРАННАЯ ОПЕРАЦИЯ</span><span class="mission-sequence" id="mission-sequence">01 / 03</span></p>
+          <div class="mission-detail-content">
+            <h3 id="mission-name">BLACKOUT</h3>
+            <p id="mission-description">Два независимых контура и три жизненно важные системы. Перераспредели питание, спаси экипаж и открой аварийный шлюз.</p>
+            <div class="mission-meta"><span id="mission-hazard">GRID INSTABILITY</span><span>FACILITY A7</span></div>
+          </div>
+          <a class="button button-primary mission-play" id="mission-play" data-play href="./play/?scenario=blackout&amp;lang=ru"><span data-i18n="enterMission">ВОЙТИ В МИССИЮ</span><span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
+    </section>
+
+    <section id="experience" class="experience section-shell" aria-labelledby="experience-heading">
+      <div class="section-heading">
+        <div><p class="overline" data-i18n="worldOverline">002 / THE WORLD</p><h2 id="experience-heading" data-i18n="worldHeading">ВНУТРИ<br>РЕАКТОРА A7.</h2></div>
+        <p data-i18n="worldIntro">Физическое игровое пространство, а не декорация в браузере. Интерактивные терминалы, меняющееся освещение, аварийные эффекты и настоящая логика ресурсов.</p>
+      </div>
+      <figure class="gameplay-proof">
+        <div class="proof-meta"><span class="proof-live"><i aria-hidden="true"></i><span data-i18n="proofLabel">ЗАПИСАНО ИЗ НАСТОЯЩЕЙ ИГРЫ</span></span><span class="proof-code">GODOT / WEBGL / A7</span></div>
+        <img src="./assets/gameplay-proof.png" width="1366" height="768" loading="lazy" decoding="async" alt="Настоящий кадр реактора из игровой сборки IRON PULSE WebGL" id="gameplay-shot">
+        <figcaption data-i18n="proofCaption">Скриншот создаётся автоматически из точного исходного коммита во время CI. Это настоящий игровой кадр — без AI-генерации и ретуши.</figcaption>
+      </figure>
+      <div class="feature-grid">
+        <article><span class="feature-index">01 / PHYSICS</span><h3 data-i18n="feat1Title">Настоящая система</h3><p data-i18n="feat1Body">Два контура питания, температура, кислород, состояние экипажа и накопитель двери связаны одной моделью.</p></article>
+        <article><span class="feature-index">02 / CHOICE</span><h3 data-i18n="feat2Title">Последствия решений</h3><p data-i18n="feat2Body">Три станции спасения, но выбрать можно только две. Каждое решение меняет доступные ресурсы.</p></article>
+        <article><span class="feature-index">03 / NARRATIVE</span><h3 data-i18n="feat3Title">История экипажа</h3><p data-i18n="feat3Body">Радиопереговоры Мары, выбор приоритета между людьми и реактором, разные результаты прохождения.</p></article>
+      </div>
+    </section>
+
+    <section id="how-to-play" class="controls section-shell" aria-labelledby="controls-heading">
+      <div class="section-heading">
+        <div><p class="overline" data-i18n="controlsOverline">003 / OPERATOR GUIDE</p><h2 id="controls-heading" data-i18n="controlsHeading">ВХОД В СИСТЕМУ.</h2></div>
+        <p data-i18n="controlsIntro">Короткие команды, понятный маршрут и настраиваемая графика. Можно играть на ПК; мобильное управление также предусмотрено.</p>
+      </div>
+      <div class="controls-grid">
+        <div class="control-group"><h3 data-i18n="pcTitle">ПК / КЛАВИАТУРА</h3><dl><div><dt>W A S D</dt><dd data-i18n="move">Движение</dd></div><div><dt>MOUSE</dt><dd data-i18n="look">Осмотр</dd></div><div><dt>E / Q</dt><dd data-i18n="use">Действие / срочно</dd></div><div><dt>C / J</dt><dd data-i18n="camera">Камера / радиоархив</dd></div><div><dt>T</dt><dd data-i18n="forecastGuide">Прогноз распределения энергии / 30 с</dd></div><div><dt>B</dt><dd data-i18n="blackBoxGuide">Чёрный ящик после завершения миссии</dd></div><div><dt>O</dt><dd data-i18n="recordsGuide">Личный архив завершённых операций</dd></div></dl></div>
+        <div class="control-group"><h3 data-i18n="accessTitle">ДОСТУПНОСТЬ</h3><dl><div><dt>RU / EN</dt><dd data-i18n="language">Язык интерфейса</dd></div><div><dt>G</dt><dd data-i18n="graphics">HERO / ECO графика</dd></div><div><dt>K</dt><dd data-i18n="adaptiveGraphicsGuide">Автографика по реальному времени кадра</dd></div><div><dt>V</dt><dd data-i18n="reduceMotion">Уменьшение движения</dd></div><div><dt>M</dt><dd data-i18n="mute">Звук вкл./выкл.</dd></div></dl></div>
+      </div>
+    </section>
+
+    <section class="preflight section-shell" id="preflight" aria-labelledby="preflight-title">
+      <p class="overline" data-ready-i18n="overline">004 / ПРОВЕРКА ПЕРЕД ЗАПУСКОМ</p>
+      <h2 id="preflight-title" data-ready-i18n="heading">ПРОВЕРЬ СИСТЕМУ. ЗАТЕМ ВХОДИ.</h2>
+      <p class="preflight-lead" data-ready-i18n="lead">Локальная диагностика браузера и игровой сборки.</p>
+      <div class="preflight-console">
+        <div class="preflight-head">
+          <h3>IRON PULSE / LAUNCH CHECK</h3>
+          <p class="preflight-note" id="preflight-status" role="status" aria-live="polite">Проверка ещё не проводилась.</p>
+        </div>
+        <div class="preflight-checks" aria-label="Browser launch checks">
+          <div class="preflight-check" id="preflight-webgl" data-state="idle"><span class="preflight-check-name" data-ready-i18n="webgl">ГРАФИКА / WEBGL 2</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+          <div class="preflight-check" id="preflight-wasm" data-state="idle"><span class="preflight-check-name" data-ready-i18n="wasm">ИСПОЛНЕНИЕ / WEBASSEMBLY</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+          <div class="preflight-check" id="preflight-files" data-state="idle"><span class="preflight-check-name" data-ready-i18n="files">ИГРОВЫЕ ФАЙЛЫ / GODOT</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+          <div class="preflight-check" id="preflight-manifest" data-state="idle"><span class="preflight-check-name" data-ready-i18n="manifest">МАНИФЕСТ / СБОРКА</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+          <div class="preflight-check" id="preflight-network" data-state="idle"><span class="preflight-check-name" data-ready-i18n="network">СОЕДИНЕНИЕ / ПОДСКАЗКА</span><span class="preflight-state">НЕ ПРОВЕРЕНО</span></div>
+        </div>
+        <div class="preflight-actions">
+          <button class="button button-primary" id="preflight-run" type="button">ПРОВЕРИТЬ ИГРУ</button>
+          <button class="button button-quiet" id="preflight-download" type="button" disabled data-ready-i18n="save">СКАЧАТЬ ОТЧЁТ</button>
+          <a class="button button-campaign" data-play href="./play/index.html?scenario=blackout&amp;lang=ru" data-ready-i18n="play">ИГРАТЬ В ВЫБРАННУЮ ОПЕРАЦИЮ</a>
+        </div>
+        <div class="preflight-commitline"><span id="preflight-commit-label">КОММИТ СБОРКИ</span><code id="preflight-commit">Не проверен</code></div>
+        <p class="preflight-privacy" data-ready-i18n="privacy">Без отправки отчёта на сервер.</p>
+        <p class="preflight-privacy" data-ready-i18n="manifestNote">Формат манифеста проверяется локально, без криптографической сертификации.</p>
+      </div>
+      <div class="operator-ledger">
+        <div class="operator-ledger-copy">
+          <span class="feature-index">04 / OPERATOR RECORDS</span>
+          <h3 data-i18n="recordsTitle">ТВОИ РЕШЕНИЯ. ТВОЯ ИСТОРИЯ.</h3>
+          <p data-i18n="recordsBody">Только реальные завершённые операции. Личный рекорд по каждой аварии, локальная история попыток и осознанное удаление без передачи данных на сервер.</p>
+        </div>
+        <div class="operator-ledger-figure">
+          <span>A7 / PRIVATE RECORD CAPACITY</span>
+          <strong>16</strong>
+          <small data-i18n="recordsCapacity">Максимум хранимых локальных прохождений, не количество игроков</small>
+        </div>
+      </div>
+      <div class="frame-quality-note">
+        <span class="feature-index">05 / REAL FRAME PACING</span>
+        <div class="frame-quality-content">
+          <h3 data-i18n="adaptiveGraphicsTitle">ГРАФИКА, КОТОРАЯ РЕАГИРУЕТ.</h3>
+          <p data-i18n="adaptiveGraphicsBody">По клавише K или в меню паузы можно включить автоматический выбор HERO/ECO на основе локально измеренного P95 времени кадра. Ручной G всегда имеет приоритет. Это не гарантия FPS и не тест реального устройства.</p>
+        </div>
+      </div>
+      <p class="world-evidence-note" data-i18n="blackBoxProof">Чёрный ящик открывается только после настоящего игрового результата. Данные и журнал событий берутся из Godot, не из рейтинга или демонстрационных чисел.</p>
+    </section>
+
+    <section class="final-cta section-shell">
+      <span class="overline" data-i18n="lastOverline">A7 / EMERGENCY TRANSMISSION</span>
+      <h2 data-i18n="lastHeading">СИСТЕМА ЖДЁТ<br>ТВОЕГО РЕШЕНИЯ.</h2>
+      <div class="last-actions"><a class="button button-primary" data-play href="./play/?scenario=blackout&amp;lang=ru"><span data-i18n="lastPlay">НАЧАТЬ ОПЕРАЦИЮ</span><span aria-hidden="true">↗</span></a><span data-i18n="saveNote">Локальные сохранения. Без обязательной регистрации.</span></div>
+    </section>
+  </main>
+
+  <footer class="site-footer section-shell">
+    <div><a class="footer-brand" href="#top">IRON PULSE <span>WORLD</span></a><p data-i18n="footerNote">Оригинальная научно-фантастическая игра. Предварительная версия для тестирования; не финальное AAA-производство.</p></div>
+    <div class="footer-links"><a href="#missions" data-i18n="footerMissions">Операции</a><a href="#how-to-play" data-i18n="footerHelp">Управление</a><button type="button" id="install" hidden data-i18n="install">Установить приложение</button></div>
+    <div class="footer-bottom"><span>© 2026 IRON PULSE</span><span data-i18n="privacy">БЕЗ ТРЕКЕРОВ · СОХРАНЕНИЯ НА УСТРОЙСТВЕ</span><span>PREVIEW / NOT PRODUCTION</span></div>
+  </footer>
+</body>
+</html>
