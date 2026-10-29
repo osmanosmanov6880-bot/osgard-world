@@ -208,7 +208,7 @@ export default function IntelligenceHome() {
           <a className="brand-button intelligence-command-secondary" href="/learning/program">{t.program} <span aria-hidden="true">↗</span></a>
         </div>
         <p className="intelligence-cinema-cta">
-          <span>OSA CINEMA / FREE RELEASE</span>
+          <span>OSA CINEMA / INTERACTIVE STORY</span>
           <a
             href={locale === 'en'
               ? 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=en#watch'

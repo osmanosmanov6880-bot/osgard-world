@@ -11,7 +11,7 @@ test('World never boots heavy WebGL while reduced motion is requested', async ({
   await page.locator('.omega-experience-panel summary').click()
   const quality = page.getByRole('combobox', { name: 'Качество 3D-глобуса' })
   await expect(quality).toBeDisabled()
-  await expect(page.getByRole('status').filter({ hasText: 'Режим экономии ресурсов' })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: 'Экономный режим: фото Земли вместо 3D.' })).toBeVisible()
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await expect(quality).toBeEnabled()
   await expect(page.locator('.omega-webgl-stage')).toHaveCount(1, { timeout: 25000 })
