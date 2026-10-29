@@ -3,6 +3,7 @@ extends MultiMeshInstance3D
 ## This is transparent polygonal geometry, not physical water simulation.
 ## No extra physics colliders, no input changes, and no expensive reflections.
 const COUNT: int = 72
+const R168_ATMOSPHERE = preload("res://scripts/city_reign_atmospheric_optics.gd")
 const MASK_SIZE: int = 48
 var weather := "clear"
 var detail := "standard"
@@ -66,6 +67,29 @@ func set_conditions(current_weather: String,quality: String) -> void:
 	weather=current_weather if ["clear","rain","storm","cloudy","wind","drought"].has(current_weather) else "clear"
 	detail=quality if ["low","standard","cinematic"].has(quality) else "standard"
 	visible=(weather=="rain" or weather=="storm") and detail!="low"
+
+func set_reflective_grade(hour: float,quality: String) -> void:
+	if multimesh == null:
+		return
+	var plane: PlaneMesh = multimesh.mesh as PlaneMesh
+	if plane == null:
+		return
+	var finish: StandardMaterial3D = plane.material as StandardMaterial3D
+	if finish == null:
+		return
+	# The existing ONE pooled 72-instance mesh/material remains unchanged.
+	# Its direct optical response is recomputed only when colors differ.
+	var tone: Color = R168_ATMOSPHERE.puddle_tint(hour)
+	if not finish.albedo_color.is_equal_approx(tone):
+		finish.albedo_color = tone
+	var coating: bool = (weather == "rain" or weather == "storm") and quality == "cinematic"
+	if finish.clearcoat_enabled != coating:
+		finish.clearcoat_enabled = coating
+	if coating:
+		if not is_equal_approx(finish.clearcoat,0.62):
+			finish.clearcoat = 0.62
+		if not is_equal_approx(finish.clearcoat_roughness,0.16):
+			finish.clearcoat_roughness = 0.16
 
 func material_is_bounded() -> bool:
 	return multimesh != null and multimesh.instance_count<=COUNT

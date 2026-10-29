@@ -5,6 +5,7 @@ const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_player_vehicle_profiles.gd")
 const R39_DETAIL = preload("res://scripts/horizon_r39_wheel_detail.gd")
 const CITY_REIGN_COCKPIT = preload("res://scripts/city_reign_cockpit_interior.gd")
+const R168_ATMOSPHERE = preload("res://scripts/city_reign_atmospheric_optics.gd")
 const R167_PRECISION = preload("res://scripts/city_reign_precision_bodywork.gd")
 ## OSGARD HORIZON DRIVE: original PBR sports coupe assembled in Godot.
 ## These are editable original meshes, not meshes or assets from Forza.
@@ -325,6 +326,23 @@ func set_detail_quality(tier: String) -> void:
 	for item in wheel_detail_nodes:
 		if is_instance_valid(item):
 			item.call("set_quality",tier)
+
+func set_headlamp_illumination(hour: float,tier: String) -> void:
+	# R168: reuse the TWO original R167 triple-band lens materials. No new
+	# mesh, light, camera, shadow or frame-local material allocation.
+	var energy: float = R168_ATMOSPHERE.headlamp_energy(hour,tier)
+	var roughness: float = 0.18 if energy > 0.70 else 0.24
+	for lamp_name in ["LeftLED","RightLED"]:
+		var lens: MeshInstance3D = get_node_or_null(lamp_name) as MeshInstance3D
+		if lens == null:
+			continue
+		var finish: StandardMaterial3D = lens.material_override as StandardMaterial3D
+		if finish == null:
+			continue
+		if absf(finish.emission_energy_multiplier-energy)>0.015:
+			finish.emission_energy_multiplier = energy
+		if not is_equal_approx(finish.roughness,roughness):
+			finish.roughness = roughness
 
 func _create_lighting() -> void:
 	# Emissive surfaces, not expensive realtime omni lights per vehicle.
