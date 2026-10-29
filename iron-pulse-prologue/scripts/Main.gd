@@ -1431,6 +1431,37 @@ func _refresh_decision_forecast() -> void:
     forecast_label.text = decision_forecaster.text_report(forecast_report,locale)
     forecast_close_button.text = "CLOSE / X" if locale == "en" else "ЗАКРЫТЬ / X"
 
+func _refresh_operator_guide_locale() -> void:
+    if guide_label == null or guide_panel == null:
+        return
+    var details: Dictionary = operator_guide.readout(session,locale)
+    guide_label.text = str(details.get("text",""))
+    if guide_next_button != null:
+        guide_next_button.text = "F1 / NEXT HINT" if locale == "en" else "F1 / ЕЩЁ ПОДСКАЗКА"
+    if guide_close_button != null:
+        guide_close_button.text = "ESC / CLOSE" if locale == "en" else "ESC / ЗАКРЫТЬ"
+
+func _close_operator_guide() -> void:
+    if guide_panel != null:
+        guide_panel.visible = false
+    _publish_web_state()
+
+func _toggle_operator_guide() -> void:
+    # Genuine 3D gameplay continues. No pause, auto-action, remote API,
+    # simulated player success or mutation of source engine state.
+    if guide_panel == null or not started or paused or session.finished() or cinematic_view:
+        return
+    var details: Dictionary = operator_guide.request(session,locale)
+    if details.is_empty():
+        return
+    guide_panel.visible = true
+    if forecast_panel != null:
+        forecast_panel.visible = false
+    if diagnostic_panel != null:
+        diagnostic_panel.visible = false
+    _refresh_operator_guide_locale()
+    _publish_web_state()
+
 func _clear_after_action() -> void:
     if debrief_panel != null:
         debrief_panel.visible = false
@@ -1644,6 +1675,7 @@ func _continue_checkpoint() -> bool:
     forecast_panel.visible = false
     forecast_report.clear()
     session = restored_engine
+    operator_guide.reset(session)
     story = restored_story
     campaign = saved_campaign
     campaign_echoes.sync(campaign,saved_locale)
@@ -1734,6 +1766,8 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    operator_guide.reset(session)
+    _close_operator_guide()
     _clear_operator_overlay()
     archive_last_save_ok = false
     _clear_after_action()
@@ -1765,6 +1799,8 @@ func _restart() -> void:
     cinematic_view = false
     _apply_cinematic_view()
     session.reset(selected_scenario)
+    operator_guide.reset(session)
+    _close_operator_guide()
     if campaign.active and campaign.index > 0:
         campaign.modifier_applied = false
         campaign.apply_to_next(session)
@@ -1811,6 +1847,8 @@ func _pause_toggle() -> void:
     if not started or session.finished():
         return
     paused = not paused
+    if paused and guide_panel != null:
+        guide_panel.visible = false
     if paused and forecast_panel != null:
         forecast_panel.visible = false
     pause_panel.visible = paused
@@ -1835,6 +1873,7 @@ func _toggle_language() -> void:
     _announce("language")
     _refresh_hud()
     _refresh_decision_forecast()
+    _refresh_operator_guide_locale()
     _refresh_after_action_locale()
     _refresh_run_archive_locale()
     _refresh_radio_ui()
@@ -1880,6 +1919,12 @@ func _gamepad_axis(axis_id: int) -> float:
 func _gamepad_button(button_index: int) -> void:
     # Hardware performance/compatibility still requires real controller QA.
     # This dispatch handles Godot's mapped standard gamepad button events.
+    if button_index == JOY_BUTTON_BACK:
+        if guide_panel != null and guide_panel.visible:
+            _close_operator_guide()
+        else:
+            _toggle_operator_guide()
+        return
     if button_index == JOY_BUTTON_START:
         if archive_panel != null and archive_panel.visible:
             _toggle_run_archive()
@@ -1890,7 +1935,9 @@ func _gamepad_button(button_index: int) -> void:
             _pause_toggle()
         return
     if button_index == JOY_BUTTON_B:
-        if archive_panel != null and archive_panel.visible:
+        if guide_panel != null and guide_panel.visible:
+            _close_operator_guide()
+        elif archive_panel != null and archive_panel.visible:
             _toggle_run_archive()
         elif session.finished():
             _toggle_after_action()
@@ -1942,6 +1989,9 @@ func _input(event: InputEvent) -> void:
             walking_phase = 0.0
             _announce("motion_reduced" if reduced_motion else "motion_normal")
             return
+        if event.keycode == KEY_F1:
+            _toggle_operator_guide()
+            return
         if event.keycode == KEY_F3:
             if forecast_panel != null:
                 forecast_panel.visible = false
@@ -1987,6 +2037,9 @@ func _input(event: InputEvent) -> void:
             _toggle_journal()
             return
         if event.keycode == KEY_ESCAPE:
+            if guide_panel != null and guide_panel.visible:
+                _close_operator_guide()
+                return
             if archive_panel != null and archive_panel.visible:
                 _toggle_run_archive()
                 return
@@ -2067,6 +2120,7 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
     var gameplay_active: bool = started and not paused and not session.finished()
     performance_audit.observe(delta,gameplay_active,quality_mode)
+    operator_guide.observe(delta,session,gameplay_active)
     if adaptive_performance.enabled and gameplay_active and is_finite(delta) and delta > 0.0 and delta <= 0.25:
         adaptive_sampling_clock += delta
         if adaptive_sampling_clock >= 0.2:
@@ -2247,6 +2301,7 @@ func _announce(key: String) -> void:
             audio_director.cue("confirm")
 
 func _show_end() -> void:
+    _close_operator_guide()
     forecast_panel.visible = false
     forecast_report.clear()
     cinematic_view = false
@@ -2289,6 +2344,9 @@ func _show_end() -> void:
 func _refresh_hud() -> void:
     if objective_label == null:
         return
+    operator_guide.observe(0.0,session,false)
+    if guide_panel != null and guide_panel.visible:
+        _refresh_operator_guide_locale()
     var objective_key: String = session.objective_id()
     if objective_key == "victory":
         objective_key = "victory_objective"
