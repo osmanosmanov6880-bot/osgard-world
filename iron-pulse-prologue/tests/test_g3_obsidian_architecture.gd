@@ -42,8 +42,15 @@ func _run() -> void:
         "Actual authored 3D mesh detail exists on scene tree")
     _assert(game.get_node_or_null("G3_Obsidian_Industrial/G3_AlwaysVisibleSafetyLayer")!=null,
         "Critical hazard labels survive cheap graphics")
-    _assert(art.hero_mesh_count>=70 and art.persistent_mesh_count>=9,
-        "G3 builds a substantive material/geometric environment, not a UI label")
+    _assert(art.hero_mesh_count>=90 and art.persistent_mesh_count>=9,
+        "G3 constructs substantial visible industrial structures, not a UI label")
+    var cassette: MeshInstance3D=art.hero_detail.get_node_or_null("G3_Cassette_-5_1_Body") as MeshInstance3D
+    _assert(cassette!=null and absf(cassette.position.x)<6.65 and
+        is_equal_approx(cassette.position.x,6.42),
+        "PBR architectural cassette must project IN FRONT of original opaque wall")
+    _assert(art.close_range_labels.size()==2 and
+        art.hero_detail.get_node_or_null("G3_VisibleControlBay_1_TitaniumHousing")!=null,
+        "Near camera two proper physical machinery faces, not buried decoration")
     _assert(art.batch_count==2 and art.batched_instance_count>=190,
         "True 3D machined bolts and traction decking are GPU-instanced")
     var group_a: MultiMeshInstance3D=art.hero_detail.get_node_or_null("G3_Batched_TitaniumFasteners") as MultiMeshInstance3D
@@ -85,13 +92,22 @@ func _run() -> void:
     _assert(start["sign_count"]==3 and start["light_count"]==3 and
         start["physical_lamp_positions"].size()==3,
         "All three emitted readout locations correspond to physical lights")
+    _assert(float(start["visible_cassette_surface_x"])<6.65 and
+        start["foreground_machined_panels"]==2,
+        "Read-only browser record exposes actual visible geometry beyond wall surface")
 
     art.set_locale("en")
+    _assert(art.close_range_labels[0].text.contains("COOLANT") and
+        art.close_range_labels[1].text.contains("CONTROL"),
+        "High-detail wall-machine labels genuinely change with RU/EN")
     _assert(art.locale=="en" and str(art.sector_labels[0].text).contains("REACTOR") and
         str(art.sector_labels[1].text).contains("SERVICE") and
         str(art.sector_labels[2].text).contains("EVACUATION"),
         "In-world source geometry signs truly localize to English")
     art.set_locale("ru")
+    _assert(art.close_range_labels[0].text.contains("ОХЛАЖДЕНИЕ") and
+        art.close_range_labels[1].text.contains("КОНТРОЛЬ"),
+        "Physical foreground signs use real Russian glyphs")
     _assert(art.locale=="ru" and str(art.sector_labels[0].text).contains("РЕАКТОР") and
         str(art.sector_labels[1].text).contains("ТЕХСЕКТОР") and
         str(art.sector_labels[2].text).contains("ШЛЮЗ"),
