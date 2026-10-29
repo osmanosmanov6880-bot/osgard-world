@@ -48,6 +48,14 @@ const COPY := {
         "rescue_medbay": "МЕДИЦИНСКИЙ УЗЕЛ", "rescue_quench": "ТЕПЛОВОЙ ГАСИТЕЛЬ", "rescue_uplink": "СВЯЗЬ И ЭВАКУАЦИЯ",
         "rescue_count": "СПАСАТЕЛЬНЫЕ СТАНЦИИ {used}/2",
         "rescue_final": "Станции спасения: {used}/2",
+        "field_sink_terminal": "ТЕПЛОВОЙ ЯКОРЬ",
+        "field_air_terminal": "РЕЗЕРВ ВОЗДУХА",
+        "field_hint": "ПОЛЕВАЯ СТАНЦИЯ {name}  {distance} м  /  [E] ВЫБРАТЬ 1 ИЗ 2",
+        "field_spent": "ПОЛЕВОЙ ПРОТОКОЛ: ВЫБОР ЗАФИКСИРОВАН",
+        "field_final": "Полевой протокол: {protocol}",
+        "field_none": "НЕ ИСПОЛЬЗОВАН",
+        "field_sink": "ТЕПЛОВОЙ ЯКОРЬ: температура снижена ценой кислорода.",
+        "field_air": "РЕЗЕРВ ВОЗДУХА: воздух восстановлен ценой нагрева и здоровья.",
         "campaign_start": "КАМПАНИЯ / ТРИ АВАРИИ",
         "campaign_next": "СЛЕДУЮЩАЯ ОПЕРАЦИЯ",
         "campaign_replay": "ПЕРЕИГРАТЬ КАМПАНИЮ",
@@ -124,6 +132,14 @@ const COPY := {
         "rescue_medbay": "MEDICAL BAY", "rescue_quench": "HEAT SUPPRESSOR", "rescue_uplink": "EVACUATION UPLINK",
         "rescue_count": "RESCUE NETWORK {used}/2",
         "rescue_final": "Rescue stations: {used}/2",
+        "field_sink_terminal": "HEAT SINK",
+        "field_air_terminal": "AIR BUFFER",
+        "field_hint": "FIELD STATION {name}  {distance} m  /  [E] CHOOSE ONE OF TWO",
+        "field_spent": "FIELD PROTOCOL: CHOICE ALREADY LOCKED",
+        "field_final": "Field protocol: {protocol}",
+        "field_none": "NOT USED",
+        "field_sink": "HEAT SINK: core cooler, oxygen spent.",
+        "field_air": "AIR BUFFER: oxygen restored at a cost to heat and crew.",
         "campaign_start": "CAMPAIGN / THREE EMERGENCIES",
         "campaign_next": "NEXT OPERATION",
         "campaign_replay": "REPLAY CAMPAIGN",
@@ -214,6 +230,9 @@ var exit_gate: MeshInstance3D
 var reactor_rings: Array[Node3D] = []
 var terminals: Array[Dictionary] = []
 var relay_terminals: Array[Dictionary] = []
+var field_stations: Array[Dictionary] = []
+var _field_ready_material: StandardMaterial3D
+var _field_done_material: StandardMaterial3D
 var _relay_ready_material: StandardMaterial3D
 var _relay_done_material: StandardMaterial3D
 var hud_root: Control
@@ -522,6 +541,21 @@ func _publish_web_state() -> void:
         var spot: Vector3 = relay_info["position"]
         real_relays.append([str(relay_info["id"]),spot.x,spot.z])
     state["relay_positions"] = real_relays
+    state["g2_field_protocol"] = {
+        "schema":"IRON_PULSE_FIELD_PROCEDURES_G2",
+        "selected":session.field_protocol,
+        "selected_from_real_engine":true,
+        "available":session.core_scanned and session.field_protocol == "" and not session.override_set and not session.finished(),
+        "physical_station_count":field_stations.size(),
+        "physical_positions":[],
+        "telemetry_uploaded":false,
+        "gameplay_simulated":false
+    }
+    var field_points: Array = []
+    for station in field_stations:
+        var position3d: Vector3 = station["position"]
+        field_points.append([str(station["id"]),position3d.x,position3d.z])
+    state["g2_field_protocol"]["physical_positions"] = field_points
     state["radio_visible"] = radio_panel.visible if radio_panel != null else false
     state["priority_visible"] = priority_panel.visible if priority_panel != null else false
     state["radio_speaker"] = radio_speaker.text if radio_speaker != null else ""
@@ -665,6 +699,7 @@ func _make_complex() -> void:
     _build_reactor()
     _build_terminals()
     _build_rescue_relays()
+    _build_field_stations()
     _build_bulkhead()
     art_stage = IPCinematicStage.new()
     add_child(art_stage)
@@ -799,6 +834,42 @@ func _build_rescue_relays() -> void:
             "id":info["id"],"key":info["key"],
             "position":info["point"],"indicator":indicator,
             "node":relay
+        })
+
+func _build_field_stations() -> void:
+    # G2: two physically different optional stations across two sectors.
+    # Both are actually reachable in the existing collidable 3D hallway.
+    var locations: Array[Dictionary] = [
+        {"id":"sink","key":"field_sink_terminal","point":Vector3(-4.2,1.0,-32.5)},
+        {"id":"air","key":"field_air_terminal","point":Vector3(4.2,1.0,-49.0)}
+    ]
+    _field_ready_material = _metal(Color(0.91,0.63,0.32),0.18,true)
+    _field_done_material = _metal(Color(0.19,0.76,0.63),0.18,true)
+    for info in locations:
+        var station := Node3D.new()
+        station.name = "G2_PhysicalProtocol_" + str(info["id"])
+        station.position = info["point"]
+        add_child(station)
+        _box(station,Vector3(0,-0.02,0),Vector3(1.65,1.66,0.52),_metal(METAL))
+        _box(station,Vector3(0,0.02,0.29),Vector3(1.48,1.25,0.05),_metal(NIGHT,0.1))
+        # Different industrial shapes, no external textures or fake sprites.
+        for col in range(4):
+            var x: float = -0.57 + float(col)*0.38
+            _box(station,Vector3(x,-0.40,0.34),Vector3(0.07,0.18,0.045),_metal(STEEL))
+        var indicator: MeshInstance3D = _box(
+            station,Vector3(0,0.53,0.35),Vector3(1.38,0.11,0.06),_field_ready_material)
+        indicator.name = "PhysicalFieldProtocolIndicator"
+        var label3d := Label3D.new()
+        label3d.name = "PhysicalFieldProtocolSign"
+        label3d.text = "SINK" if info["id"]=="sink" else "AIR BUFFER"
+        label3d.font_size = 42
+        label3d.pixel_size = 0.0025
+        label3d.position = Vector3(0,0.04,0.39)
+        label3d.modulate = WHITE
+        station.add_child(label3d)
+        field_stations.append({
+            "id":info["id"],"key":info["key"],
+            "position":info["point"],"indicator":indicator,"node":station
         })
 
 func _build_bulkhead() -> void:
@@ -2245,6 +2316,19 @@ func _nearest_terminal() -> Dictionary:
             closest = terminal
     return closest
 
+func _nearest_field_station() -> Dictionary:
+    if player == null:
+        return {}
+    var chosen: Dictionary = {}
+    var nearest: float = 2.85
+    for field in field_stations:
+        var where: Vector3 = field["position"]
+        var dist: float = Vector2(where.x,where.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
+        if dist < nearest:
+            nearest = dist
+            chosen = field
+    return chosen
+
 func _nearest_relay() -> Dictionary:
     if player == null:
         return {}
@@ -2266,6 +2350,19 @@ func _interact(fast: bool = false) -> void:
         return
     var target: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
+    var field: Dictionary = _nearest_field_station()
+    if not fast and not field.is_empty():
+        var main_d: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
+        var relay_d: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+        if _physical_distance(field["position"]) < minf(main_d,relay_d):
+            var approved: bool = session.activate_field_protocol(str(field["id"]))
+            previous_event = session.last_event
+            if approved:
+                _story_event(session.last_event)
+            _announce(session.last_event)
+            _save_checkpoint()
+            _refresh_hud()
+            return
     if not rescue.is_empty() and not fast:
         var main_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
         var rescue_distance: float = _physical_distance(rescue["position"])
@@ -2321,7 +2418,7 @@ func _announce(key: String) -> void:
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink", "field_sink", "field_air":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -2351,6 +2448,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    var protocol_tag: String = _copy("field_" + session.field_protocol + "_terminal") if session.field_protocol != "" else _copy("field_none")
+    end_stats.text += "\n" + _copy("field_final").format({"protocol":protocol_tag})
     if campaign.active:
         end_stats.text += "\n\n" + campaign.summary(locale)
     black_box_report = after_action_review.review(session,campaign)
@@ -2405,13 +2504,21 @@ func _refresh_hud() -> void:
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
     var nearby: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
-    var show_rescue: bool = not rescue.is_empty()
-    if show_rescue and not nearby.is_empty():
-        show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
-    if started and not session.finished() and show_rescue:
+    var field: Dictionary = _nearest_field_station()
+    var main_dist: float = _physical_distance(nearby["position"]) if not nearby.is_empty() else 999.0
+    var rescue_dist: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+    var field_dist: float = _physical_distance(field["position"]) if not field.is_empty() else 999.0
+    var show_field: bool = not field.is_empty() and field_dist < minf(main_dist,rescue_dist)
+    var show_rescue: bool = not rescue.is_empty() and rescue_dist < main_dist and rescue_dist <= field_dist
+    if started and not session.finished() and show_field:
+        var field_ready: bool = session.core_scanned and session.field_protocol == "" and not session.override_set
+        var text_key: String = "field_hint" if field_ready else "field_spent"
+        interaction_label.text = _copy(text_key).format({
+            "name":_copy(str(field["key"])),"distance":"%.1f" % field_dist})
+    elif started and not session.finished() and show_rescue:
         var relay_dist: float = _physical_distance(rescue["position"])
-        var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
-        var rescue_key: String = "rescue_hint" if available else "rescue_spent"
+        var relay_ready: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
+        var rescue_key: String = "rescue_hint" if relay_ready else "rescue_spent"
         interaction_label.text = _copy(rescue_key).format({
             "name":_copy(str(rescue["key"])),"distance":"%.1f" % relay_dist})
     elif not nearby.is_empty() and started and not session.finished():
@@ -2472,3 +2579,9 @@ func _update_terminal_highlights(objective_key: String) -> void:
         var material: StandardMaterial3D = _relay_done_material if activated else _relay_ready_material
         if indicator.material_override != material:
             indicator.material_override = material
+    for station in field_stations:
+        var lamp: MeshInstance3D = station["indicator"]
+        var chosen: bool = session.field_protocol == str(station["id"])
+        var status_mat: StandardMaterial3D = _field_done_material if chosen else _field_ready_material
+        if lamp.material_override != status_mat:
+            lamp.material_override = status_mat

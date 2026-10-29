@@ -243,6 +243,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_g1_operator_onboarding.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g1-real-onboarding.log"
           grep -q '^IRON PULSE G1 REAL OPERATOR ONBOARDING PASS:' "$RUNNER_TEMP/iron-pulse-g1-real-onboarding.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g1-real-onboarding.log"; then exit 1; fi
+      - name: G2 source-bound physical SINK vs AIR interventions, real game/progress and backward save QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 210s godot --headless --path iron-pulse-prologue --script res://tests/test_g2_physical_field_protocols.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g2-physical-protocols.log"
+          grep -q '^IRON PULSE G2 PHYSICAL FIELD PROTOCOLS PASS:' "$RUNNER_TEMP/iron-pulse-g2-physical-protocols.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g2-physical-protocols.log"; then exit 1; fi
       - name: V13 safe world-link contract to actual story campaign and original mission
         shell: bash
         run: |

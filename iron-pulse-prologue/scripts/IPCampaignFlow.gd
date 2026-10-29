@@ -42,6 +42,7 @@ func record_victory(engine: IPCrisisEngine) -> bool:
         "heat":snappedf(engine.heat,0.01),
         "priority":engine.priority_id,
         "repair":engine.repair_method,
+        "field_protocol":engine.field_protocol,
         "relays":engine.relays_activated.duplicate(),
         "switches":engine.switches,
         "faults":engine.faults
@@ -65,8 +66,10 @@ func summary(locale: String = "ru") -> String:
         var name: String = ["GRID","HEAT","AIR"][i]
         var priority: String = str(entry["priority"])
         var tag: String = "CREW" if priority == "crew" else "CORE" if priority == "core" else "-"
-        result.append("%02d  %s  /  %s  /  %s  /  %d%%" % [
-            i+1,name,str(entry["grade"]),tag,roundi(float(entry["crew_health"]))])
+        var field: String = str(entry.get("field_protocol",""))
+        var field_tag: String = "SINK" if field == "sink" else "AIR" if field == "air" else "—"
+        result.append("%02d  %s  /  %s  /  %s  /  %d%%  /  FIELD %s" % [
+            i+1,name,str(entry["grade"]),tag,roundi(float(entry["crew_health"])),field_tag])
     if completed():
         var weakest: float = 100.0
         var sum_score: int = 0
@@ -103,6 +106,15 @@ func next_modifier() -> Dictionary:
         outcome["crew"] = float(outcome["crew"])-3.0
     if health < 45.0:
         outcome["crew"] = float(outcome["crew"])-5.0
+    # G2: the previous shift's actual field choice leaves a small,
+    # transparently reported resource legacy in the next operation.
+    var field: String = str(before.get("field_protocol",""))
+    if field == "sink":
+        outcome["heat"] = float(outcome["heat"])-3.0
+        outcome["oxygen"] = float(outcome["oxygen"])-2.0
+    elif field == "air":
+        outcome["heat"] = float(outcome["heat"])+2.0
+        outcome["oxygen"] = float(outcome["oxygen"])+5.0
     return outcome
 
 func apply_to_next(engine: IPCrisisEngine) -> bool:
@@ -179,6 +191,9 @@ func restore(data: Dictionary) -> bool:
                 return false
         var repair: Variant = item.get("repair",null)
         if not repair is String or repair.length() > 40:
+            return false
+        var field: Variant = item.get("field_protocol","")
+        if not field is String or (field != "" and not IPCrisisEngine.FIELD_PROTOCOLS.has(str(field))):
             return false
         checked.append(item.duplicate(true))
     # Never partly mutate the active campaign on invalid checkpoint.

@@ -6,6 +6,10 @@ class_name IPCrisisEngine
 const SYSTEMS: Array[String] = ["coolant", "life", "door"]
 const SCENARIOS: Array[String] = ["blackout", "thermal", "breach"]
 const RELAYS: Array[String] = ["medbay","quench","uplink"]
+const FIELD_PROTOCOLS: Array[String] = ["sink","air"]
+# One-of-two physical, optional field interventions; never an automatic win.
+const SINK_TIME: float = 9.0
+const AIR_TIME: float = 11.0
 const MAX_RELAYS: int = 2
 const MAX_TIME: float = 330.0
 const CHARGE_REQUIRED: float = 95.0
@@ -16,6 +20,7 @@ var repair_method: String = ""
 var priority_id: String = ""
 var relays_activated: Array[String] = []
 var thermal_shield: bool = false
+var field_protocol: String = ""
 var time_left: float = MAX_TIME
 var heat: float = 48.0
 var oxygen: float = 93.0
@@ -65,6 +70,7 @@ func reset(next_scenario: String = "blackout") -> void:
     priority_id = ""
     relays_activated.clear()
     thermal_shield = false
+    field_protocol = ""
     won = false
     lost = false
     elapsed = 0.0
@@ -111,6 +117,12 @@ func _integrate_step(dt: float) -> void:
     else:
         oxygen -= 0.76 * dt
         crew_health -= 1.05 * dt
+
+    # One real, player-chosen onsite intervention changes ongoing resource flow.
+    if field_protocol == "sink":
+        heat -= 0.18 * dt
+    elif field_protocol == "air":
+        oxygen += 0.22 * dt
 
     # Sector-specific systemic pressure: leak affects powered and unpowered LIFE.
     # A rapid patch leaves an ongoing micro-leak: a consequential second strategy.
@@ -248,6 +260,25 @@ func activate_relay(relay_id: String) -> bool:
     _record("relay_" + relay_id)
     return true
 
+func activate_field_protocol(which: String) -> bool:
+    # Two physically separated A7 field consoles, once per operation, after
+    # a real scan and before evacuation authorization.
+    if finished() or not core_scanned or override_set or field_protocol != "" or not FIELD_PROTOCOLS.has(which):
+        return _reject()
+    tick(SINK_TIME if which == "sink" else AIR_TIME)
+    if finished():
+        return false
+    field_protocol = which
+    if which == "sink":
+        heat = maxf(0.0,heat-16.0)
+        oxygen = maxf(0.0,oxygen-8.0)
+    else:
+        oxygen = minf(100.0,oxygen+16.0)
+        heat = minf(110.0,heat+7.0)
+        crew_health = maxf(0.0,crew_health-5.0)
+    _record("field_"+which)
+    return true
+
 func cycle_bus(bus_index: int) -> bool:
     if finished() or not coolant_repaired or (bus_index != 0 and bus_index != 1):
         return _reject()
@@ -314,6 +345,7 @@ func diagnostic_snapshot() -> Dictionary:
         "priority":priority_id,
         "relays":relays_activated.duplicate(),"relay_count":relays_activated.size(),
         "thermal_shield":thermal_shield,
+        "field_protocol":field_protocol,
         "thermal_pulses": thermal_pulses, "next_pulse": next_pulse_at,
         "leak_active": scenario_id == "breach" and (not coolant_repaired or repair_method == "rapid_patch"),
         "objective": objective_id(), "time_left": time_left, "heat": heat,
@@ -335,6 +367,7 @@ func checkpoint() -> Dictionary:
         "priority":priority_id,
         "relays_activated":relays_activated.duplicate(),
         "thermal_shield":thermal_shield,
+        "field_protocol":field_protocol,
         "time_left":time_left, "heat":heat, "oxygen":oxygen,
         "crew_health":crew_health, "door_charge":door_charge,
         "bus_a":bus_a, "bus_b":bus_b,
@@ -379,6 +412,12 @@ func restore_checkpoint(data: Dictionary) -> bool:
         if not relay is String or not RELAYS.has(str(relay)) or checked_relays.has(str(relay)):
             return false
         checked_relays.append(str(relay))
+    # Older V6/V7/V9 saves do not contain the optional G2 field.
+    var saved_field: Variant = data.get("field_protocol","")
+    if not saved_field is String:
+        return false
+    if saved_field != "" and not FIELD_PROTOCOLS.has(str(saved_field)):
+        return false
     var stored_shield: Variant = data.get("thermal_shield",false)
     if typeof(stored_shield) != TYPE_BOOL or (bool(stored_shield) and not checked_relays.has("quench")):
         return false
@@ -409,6 +448,8 @@ func restore_checkpoint(data: Dictionary) -> bool:
         return false
     if saved_priority != "" and not scanned:
         return false
+    if saved_field != "" and not scanned:
+        return false
     if data["won"] and (not overridden or data["lost"]):
         return false
     var events: Variant = data.get("event_log",null)
@@ -427,6 +468,7 @@ func restore_checkpoint(data: Dictionary) -> bool:
     priority_id = saved_priority
     relays_activated = checked_relays
     thermal_shield = bool(stored_shield)
+    field_protocol = str(saved_field)
     time_left = float(data["time_left"])
     heat = float(data["heat"])
     oxygen = float(data["oxygen"])

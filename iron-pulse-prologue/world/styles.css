@@ -279,6 +279,17 @@ button { cursor: pointer; }
 .guide-stages span { padding:17px 0; border-bottom:1px solid #33434b; color:#d6e0df; font-size:12px; letter-spacing:.07em; }
 .guide-stages span:first-child { border-top:1px solid #33434b; }
 @media(max-width:680px) { .first-operator-guide { grid-template-columns:1fr; } .guide-stages span { font-size:11px; padding:14px 0; } }
+.field-tactics { margin-top: 16px; border: 1px solid #43535b; padding: clamp(27px,4vw,48px); background: linear-gradient(125deg,#10171b,#111b20 58%,#080e12); }
+.field-tactics-heading { max-width:780px; }
+.field-tactics-heading h3 { font-size:clamp(25px,3vw,42px); margin:16px 0 18px; letter-spacing:-.047em; }
+.field-tactics-heading p { font-size:14px; color:#b5c3c5; line-height:1.8; }
+.field-tactics-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:28px; }
+.field-tactic { min-width:0; border:1px solid #344650; background:rgba(9,17,21,.82); padding:clamp(22px,3vw,32px); }
+.field-tactic-index { display:block; color:#91a6ac; font-size:11px; letter-spacing:.11em; margin-bottom:21px; }
+.field-tactic h4 { font-size:clamp(17px,2vw,23px); margin:0 0 15px; letter-spacing:-.02em; }
+.field-tactic p { color:#bdc8c8; font-size:13px; line-height:1.8; margin:0; }
+.field-tactics-note { color:#99a8a9; font-size:12px; line-height:1.7; margin:21px 0 0; }
+@media(max-width:680px) { .field-tactics-options { grid-template-columns:1fr; } }
 .world-evidence-note { margin: 35px 0 0; padding: 20px 24px; border-left: 2px solid var(--accent-soft); background: #192025; color: #b8c4c5; font-size: 13px; line-height: 1.8; max-width: 840px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

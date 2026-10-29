@@ -57,6 +57,10 @@ func _valid_entry(raw: Variant) -> bool:
             return false
     if item.get("repair","") not in REPAIRS or item.get("priority","") not in ["","crew","core"]:
         return false
+    # G2 field choice is optional; previously saved V17 run records omit it.
+    var protocol: Variant = item.get("field_protocol","")
+    if not protocol is String or (protocol != "" and not IPCrisisEngine.FIELD_PROTOCOLS.has(str(protocol))):
+        return false
     if typeof(item.get("campaign",null))!=TYPE_BOOL or typeof(item.get("history_has_timestamps",null))!=TYPE_BOOL:
         return false
     if item["history_has_timestamps"]:
