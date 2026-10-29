@@ -12,8 +12,9 @@ func check(ok: bool,why: String) -> void:
 func _initialize() -> void:
 	call_deferred("_run")
 func _run() -> void:
-	var saved: Dictionary=GameState.data.duplicate(true)
-	var state: Dictionary=GameState.new_game()
+	var sim: Node=root.get_node("GameState")
+	var saved: Dictionary=(sim.get("data") as Dictionary).duplicate(true)
+	var state: Dictionary=sim.new_game()
 	var original: Dictionary=state.duplicate(true)
 	var node: Node3D=PULSE.new()
 	root.add_child(node)
@@ -60,7 +61,7 @@ func _run() -> void:
 		"source rotor resume occurs only within genuine camera proximity")
 	check(state["wallet"]==original["wallet"] and
 		state["mission"]==original["mission"] and
-		GameState.data==saved and node.geometry_is_bounded(),
+		sim.get("data")==saved and node.geometry_is_bounded(),
 		"visual economy consumes neither fake rewards nor source player state")
 	node.queue_free()
 	await process_frame

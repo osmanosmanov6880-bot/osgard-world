@@ -12,7 +12,8 @@ func check(ok: bool,reason: String) -> void:
 func _initialize() -> void:
 	call_deferred("_run")
 func _run() -> void:
-	var src: Dictionary=GameState.new_game()
+	var original_sim: Node=root.get_node("GameState")
+	var src: Dictionary=original_sim.new_game()
 	var original: Dictionary=src.duplicate(true)
 	check(PULSE.value_for(src,"forum")["value"]==72 and
 		PULSE.value_for(src,"aqueduct")["value"]==93,
