@@ -290,6 +290,20 @@ button { cursor: pointer; }
 .field-tactic p { color:#bdc8c8; font-size:13px; line-height:1.8; margin:0; }
 .field-tactics-note { color:#99a8a9; font-size:12px; line-height:1.7; margin:21px 0 0; }
 @media(max-width:680px) { .field-tactics-options { grid-template-columns:1fr; } }
+.obsidian-materials { margin-top:16px; padding:clamp(25px,4vw,50px); border:1px solid #39454b; background:linear-gradient(150deg,#12191e 0%,#0b1014 62%,#0d171a 100%); }
+.obsidian-material-head { max-width:810px; }
+.obsidian-material-head h3 { margin:20px 0 17px; font-size:clamp(27px,3vw,43px); line-height:1.07; letter-spacing:-.048em; }
+.obsidian-material-head p { max-width:700px; font-size:14px; color:#bbc5c7; line-height:1.85; margin:0; }
+.obsidian-material-specimens { margin-top:33px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.obsidian-sample { min-width:0; background:#090e12; padding:16px; border:1px solid #2d3a40; }
+.obsidian-swatch { height:64px; border:1px solid #2f4148; margin-bottom:19px; }
+.obsidian-swatch-titanium { background:linear-gradient(140deg,#060c10 10%,#2e3c43 42%,#0c1419 75%,#65757e); }
+.obsidian-swatch-graphite { background:linear-gradient(145deg,#0b1215 15%,#121c22 60%,#090f13 90%); }
+.obsidian-swatch-safety { background:linear-gradient(90deg,#081117 0%,#0b2229 48%,#19818a 51%,#071318 55%,#191b1d 100%); }
+.obsidian-sample strong { display:block; letter-spacing:.075em; font-size:12px; color:#e4e9e8; }
+.obsidian-sample p { font-size:12px; color:#a5b3b7; margin:11px 0 0; line-height:1.7; }
+.obsidian-material-note { font-size:12px; line-height:1.7; margin:24px 0 0; color:#94a3a5; }
+@media(max-width:700px){ .obsidian-material-specimens { grid-template-columns:1fr; } .obsidian-swatch{ height:42px; } }
 .world-evidence-note { margin: 35px 0 0; padding: 20px 24px; border-left: 2px solid var(--accent-soft); background: #192025; color: #b8c4c5; font-size: 13px; line-height: 1.8; max-width: 840px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
