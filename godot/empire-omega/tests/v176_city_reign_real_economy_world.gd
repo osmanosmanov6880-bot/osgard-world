@@ -66,18 +66,18 @@ func _run() -> void:
 		int(street.city_vitality["housing"])==
 		int(sim.data["district_scores"]["housing"]),
 		"actual generated GPU facade color follows genuine district score after turn")
-	var old_shade: Color=(street.nodes["District_forum"] as MultiMeshInstance3D).multimesh.get_instance_color(0)
+	var old_shade: Color=(street.materials["District_forum"] as StandardMaterial3D).albedo_color
 	sim.data["district_scores"]["forum"]=0
 	world.update_development()
-	var down: Color=(street.nodes["District_forum"] as MultiMeshInstance3D).multimesh.get_instance_color(0)
+	var down: Color=(street.materials["District_forum"] as StandardMaterial3D).albedo_color
 	sim.data["district_scores"]["forum"]=100
 	world.update_development()
-	var up: Color=(street.nodes["District_forum"] as MultiMeshInstance3D).multimesh.get_instance_color(0)
-	print("R175 ACTUAL MULTIMESH PROOF forum_count=%d samples original=%s low=%s high=%s vitality=%s revisions=%d" % [
+	var up: Color=(street.materials["District_forum"] as StandardMaterial3D).albedo_color
+	print("R175 PHYSICAL PBR MATERIAL PROOF forum_count=%d samples original=%s low=%s high=%s vitality=%s revisions=%d" % [
 		(street.nodes["District_forum"] as MultiMeshInstance3D).multimesh.instance_count,
 		str(old_shade),str(down),str(up),str(street.city_vitality),int(street.vitality_updates)])
 	check(up.r>down.r and up.g>down.g and is_finite(old_shade.r) and is_finite(old_shade.g),
-		"same REAL original 3D facades visually change with live city district health")
+		"same real shared original district PBR materials visibly respond to source city vitality")
 	world.apply_visual_budget("low")
 	check(not (meters.foundations["forum"] as Node3D).visible and
 		not meters.is_processing() and street.graphics_are_bounded(),
