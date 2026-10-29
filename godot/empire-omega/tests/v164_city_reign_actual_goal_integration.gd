@@ -12,6 +12,11 @@ func _initialize() -> void:
 	call_deferred("_run")
 func _run() -> void:
 	var sim: Node=root.get_node_or_null("GameState")
+	var cargo: Node=root.get_node_or_null("ContractManager")
+	check(cargo!=null,"existing original contract catalog is loaded")
+	if cargo==null:
+		quit(2)
+		return
 	var original: Dictionary=sim.data.duplicate(true)
 	var locale: String=sim.locale
 	sim.data=sim.new_game()
@@ -32,8 +37,8 @@ func _run() -> void:
 		"real native drivable car, city world and original HUD remain")
 	check(str(main.get("last_route_source"))=="vehicle",
 		"the current actual car is first genuine on-road GPS objective")
-	var initial_nav: Dictionary=GOAL.resolve(sim.data,"enter_vehicle",ContractManager.current_offer(),
-		ContractManager.POSITIONS,car.global_position,Vector3.ZERO,Vector3.ZERO,Vector3.ZERO)
+	var initial_nav: Dictionary=GOAL.resolve(sim.data,"enter_vehicle",cargo.current_offer(),
+		cargo.POSITIONS,car.global_position,Vector3.ZERO,Vector3.ZERO,Vector3.ZERO)
 	check(initial_nav["active"] and initial_nav["point"]==car.global_position,
 		"original source car transform, not stale save position, drives live objective")
 	sim.data["mission"]=1
