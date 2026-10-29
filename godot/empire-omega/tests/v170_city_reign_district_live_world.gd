@@ -57,8 +57,11 @@ func _run() -> void:
 	world.update_daynight(12.0)
 	check(not (art.get_node("PoweredDistrictSigns") as Node3D).visible,
 		"real world noon disables all optional signs' expensive emission")
-	check(sim.data==initial and int(sim.data["mission"])==0,
-		"no wallet, save, 40-mission authority or economics modification")
+	check(int(sim.data["mission"])==0 and
+		int(sim.data["wallet"])==int(initial["wallet"]) and
+		int(sim.data["treasury"])==int(initial["treasury"]) and
+		sim.data.get("buildings",{})==initial.get("buildings",{}),
+		"no wallet, treasury, building purchases or mission authority modified by street art")
 	current_scene.queue_free()
 	await process_frame
 	sim.data=old
