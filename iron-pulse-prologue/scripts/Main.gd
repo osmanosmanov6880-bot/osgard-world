@@ -193,6 +193,8 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var campaign: IPCampaignFlow = IPCampaignFlow.new()
 var world_launch: Dictionary = IPWorldLaunch.parse("")
 var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
+var device_lab: IPDeviceLab = IPDeviceLab.new()
+var _lab_preexisting_pause: bool = false
 var adaptive_performance: IPAdaptivePerformance = IPAdaptivePerformance.new()
 var adaptive_sampling_clock: float = 0.0
 var threat_radar: IPThreatRadar = IPThreatRadar.new()
@@ -307,6 +309,13 @@ var forecast_close_button: Button
 var touch_forecast_button: Button
 var touch_guide_button: Button
 var touch_navigation_button: Button
+var touch_device_lab_button: Button
+var device_lab_panel: PanelContainer
+var device_lab_label: Label
+var device_lab_start_button: Button
+var device_lab_export_button: Button
+var device_lab_close_button: Button
+var device_lab_export_note: Label
 var guide_panel: PanelContainer
 var guide_label: Label
 var guide_next_button: Button
@@ -484,6 +493,15 @@ func _publish_web_state() -> void:
     state["cinematic_view"] = cinematic_view
     state["director_shot_index"] = reactor_atrium.director_shot_index
     state["performance_audit"] = performance_audit.telemetry()
+    # G4 is read-only on the web: real _process frame deltas, no web
+    # messages or JS callbacks may start, stop, forge or upload a run.
+    state["g4_device_lab"] = device_lab.snapshot()
+    state["g4_device_lab"]["panel_visible"] = device_lab_panel != null and device_lab_panel.visible
+    state["g4_device_lab"]["start_button_rect"] = _hud_rect(device_lab_start_button) if device_lab_start_button != null else []
+    state["g4_device_lab"]["export_button_rect"] = _hud_rect(device_lab_export_button) if device_lab_export_button != null else []
+    state["g4_device_lab"]["close_button_rect"] = _hud_rect(device_lab_close_button) if device_lab_close_button != null else []
+    state["g4_device_lab"]["touch_button_rect"] = _hud_rect(touch_device_lab_button) if touch_device_lab_button != null else []
+    state["g4_device_lab"]["local_save_ok"] = device_lab.last_local_save_ok
     state["release_gate"] = performance_audit.release_gate()
     state["diagnostics_visible"] = diagnostic_panel != null and diagnostic_panel.visible
     state["cinematic_hud_hidden"] = cinematic_view and not header_panel.visible and not side_panel.visible and not prompt_panel.visible and not crosshair.visible
@@ -1062,6 +1080,7 @@ func _make_hud() -> void:
     guide_stack.add_child(guide_close_button)
     guide_panel.visible = false
     _refresh_operator_guide_locale()
+    _make_device_lab_overlay()
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
 
@@ -1295,6 +1314,9 @@ func _make_touch_controls() -> void:
     touch_navigation_button = _touch_button(touch_ui,"NAV / H",6,-414,94)
     touch_navigation_button.add_theme_font_size_override("font_size",15)
     touch_navigation_button.pressed.connect(_toggle_wayfinding)
+    touch_device_lab_button = _touch_button(touch_ui,"LAB / F6",6,-471,94)
+    touch_device_lab_button.add_theme_font_size_override("font_size",14)
+    touch_device_lab_button.pressed.connect(_toggle_device_lab)
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1366,6 +1388,8 @@ func _layout_hud() -> void:
             legacy_lamps[i].visible = i % 3 == 0
         if world_sectors != null:
             world_sectors.set_quality("eco")
+        if obsidian_world != null:
+            obsidian_world.set_quality("eco")
         if reactor_atrium != null:
             reactor_atrium.set_quality("eco")
         if containment_fx != null:
@@ -1397,6 +1421,12 @@ func _layout_hud() -> void:
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
+    if device_lab_panel != null:
+        var lab_half: float = minf(300.0,width*0.45)
+        device_lab_panel.offset_left = -lab_half
+        device_lab_panel.offset_right = lab_half
+        device_lab_label.custom_minimum_size.x = lab_half*2.0-46.0
+        device_lab_label.add_theme_font_size_override("font_size",11 if narrow else 13)
     if guide_panel != null:
         var help_half: float = minf(310.0,width*0.45)
         guide_panel.offset_left = -help_half
@@ -1983,6 +2013,7 @@ func _toggle_language() -> void:
     _refresh_operator_guide_locale()
     _refresh_after_action_locale()
     _refresh_run_archive_locale()
+    _refresh_device_lab_ui()
     _refresh_radio_ui()
 
 func _apply_graphics_profile(next_mode: String) -> void:
@@ -2085,6 +2116,16 @@ func _input(event: InputEvent) -> void:
         _gamepad_button(event.button_index)
         return
     if event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == KEY_F6:
+            _toggle_device_lab()
+            return
+        if event.keycode == KEY_F7:
+            _device_lab_toggle_record()
+            return
+        if device_lab_panel != null and device_lab_panel.visible:
+            if event.keycode == KEY_ESCAPE:
+                _close_device_lab()
+            return
         if event.keycode == KEY_L:
             _toggle_language()
             return
@@ -2227,6 +2268,13 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
     var gameplay_active: bool = started and not paused and not session.finished()
     performance_audit.observe(delta,gameplay_active,quality_mode)
+    # Actual client-frame evidence, explicitly started by F7 or native
+    # button. Pause/intro/overlay frames are never treated as gameplay.
+    var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+    device_lab.observe(delta,gameplay_active,quality_mode,
+        Vector2i(roundi(viewport_size.x),roundi(viewport_size.y)))
+    if device_lab.state == "recording" and session.finished():
+        device_lab.finish()
     operator_guide.observe(delta,session,gameplay_active)
     if adaptive_performance.enabled and gameplay_active and is_finite(delta) and delta > 0.0 and delta <= 0.25:
         adaptive_sampling_clock += delta
@@ -2314,6 +2362,8 @@ func _process(delta: float) -> void:
         _refresh_hud()
         if diagnostic_panel.visible:
             diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
+        if device_lab_panel != null and device_lab_panel.visible:
+            _refresh_device_lab_ui()
 
 func _nearest_terminal() -> Dictionary:
     if player == null:
