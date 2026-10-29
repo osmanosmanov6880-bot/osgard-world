@@ -124,8 +124,9 @@ static func recommend(state: Dictionary,offer: Dictionary,locations: Dictionary,
         return _result("done",locale,projection,-1.0)
     var target: Vector3=projection["goal"]
     var person: Vector3=vehicle_at if driving else player_at
-    if not person.is_finite() or not vehicle_at.is_finite() or not target.is_finite() or
-            not is_finite(velocity) or not is_finite(fuel) or not is_finite(health):
+    if (not person.is_finite() or not vehicle_at.is_finite() or
+            not target.is_finite() or not is_finite(velocity) or
+            not is_finite(fuel) or not is_finite(health)):
         return _result("invalid",locale,projection,-1.0)
     var distance: float=horizontal_distance(person,target)
     if not bool(projection["goal_available"]):
