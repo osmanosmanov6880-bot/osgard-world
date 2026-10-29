@@ -133,10 +133,12 @@ func snapshot(force: bool = false) -> Dictionary:
     var median: float = _percentile(ordered,0.50)
     var p95: float = _percentile(ordered,0.95)
     var p99: float = _percentile(ordered,0.99)
-    var comparable: bool = state == "complete" and
+    var comparable: bool = (
+        state == "complete" and
         active_seconds >= VALID_SECONDS and total_frames >= VALID_SAMPLES and
         not mixed_quality and not viewport_changed and
         excluded_interrupted == 0 and not truncated_samples
+    )
     _cached = {
         "schema": FORMAT,
         "status": state,
