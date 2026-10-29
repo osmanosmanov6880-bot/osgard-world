@@ -272,6 +272,13 @@ button { cursor: pointer; }
 .frame-quality-note h3 { margin: 0 0 14px; font-size: clamp(20px,2.3vw,33px); letter-spacing: -.04em; }
 .frame-quality-note p { margin: 0; max-width: 710px; line-height: 1.8; color: #aebfc1; font-size: 14px; }
 @media(max-width:680px) { .frame-quality-note { grid-template-columns: 1fr; gap: 16px; } }
+.first-operator-guide { margin-top: 16px; padding: clamp(27px,4vw,52px); background: linear-gradient(135deg,#1a2227 0%,#0b0f13 100%); border: 1px solid #3f5158; display: grid; grid-template-columns: minmax(0,1.5fr) minmax(175px,.75fr); gap: clamp(22px,4vw,62px); }
+.first-operator-guide h3 { font-size: clamp(23px,2.4vw,34px); line-height: 1.1; max-width: 550px; letter-spacing: -.042em; margin: 18px 0; }
+.first-operator-guide p { color:#b4c0c4; line-height:1.8; font-size:14px; margin:0; max-width:610px; }
+.guide-stages { display:flex; flex-direction:column; justify-content:center; gap:0; }
+.guide-stages span { padding:17px 0; border-bottom:1px solid #33434b; color:#d6e0df; font-size:12px; letter-spacing:.07em; }
+.guide-stages span:first-child { border-top:1px solid #33434b; }
+@media(max-width:680px) { .first-operator-guide { grid-template-columns:1fr; } .guide-stages span { font-size:11px; padding:14px 0; } }
 .world-evidence-note { margin: 35px 0 0; padding: 20px 24px; border-left: 2px solid var(--accent-soft); background: #192025; color: #b8c4c5; font-size: 13px; line-height: 1.8; max-width: 840px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
