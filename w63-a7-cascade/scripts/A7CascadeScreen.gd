@@ -222,6 +222,7 @@ var w82_nav_cockpit: A7MissionNavCockpit
 var w83_dual_touch: A7DualTouchLook
 var w84_studio: A7MobileControlStudio
 var w85_field_guide: A7MissionFieldGuide
+var w86_coach: A7FirstRunCoach
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -299,6 +300,13 @@ func _ready() -> void:
     w85_field_guide.build(stage_shell,stage_3d.spatial_mission,
         stage_3d.field_operations,stage_3d.first_person,w82_nav_cockpit)
     w85_field_guide.opened_changed.connect(_w85_on_guide_opened)
+    # W86: FIRST CONTACT reads original live physical input/source-gated
+    # mission only. Native UI is a small nonblocking on-world coaching strip.
+    w86_coach = A7FirstRunCoach.new()
+    stage_shell.add_child(w86_coach)
+    w86_coach.build(stage_shell,stage_3d.first_person,w83_dual_touch,
+        w78_touch_overlay,w85_field_guide,stage_3d.field_operations,
+        stage_3d.spatial_mission,checkpoint)
     sound_bus = A7ProceduralAudio.new()
     add_child(sound_bus)
     _create_web_accessibility()
@@ -1295,6 +1303,9 @@ func _layout_stage() -> void:
     if w85_field_guide != null and stage_3d != null:
         w85_field_guide.set_context(touch_context and w76_immersive and
             stage_3d.first_person.piloting,locale,size,model.snapshot())
+    if w86_coach != null and stage_3d != null:
+        w86_coach.set_context(w76_immersive and
+            stage_3d.first_person.piloting,locale,size)
     _w84_sync_modal_input()
     if w82_nav_cockpit != null:
         w82_nav_cockpit.configure(size.x)
@@ -1315,6 +1326,10 @@ func _w84_sync_modal_input() -> void:
     var guiding: bool = (w85_field_guide != null and
         w85_field_guide.visible and w85_field_guide.opened)
     var modal: bool = tuning or guiding
+    if w86_coach != null:
+        # Hide the small read-only tutorial panel while the original
+        # physical equipment/settings or full source mission guide are open.
+        w86_coach.set_suppressed(modal)
     if w83_dual_touch != null:
         w83_dual_touch.input_suspended = modal
     if w84_studio != null and w84_studio.settings_button != null:
@@ -1577,6 +1592,9 @@ func _render(state: Dictionary) -> void:
     if w85_field_guide != null and stage_3d != null:
         w85_field_guide.set_context(_w81_touch_context() and w76_immersive and
             stage_3d.first_person.piloting,locale,size,state)
+    if w86_coach != null and stage_3d != null:
+        w86_coach.set_context(w76_immersive and
+            stage_3d.first_person.piloting,locale,size)
     _w84_sync_modal_input()
     restart_button.text = _t("reset")
     save_button.text = _t("save_game")
@@ -1911,6 +1929,19 @@ func _publish_web_accessibility() -> void:
         "w85_safe_source_modal":w83_dual_touch.input_suspended if w83_dual_touch != null else false,
         "w85_real_original_body_id":w85_field_guide.qa_readout()["real_original_w70_body"] if w85_field_guide != null else 0,
         "w85_hardware_verified":false,
+        "w86_coach_visible":w86_coach.visible if w86_coach != null else false,
+        "w86_coach_source_eligible":w86_coach.source_eligible if w86_coach != null else false,
+        "w86_source_lesson_step":w86_coach.lesson_step if w86_coach != null else -1,
+        "w86_source_lessons_total":w86_coach.LESSON_TOTAL if w86_coach != null else 0,
+        "w86_source_lesson_completed":w86_coach.completed if w86_coach != null else false,
+        "w86_source_lesson_skipped":w86_coach.skipped if w86_coach != null else false,
+        "w86_original_body_id":w86_coach.qa_readout()["real_original_body_id"] if w86_coach != null else -1,
+        "w86_original_game_actions_issued":w86_coach.original_game_commands_issued if w86_coach != null else -1,
+        "w86_actual_source_proofs":w86_coach.completed_proofs.duplicate() if w86_coach != null else [],
+        "w86_real_user_skips":w86_coach.explicit_skips if w86_coach != null else 0,
+        "w86_real_user_replays":w86_coach.explicit_replays if w86_coach != null else 0,
+        "w86_true_checkpoint_preference_saves":w86_coach.successful_saves if w86_coach != null else 0,
+        "w86_legal_hardware_pass":false,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1988,6 +2019,9 @@ func _publish_web_accessibility() -> void:
         "w85_guide_objective":_web_rect(w85_field_guide.objective_label) if w85_field_guide != null else [],
         "w85_guide_distance":_web_rect(w85_field_guide.distance_label) if w85_field_guide != null else [],
         "w85_guide_close":_web_rect(w85_field_guide.close_button) if w85_field_guide != null else [],
+        "w86_coach_panel":_web_rect(w86_coach.panel) if w86_coach != null else [],
+        "w86_coach_prompt":_web_rect(w86_coach.hint) if w86_coach != null else [],
+        "w86_coach_action":_web_rect(w86_coach.action_button) if w86_coach != null else [],
         "w80_true_native_menu":_web_rect(w80_full_bleed.exit_button) if w80_full_bleed != null else [],
         "w80_true_native_language":_web_rect(w80_full_bleed.language_button) if w80_full_bleed != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),

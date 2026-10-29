@@ -225,8 +225,8 @@ func replay_training() -> void:
     _paint()
 
 func _lesson_proven() -> bool:
-    if mission == null or not mission.active or operator == null or
-            operator.body == null:
+    if (mission == null or not mission.active or operator == null or
+            operator.body == null):
         return false
     match lesson_step:
         0:
