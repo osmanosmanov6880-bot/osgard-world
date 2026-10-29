@@ -96,6 +96,13 @@ jobs:
             v21_vehicle_dynamics \
             v27_driver_assists \
             v67_r46_load_transfer_brake_grip \
+            v146_city_reign_rotor_thermal \
+            v147_city_reign_asphalt_normal_trails \
+            v148_city_reign_spray_aerodynamics \
+            v149_city_reign_real_road_rotor_heat \
+            v45_skid_trails \
+            v46_ground_spray \
+            v62_r39_actual_wheel_art \
             v97_r123_real_pedestrian_body_gait \
             v68_r47_predictive_crosswalk_traffic \
             v110_city_reign_first_mandate \
