@@ -18,6 +18,7 @@ const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
 const DEVICE_BENCHMARK = preload("res://scripts/horizon_device_frame_benchmark.gd")
+const R177_FIRST_SESSION = preload("res://scripts/city_reign_first_session_observer.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
 const ROUTER = preload("res://scripts/street_router.gd")
@@ -85,6 +86,7 @@ var diagnostic_timer := 0.0
 var adaptive_graphics = ADAPTIVE_GRAPHICS.new()
 var frame_metrics = FRAME_METRICS.new()
 var device_benchmark = DEVICE_BENCHMARK.new()
+var first_session_observer = R177_FIRST_SESSION.new()
 var patrols
 var previous_vehicle_health := 100.0
 var speeding_seconds := 0.0
@@ -184,6 +186,8 @@ func _ready() -> void:
 	hud.wants_reset.connect(_new_game)
 	hud.benchmark_start_requested.connect(_on_benchmark_start)
 	hud.benchmark_export_requested.connect(_on_benchmark_export)
+	hud.playtest_export_requested.connect(_on_playtest_export)
+	first_session_observer.begin(GameState.data)
 	car.drift_reward_earned.connect(_on_drift_reward_earned)
 	GameState.state_changed.connect(_on_game_changed)
 	GameState.alert_created.connect(_on_alert)
@@ -375,6 +379,12 @@ func _stopped_traffic_count() -> int:
 
 func _process(delta: float) -> void:
 	frame_metrics.record_frame(delta,DisplayServer.window_is_focused())
+	# R177: only actual mission index and foreground, unblocked game time.
+	# No persistent trace or automatic upload of any device/player data.
+	var first_session_blocked: bool = (hud==null or hud.is_pause_open() or
+		hud.is_strategy_open() or hud.is_citizen_open() or hud.is_city_case_open())
+	first_session_observer.observe(delta,GameState.data,first_session_blocked,
+		DisplayServer.window_is_focused())
 	if device_benchmark.active:
 		var draw_calls: int = maxi(0,int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
 		device_benchmark.record_frame(delta,draw_calls,DisplayServer.window_is_focused())
@@ -389,6 +399,26 @@ func _on_benchmark_start() -> void:
 		hud.update_benchmark_status(0.0,false,"")
 		hud.announce(_three("ТЕСТ КАДРОВ: ПРОГРЕВ 2 С, ЗАМЕР 20 С",
 			"FRAME TEST: 2S WARMUP + 20S CAPTURE","帧测试：预热2秒 + 测量20秒"))
+
+func _on_playtest_export() -> void:
+	# Explicit, local-only opt-in. Not telemetry, a cookie, or background work.
+	var report: Dictionary=first_session_observer.report()
+	var text_json: String=JSON.stringify(report,"  ")
+	var buffer: PackedByteArray=text_json.to_utf8_buffer()
+	if OS.has_feature("web"):
+		JavaScriptBridge.download_buffer(buffer,
+			"city-reign-first-six-playtest.json","application/json")
+	else:
+		var output: FileAccess=FileAccess.open(
+			"user://city-reign-first-six-playtest.json",FileAccess.WRITE)
+		if output!=null:
+			output.store_string(text_json)
+			output.close()
+		else:
+			push_error("R177 local playtest JSON file cannot be written")
+	if hud!=null:
+		hud.announce(_three("ОТЧЁТ ПЕРВОЙ ГЛАВЫ · ЛОКАЛЬНЫЙ JSON",
+			"FIRST CHAPTER · LOCAL JSON REPORT","第一章 · 本地JSON报告"))
 
 func _on_benchmark_export() -> void:
 	if not device_benchmark.completed:
@@ -541,6 +571,7 @@ func _physics_process(delta: float) -> void:
 		if hud != null:
 			hud.update_diagnostics(Engine.get_frames_per_second(),world.active_chunk_count,world.building_chunks.size(),pedestrians.size(),ambient_cars.size(),_stopped_traffic_count(),frame_metrics.p95_ms(),adaptive_graphics.effective_quality(),adaptive_graphics.is_adapting())
 			hud.update_benchmark_status(device_benchmark.progress(),device_benchmark.completed,device_benchmark.aborted)
+			hud.update_playtest_status(first_session_observer.status_text(GameState.locale))
 	if lod_timer >= 1.1:
 		lod_timer = 0.0
 		_update_agent_lod(protagonist)
@@ -1110,6 +1141,7 @@ func _on_strategy_changed(enabled: bool) -> void:
 func _on_game_changed(reason: String) -> void:
 	_sync_trial_marker()
 	if reason == "load" or reason == "migrated" or reason == "reset":
+		first_session_observer.begin(GameState.data,reason)
 		_sync_positions_from_state()
 		if hud.map != null:
 			hud.map.visible = not interiors.is_inside()

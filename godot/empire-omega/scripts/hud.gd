@@ -28,6 +28,7 @@ signal wants_reset
 signal dialogue_changed(is_open: bool)
 signal benchmark_start_requested
 signal benchmark_export_requested
+signal playtest_export_requested
 
 const BUILDS = {
 	"council":["Городской совет","Council","市政议会"],
@@ -300,6 +301,8 @@ var diagnostic_label: Label
 var benchmark_status_label: Label
 var benchmark_start_button: Button
 var benchmark_export_button: Button
+var r177_playtest_status: Label
+var r177_playtest_export: Button
 var diagnostic_visible := false
 var map_visible_before_diagnostics := false
 var overlay: ColorRect
@@ -565,7 +568,14 @@ func _make_hud() -> void:
 	diagnostic_panel.visible = false
 	var benchmark_stack := VBoxContainer.new()
 	benchmark_stack.add_theme_constant_override("separation",4)
-	diagnostic_panel.add_child(benchmark_stack)
+	# R177: keep mobile GPU diagnostics compact, but allow scrolling
+	# for opt-in playtest export rather than grow a new HUD overlay.
+	var diagnostics_scroll:=ScrollContainer.new()
+	diagnostics_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	diagnostics_scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
+	diagnostics_scroll.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	diagnostic_panel.add_child(diagnostics_scroll)
+	diagnostics_scroll.add_child(benchmark_stack)
 	diagnostic_label = _label(benchmark_stack,"PERFORMANCE",14,true)
 	benchmark_status_label = _label(benchmark_stack,"REAL FRAME TEST: READY",12)
 	var benchmark_controls := HBoxContainer.new()
@@ -579,6 +589,18 @@ func _make_hud() -> void:
 	benchmark_export_button.custom_minimum_size.y = 38
 	benchmark_start_button.add_theme_font_size_override("font_size",12)
 	benchmark_export_button.add_theme_font_size_override("font_size",12)
+	_separator(benchmark_stack)
+	r177_playtest_status=_label(benchmark_stack,
+		_v08("ПЕРВЫЕ ШЕСТЬ · ЛОКАЛЬНЫЙ ПЛЕЙТЕСТ",
+		"FIRST SIX · PRIVATE PLAYTEST",
+		"前六项 · 本地游玩测试"),12,true)
+	r177_playtest_status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	r177_playtest_export=_button(benchmark_stack,
+		_v08("ЭКСПОРТ ПРОХОЖДЕНИЯ",
+		"EXPORT FIRST SIX JSON","导出前六项任务JSON"),
+		Callable(self,"_request_playtest_export"))
+	r177_playtest_export.custom_minimum_size.y=40
+	r177_playtest_export.add_theme_font_size_override("font_size",12)
 
 func toggle_field_journal() -> void:
 	if journal_panel != null and not open and not pause_open:
@@ -975,6 +997,13 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 			var episode: Dictionary=R170_EPISODE.first_six(GameState.data,
 				ContractManager.current_offer(),ContractManager.POSITIONS,GameState.locale)
 			r170_episode_controls.text=str(episode["hint"])
+
+func _request_playtest_export() -> void:
+	playtest_export_requested.emit()
+
+func update_playtest_status(status: String) -> void:
+	if r177_playtest_status!=null:
+		r177_playtest_status.text=status
 
 func _request_benchmark_start() -> void:
 	benchmark_start_requested.emit()
