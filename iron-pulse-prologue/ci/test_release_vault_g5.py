@@ -173,6 +173,17 @@ class G5ReleaseVaultTests(unittest.TestCase):
             vault.status(root)
         with self.assertRaises(vault.VaultError):
             vault.activate(root, self.SHA_B, self.SHA_A)
+        # Emergency rollback is a different contract: a corrupted current
+        # version must not prevent recovery to the CLEAN previous release.
+        rescue = vault.rollback(root, self.SHA_A)
+        self.assertEqual(rescue["current"], self.SHA_B)
+        self.assertEqual(rescue["generation"], 4)
+        self.assertEqual(vault.status(root)["current_verified"]["sha"], self.SHA_B)
+        # Staged symlinks, including broken links, must be rejected.
+        poisoned = root / "releases" / self.SHA_B / "site" / "dangling"
+        poisoned.symlink_to("../does-not-exist")
+        with self.assertRaises(vault.VaultError):
+            vault.status(root)
 
     def test_03_reject_corrupted_and_ambiguous_archives(self) -> None:
         zip_a, receipt = self._build(self.SHA_A)
