@@ -14,16 +14,21 @@ func _initialize() -> void:
 func _run() -> void:
 	var sim: Node=root.get_node_or_null("GameState")
 	var career: Node=root.get_node_or_null("MissionManager")
+	var contracts: Node=root.get_node_or_null("ContractManager")
+	check(contracts!=null,"real original cargo authority is present")
+	if contracts==null:
+		quit(2)
+		return
 	var original: Dictionary=sim.data.duplicate(true)
 	var original_lang: String=sim.locale
 	sim.data=sim.new_game()
 	var initial_wallet: int=int(sim.data["wallet"])
-	var offered: Dictionary=ContractManager.current_offer()
+	var offered: Dictionary=contracts.current_offer()
 	# Wrong actions NEVER advance a single byte of original campaign.
 	check(not career.register_action("deliver") and sim.data["mission"]==0,
 		"arbitrary F before entering vehicle does NOT advance first mission")
 	for index in range(EP.TOTAL_STEPS):
-		var step: Dictionary=EP.first_six(sim.data,offered,ContractManager.POSITIONS,"en")
+		var step: Dictionary=EP.first_six(sim.data,offered,contracts.POSITIONS,"en")
 		check(step["action"]==career.MISSIONS[index]["id"] and step["step"]==index+1,
 			"native existing MissionManager owns real six milestones")
 		check(career.register_action(str(step["action"])) and sim.data["mission"]==index+1,
@@ -35,7 +40,7 @@ func _run() -> void:
 	var earned: int=int(sim.data["wallet"])-initial_wallet
 	var after: Dictionary=sim.data.duplicate(true)
 	for i in range(80):
-		EP.first_six(sim.data,offered,ContractManager.POSITIONS,["ru","en","zh"][i%3])
+		EP.first_six(sim.data,offered,contracts.POSITIONS,["ru","en","zh"][i%3])
 	check(sim.data==after and int(sim.data["wallet"])-initial_wallet==earned,
 		"80 journal, resume and translation projections cannot duplicate one credit")
 	# REAL game engine scene: do not fake route screenshots or skip the true car.
