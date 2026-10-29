@@ -350,6 +350,38 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/iron-pulse-world-v13-browser.log"
           grep -q '"status": "PASS"' iron-pulse-prologue/build/world-evidence/world-portal-evidence.json
           grep -q '"genuine_webgl_launch": true' iron-pulse-prologue/build/world-evidence/world-portal-evidence.json
+      - name: G5 independent reproducible ZIP tamper, security and CAS rollback tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 iron-pulse-prologue/ci/test_release_vault_g5.py 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g5-unit.log"
+          grep -q 'Ran 5 tests' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
+          grep -q '^OK$' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
+      - name: G5 source-bound actual Windows/WebGL release bundle and offline stage NO activation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p iron-pulse-prologue/build/g5-release
+          python3 iron-pulse-prologue/ci/release_vault_g5.py pack \
+            --site iron-pulse-prologue/build/world-preview \
+            --web iron-pulse-prologue/build/web \
+            --windows iron-pulse-prologue/build/windows \
+            --proof iron-pulse-prologue/build/proof \
+            --source-sha "${{ github.event.pull_request.head.sha || github.sha }}" \
+            --output iron-pulse-prologue/build/g5-release/IRON_PULSE_WORLD_G5_RELEASE_HOLD.zip \
+            --receipt iron-pulse-prologue/build/g5-release/RELEASE_RECEIPT.json
+          BUNDLE="iron-pulse-prologue/build/g5-release/IRON_PULSE_WORLD_G5_RELEASE_HOLD.zip"
+          HASH="$(sha256sum "$BUNDLE" | cut -d' ' -f1)"
+          printf '%s  %s\n' "$HASH" "IRON_PULSE_WORLD_G5_RELEASE_HOLD.zip" > iron-pulse-prologue/build/g5-release/PINNED_SHA256SUMS.txt
+          python3 iron-pulse-prologue/ci/release_vault_g5.py verify \
+            --archive "$BUNDLE" --bundle-sha256 "$HASH" --source-sha "${{ github.event.pull_request.head.sha || github.sha }}"
+          python3 iron-pulse-prologue/ci/release_vault_g5.py stage \
+            --archive "$BUNDLE" --vault "$RUNNER_TEMP/iron-pulse-g5-offline-stage" \
+            --bundle-sha256 "$HASH" --source-sha "${{ github.event.pull_request.head.sha || github.sha }}"
+          python3 iron-pulse-prologue/ci/release_vault_g5.py status \
+            --vault "$RUNNER_TEMP/iron-pulse-g5-offline-stage"
+          test ! -e "$RUNNER_TEMP/iron-pulse-g5-offline-stage/state/current.json"
+          printf '%s\n' 'G5 actual release package and staged verification PASS; no activation, no deployment, PRODUCTION HOLD' > iron-pulse-prologue/build/proof/G5_STAGE_RELEASE_HOLD.txt
       - name: Retain build proof even if packaging fails
         if: always()
         uses: actions/upload-artifact@v4
@@ -362,5 +394,6 @@ jobs:
             iron-pulse-prologue/build/browser-evidence
             iron-pulse-prologue/build/world-preview
             iron-pulse-prologue/build/world-evidence
+            iron-pulse-prologue/build/g5-release
           if-no-files-found: warn
           retention-days: 14
