@@ -1,0 +1,29 @@
+; IRON PULSE: BLACKOUT — standalone Godot 4.4.1 cinematic playable slice.
+; All fictional safety procedures. No external assets, credentials or networking.
+config_version=5
+
+[application]
+config/name="IRON PULSE | BLACKOUT"
+config/description="Playable first-person reactor evacuation puzzle — an independent vertical slice"
+run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+renderer/rendering_method.web="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.012, 0.022, 0.045, 1)
+
+[physics]
+3d/default_gravity=12.0
+
+[audio]
+buses/default_bus_layout=""

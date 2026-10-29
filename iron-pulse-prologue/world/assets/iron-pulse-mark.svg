@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="IRON PULSE mark">
+<rect width="512" height="512" rx="88" fill="#090d11"/>
+<path d="M115 103H338L400 165V411H115Z" fill="#151b20" stroke="#a2b6bd" stroke-width="15"/>
+<path d="M166 155H314L350 190V363H166Z" fill="#0d1116" stroke="#39474f" stroke-width="9"/>
+<path d="M236 150L303 150L234 361H168L206 248H163L194 206H220Z" fill="#e66b3b"/>
+<path d="M309 273H353L325 353H280Z" fill="#9fd1d5"/>
+<path d="M99 406H411" stroke="#e66b3b" stroke-width="14"/>
+</svg>
