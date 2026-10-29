@@ -180,7 +180,7 @@ func _make_critical_wayfinding() -> void:
         marker_materials.append(lamp_material)
         var sign := _label(critical_layer,prefix+"_LocalizedLabel",
             Vector3(-5.91,3.34,z-0.9),"",32,Color(0.87,0.92,0.94))
-        sign.rotation_degrees.y = -90.0
+        sign.rotation_degrees.y = 90.0
         sector_labels.append(sign)
         var lamp := OmniLight3D.new()
         lamp.name = prefix+"_ActualIllumination"
@@ -238,6 +238,12 @@ func _update_visual_state(elapsed: float,reduce_motion: bool) -> void:
         light.light_energy = (0.12 if quality_mode == "eco" else 0.24) + measured_risk*0.27*breath
 
 func readout() -> Dictionary:
+    var actual_positions: Array = []
+    for point in marker_positions:
+        actual_positions.append([point.x,point.y,point.z])
+    var displayed_signs: Array[String] = []
+    for sign in sector_labels:
+        displayed_signs.append(sign.text)
     return {
         "schema":FORMAT,
         "world_geometry_authentic":true,
@@ -250,8 +256,8 @@ func readout() -> Dictionary:
         "hero_visible":hero_detail != null and hero_detail.visible,
         "safety_visible":critical_layer != null and critical_layer.visible,
         "sector_ids":ZONES.duplicate(),
-        "physical_lamp_positions":marker_positions.map(func(p: Vector3) -> Array: return [p.x,p.y,p.z]),
-        "sign_text":sector_labels.map(func(label: Label3D) -> String: return label.text),
+        "physical_lamp_positions":actual_positions,
+        "sign_text":displayed_signs,
         "sign_count":sector_labels.size(),
         "light_count":marker_lamps.size(),
         "scenario":current_scenario,
