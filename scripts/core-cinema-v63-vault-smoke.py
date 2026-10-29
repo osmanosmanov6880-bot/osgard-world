@@ -106,7 +106,7 @@ class VaultTests(base.EvidenceTests):
           (PDF,'script.pdf','application/octet-stream'),
           (PNG,'png.jpg','image/jpeg'),
           (b'\x00\x01\x02','fake.txt','text/plain'),
-          (MP4,'clip.mp4','video/mp4;unknown'),
+          (MP4,'clip.mp4','video/x-msvideo'),
         ]
         for content,name,mime in invalid:
             status,_,_=self.upload_raw(wid,1,content,name,mime)
