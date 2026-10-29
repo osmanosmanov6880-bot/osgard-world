@@ -3,7 +3,7 @@ name: CITY REIGN R172 - FIRST SIX ACTION READINESS | real city source routes, A*
 on:
   push:
     branches:
-      - feat/city-reign-r172-objective-fabric-20261029
+      - feat/city-reign-r172-action-readiness-20261029
   pull_request:
     branches:
       - feat/city-reign-r171-objective-fabric-20261029
