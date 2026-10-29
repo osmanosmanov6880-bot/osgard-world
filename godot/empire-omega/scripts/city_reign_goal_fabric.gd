@@ -28,8 +28,7 @@ static func safe(point: Variant) -> bool:
 	if not (point is Vector3):
 		return false
 	var p: Vector3=point
-	return p.is_finite() and absf(p.x)<=MAX_WORLD_COORD and
-		absf(p.z)<=MAX_WORLD_COORD and absf(p.y)<=100.0 and p!=Vector3.ZERO
+	return p.is_finite() and absf(p.x)<=MAX_WORLD_COORD and absf(p.z)<=MAX_WORLD_COORD and absf(p.y)<=100.0 and p!=Vector3.ZERO
 
 static func _located(point: Variant,source: String) -> Dictionary:
 	if not safe(point):

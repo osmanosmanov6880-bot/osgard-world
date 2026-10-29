@@ -522,8 +522,8 @@ func _physics_process(delta: float) -> void:
 		ContractManager.current_offer(),ContractManager.POSITIONS,car.global_position,
 		GameState.TRIALS.target(GameState.data),resident_target,service_target)
 	var goal: Vector3=live_objective["point"]
-	var goal_visible: bool=bool(live_objective["active"]) and
-		MISSION_NAV.has_world_goal(mission_action,
+	var goal_visible: bool=bool(live_objective["active"])
+	goal_visible = goal_visible and MISSION_NAV.has_world_goal(mission_action,
 			not GameState.data.get("driving_trial",{}).is_empty(),
 			not ContractManager.active_contract().is_empty(),
 			not GameState.data.get("neighborhood_active",{}).is_empty(),
