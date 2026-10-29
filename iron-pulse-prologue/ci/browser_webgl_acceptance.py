@@ -372,6 +372,99 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
 
+                        # G1: prove that the real Godot operator guide opens
+                        # through the actual keyboard and mobile touch inputs.
+                        # No JavaScript method injects an objective or victory.
+                        initial_help=state.get("operator_guide",{})
+                        assert initial_help.get("visible") is False, (
+                            "Onboarding covers gameplay without player consent",name,initial_help)
+                        assert state.get("scanned") is False, (
+                            "WebGL mission secretly completed the scan before help",name,state)
+                        page.keyboard.press("F1")
+                        deadline=time.monotonic()+18
+                        helped={}
+                        while time.monotonic()<deadline:
+                            helped=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if helped.get("operator_guide",{}).get("visible") is True:
+                                break
+                            page.wait_for_timeout(180)
+                        hint=helped.get("operator_guide",{}).get("report",{})
+                        assert hint.get("schema")=="IRON_PULSE_OPERATOR_GUIDE_G1" and hint.get("objective")=="scan" and hint.get("tier")==1, (
+                            "Real F1 failed to open source-derived scanner guidance",name,hint)
+                        assert hint.get("source_derived") is True and hint.get("real_gameplay_modified") is False and hint.get("telemetry_uploaded") is False, (
+                            "Gameplay hint pretends to be real mission progression or external stats",hint)
+                        page.keyboard.press("F1")
+                        deadline=time.monotonic()+18
+                        tier_two={}
+                        while time.monotonic()<deadline:
+                            tier_two=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if tier_two.get("operator_guide",{}).get("report",{}).get("tier")==2:
+                                break
+                            page.wait_for_timeout(180)
+                        assert tier_two.get("operator_guide",{}).get("report",{}).get("tier")==2, (
+                            "Player cannot request progressively detailed real hints",name)
+                        page.keyboard.press("Escape")
+                        deadline=time.monotonic()+18
+                        after_help={}
+                        while time.monotonic()<deadline:
+                            after_help=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if after_help.get("operator_guide",{}).get("visible") is False:
+                                break
+                            page.wait_for_timeout(180)
+                        assert after_help.get("operator_guide",{}).get("visible") is False and (
+                            after_help.get("paused") is False) and after_help.get("scanned") is False,(
+                            "ESC from optional help opened pause or manufactured objective progress",name)
+                        if mobile:
+                            actual_rects=after_help.get("touch_button_rects",{})
+                            guide_rect=actual_rects.get("GUIDE / ?")
+                            nav_rect=actual_rects.get("NAV / H")
+                            assert guide_rect and nav_rect and guide_rect[2]>=44 and guide_rect[3]>=44 and nav_rect[2]>=44, (
+                                "Actual small-screen GUIDE/NAV touch targets missing",name,actual_rects)
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            def tap_rect(rect,game_state):
+                                px=bounds["x"]+(rect[0]+rect[2]/2)*bounds["width"]/game_state["viewport"][0]
+                                py=bounds["y"]+(rect[1]+rect[3]/2)*bounds["height"]/game_state["viewport"][1]
+                                assert 0<=px<=size["width"] and 0<=py<=size["height"], (
+                                    "G1 real touch control is clipped",name,rect,(px,py))
+                                page.touchscreen.tap(px,py)
+                            tap_rect(guide_rect,after_help)
+                            deadline=time.monotonic()+18
+                            opened={}
+                            while time.monotonic()<deadline:
+                                opened=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if opened.get("operator_guide",{}).get("visible") is True:
+                                    break
+                                page.wait_for_timeout(180)
+                            assert opened.get("operator_guide",{}).get("visible") is True, (
+                                "Real GUIDE touch button cannot reopen native Godot hint panel",name)
+                            close=opened.get("operator_guide",{}).get("close_rect")
+                            assert close and close[2]>=44 and close[3]>=44, (
+                                "Native guide lacks 44px touch close target",name,close)
+                            tap_rect(close,opened)
+                            deadline=time.monotonic()+18
+                            closed={}
+                            while time.monotonic()<deadline:
+                                closed=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if closed.get("operator_guide",{}).get("visible") is False:
+                                    break
+                                page.wait_for_timeout(180)
+                            assert closed.get("operator_guide",{}).get("visible") is False, (
+                                "Native guide cannot be closed on mobile",name)
+                            way_before=closed.get("wayfinder",{}).get("enabled")
+                            tap_rect(nav_rect,closed)
+                            deadline=time.monotonic()+18
+                            after_nav={}
+                            while time.monotonic()<deadline:
+                                after_nav=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if after_nav.get("wayfinder",{}).get("enabled") != way_before:
+                                    break
+                                page.wait_for_timeout(180)
+                            assert after_nav.get("wayfinder",{}).get("enabled") != way_before and after_nav.get("scanned") is False, (
+                                "Real mobile NAV/H input fails or changes core game",name)
+                        report.setdefault("g1_real_onboarding",{})[name] = (
+                            "actual F1 tier1/tier2/ESC + optional mobile GUIDE/NAV touch PASS")
+
                         # V18 actual WebGL Godot input: measure honest local
                         # frame state, toggle opt-in AUTO via K, then back off.
                         # This is NOT a physical device frame-rate claim.
