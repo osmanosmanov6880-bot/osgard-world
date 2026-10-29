@@ -50,6 +50,7 @@ var city_reign_facades: Node3D
 var city_reign_street_architecture: Node3D
 var city_reign_street_identity: Node3D
 var city_reign_squares: Node3D
+var city_reign_business_portfolio: Node3D
 var city_reign_hero_architecture: Node3D
 var city_reign_purchased_skyline: Node3D
 var city_reign_public_works: Node3D
@@ -89,6 +90,7 @@ const CITY_REIGN_FACADE = preload("res://scripts/city_reign_cinematic_facades.gd
 const CITY_REIGN_STREET_ARCHITECTURE = preload("res://scripts/city_reign_street_architecture.gd")
 const R173_STREET_IDENTITY = preload("res://scripts/city_reign_district_identity.gd")
 const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.gd")
+const R174_OWNED_BUSINESS = preload("res://scripts/city_reign_owned_business_world.gd")
 const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.gd")
 const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_skyline.gd")
 const CITY_REIGN_TOWER_BODY = preload("res://scripts/city_reign_tower_body_lod.gd")
@@ -157,6 +159,11 @@ func _ready() -> void:
 	city_root.add_child(city_reign_hero_architecture)
 	city_reign_squares = CITY_REIGN_SQUARES.new()
 	city_root.add_child(city_reign_squares)
+	# R174: real purchased business value physically appears by existing
+	# Market Gallery and Freight plaza; source GameState still owns purchases.
+	city_reign_business_portfolio = R174_OWNED_BUSINESS.new()
+	city_root.add_child(city_reign_business_portfolio)
+	city_reign_business_portfolio.call("sync_state",GameState.data,GameState.locale,GameState.BUSINESSES)
 	_create_waypoint_marker()
 	_create_project_visuals()
 	# B57: authentic saved civic choice physically changes the playable city.
@@ -412,6 +419,8 @@ func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 	# Reuse the ORIGINAL 1.1s live-game chunk update tick. Cinematic art
 	# stays near the camera; distant meshes can keep the source cheap LOD.
 	_apply_camera_tower_lod(focus,quality)
+	if city_reign_business_portfolio != null:
+		city_reign_business_portfolio.call("update_view",focus)
 	# Update only when original world chunk culling runs, not every frame.
 	if focus.is_finite():
 		streetlight_focus = focus
@@ -725,6 +734,8 @@ func apply_visual_budget(mode: String) -> void:
 		city_reign_street_identity.call("set_quality",visual_budget)
 	if city_reign_squares != null:
 		city_reign_squares.call("set_quality",visual_budget)
+	if city_reign_business_portfolio != null:
+		city_reign_business_portfolio.call("update_quality",visual_budget)
 	if city_reign_hero_architecture != null:
 		city_reign_hero_architecture.call("set_quality",visual_budget)
 	if city_reign_purchased_skyline != null:
@@ -799,6 +810,8 @@ func _apply_lighting() -> void:
 			int(GameState.data.get("energy",100)),weather_mode)
 	if city_reign_squares != null:
 		city_reign_squares.call("sync_ambience",ambience_time,int(GameState.data.get("energy",100)))
+	if city_reign_business_portfolio != null:
+		city_reign_business_portfolio.call("update_power",ambience_time,int(GameState.data.get("energy",100)))
 	if city_reign_hero_architecture != null:
 		city_reign_hero_architecture.call("update_ambience",ambience_time,int(GameState.data.get("energy",100)))
 	if city_reign_public_works != null:
@@ -866,6 +879,9 @@ func update_development() -> void:
 		city_reign_public_works.call("sync_state",state,GameState.locale)
 	if city_reign_park_furniture != null:
 		city_reign_park_furniture.call("sync_state",state)
+	# The same buy_business() transaction updates actual street ownership.
+	if city_reign_business_portfolio != null:
+		city_reign_business_portfolio.call("sync_state",state,GameState.locale,GameState.BUSINESSES)
 
 func _update_property_visuals() -> void:
 	var owned: Dictionary = GameState.data.get("properties",{})
@@ -879,6 +895,8 @@ func _update_property_visuals() -> void:
 		orb.material_override = _material(Color("e5bd72") if level > 0 else Color("6e9db7"),0.2,0.25,true)
 
 func update_language(lang: String) -> void:
+	if city_reign_business_portfolio != null:
+		city_reign_business_portfolio.call("sync_state",GameState.data,lang,GameState.BUSINESSES)
 	if city_reign_public_works != null:
 		city_reign_public_works.call("sync_state",GameState.data,lang)
 	if city_reign_squares != null:
