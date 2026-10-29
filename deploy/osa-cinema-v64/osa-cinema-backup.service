@@ -1,0 +1,17 @@
+[Unit]
+Description=OSA CINEMA verified SQLite backup/recovery rehearsal (not encrypted)
+After=osgard-cinema.service
+
+[Service]
+Type=oneshot
+User=osgard
+Group=osgard
+WorkingDirectory=/srv/osgard-world
+Environment=PYTHONDONTWRITEBYTECODE=1
+UMask=0077
+ExecStart=/bin/sh /srv/osgard-world/deploy/osa-cinema-v64/backup-once.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/osgard-cinema /var/backups/osgard-cinema

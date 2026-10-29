@@ -1,0 +1,34 @@
+[Unit]
+Description=OSGARD Core with OSA Cinema private production workspace (self-hosted pilot)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=osgard
+Group=osgard
+WorkingDirectory=/srv/osgard-world
+Environment=PYTHONDONTWRITEBYTECODE=1
+EnvironmentFile=-/etc/osgard-cinema/core.env
+ExecStart=/usr/bin/python3 /srv/osgard-world/server/core_server.py --root /srv/osgard-world/dist --database /var/lib/osgard-cinema/core.sqlite3 --host 127.0.0.1 --port 4173 --public-origin https://cinema.example.com
+Restart=on-failure
+RestartSec=5s
+UMask=0077
+StateDirectory=osgard-cinema
+StateDirectoryMode=0700
+RuntimeDirectory=osgard-cinema
+RuntimeDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/var/lib/osgard-cinema
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target
