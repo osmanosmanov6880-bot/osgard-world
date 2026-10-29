@@ -36,13 +36,12 @@ static func snapshot(active: Dictionary,locale: String="ru") -> Dictionary:
 	var fraction: float=CARGO.completion_fraction(active)
 	var ready: bool=CARGO.ready(active)
 	var condition: int=clampi(roundi(float(progress["condition"])),5,100)
-	var distance: int=mini(CARGO.MAX_TRACKED_METERS,roundi(float(progress["meters"])))
+	var distance: int=mini(int(CARGO.MAX_TRACKED_METERS),roundi(float(progress["meters"])))
 	var required: int=roundi(float(progress["required"]))
 	var compatible: bool=bool(progress.get("legacy",false))
 	var status: String=str(l["legacy"]) if compatible else (
 		str(l["ready"]) if ready else str(l["driving"]))
-	var readout: String=str(l["cargo"])+" "+str(condition)+"%  ·  "+
-		str(l["route"])+" "+str(distance)+"/"+str(required)+" "+str(l["meters"])
+	var readout: String=str(l["cargo"])+" "+str(condition)+"%  ·  "+str(l["route"])+" "+str(distance)+"/"+str(required)+" "+str(l["meters"])
 	return {"active":true,"valid":true,"fraction":fraction,
 		"condition":condition,"meters":distance,"required":required,
 		"legacy":compatible,"distance_met":ready,

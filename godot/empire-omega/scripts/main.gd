@@ -768,6 +768,8 @@ func _apply_visual_budget() -> void:
 	var effective: String = adaptive_graphics.effective_quality()
 	if car != null:
 		car.update_headlights(float(GameState.data.get("day_clock",12.0)),effective)
+	if cargo_visual != null:
+		cargo_visual.call("set_quality",effective)
 	world.sun.shadow_enabled = effective != "low"
 	world.apply_visual_budget(effective)
 	if road_guidance != null: road_guidance.set_quality(effective)

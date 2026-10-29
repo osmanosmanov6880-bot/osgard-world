@@ -45,7 +45,7 @@ static func within_original_envelope(mesh: Mesh) -> bool:
 	if mesh==null or mesh.get_surface_count()!=1:
 		return false
 	var bb: AABB=mesh.get_aabb()
-	return mesh.surface_get_array_len(0)<=MAX_VERTICES and
+	return (mesh.surface_get_array_len(0)<=MAX_VERTICES and
 		bb.position.x>=-0.37 and bb.end.x<=0.37 and
 		bb.position.y>=-0.25 and bb.end.y<=0.25 and
-		bb.position.z>=-0.435 and bb.end.z<=0.435
+		bb.position.z>=-0.435 and bb.end.z<=0.435)
