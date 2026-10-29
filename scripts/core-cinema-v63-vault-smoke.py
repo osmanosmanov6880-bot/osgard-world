@@ -113,8 +113,13 @@ class VaultTests(base.EvidenceTests):
             self.assertIn(status,(400,415),(name,status))
         self.assertEqual(self.listing(wid)[1]['assets'],[])
         self.assertEqual(self.view(wid)[1]['space']['version'],1)
-        oversized=b'a'*(MAX_ASSET_BYTES+1)
-        self.assertEqual(self.upload_raw(wid,1,oversized,'big.txt','text/plain')[0],413)
+        # Test the Content-Length guard without sending 8 MiB into a socket
+        # that intentionally closes immediately on oversized requests.
+        path='cinema/spaces/'+wid+'/vault/upload'
+        headers={'Content-Type':'text/plain','X-Cinema-File-Name':'big.txt',
+                 'X-Space-Version':'1','Idempotency-Key':uuid.uuid4().hex,
+                 'Content-Length':str(MAX_ASSET_BYTES+1)}
+        self.assertEqual(self.raw('POST',path,b'a',self.owner['token'],headers)[0],413)
         self.assertEqual(self.upload_raw(wid,1,b'','empty.txt','text/plain')[0],413)
         self.assertEqual(self.listing(wid)[1]['assets'],[])
 
