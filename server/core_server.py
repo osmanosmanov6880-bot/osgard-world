@@ -31,6 +31,7 @@ import core_programs
 import core_inherit
 import core_cinema
 import core_cinema_evidence
+import core_cinema_vault
 from core_model import Fault, require, text, initial, patch, action, economics, simulation, metrics, now, uid
 
 SCHEMA='''
@@ -62,7 +63,7 @@ class Store:
         Path(path).parent.mkdir(parents=True,exist_ok=True)
         with self.connect() as db:
             require(db.execute('PRAGMA user_version').fetchone()[0] in (0,1),'Версия базы новее этого сервера. Обновите Core.')
-            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+nebula_payments.SCHEMA+core_programs.SCHEMA+core_cinema.SCHEMA+core_cinema_evidence.SCHEMA)
+            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+nebula_payments.SCHEMA+core_programs.SCHEMA+core_cinema.SCHEMA+core_cinema_evidence.SCHEMA+core_cinema_vault.SCHEMA)
             core_inherit.initialize(db)
         self.commerce=core_commerce.Commerce(self,commerce_config,commerce_provider)
         self.nebula=nebula_payments.Payments(self,nebula_config or nebula_payments.Config.from_env(),nebula_provider)
@@ -141,6 +142,8 @@ class Store:
             commerce_project=re.fullmatch(r'projects/([a-f0-9]{32})/commerce',route)
             if commerce_project:return self.commerce.project_orders(db,commerce_project[1],actor)
             if route=='cinema/spaces':return core_cinema.listing(db,actor)
+            vault_route=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/vault',route)
+            if vault_route:return core_cinema_vault.listing(db,vault_route[1],actor)
             evidence_route=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/evidence',route)
             if evidence_route:return core_cinema_evidence.listing(db,evidence_route[1],actor)
             cinema_route=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})',route)
@@ -221,7 +224,7 @@ class Store:
                 old=json.loads(previous['response'])
                 if route.startswith(core_inherit.PREFIX):core_inherit.retry_guard(db,actor,key)
                 if route=='teams':core_teams.access(db,old['teamId'],actor)
-                cinema_retry=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})(?:/evidence)?',route)
+                cinema_retry=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})(?:/(?:evidence|vault))?',route)
                 if cinema_retry:core_cinema.access(db,cinema_retry[1],actor,write=True)
                 if route=='cinema/spaces' and 'workspaceId' in old:core_cinema.access(db,old['workspaceId'],actor,owner=True)
                 team_retry=re.fullmatch(r'teams/([a-f0-9]{32})',route)
@@ -239,11 +242,13 @@ class Store:
             team_mutation=re.fullmatch(r'teams/([a-f0-9]{32})',route)
             program_mutation=re.fullmatch(r'learning/enrollments/([a-f0-9]{32})',route)
             cinema_change=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})',route)
+            vault_change=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/vault',route)
             evidence_change=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/evidence',route)
             if route.startswith(core_inherit.PREFIX):result=core_inherit.mutate(db,route,actor,payload,key)
             elif route=='cinema/spaces':result=core_cinema.create(db,actor,payload)
             elif cinema_change:result=core_cinema.mutate(db,cinema_change[1],actor,payload)
             elif evidence_change:result=core_cinema_evidence.mutate(db,evidence_change[1],actor,payload)
+            elif vault_change:result=core_cinema_vault.mutate(db,vault_change[1],actor,payload)
             elif program_mutation:result=core_programs.mutate(self,db,program_mutation[1],actor,payload)
             elif route=='teams':result=core_teams.create(db,actor,payload)
             elif team_mutation:result=core_teams.mutate(self,db,team_mutation[1],actor,payload)
@@ -401,6 +406,27 @@ class Handler(SimpleHTTPRequestHandler):
         except (ValueError,UnicodeError):raise Fault('json','Неверный JSON.')
         require(isinstance(p,dict),'Нужен JSON-объект.')
         return p
+    def cinema_binary_body(self):
+        require(not self.headers.get('Transfer-Encoding'),'Chunked uploads are not supported.','body',400)
+        length=self.headers.get('Content-Length','')
+        require(bool(re.fullmatch(r'[0-9]{1,9}',length)),'Требуется длина загрузки.','body',411)
+        size=int(length)
+        if size<=0 or size>core_cinema_vault.MAX_ASSET_BYTES:
+            self.close_connection=True
+            raise Fault('file_size','Размер одного файла не может превышать 8 МиБ.',413)
+        data=self.rfile.read(size)
+        require(len(data)==size,'Передача файла прервалась.','incomplete',400)
+        return data
+    def cinema_attachment(self,asset):
+        self.send_response(200)
+        self.send_header('Content-Type','application/octet-stream')
+        self.send_header('Content-Disposition','attachment; filename="osa-cinema-'+asset['assetId']+'.bin"')
+        self.send_header('Content-Length',str(asset['size']))
+        self.send_header('X-OSA-Cinema-SHA256',asset['actualSha256'])
+        self.send_header('Cross-Origin-Resource-Policy','same-origin')
+        self.send_header('X-Frame-Options','DENY')
+        self.end_headers()
+        self.wfile.write(asset['bytes'])
     def raw_json_body(self):
         require(self.headers.get('Content-Type','').split(';')[0]=='application/json','Ожидается JSON.','content_type',415)
         try:size=int(self.headers.get('Content-Length','0'))
@@ -432,6 +458,20 @@ class Handler(SimpleHTTPRequestHandler):
                 if route=='auth/recover':return self.output(core_account.recover(self.server.store,self.body()))
                 if route in ('auth/register','auth/login'):return self.output(self.server.store.auth(route.split('/')[1],self.body(),self.headers.get('User-Agent','')))
             auth=self.headers.get('Authorization','');actor=self.server.store.actor(auth[7:] if auth.startswith('Bearer ') else '')
+            private_asset=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/vault/([a-f0-9]{32})/download',route)
+            if method=='GET' and private_asset:
+                asset=core_cinema_vault.download(self.server.store,private_asset[1],private_asset[2],actor['id'])
+                return self.cinema_attachment(asset)
+            private_upload=re.fullmatch(r'cinema/spaces/([a-f0-9]{32})/vault/upload',route)
+            if method=='POST' and private_upload:
+                encoded_name=self.headers.get('X-Cinema-File-Name','')
+                mime=self.headers.get('Content-Type','').split(';')[0]
+                try:expected_version=int(self.headers.get('X-Space-Version',''))
+                except ValueError:raise Fault('version_conflict','Укажите версию пространства.',409)
+                body=self.cinema_binary_body()
+                return self.output(core_cinema_vault.upload(self.server.store,private_upload[1],
+                    actor['id'],body,encoded_name,mime,self.headers.get('Idempotency-Key'),
+                    expected_version,self.headers.get('X-Cinema-Evidence-Id','')))
             if method=='GET' and route=='nebula/inventory':
                 return self.output(self.server.store.nebula.inventory(actor['id']))
             if method=='POST' and route=='nebula/checkout':

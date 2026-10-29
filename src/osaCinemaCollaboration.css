@@ -61,7 +61,7 @@ main.osa-studio.osa-collab-page{background:#090b0d;color:#f4e9d9;min-height:100v
 .osa-collab-kpis strong{color:#e5c494;font:400 clamp(27px,3vw,47px)/1 Georgia,serif}
 .osa-collab-kpis>div:last-child strong{font:400 clamp(19px,2.4vw,32px) Georgia,serif;color:#efa88e}
 .osa-collab-kpis span{font:10px/1.6 monospace;color:#c2b29e}
-.osa-collab-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid #6b5136;background:#171919}
+.osa-collab-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-bottom:1px solid #6b5136;background:#171919}
 .osa-collab-tabs button{border:0;border-bottom:2px solid transparent;background:transparent;color:#bba68d;font:12px 'Segoe UI',sans-serif;cursor:pointer;min-height:57px}
 .osa-collab-tabs button[aria-selected=true]{color:#f4d09f;border-bottom-color:#e5b87c;background:#241f18}
 .osa-collab-tabpanel{padding:30px clamp(18px,3vw,43px) 42px}
@@ -109,3 +109,6 @@ main.osa-studio.osa-collab-page{background:#090b0d;color:#f4e9d9;min-height:100v
 /* V62 evidence tab adopts the native Core shell spacing without changing the initial bundle. */
 .osa-collab-evidence-container{padding:clamp(18px,2.5vw,35px)}
 @media(max-width:470px){.osa-collab-tabs button{font-size:10px;min-height:51px;padding:4px}.osa-collab-evidence-container{padding:14px}}
+
+/* V63: fifth tab keeps touch targets, no horizontal scrolling at 320px. */
+@media(max-width:420px){.osa-collab-tabs button{font-size:10px;letter-spacing:-.035em;padding:4px 2px;min-width:0}}
