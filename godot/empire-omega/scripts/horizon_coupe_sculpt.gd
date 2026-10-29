@@ -41,6 +41,41 @@ const RING = [
 	Vector2(0.84,0.96),Vector2(0.55,0.98)
 ]
 
+# R167: authored, bounded Hermite longitudinal panel smoothing. The
+# SAME one-surface MeshInstance is kept for original garage and gameplay.
+# Each source cross section remains within its original bounds to prevent
+# wheel/collider overlap and roof changes from modifying physical authority.
+const PROFILE_SUBDIVISIONS: int = 3
+const MAX_VERTEX_BUDGET: int = 3400
+
+static func _bounded_section(profile: Array,segment: int,t: float) -> Vector4:
+	var first: Vector4 = profile[segment]
+	var last: Vector4 = profile[segment+1]
+	if t<=0.0: return first
+	if t>=1.0: return last
+	var prev: Vector4 = profile[maxi(segment-1,0)]
+	var next: Vector4 = profile[mini(segment+2,sections.size()-1)]
+	var m0: Vector4 = (last-prev)*0.5
+	var m1: Vector4 = (next-first)*0.5
+	var t2: float = t*t
+	var t3: float = t2*t
+	var smooth: Vector4 = first*(2.0*t3-3.0*t2+1.0)+m0*(t3-2.0*t2+t)+last*(-2.0*t3+3.0*t2)+m1*(t3-t2)
+	return Vector4(
+		clampf(smooth.x,minf(first.x,last.x),maxf(first.x,last.x)),
+		clampf(smooth.y,minf(first.y,last.y),maxf(first.y,last.y)),
+		clampf(smooth.z,minf(first.z,last.z),maxf(first.z,last.z)),
+		clampf(smooth.w,minf(first.w,last.w),maxf(first.w,last.w)))
+
+static func refined_profile(profile: Array,steps: int = PROFILE_SUBDIVISIONS) -> Array[Vector4]:
+	var result: Array[Vector4] = []
+	if profile.size()<2: return result
+	var bounded_steps: int = clampi(steps,1,PROFILE_SUBDIVISIONS)
+	for segment in range(profile.size()-1):
+		for sub in range(bounded_steps):
+			result.append(_bounded_section(profile,segment,float(sub)/float(bounded_steps)))
+	result.append(profile[profile.size()-1])
+	return result
+
 static func _point(section: Vector4, ring_index: int) -> Vector3:
 	var contour: Vector2 = RING[ring_index]
 	var half_width: float = section.y
@@ -54,21 +89,24 @@ static func _vertex(st: SurfaceTool, at: Vector3, uv: Vector2) -> void:
 	st.set_uv(uv)
 	st.add_vertex(at)
 
-static func sculpt(name: String, profile: Array, finish: Material) -> MeshInstance3D:
+static func sculpt(name: String, profile: Array, finish: Material,
+		steps: int = PROFILE_SUBDIVISIONS) -> MeshInstance3D:
+	var sections: Array[Vector4] = refined_profile(profile,steps)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_smooth_group(0)
 	var count: int = RING.size()
-	for row in range(profile.size()-1):
+	for row in range(sections.size()-1):
 		for segment in range(count):
 			var next: int = (segment+1)%count
-			var a: Vector3 = _point(profile[row],segment)
-			var b: Vector3 = _point(profile[row],next)
-			var c: Vector3 = _point(profile[row+1],segment)
-			var d: Vector3 = _point(profile[row+1],next)
+			var a: Vector3 = _point(sections[row],segment)
+			var b: Vector3 = _point(sections[row],next)
+			var c: Vector3 = _point(sections[row+1],segment)
+			var d: Vector3 = _point(sections[row+1],next)
 			var u0: float = float(segment)/float(count)
 			var u1: float = float(segment+1)/float(count)
-			var v0: float = float(row)/float(profile.size()-1)
-			var v1: float = float(row+1)/float(profile.size()-1)
+			var v0: float = float(row)/float(sections.size()-1)
+			var v1: float = float(row+1)/float(sections.size()-1)
 			_vertex(st,a,Vector2(u0,v0))
 			_vertex(st,b,Vector2(u1,v0))
 			_vertex(st,c,Vector2(u0,v1))
@@ -76,8 +114,8 @@ static func sculpt(name: String, profile: Array, finish: Material) -> MeshInstan
 			_vertex(st,d,Vector2(u1,v1))
 			_vertex(st,c,Vector2(u0,v1))
 	# Close both ends so the sports car is solid when viewed from the road.
-	for cap_index in [0,profile.size()-1]:
-		var end: Vector4 = profile[cap_index]
+	for cap_index in [0,sections.size()-1]:
+		var end: Vector4 = sections[cap_index]
 		var mid := Vector3(0.0,(end.z+end.w)*0.5,end.x)
 		for index in range(count):
 			var following: int = (index+1)%count
@@ -89,7 +127,10 @@ static func sculpt(name: String, profile: Array, finish: Material) -> MeshInstan
 				_vertex(st,mid,Vector2(0.5,0.5))
 				_vertex(st,_point(end,following),Vector2(1,0))
 				_vertex(st,_point(end,index),Vector2(0,0))
+	# Smooth cross-sections have stable normals and generated tangents for
+	# original PBR clearcoat; the physical car and its collision do not change.
 	st.generate_normals()
+	st.generate_tangents()
 	var visual := MeshInstance3D.new()
 	visual.name = name
 	visual.mesh = st.commit()
