@@ -168,8 +168,12 @@ func configure(screen_size: Vector2) -> void:
     else:
         panel.offset_left = 8.0
         panel.offset_right = maxf(220.0,screen_size.x-8.0)
-        panel.offset_top = 185.0
-        panel.offset_bottom = 264.0
+        # Keep source W83's real second-finger camera swipe around
+        # x≈0.83*width, y≈205 physically clear. A 185px panel would put
+        # SKIP directly under the user's aiming finger and steal touchStart.
+        # Original W79 equipment dock starts well below this 284..363 HUD.
+        panel.offset_top = 284.0
+        panel.offset_bottom = 363.0
 
 func set_context(immersed: bool, piloting: bool, language: String,
         screen_size: Vector2) -> void:

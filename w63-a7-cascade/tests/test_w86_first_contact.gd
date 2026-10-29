@@ -49,6 +49,11 @@ func _check_view(ui: A7CascadeScreen, width: int, height: int) -> void:
     if width==320:
         _check(_not_overlapping(c.panel,ui.w85_field_guide.entry_button),
             "320px first-contact card cannot cover W85 HELP in its real narrow position")
+    if width < 640:
+        var drag_point: Vector2=Vector2(
+            stage.position.x+stage.size.x*0.83,stage.position.y+205.0)
+        _check(not c.action_button.get_global_rect().has_point(drag_point),
+            "W86 genuine SKIP never intercepts original W83 free-world physical second-finger camera swipe")
 
 func _run() -> void:
     var packed: PackedScene=load("res://Main.tscn") as PackedScene
