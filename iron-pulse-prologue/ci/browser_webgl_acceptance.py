@@ -462,6 +462,19 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 page.wait_for_timeout(180)
                             assert after_nav.get("wayfinder",{}).get("enabled") != way_before and after_nav.get("scanned") is False, (
                                 "Real mobile NAV/H input fails or changes core game",name)
+                            # Restore the original real navigation state before
+                            # running the V1-V18 baseline assertions below.
+                            # Do not weaken the old physical 3D marker checks.
+                            tap_rect(nav_rect,after_nav)
+                            deadline=time.monotonic()+18
+                            restored_nav={}
+                            while time.monotonic()<deadline:
+                                restored_nav=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if restored_nav.get("wayfinder",{}).get("enabled")==way_before:
+                                    break
+                                page.wait_for_timeout(180)
+                            assert restored_nav.get("wayfinder",{}).get("enabled")==way_before and restored_nav.get("scanned") is False, (
+                                "G1 NAV physical interaction is not reversible; baseline state not restored",name)
                         report.setdefault("g1_real_onboarding",{})[name] = (
                             "actual F1 tier1/tier2/ESC + optional mobile GUIDE/NAV touch PASS")
 
