@@ -232,6 +232,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 190s godot --headless --path iron-pulse-prologue --script res://tests/test_v18_adaptive_performance.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v18-performance.log"
           grep -q '^IRON PULSE V18 ADAPTIVE PERFORMANCE PASS:' "$RUNNER_TEMP/iron-pulse-v18-performance.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v18-performance.log"; then exit 1; fi
+      - name: G1 actual context onboarding across GRID HEAT AIR, 3D HUD and real touch controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_g1_operator_onboarding.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g1-real-onboarding.log"
+          grep -q '^IRON PULSE G1 REAL OPERATOR ONBOARDING PASS:' "$RUNNER_TEMP/iron-pulse-g1-real-onboarding.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g1-real-onboarding.log"; then exit 1; fi
       - name: V13 safe world-link contract to actual story campaign and original mission
         shell: bash
         run: |
