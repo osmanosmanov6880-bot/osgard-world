@@ -1,6 +1,25 @@
 import {test,expect} from '@playwright/test'
 import {PNG} from 'pngjs'
 // True exported source WebGL canvas, never a web image masquerading as gameplay.
+// The Godot canvas is intentionally animated; locator.screenshot() waits for
+// a "stable" element and can time out even while genuine WebGL is playable.
+// Fix the real canvas bounds once per test, then capture those exact live
+// pixels from the page without imposing false DOM element stability.
+async function originalGodotCapture(page,canvas){
+  const bounds=await canvas.boundingBox()
+  if(!bounds||bounds.width<300||bounds.height<200)
+    throw Error('Original Godot WebGL canvas has no valid visible bounds')
+  const viewport=page.viewportSize()
+  if(!viewport)throw Error('No real browser viewport')
+  const x=Math.max(0,Math.floor(bounds.x)), y=Math.max(0,Math.floor(bounds.y))
+  const width=Math.floor(Math.min(bounds.width,viewport.width-x))
+  const height=Math.floor(Math.min(bounds.height,viewport.height-y))
+  if(width<300||height<200)throw Error('Actual WebGL view clipped or invisible')
+  const clip={x,y,width,height}
+  return async()=>await page.screenshot({
+    clip,animations:'disabled',timeout:45000
+  })
+}
 function realPixelChange(a,b){
   const x=PNG.sync.read(a),y=PNG.sync.read(b)
   if(x.width!==y.width||x.height!==y.height)throw Error('Native source viewport changed')
@@ -29,14 +48,15 @@ test('real original playable Godot 3D camera switches STREET CLASSIC PANORAMA',a
   const webgl=await canvas.evaluate(el=>{const gl=el.getContext('webgl2');return !!gl&&!gl.isContextLost()})
   expect(webgl).toBe(true)
   await canvas.focus()
+  const capture=await originalGodotCapture(page,canvas)
   await page.waitForTimeout(1800)
-  const first=await canvas.screenshot()
+  const first=await capture()
   await page.keyboard.press('v')
   await page.waitForTimeout(2600)
-  const second=await canvas.screenshot()
+  const second=await capture()
   await page.keyboard.press('v')
   await page.waitForTimeout(2600)
-  const third=await canvas.screenshot()
+  const third=await capture()
   const deltaA=realPixelChange(first,second),deltaB=realPixelChange(second,third)
   expect(deltaA.fraction,'REAL 3D camera street->classic changes geometry perspective').toBeGreaterThan(0.012)
   expect(deltaB.fraction,'REAL 3D camera classic->panorama changes geometry perspective').toBeGreaterThan(0.012)
@@ -71,6 +91,7 @@ test('R164 COCKPIT ACTUAL WEBGL — enter physical car and render fourth camera'
   })
   expect(hardware,'Real original Godot WebGL2 context').toBe(true)
   await canvas.focus()
+  const capture=await originalGodotCapture(page,canvas)
   await page.waitForTimeout(1450)
   // Original GameState begins 5 metres from its actual physical car.
   // Enter it with the real E action. No debug teleports, test-only models
@@ -83,10 +104,10 @@ test('R164 COCKPIT ACTUAL WEBGL — enter physical car and render fourth camera'
     await page.waitForTimeout(740)
   }
   await page.waitForTimeout(900)
-  const realCockpit=await canvas.screenshot()
+  const realCockpit=await capture()
   await page.keyboard.press('v')
   await page.waitForTimeout(1950)
-  const outside=await canvas.screenshot()
+  const outside=await capture()
   const difference=realPixelChange(realCockpit,outside)
   expect(difference.fraction,
     'A physically rendered car cockpit must differ substantially from the real exterior chase camera'
@@ -125,6 +146,7 @@ test('R165 APEX ACTUAL WEBGL — accelerate and brake with original cockpit, nev
     return !!gl&&!gl.isContextLost()
   })).toBe(true)
   await canvas.focus()
+  const capture=await originalGodotCapture(page,canvas)
   await page.waitForTimeout(1200)
   // Same original native car spawn as previous R164 cockpit proof.
   // E genuinely enters the physical car. No test-only debug scene changes.
@@ -134,17 +156,17 @@ test('R165 APEX ACTUAL WEBGL — accelerate and brake with original cockpit, nev
     await page.keyboard.press('v')
     await page.waitForTimeout(500)
   }
-  const stationary=await canvas.screenshot()
+  const stationary=await capture()
   await page.keyboard.down('w')
   await page.waitForTimeout(2200)
   await page.keyboard.up('w')
   await page.waitForTimeout(350)
-  const accelerated=await canvas.screenshot()
+  const accelerated=await capture()
   await page.keyboard.down('s')
   await page.waitForTimeout(1100)
   await page.keyboard.up('s')
   await page.waitForTimeout(300)
-  const braking=await canvas.screenshot()
+  const braking=await capture()
   const drivePixels=realPixelChange(stationary,accelerated)
   const brakePixels=realPixelChange(accelerated,braking)
   expect(drivePixels.fraction,'Actual 3D cockpit must react visually to native W driving').toBeGreaterThan(0.022)
