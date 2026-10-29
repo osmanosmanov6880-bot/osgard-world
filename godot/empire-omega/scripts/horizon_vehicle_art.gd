@@ -4,6 +4,9 @@ const SCULPT = preload("res://scripts/horizon_coupe_sculpt.gd")
 const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_player_vehicle_profiles.gd")
 const R39_DETAIL = preload("res://scripts/horizon_r39_wheel_detail.gd")
+const CITY_REIGN_COCKPIT = preload("res://scripts/city_reign_cockpit_interior.gd")
+const R168_ATMOSPHERE = preload("res://scripts/city_reign_atmospheric_optics.gd")
+const R167_PRECISION = preload("res://scripts/city_reign_precision_bodywork.gd")
 ## OSGARD HORIZON DRIVE: original PBR sports coupe assembled in Godot.
 ## These are editable original meshes, not meshes or assets from Forza.
 ## Built for Godot 4.4.1 GL Compatibility / HTML5.
@@ -12,6 +15,10 @@ var painted_parts: Array[MeshInstance3D] = []
 var wheel_rigs: Array[Node3D] = []
 var wheel_detail_nodes: Array[Node3D] = []
 var brake_strip: MeshInstance3D
+var cockpit_interior: Node3D
+var precision_panel: MeshInstance3D
+var aero_spoiler: MeshInstance3D
+var aero_angle: float = 0.0
 var body_paint: Color = Color("d45835")
 var first_build := true
 var body_parts: Array[MeshInstance3D] = []
@@ -35,6 +42,10 @@ func _ready() -> void:
 	_create_wheels()
 	_attach_wheel_detail_packs()
 	_create_lighting()
+	# R164: 3 real PBR interior meshes built once and hidden outside
+	# the driver-seat camera. No extra car collider or Godot Camera3D.
+	cockpit_interior = CITY_REIGN_COCKPIT.new()
+	add_child(cockpit_interior)
 	var default_body: MeshInstance3D = get_node_or_null("FlowBody") as MeshInstance3D
 	var default_roof: MeshInstance3D = get_node_or_null("AerodynamicGreenhouse") as MeshInstance3D
 	original_flow = default_body.mesh if default_body != null else null
@@ -180,7 +191,7 @@ func _create_body() -> void:
 	aero_finish.metallic = 0.32
 	aero_finish.roughness = 0.38
 	_part("RearDiffuser",Vector3(2.78,0.14,0.56),Vector3(0,-0.64,2.30),Color("101a24"),0.22,0.34)
-	_part("RearSpoiler",Vector3(2.60,0.10,0.45),Vector3(0,0.36,2.26),Color("101b23"),0.25,0.30)
+	aero_spoiler = _part("RearSpoiler",Vector3(2.60,0.10,0.45),Vector3(0,0.36,2.26),Color("101b23"),0.25,0.30)
 	for sign in [-1.0,1.0]:
 		_part("SideSill",Vector3(0.18,0.16,3.42),Vector3(sign*1.26,-0.62,0),Color("121d25"),0.3,0.39)
 		_part("SpoilerBracket",Vector3(0.11,0.47,0.13),Vector3(sign*0.94,0.09,2.20),Color("17232a"),0.4,0.35)
@@ -215,6 +226,13 @@ func _create_body() -> void:
 	body_rest.append(upper_shell.transform)
 	# Separate slim metal roof seam, lit naturally rather than as a neon bar.
 	_part("RoofCentreRail",Vector3(0.12,0.026,1.28),Vector3(0,0.85,0.04),Color("a4b9bd"),0.73,0.21)
+	# R167: one cached 3D PBR surface with recessed carbon air mouths,
+	# machined grille ribs, sculpted hood creases and rear aero details.
+	# It shares original chassis visual spring and uses no collision.
+	precision_panel=R167_PRECISION.build()
+	add_child(precision_panel)
+	body_parts.append(precision_panel)
+	body_rest.append(precision_panel.transform)
 
 func _create_wheels() -> void:
 	for side in [-1.0,1.0]:
@@ -283,15 +301,57 @@ func _attach_wheel_detail_packs() -> void:
 		spin.add_child(detail)
 		wheel_detail_nodes.append(detail)
 
+func set_cockpit_active(value: bool) -> void:
+	if cockpit_interior != null:
+		cockpit_interior.set_active(value,self)
+
+func set_cockpit_data(forward_speed: float,steering: float,braking: float = 0.0,
+		lateral_motion: float = 0.0,reduced_motion: bool = false) -> void:
+	if cockpit_interior != null and cockpit_interior.active:
+		cockpit_interior.set_live_data(forward_speed,steering,braking,lateral_motion,reduced_motion)
+
+func sync_rotor_heat(axle_heat: Vector2) -> void:
+	# Real front/rear loads drive existing wheel rotors. Pooled meshes and
+	# materials survive arbitrary graphics-tier and camera switches.
+	if not axle_heat.is_finite():
+		return
+	for i in range(wheel_detail_nodes.size()):
+		var detail: Node3D = wheel_detail_nodes[i]
+		if is_instance_valid(detail):
+			# Wheel rigs are [left front,left rear,right front,right rear].
+			detail.call("apply_brake_heat",axle_heat.x if i%2==0 else axle_heat.y)
+
 func set_detail_quality(tier: String) -> void:
+	if precision_panel!=null:
+		precision_panel.visible=tier!="low"
 	for item in wheel_detail_nodes:
 		if is_instance_valid(item):
 			item.call("set_quality",tier)
 
+func set_headlamp_illumination(hour: float,tier: String) -> void:
+	# R168: reuse the TWO original R167 triple-band lens materials. No new
+	# mesh, light, camera, shadow or frame-local material allocation.
+	var energy: float = R168_ATMOSPHERE.headlamp_energy(hour,tier)
+	var roughness: float = 0.18 if energy > 0.70 else 0.24
+	for lamp_name in ["LeftLED","RightLED"]:
+		var lens: MeshInstance3D = get_node_or_null(lamp_name) as MeshInstance3D
+		if lens == null:
+			continue
+		var finish: StandardMaterial3D = lens.material_override as StandardMaterial3D
+		if finish == null:
+			continue
+		if absf(finish.emission_energy_multiplier-energy)>0.015:
+			finish.emission_energy_multiplier = energy
+		if not is_equal_approx(finish.roughness,roughness):
+			finish.roughness = roughness
+
 func _create_lighting() -> void:
 	# Emissive surfaces, not expensive realtime omni lights per vehicle.
-	_part("LeftLED",Vector3(0.78,0.13,0.045),Vector3(-.83,-.29,-2.43),Color("d9f2ff"),0.0,0.15,false,true)
-	_part("RightLED",Vector3(0.78,0.13,0.045),Vector3(.83,-.29,-2.43),Color("d9f2ff"),0.0,0.15,false,true)
+	var left_led: MeshInstance3D=_part("LeftLED",Vector3(0.78,0.13,0.045),Vector3(-.83,-.29,-2.43),Color("d9f2ff"),0.0,0.15,false,true)
+	var right_led: MeshInstance3D=_part("RightLED",Vector3(0.78,0.13,0.045),Vector3(.83,-.29,-2.43),Color("d9f2ff"),0.0,0.15,false,true)
+	# Native emissive geometry, the SAME two original source headlamp draws.
+	left_led.mesh=R167_PRECISION.light_mesh()
+	right_led.mesh=R167_PRECISION.light_mesh()
 	brake_strip = _part("FullWidthRearLight",Vector3(2.25,0.10,0.055),Vector3(0,-0.24,2.52),Color("ff5861"),0.0,0.2,false,true)
 
 func set_visual_variant(id: String) -> void:
@@ -355,6 +415,37 @@ func set_brake_lights(on: bool) -> void:
 	var mat := brake_strip.material_override as StandardMaterial3D
 	if mat != null:
 		mat.emission_energy_multiplier = 3.5 if on else 0.45
+
+func sync_brake_response(pressure: float,braking: bool,dt: float) -> void:
+	# R165: source-physical brake LIGHT RESPONSE, no new lights/draw
+	# surfaces/materials or frame-local GPU allocations.
+	if brake_strip==null or not is_finite(pressure) or not is_finite(dt):
+		return
+	var mat: StandardMaterial3D = brake_strip.material_override as StandardMaterial3D
+	if mat==null:
+		return
+	var intensity: float = 0.38+3.20*clampf(pressure,0.0,1.0) if braking else 0.38
+	var alpha: float = 1.0-exp(-clampf(dt,0.0,0.1)*19.0)
+	mat.emission_energy_multiplier = lerpf(mat.emission_energy_multiplier,intensity,alpha)
+
+func sync_aero_feedback(forward_speed: float,brake_pressure: float,dt: float,
+		reduced_motion: bool = false) -> void:
+	# The existing rear spoiler is a visual response only. It NEVER adds
+	# traction, downforce, braking or collision; NO new MeshInstance3D.
+	if aero_spoiler==null or not is_finite(forward_speed) or (
+			not is_finite(brake_pressure)) or not is_finite(dt) or dt<=0.0:
+		return
+	var airspeed: float = clampf((absf(forward_speed)-10.0)/19.0,0.0,1.0)
+	var brake: float = clampf(brake_pressure,0.0,1.0)
+	var target: float = 0.0 if reduced_motion else airspeed*brake*0.22
+	aero_angle=lerpf(aero_angle,target,1.0-exp(-clampf(dt,0.0,0.1)*7.0))
+	# In the actual scene simulate_chassis has already applied contact lean,
+	# so this computes a deterministic final pose without angle accumulation.
+	var index: int = body_parts.find(aero_spoiler)
+	if index<0: return
+	var road_lean: Basis=Basis.from_euler(Vector3(pitch_angle,0.0,roll_angle))
+	var neutral: Transform3D=Transform3D(road_lean,Vector3(0,ride_bob,0))*body_rest[index]
+	aero_spoiler.transform=neutral*Transform3D(Basis(Vector3.RIGHT,-aero_angle),Vector3.ZERO)
 
 func simulate_chassis(forward_speed: float, yaw_rate: float, forward_acceleration: float,
 		grip: float, handbrake: bool, contacts: Array[float], dt: float,

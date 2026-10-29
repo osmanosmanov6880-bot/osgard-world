@@ -36,6 +36,28 @@ def engine(i,t,n):
  return 0.24*math.sin(2*math.pi*90*t)+0.12*math.sin(2*math.pi*180*t)+0.09*math.sin(2*math.pi*270*t)+0.09*math.sin(2*math.pi*45*t)
 save('engine_low.wav',2.0,engine)
 
+# R169: original deterministic source-generated harmonic load layer, with
+# exact integer cycle counts for seamless two-second looping.
+def engine_load_sound(i,t,n):
+ breathing=0.72+0.18*math.cos(2*math.pi*8*t)
+ return breathing*(0.21*math.sin(2*math.pi*120*t)+0.15*math.sin(2*math.pi*240*t)+0.07*math.sin(2*math.pi*360*t))+0.05*math.sin(2*math.pi*55*t)
+save('engine_load.wav',2.0,engine_load_sound)
+
+# R169: bounded filtered road-grain noise. Independent seeded source means
+# existing weather/ambience recordings retain their exact previous hashes.
+n_road=RATE*2
+tyre_rng=random.Random(917654)
+noise=[tyre_rng.uniform(-1.0,1.0) for _ in range(n_road)]
+surface=[0.0]*n_road
+memory=0.0
+for j in range(n_road*3):
+ memory=0.88*memory+0.12*noise[j%n_road]
+ if j>=2*n_road:
+  surface[j-2*n_road]=memory
+def tyre_rolling_sound(i,t,n):
+ return 0.35*surface[i]+0.025*math.sin(2*math.pi*48*t)
+save('tyre_roll.wav',2.0,tyre_rolling_sound)
+
 s=[0.0]
 def rain(i,t,n):
  x=r.random()*2-1

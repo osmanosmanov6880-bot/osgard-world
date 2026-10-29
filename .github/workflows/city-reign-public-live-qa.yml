@@ -1,0 +1,98 @@
+name: CITY REIGN - independent LIVE public original Godot desktop/mobile Chromium QA
+
+# Public QA is dispatched ONLY after a release is verified, never in a
+# race against ongoing SSH upload. The release workflow also runs it itself.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Full 40-character SHA of already published source
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: city-reign-public-native-browser-acceptance
+  cancel-in-progress: true
+
+jobs:
+  live-game-independent-original-WebGL:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CITY_REIGN_EXPECTED_SHA: ${{ inputs.expected_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify real published source manifest, not a fake image or old Omega
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 - <<'PY'
+          import json,urllib.request,os,re
+          expected=os.environ.get('CITY_REIGN_EXPECTED_SHA','')
+          assert re.fullmatch('[0-9a-f]{40}',expected)
+          url='https://osgard.world/games/city-reign/release.json'
+          req=urllib.request.Request(url,
+            headers={'Cache-Control':'no-cache','Accept-Encoding':'identity'})
+          with urllib.request.urlopen(req,timeout=30) as response:
+            assert response.status==200
+            d=json.load(response)
+          assert d['source_commit']==expected
+          assert d['channel']=='city-reign-preview'
+          assert d['engine']=='Godot 4.4.1'
+          assert d['main_scene']=='res://scenes/main.tscn'
+          assert d['native_tests']=='passed'
+          print('PASS published original Godot SHA and legitimate main scene')
+          PY
+      - name: Install pinned real Chromium, WebGL decoder and Node test driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Inspect actual LIVE public original 3D canvas at desktop and phone viewport
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          CITY_REIGN_PUBLIC_EVIDENCE_DIR: city-reign-public-live-evidence
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            node scripts/city-reign-public-live-qa.mjs
+          python3 - <<'PY'
+          import json,pathlib,os
+          p=pathlib.Path('city-reign-public-live-evidence')
+          m=json.loads((p/'PUBLIC-REAL-GODOT-ACCEPTANCE.json').read_text())
+          assert m['status']=='PASS'
+          assert m['source_sha']==os.environ['CITY_REIGN_EXPECTED_SHA']
+          assert len(m['screens'])==2
+          assert m['screens'][0]['actualInputChecked'] is True
+          assert m['screens'][0]['actualCameraSwitchChecked'] is True
+          assert m['screens'][0]['originalCameraPixelDifference']>6
+          assert (p/'desktop-1366x768-real-3d-camera-after-V.png').stat().st_size>12000
+          for row in m['screens']:
+            assert row['engine']['actualWebGL2']
+            assert not row['engine']['lost']
+            assert row['originalFrame']['realWorldEdges']
+            assert (p/(row['name']+'-real-Godot-world.png')).stat().st_size>12000
+          print('PASS: authentic ORIGINAL CITY REIGN is interactive on desktop and renders on phone-sized Chromium')
+          PY
+      - name: Upload honest original live screenshots and actual engine diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-real-live-desktop-mobile-${{ github.run_id }}
+          path: city-reign-public-live-evidence/
+          if-no-files-found: warn
+          retention-days: 21

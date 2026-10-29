@@ -11,8 +11,11 @@ const R90_SPEED = preload("res://scripts/horizon_r90_speed_dial.gd")
 const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
 const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
+const R170_EPISODE = preload("res://scripts/city_reign_episode_sequence.gd")
 const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_premium_garage.gd")
+const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
+const DRIVER_SENSE = preload("res://scripts/city_reign_driver_awareness.gd")
 const CITY_REIGN_SHOWROOM = preload("res://scripts/city_reign_hero_showroom.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
@@ -116,7 +119,7 @@ const TRANSLATIONS = {
 		"action_pause_game":"Пауза",
 		"action_show_map":"Мини-карта","action_field_journal":"Полевой журнал",
 		"action_enter_interior":"Войти / выйти из здания",
-		"action_diagnostics":"Производительность (F3)",
+		"action_diagnostics":"Производительность (F3)","action_camera_cycle":"Режим камеры (V)",
 		"action_buy_business":"Купить бизнес",
 		"action_advance_turn":"Следующий такт",
 		"action_save_game":"Сохранить",
@@ -124,7 +127,7 @@ const TRANSLATIONS = {
 		"action_language":"Сменить язык",
 		"action_pay_traffic_fines":"Оплатить штраф у мэрии","brand":"CITY REIGN  ·  ВЛАСТЬ НАД ГОРОДОМ","market_hint":"B — купить торговый бизнес","budget_graph":"ИСТОРИЯ КАЗНЫ / ЛИЧНЫХ ДЕНЕГ","sub":"ОТКРЫТЫЙ МИР / ПРАВЛЕНИЕ",
 		"cash":"Казна","wallet":"Личные деньги","business_income":"Доход бизнеса","invest":"ВЛОЖИТЬ 250 кр. В ГОРОД","contracts":"КОММЕРЧЕСКИЕ РЕЙСЫ","fuel":"Топливо","refueled":"Машина заправлена: −85 кр.","refuel_hint":"Для заправки нужно 85 кр. и неполный бак","accepted":"Груз принят: следуйте к пункту доставки","completed":"Доставка выполнена","unavailable":"Задания временно недоступны","population":"Население","stability":"Стабильность","energy":"Энергия","water":"Вода","food":"Продовольствие",
-		"turn":"Такт","mission":"МИССИЯ","hint":"WASD — идти · E — авто · F — действие · J — житель · T — автошкола · C — события · R — помощь · I — здание · Tab — правление · F3 — FPS",
+		"turn":"Такт","mission":"МИССИЯ","hint":"WASD — идти · E — авто · F — действие · J — житель · T — автошкола · C — события · R — помощь · I — здание · Tab — правление · V — камера · F3 — FPS",
 		"strategy":"КАБИНЕТ ПРАВИТЕЛЯ","close":"ЗАКРЫТЬ (Tab)","district":"РАЙОН","development":"СТРОИТЕЛЬСТВО","research":"ИССЛЕДОВАНИЯ",
 		"business":"БИЗНЕС","tax":"Налог","tax_minus":"− 2%","tax_plus":"+ 2%","policy":"Курс политики","balance":"Баланс","industry":"Промышленность","energy_policy":"Энергетика","welfare":"Социальный курс",
 		"forecast":"ПРОГНОЗ СЛЕДУЮЩЕГО ТАКТА","income":"Доходы","expenses":"Расходы","net":"Итог","science":"Наука","actions":"Действий осталось","start_turn":"ЗАВЕРШИТЬ ТАКТ (N)",
@@ -175,7 +178,7 @@ const TRANSLATIONS = {
 		"action_pause_game":"Pause",
 		"action_show_map":"Mini-map","action_field_journal":"Field journal",
 		"action_enter_interior":"Enter / exit building",
-		"action_diagnostics":"Performance (F3)",
+		"action_diagnostics":"Performance (F3)","action_camera_cycle":"Camera preset (V)",
 		"action_buy_business":"Buy business",
 		"action_advance_turn":"Next turn",
 		"action_save_game":"Save",
@@ -183,7 +186,7 @@ const TRANSLATIONS = {
 		"action_language":"Change language",
 		"action_pay_traffic_fines":"Pay city fine","brand":"CITY REIGN  ·  RULE THE CITY","market_hint":"B — purchase market business","budget_graph":"TREASURY / WALLET HISTORY","sub":"OPEN WORLD / GOVERNANCE",
 		"cash":"Treasury","wallet":"Your wallet","business_income":"Business income","invest":"INVEST 250 кр. INTO CITY","contracts":"COURIER CONTRACTS","fuel":"Fuel","refueled":"Refueled: −85 кр.","refuel_hint":"Refueling needs 85 кр. and a non-full tank","accepted":"Cargo collected: go to destination","completed":"Delivery completed","unavailable":"Contracts are unavailable","population":"Population","stability":"Stability","energy":"Energy","water":"Water","food":"Food",
-		"turn":"Turn","mission":"MISSION","hint":"WASD — move · E — car · F — act · J — residents · T — academy · C — incidents · R — service · I — interior · Tab — govern · F3 — FPS",
+		"turn":"Turn","mission":"MISSION","hint":"WASD — move · E — car · F — act · J — residents · T — academy · C — incidents · R — service · I — interior · Tab — govern · V — camera · F3 — FPS",
 		"strategy":"GOVERNOR'S CABINET","close":"CLOSE (Tab)","district":"DISTRICT","development":"CONSTRUCTION","research":"RESEARCH",
 		"business":"BUSINESS","tax":"Tax","tax_minus":"− 2%","tax_plus":"+ 2%","policy":"Policy","balance":"Balance","industry":"Industry","energy_policy":"Energy","welfare":"Welfare",
 		"forecast":"NEXT-TURN FORECAST","income":"Revenue","expenses":"Expenses","net":"Net","science":"Science","actions":"Actions left","start_turn":"ADVANCE TURN (N)",
@@ -234,7 +237,7 @@ const TRANSLATIONS = {
 		"action_pause_game":"暂停",
 		"action_show_map":"小地图","action_field_journal":"任务日志",
 		"action_enter_interior":"进入 / 离开建筑",
-		"action_diagnostics":"性能 (F3)",
+		"action_diagnostics":"性能 (F3)","action_camera_cycle":"切换视角 (V)",
 		"action_buy_business":"购买企业",
 		"action_advance_turn":"下一回合",
 		"action_save_game":"保存",
@@ -242,7 +245,7 @@ const TRANSLATIONS = {
 		"action_language":"切换语言",
 		"action_pay_traffic_fines":"在市政厅缴纳罚款","brand":"CITY REIGN · 掌控城市","market_hint":"按 B 购买市场商铺","budget_graph":"国库 / 钱包历史","sub":"开放世界 / 城市治理",
 		"cash":"国库","wallet":"个人资金","business_income":"企业收入","invest":"向城市投资 250 кр.","contracts":"配送合同","fuel":"燃油","refueled":"加油成功：−85 кр.","refuel_hint":"加油需要 85 кр. 且油箱未满","accepted":"已接货：前往目的地","completed":"配送完成","unavailable":"暂无配送合同","population":"人口","stability":"稳定度","energy":"能源","water":"水资源","food":"粮食",
-		"turn":"回合","mission":"任务","hint":"WASD 移动/驾驶 · E 汽车 · F 互动/维修 · J 居民 · T 驾考 · R 公共服务 · I 室内 · Tab 治理 · F3 性能 · L 语言",
+		"turn":"回合","mission":"任务","hint":"WASD 移动/驾驶 · E 汽车 · F 互动/维修 · J 居民 · T 驾考 · R 公共服务 · I 室内 · Tab 治理 · V 镜头 · F3 性能 · L 语言",
 		"strategy":"执政官办公室","close":"关闭 (Tab)","district":"城区","development":"建设","research":"研究",
 		"business":"企业","tax":"税率","tax_minus":"− 2%","tax_plus":"+ 2%","policy":"政策方向","balance":"平衡","industry":"工业","energy_policy":"能源","welfare":"民生",
 		"forecast":"下回合预测","income":"收入","expenses":"支出","net":"结余","science":"科研","actions":"剩余行动","start_turn":"结束回合 (N)",
@@ -262,6 +265,9 @@ var city_reign_pulse_label: Label
 var city_reign_promise_title: Label
 var city_reign_promise_body: Label
 var city_reign_promise_hint: Label
+var r170_episode_progress: Label
+var r170_episode_direction: Label
+var r170_episode_controls: Label
 var controls_panel: PanelContainer
 var map_panel: PanelContainer
 var strategy_window: PanelContainer
@@ -506,6 +512,12 @@ func _make_hud() -> void:
 	city_reign_promise_title = _label(details,"",18,true)
 	city_reign_promise_body = _label(details,"",16)
 	city_reign_promise_hint = _label(details,"",15,true)
+	_separator(details)
+	# R170: one authoritative 6-action playable chapter rail inside the
+	# EXISTING scrollable city journal. Zero screen overlays or idle GPU draws.
+	r170_episode_progress = _label(details,"",17,true)
+	r170_episode_direction = _label(details,"",15)
+	r170_episode_controls = _label(details,"",14,true)
 	_separator(details)
 	_label(details,_v08("ЭКОНОМИКА И БЕЗОПАСНОСТЬ","ECONOMY AND SAFETY","经济和安全"),14,true)
 	context_label = _label(details,"",16)
@@ -809,6 +821,16 @@ func _refresh() -> void:
 		city_reign_promise_body.text = str(first_promise["body"])
 	if city_reign_promise_hint != null:
 		city_reign_promise_hint.text = str(first_promise["hint"])
+	# Every line comes from the SAME real mission index and existing contract
+	# authority as the physical E/F/B/Tab actions. Save/load needs no migration.
+	var episode: Dictionary = R170_EPISODE.first_six(d,
+		ContractManager.current_offer(),ContractManager.POSITIONS,GameState.locale)
+	if r170_episode_progress != null:
+		r170_episode_progress.text = str(episode["heading"])+"  ·  "+str(episode["progress"])
+	if r170_episode_direction != null:
+		r170_episode_direction.text = str(episode["title"])+"\n"+str(episode["body"])
+	if r170_episode_controls != null:
+		r170_episode_controls.text = str(episode["hint"])
 	if objective_details_button != null:
 		objective_details_button.tooltip_text = _v08("ПОДРОБНОСТИ ЗАДАНИЯ · ОТКРЫТЬ / ЗАКРЫТЬ","MISSION DETAILS · OPEN / CLOSE","任务详情 · 打开 / 关闭")
 	if trial_label != null:
@@ -842,7 +864,9 @@ func _restore_strategy_scroll(offset: int) -> void:
 	if open and strategy_scroll != null and is_instance_valid(strategy_scroll):
 		strategy_scroll.scroll_vertical = maxi(0,offset)
 
-func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true) -> void:
+func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true,
+        drive_nav: Dictionary = {}, drive_warning: Dictionary = {},
+        indicator_mode: String = "off",brake_response: float = 0.0) -> void:
 	if map != null:
 		map.player_world = player_at
 		map.vehicle_world = vehicle_at
@@ -871,6 +895,11 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		if not guide.is_empty():
 			mission_label.text = str(guide["title"])
 			mission_distance_label.text = str(guide["details"])
+		elif is_driving and goal_available and not drive_nav.is_empty():
+			mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),
+				int(GameState.data.get("mission",0)),compact_hud,
+				DisplayServer.is_touchscreen_available(),GameState.locale)
+			mission_distance_label.text = DRIVE_NAV.localized(drive_nav,GameState.locale,compact_hud)
 		else:
 			mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
 			if goal_available:
@@ -888,12 +917,27 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		else:
 			speed_label.text = "%d км/ч · %s" % [roundi(absf(speed)*3.6),gear]
 		if not compact_hud: speed_label.text += "\n%s %d%%  ·  %s %d%%" % [t("fuel"),roundi(fuel),t("condition"),roundi(condition)]
+		# R162: tell the player which actual lamp mode is currently selected.
+		# No extra HUD panel on a 390px phone, only one short native glyph.
+		if indicator_mode=="left": speed_label.text = "◀ " + speed_label.text
+		elif indicator_mode=="right": speed_label.text = "▶ " + speed_label.text
+		elif indicator_mode=="hazard": speed_label.text = "⚠ " + speed_label.text
 		if handbrake and not compact_hud: speed_label.text += " · " + t("handbrake")
 		if drift_score >= 12 and not compact_hud: speed_label.text += " · DRIFT %d" % drift_score
 		var assist_intensity: float = clampf(maxf(assist_power,assist_steering*3.0),0.0,1.0)
 		if assist_intensity >= 0.025 and not compact_hud:
 			speed_label.text += "\n" + _v08("ПОМОЩЬ СЦЕПЛЕНИЮ","GRIP ASSIST","抓地辅助") + " %d%%" % roundi(assist_intensity*100.0)
+		# R165: actual modelled pedal response, never a fabricated ABS sensor.
+		# Keep phone HUD compact without adding a third row or overlays.
+		if not compact_hud and is_finite(brake_response) and brake_response>=0.08:
+			speed_label.text += "\n" + _v08("ОТКЛИК ТОРМОЗА","BRAKE RESPONSE","制动响应") + " %d%%" % roundi(clampf(brake_response,0.0,1.0)*100.0)
 		hint_label.text = _v08("ГАЗ · ТОРМ · РУЛЬ · АВТО","GAS · BRAKE · STEER · CAR","油门 · 刹车 · 转向 · 车辆") if compact_hud else _v08("W / S — газ и тормоз · A / D — руль · Пробел — ручник · E — выйти","W / S — drive and brake · A / D — steer · Space — handbrake · E — exit","W / S 油门刹车 · A / D 方向 · 空格 手刹 · E 下车")
+		if not drive_warning.is_empty():
+			# An actual risk overrides noncritical guidance, never mission
+			# authority or the gameplay inputs. Compact HUD has no help bar.
+			var caution: String = DRIVER_SENSE.localized(drive_warning,GameState.locale)
+			if compact_hud: mission_distance_label.text = caution
+			else: hint_label.text = caution
 	else:
 		speed_label.text = ""
 		hint_label.text = ((_v08("РЯДОМ: ","NEAR: ","附近: ")+nearest.left(24)) if nearest != "" else _v08("АВТО · ИДТИ · ДЕЙСТВИЯ","CAR · WALK · ACTIONS","车辆 · 行走 · 操作")) if compact_hud else (("F: "+nearest) if nearest != "" else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志"))

@@ -59,6 +59,19 @@ static func should_emit(speed: float, lateral: float, handbrake: bool, wet: bool
 	var slip: float = TIRE.slip_angle_degrees(speed,lateral)
 	return slip >= (3.6 if handbrake else MIN_DRY_SLIP)
 
+static func wake_direction(world_velocity: Vector3,road_normal: Vector3) -> Vector3:
+	# Droplets leave the ACTUAL tyre contact up and behind measured travel.
+	# Never use random camera-facing cones or teleport-based guessed speed.
+	if not world_velocity.is_finite():
+		return Vector3.UP
+	var normal: Vector3 = road_normal.normalized() if road_normal.is_finite() and road_normal.length_squared()>0.25 else Vector3.UP
+	if normal.y<0.45:
+		normal = Vector3.UP
+	var planar: Vector3 = world_velocity-normal*world_velocity.dot(normal)
+	if planar.length_squared()<0.04:
+		return normal
+	return (normal*0.72-planar.normalized()*0.69).normalized()
+
 func _stop() -> void:
 	emitted_last_tick = 0
 	for spray in emitters:
@@ -87,6 +100,7 @@ func update_spray(vehicle: CharacterBody3D, driving: bool, quality: String, dt: 
 		result = SURFACE.probe(vehicle)
 	var grounded: Array[bool] = result["grounded"]
 	var points: Array[Vector3] = result["points"]
+	var normals: Array[Vector3] = result["normals"]
 	var strength: float = clampf(absf(speed)/29.0,0.50,1.0)
 	var detail: float = 0.40 if quality == "standard" else 1.0
 	var count := 0
@@ -97,7 +111,12 @@ func update_spray(vehicle: CharacterBody3D, driving: bool, quality: String, dt: 
 			spray.emitting = false
 			spray.amount_ratio = 0.0
 			continue
-		spray.global_position = points[sample_index] + Vector3(0.0,0.12,0.0)
+		var wheel_normal: Vector3 = normals[sample_index] if normals.size()>sample_index else Vector3.UP
+		spray.global_position = points[sample_index] + wheel_normal*0.12
+		# R166: actual vehicle velocity + measured contact normal steer
+		# the two ORIGINAL bounded emitters downwind, without GPU allocations.
+		_visuals[side].direction = wake_direction(vehicle.velocity,wheel_normal)
+		_visuals[side].initial_velocity_max = 1.65+clampf(absf(speed)/29.0,0.0,1.0)*1.20
 		# Pale water mist on damp asphalt, subtle grey dust on dry tyres.
 		_visuals[side].color = Color(0.72,0.82,0.86,0.32) if wet else Color(0.47,0.50,0.52,0.28)
 		spray.amount_ratio = detail*strength

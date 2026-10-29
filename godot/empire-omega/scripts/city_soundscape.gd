@@ -3,13 +3,18 @@ extends Node
 ## loops, copyrighted music or cloud services required. Master volume uses
 ## existing GameSettings. This is an audio prototype, not studio sound design.
 const AUDIO_MODEL = preload("res://scripts/horizon_engine_audio.gd")
+const R169_MIX = preload("res://scripts/city_reign_acoustic_mix.gd")
 const AMBIENCE_PATH = "res://assets/audio/city_air.wav"
 const ENGINE_PATH = "res://assets/audio/engine_low.wav"
+const LOAD_PATH = "res://assets/audio/engine_load.wav"
+const ROLL_PATH = "res://assets/audio/tyre_roll.wav"
 const RAIN_PATH = "res://assets/audio/rain.wav"
 const SUCCESS_PATH = "res://assets/audio/ui_success.wav"
 const PATROL_PATH = "res://assets/audio/patrol_alert.wav"
 var ambience: AudioStreamPlayer
 var engine: AudioStreamPlayer3D
+var engine_load: AudioStreamPlayer3D
+var tyre_roll: AudioStreamPlayer3D
 var rain: AudioStreamPlayer
 var success: AudioStreamPlayer
 var pursuit: AudioStreamPlayer
@@ -38,6 +43,22 @@ func _ready() -> void:
 	engine.volume_db = -55.0
 	engine.stream = _load_loop(ENGINE_PATH)
 	add_child(engine)
+	# Exactly two new spatialized source-authored PCM voices; the existing
+	# master, traffic, rain and pursuit channels are never replaced.
+	engine_load = AudioStreamPlayer3D.new()
+	engine_load.name = "CityReignLoadLayer"
+	engine_load.unit_size = 7.0
+	engine_load.max_distance = 110.0
+	engine_load.volume_db = R169_MIX.MUTE_DB
+	engine_load.stream = _load_loop(LOAD_PATH)
+	add_child(engine_load)
+	tyre_roll = AudioStreamPlayer3D.new()
+	tyre_roll.name = "CityReignTyreSurface"
+	tyre_roll.unit_size = 6.0
+	tyre_roll.max_distance = 82.0
+	tyre_roll.volume_db = R169_MIX.MUTE_DB
+	tyre_roll.stream = _load_loop(ROLL_PATH)
+	add_child(tyre_roll)
 	rain = AudioStreamPlayer.new()
 	rain.name = "WeatherRain"
 	rain.volume_db = -65.0
@@ -55,12 +76,19 @@ func _ready() -> void:
 	add_child(pursuit)
 
 func attach_vehicle(vehicle: Node3D) -> void:
-	if engine != null and vehicle != null:
-		engine.reparent(vehicle)
-		engine.position = Vector3(0,0.6,0)
+	if vehicle == null: return
+	# All three spatial samples now follow the original player body in the
+	# original world with the same native car transform and no extra timer.
+	for voice in [engine,engine_load,tyre_roll]:
+		if voice != null:
+			voice.reparent(vehicle)
+			voice.position = Vector3(0,0.6,0)
+	if tyre_roll != null: tyre_roll.position.y = -0.38
 
 func update_cues(driving: bool, velocity: float, weather: String, wanted: int = 0,
-		throttle: float = 0.0, handbrake: bool = false, delta: float = 1.0/60.0) -> void:
+		throttle: float = 0.0, handbrake: bool = false, delta: float = 1.0/60.0,
+		lateral_speed: float = 0.0, rear_grip: float = 1.0,
+		quality: String = "standard", inside_cabin: bool = false) -> void:
 	if driving:
 		virtual_gear = AUDIO_MODEL.next_gear(virtual_gear,velocity)
 	else:
@@ -68,16 +96,40 @@ func update_cues(driving: bool, velocity: float, weather: String, wanted: int = 
 	if engine != null:
 		if driving and engine.stream != null and not engine.playing:
 			engine.play()
-		var desired_db: float = AUDIO_MODEL.volume(driving,velocity,throttle,handbrake)
+		var desired_db: float = AUDIO_MODEL.volume(driving,velocity,throttle,handbrake)+R169_MIX.cabin_engine(inside_cabin)
 		var desired_pitch: float = AUDIO_MODEL.pitch(velocity,throttle,virtual_gear) if driving else 0.77
 		engine.volume_db = AUDIO_MODEL.smooth(engine.volume_db,desired_db,delta,7.5)
 		engine.pitch_scale = clampf(AUDIO_MODEL.smooth(engine.pitch_scale,desired_pitch,delta,9.0),AUDIO_MODEL.MIN_PITCH,AUDIO_MODEL.MAX_PITCH)
 		if not driving and engine.playing and engine.volume_db < -62.0:
 			engine.stop()
+	# Original torque input, wheel sideslip, wet grip and graphics quality
+	# are sampled by main.gd. LOW mutes only additional cosmetic channels.
+	var tier: String = R169_MIX.safe_quality(quality)
+	if engine_load != null:
+		var load_goal: float = R169_MIX.load_volume(driving,velocity,throttle,virtual_gear,tier,inside_cabin)
+		if load_goal>R169_MIX.MUTE_DB and engine_load.stream!=null and not engine_load.playing:
+			engine_load.play()
+		engine_load.volume_db = AUDIO_MODEL.smooth(engine_load.volume_db,load_goal,delta,9.0)
+		engine_load.pitch_scale = clampf(AUDIO_MODEL.smooth(engine_load.pitch_scale,
+			AUDIO_MODEL.pitch(velocity,throttle,virtual_gear),delta,8.0),0.65,1.65)
+		if load_goal<=R169_MIX.MUTE_DB and engine_load.volume_db<-62.0 and engine_load.playing:
+			engine_load.stop()
+	if tyre_roll != null:
+		var rolling_goal: float = R169_MIX.road_volume(driving,velocity,lateral_speed,
+			rear_grip,weather,tier,inside_cabin)
+		if rolling_goal>R169_MIX.MUTE_DB and tyre_roll.stream!=null and not tyre_roll.playing:
+			tyre_roll.play()
+		tyre_roll.volume_db = AUDIO_MODEL.smooth(tyre_roll.volume_db,rolling_goal,delta,10.0)
+		var wet_surface: bool = weather=="rain" or weather=="storm"
+		tyre_roll.pitch_scale = clampf(AUDIO_MODEL.smooth(tyre_roll.pitch_scale,
+			R169_MIX.rolling_pitch(velocity,wet_surface),delta,7.0),0.67,1.65)
+		if rolling_goal<=R169_MIX.MUTE_DB and tyre_roll.volume_db<-62.0 and tyre_roll.playing:
+			tyre_roll.stop()
 	if rain != null:
 		var wet: bool = weather == "rain" or weather == "storm"
 		if wet and rain.stream != null and not rain.playing: rain.play()
-		rain.volume_db = AUDIO_MODEL.smooth(rain.volume_db,-29.0 if wet else -65.0,delta,7.0)
+		var rain_goal: float = (-29.0+R169_MIX.cabin_rain(inside_cabin)) if wet else -65.0
+		rain.volume_db = AUDIO_MODEL.smooth(rain.volume_db,rain_goal,delta,7.0)
 		if not wet and rain.playing and rain.volume_db < -63.0: rain.stop()
 
 	if pursuit != null:

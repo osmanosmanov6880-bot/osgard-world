@@ -12,6 +12,10 @@ const DRIVER_ASSISTS = preload("res://scripts/horizon_driver_assists.gd")
 const YAW_INERTIA = preload("res://scripts/horizon_yaw_inertia.gd")
 const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
 const R46_LOAD_TRANSFER = preload("res://scripts/horizon_r46_load_transfer.gd")
+const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
+const SIGNAL_CANCEL = preload("res://scripts/city_reign_signal_cancel.gd")
+const APEX_RESPONSE = preload("res://scripts/city_reign_brake_response.gd")
+const ROTOR_THERMAL = preload("res://scripts/city_reign_rotor_thermal.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -30,7 +34,25 @@ var axle_grip_active := false
 var headlight_cones: Array[SpotLight3D] = []
 var wheel_nodes: Array[MeshInstance3D] = []
 var brake_lamp_nodes: Array[MeshInstance3D] = []
+var indicator_lamps: Dictionary = {"left":[],"right":[]}
+var indicator_mode: String = "off"
+var indicator_phase: float = 0.0
+var indicator_yaw_last: float = 0.0
+var indicator_angle_progress: float = 0.0
+var indicator_distance: float = 0.0
+var _indicator_lit: Dictionary = {"left":true,"right":true}
 var brake_lights_on := false
+## Modelled pedal actuation, NOT sensor-derived hydraulic brake pressure.
+var brake_response: float = 0.0
+var brake_estimated_stop_m: float = 0.0
+var apex_torque_factor: float = 1.0
+## R166 cosmetic *normalized* axle energy (not a sensed brake temperature).
+var rotor_heat: Vector2 = Vector2.ZERO
+var rotor_energy_proxy: float = 0.0
+var last_longitudinal_accel: float = 0.0
+## The gameplay camera/controller publishes an accessibility setting.
+## No direct dependency from car physics onto UI/autoload script globals.
+var visual_reduced_motion: bool = false
 var handbrake_on := false
 var steering_filter := 0.0
 var speed := 0.0
@@ -85,7 +107,69 @@ func _ready() -> void:
 			part.visible = false
 	brake_lights_on = true
 	_set_brake_lights(false)
+	_create_indicators()
 	_make_headlight_beams()
+
+func _create_indicators() -> void:
+	# Four small physical amber optics; never add dynamic lights or shadows.
+	# The original Horizon car body, wheels, collision and garage are untouched.
+	for side in [-1.0,1.0]:
+		var side_key: String = "left" if side<0.0 else "right"
+		for front in [true,false]:
+			var suffix: String = "Front" if front else "Rear"
+			var id: String = "R161Indicator"+side_key+suffix
+			_add_part(id,Vector3(0.25,0.14,0.065),
+				Vector3(side*1.22,-0.20,-2.67 if front else 2.67),Color("b97725"),true)
+			var lamp: MeshInstance3D = get_node(id) as MeshInstance3D
+			(indicator_lamps[side_key] as Array).append(lamp)
+	_sync_indicator_lamps()
+
+func set_indicator_mode(value: String) -> void:
+	indicator_mode = SIGNAL_LOGIC.normalized_mode(value)
+	indicator_phase = 0.0
+	indicator_yaw_last = rotation.y
+	indicator_angle_progress = 0.0
+	indicator_distance = 0.0
+	_sync_indicator_lamps()
+
+func toggle_indicator(side: String) -> String:
+	indicator_mode = SIGNAL_LOGIC.toggle(indicator_mode,side)
+	indicator_phase = 0.0
+	indicator_yaw_last = rotation.y
+	indicator_angle_progress = 0.0
+	indicator_distance = 0.0
+	_sync_indicator_lamps()
+	return indicator_mode
+
+func _tick_indicators(delta: float) -> void:
+	if indicator_mode!="off":
+		indicator_phase = SIGNAL_LOGIC.phase_after(indicator_phase,delta)
+	_sync_indicator_lamps()
+
+func _update_indicator_turn(covered: float,steering: float) -> void:
+	# R163: actual yaw and displacement after move_and_slide(), not
+	# an elapsed-time guess; intentional hazard lights stay untouched.
+	if indicator_mode=="left" or indicator_mode=="right":
+		indicator_angle_progress = SIGNAL_CANCEL.progress(indicator_mode,
+			indicator_yaw_last,rotation.y,indicator_angle_progress,covered,speed)
+		if is_finite(covered):
+			indicator_distance += maxf(0.0,covered)
+		if SIGNAL_CANCEL.completed(indicator_mode,indicator_angle_progress,
+			indicator_distance,steering,speed):
+			set_indicator_mode("off")
+	indicator_yaw_last = rotation.y
+
+func _sync_indicator_lamps() -> void:
+	for side_name in ["left","right"]:
+		var active: bool = SIGNAL_LOGIC.side_on(indicator_mode,side_name,indicator_phase)
+		if bool(_indicator_lit[side_name])==active: continue
+		_indicator_lit[side_name] = active
+		for bulb in indicator_lamps[side_name]:
+			var lamp: MeshInstance3D = bulb as MeshInstance3D
+			var paint: StandardMaterial3D = lamp.material_override as StandardMaterial3D
+			paint.albedo_color = Color("ffb13c") if active else Color("795121")
+			paint.emission = Color("ffb13c") if active else Color("795121")
+			paint.emission_energy_multiplier = 2.8 if active else 0.16
 
 func _make_headlight_beams() -> void:
 	# Only two bounded unshadowed punctual lights; LOW quality disables them.
@@ -112,6 +196,8 @@ func update_headlights(hour: float,quality: String) -> void:
 	if horizon_visual != null:
 		horizon_visual.call("set_detail_quality",quality)
 	var safe_hour: float = fposmod(hour if is_finite(hour) else 12.0,24.0)
+	if horizon_visual != null:
+		horizon_visual.call("set_headlamp_illumination",safe_hour,quality)
 	var active: bool = (safe_hour < 6.75 or safe_hour >= 18.75) and quality != "low"
 	for light in headlight_cones:
 		light.visible = active
@@ -194,6 +280,7 @@ func _update_drift_score(delta: float) -> void:
 			drift_release_clock = 0.0
 
 func _physics_process(delta: float) -> void:
+	_tick_indicators(delta)
 	if not is_on_floor():
 		velocity.y -= 24.0 * delta
 	else:
@@ -218,6 +305,17 @@ func _physics_process(delta: float) -> void:
 	var applied_throttle: float = DRIVER_ASSISTS.drive_power(throttle,speed,lateral_speed,traction_factor,handbrake_on) if driving and assists_enabled else throttle
 	if applied_throttle > 0.0:
 		applied_throttle *= YAW_INERTIA.corner_power_factor(speed,current_yaw_rate,traction_factor,handbrake_on)
+	# R165: the original engine loses some torque close to its speed
+	# governor instead of a constant flat-acceleration curve.
+	apex_torque_factor = APEX_RESPONSE.power_factor(speed,forward_limit)
+	if applied_throttle>0.0 and speed>=0.0:
+		applied_throttle *= apex_torque_factor
+	# Real opposing pedal input progressively reaches braking force, while
+	# reverse from rest and positive drive remain under player authority.
+	brake_response = APEX_RESPONSE.step(brake_response,
+		APEX_RESPONSE.request(throttle,speed,handbrake_on) if driving else 0.0,delta)
+	if not driving:
+		brake_response = 0.0
 	power_assist_reduction = maxf(0.0,throttle-applied_throttle)
 	# R46: baseline driving remains identical with four planted wheels. Only
 	# true braking while contacts are missing loses available normal-force grip.
@@ -232,12 +330,16 @@ func _physics_process(delta: float) -> void:
 				prior_support[wheel_index] = bool(saved_support[wheel_index])
 	r46_brake_grip = R46_LOAD_TRANSFER.braking_grip(traction_factor,prior_support,r46_front_load_ratio)
 	var drive_grip: float = r46_brake_grip if braking_now else traction_factor
-	speed = DYNAMICS.speed_step(speed,applied_throttle,drive_grip,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
+	var phased_throttle: float = APEX_RESPONSE.effective_throttle(applied_throttle,speed,brake_response)
+	speed = DYNAMICS.speed_step(speed,phased_throttle,drive_grip,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
 	if not driving and absf(speed) < 0.35:
 		speed = 0.0
 	var applied_steering: float = DRIVER_ASSISTS.stabilize_steering(steering_filter,speed,lateral_speed,traction_factor,handbrake_on) if driving and assists_enabled else steering_filter
 	steering_assist_correction = absf(steering_filter-applied_steering)
 	var desired_yaw_rate: float = DYNAMICS.yaw_rate(speed,applied_steering*handling_factor,traction_factor,handbrake_on)
+	# Shared approximate friction budget: heavy braking reserves lateral grip.
+	# User steering and deliberate handbrake remain available.
+	desired_yaw_rate = APEX_RESPONSE.corner_yaw(desired_yaw_rate,speed,traction_factor,brake_response,handbrake_on)
 	current_yaw_rate = YAW_INERTIA.yaw_step(current_yaw_rate,desired_yaw_rate,speed,traction_factor,handbrake_on,delta)
 	rotation.y += current_yaw_rate * minf(delta,0.1)
 	var lateral_grip: float = rear_traction_factor if axle_grip_active else traction_factor
@@ -267,16 +369,32 @@ func _physics_process(delta: float) -> void:
 	var physical_limit: float = maxf(MAX_FORWARD * speed_factor,MAX_REVERSE * speed_factor) * delta * 1.35 + 0.35
 	if covered > physical_limit:
 		covered = 0.0
+	_update_indicator_turn(covered,applied_steering)
 	mileage += covered
 	var spin: float = covered / 0.44 * signf(speed)
 	var longitudinal_acceleration: float = (speed-prior_speed)/maxf(delta,0.001)
+	last_longitudinal_accel = clampf(longitudinal_acceleration,-60.0,60.0)
 	var wheel_support: Dictionary = _sample_wheel_contacts()
 	last_wheel_support = wheel_support
 	r46_brake_diagnostics = R46_LOAD_TRANSFER.diagnostics(speed,longitudinal_acceleration,traction_factor,wheel_support["grounded"])
 	r46_front_load_ratio = float(r46_brake_diagnostics["front_axle_load_ratio"])
+	brake_estimated_stop_m = R46_LOAD_TRANSFER.estimated_brake_distance(speed,r46_brake_grip)
+	# Never infer heat from a collision, throttle lift or a floating wheel.
+	# Read the CURRENT actual four-ray wheel contacts and driver brake input.
+	var wheel_grounded: Array[bool] = wheel_support["grounded"]
+	rotor_energy_proxy = ROTOR_THERMAL.dissipated_energy(prior_speed,speed,brake_response)
+	rotor_heat = ROTOR_THERMAL.step(rotor_heat,prior_speed,speed,
+		brake_response,traction_factor,r46_front_load_ratio,wheel_grounded,delta)
 	if horizon_visual != null:
 		horizon_visual.call("roll_wheels",covered * signf(speed),applied_steering)
 		horizon_visual.call("simulate_chassis",speed,current_yaw_rate,longitudinal_acceleration,traction_factor,handbrake_on,wheel_support["travel"],delta,wheel_support["grounded"])
+		# Existing brake lens is animated by actual sampled pedal response.
+		horizon_visual.call("sync_brake_response",brake_response,brake_lights_on,delta)
+		horizon_visual.call("sync_rotor_heat",rotor_heat)
+		# R167: existing machined spoiler provides speed/brake visual feedback
+		# after spring animation; no authoritative physics values change.
+		horizon_visual.call("sync_aero_feedback",speed,brake_response,delta,
+			visual_reduced_motion)
 	_update_drift_score(delta)
 	for wheel in wheel_nodes:
 		wheel.rotate_x(spin)

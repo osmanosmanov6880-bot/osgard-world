@@ -8,6 +8,12 @@ const CAR_SCENE = preload("res://scripts/vehicle_controller.gd")
 const HUD_SCENE = preload("res://scripts/hud.gd")
 const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
 const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
+const CITY_REIGN_CAMERA = preload("res://scripts/city_reign_camera_modes.gd")
+const COCKPIT_VIEW = preload("res://scripts/city_reign_cockpit_camera.gd")
+const CITY_REIGN_GUIDANCE = preload("res://scripts/city_reign_road_guidance.gd")
+const CITY_REIGN_ROUTE_CHEVRON = preload("res://scripts/city_reign_route_chevron.gd")
+const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
+const DRIVER_SENSE = preload("res://scripts/city_reign_driver_awareness.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
@@ -29,6 +35,7 @@ const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
 const CITY_REIGN_CRISIS = preload("res://scripts/city_reign_crisis_scene.gd")
 const CITY_REIGN_PROPOSALS = preload("res://scripts/city_reign_promise_markers.gd")
 const CITY_REIGN_OPENING_DIRECTOR = preload("res://scripts/city_reign_opening_director.gd")
+const R170_EPISODE = preload("res://scripts/city_reign_episode_sequence.gd")
 const CITY_REIGN_SITE_VISIT = preload("res://scripts/city_reign_live_site_inspection.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
@@ -47,6 +54,11 @@ var city_case_marker
 var city_reign_crisis: Node3D
 var city_reign_proposals: Node3D
 var city_reign_opening_director: Node3D
+var road_guidance: MeshInstance3D
+var route_chevron: MeshInstance3D
+var drive_nav_status: Dictionary = {}
+var drive_warning_status: Dictionary = {}
+var drive_sensor_timer: float = 0.0
 var cargo_visual
 var current_weather_kind := "clear"
 var base_road_grip := 1.0
@@ -146,6 +158,10 @@ func _ready() -> void:
 	add_child(ground_spray)
 	_spawn_traffic()
 	_spawn_citizens()
+	road_guidance = CITY_REIGN_GUIDANCE.new()
+	add_child(road_guidance)
+	route_chevron = CITY_REIGN_ROUTE_CHEVRON.new()
+	add_child(route_chevron)
 	patrols = POLICE_SCENE.new()
 	add_child(patrols)
 	patrols.traffic_signals = traffic_signals
@@ -345,6 +361,7 @@ func _spawn_citizens() -> void:
 		pedestrians.append(citizen)
 	for traffic in ambient_cars:
 		traffic.citizens = pedestrians
+		traffic.neighbors = ambient_cars
 
 func _stopped_traffic_count() -> int:
 	var stopped := 0
@@ -390,6 +407,9 @@ func _on_benchmark_export() -> void:
 
 func _physics_process(delta: float) -> void:
 	if player == null or car == null or camera == null: return
+	# Scene/UI own accessibility settings; physics car only receives its
+	# read-only visual hint, never imports a GameSettings singleton.
+	car.visual_reduced_motion=GameSettings.reduced_motion
 	# R33: actual 4 wheel-ground ray contacts instead of the car centre.
 	# LOW disables transparent pixels, not physical grip. The fallback
 	# samples the centre only before the first authentic wheel probe.
@@ -419,19 +439,38 @@ func _physics_process(delta: float) -> void:
 	# Do not mutate user camera preferences or gameplay while the UI is open.
 	var cabinet_open: bool = hud != null and hud.is_strategy_open()
 	var camera_pitch: float = SAFE_CAMERA.cabinet_pitch(cam_pitch,cabinet_open,viewport_size,GameSettings.reduced_motion)
+	# R160: true native 3D lens uses ORIGINAL two wall-raycast-safe camera.
+	camera_pitch = CITY_REIGN_CAMERA.pitch(camera_pitch,GameSettings.camera_mode,
+		phone_view,cabinet_open,GameSettings.reduced_motion)
 	focus = SAFE_CAMERA.cabinet_focus(focus,cam_yaw,cabinet_open,viewport_size,GameSettings.reduced_motion)
 	var ideal: Vector3 = SAFE_CAMERA.desired_position(focus,cam_yaw,camera_pitch,car.speed,driving,viewport_size)
-	var excluding: Array[RID] = [player.get_rid(),car.get_rid()]
-	var camera_solution: Dictionary = SAFE_CAMERA.solve(focus,ideal,camera.global_position,
-		get_world_3d().direct_space_state,excluding,delta,GameSettings.reduced_motion)
-	camera.global_position = camera_solution["position"]
-	camera.look_at(focus,Vector3.UP)
+	ideal = CITY_REIGN_CAMERA.distance(focus,ideal,GameSettings.camera_mode,
+		driving,phone_view,cabinet_open,GameSettings.reduced_motion)
+	# R164: fourth real driver-seat camera within the physical car.
+	# Explicitly disable it while walking, inside or in government panels.
+	# No extra Camera3D, no synthetic screenshots and no car physics edits.
+	var cockpit_enabled: bool = COCKPIT_VIEW.enabled(GameSettings.camera_mode,
+		driving,cabinet_open,interiors.is_inside())
+	if car.horizon_visual != null:
+		car.horizon_visual.call("set_cockpit_active",cockpit_enabled)
+		if cockpit_enabled:
+			car.horizon_visual.call("set_cockpit_data",car.speed,car.steering_filter,car.brake_response,
+				car.lateral_speed,GameSettings.reduced_motion)
+	if cockpit_enabled:
+		camera.global_position = COCKPIT_VIEW.eye(car.global_transform,phone_view)
+		camera.look_at(COCKPIT_VIEW.target(car.global_transform,phone_view),Vector3.UP)
+	else:
+		var excluding: Array[RID] = [player.get_rid(),car.get_rid()]
+		var camera_solution: Dictionary = SAFE_CAMERA.solve(focus,ideal,camera.global_position,
+			get_world_3d().direct_space_state,excluding,delta,GameSettings.reduced_motion)
+		camera.global_position = camera_solution["position"]
+		camera.look_at(focus,Vector3.UP)
 	# R44.2: three instanced foliage GPU batches keep the road and vehicle
 	# visible when the cinematic chase camera passes through a tall canopy.
 	if world.horizon_scenic != null:
 		world.horizon_scenic.call("update_camera_clearance",camera.global_position,focus,delta)
 	# Speed-responsive perspective, disabled for players who request less motion.
-	var desired_fov: float = SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
+	var desired_fov: float = COCKPIT_VIEW.fov(phone_view) if cockpit_enabled else SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
 	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,SAFE_CAMERA.time_alpha(2.2,delta))
 	var protagonist: Vector3 = car.global_position if driving else player.global_position
 	if city_reign_opening_director != null:
@@ -492,20 +531,45 @@ func _physics_process(delta: float) -> void:
 		lod_timer = 0.0
 		_update_agent_lod(protagonist)
 	route_refresh += delta
-	if not goal_visible and hud.map != null:
-		hud.map.route.clear()
-	if goal_visible and not interiors.is_inside() and (route_refresh >= 1.25 or last_route_goal.distance_to(goal) > 2.0):
+	# R161: share ONE closure-aware authoritative path with the 2D map and
+	# the physically grounded road guide. Never invent goals in non-spatial missions.
+	var route_allowed: bool = goal_visible and not interiors.is_inside()
+	if not route_allowed:
+		if hud.map != null: hud.map.route.clear()
+		if road_guidance != null: road_guidance.clear_route()
+		if route_chevron != null: route_chevron.clear_turn()
+	if route_allowed and (route_refresh >= 1.25 or last_route_goal.distance_to(goal) > 2.0):
 		route_refresh = 0.0
 		last_route_goal = goal
-		if hud.map != null:
-			hud.map.route = ROUTER.find_route(protagonist,goal,GameState.data)
+		var ground_route: Array[Vector3] = ROUTER.find_route(protagonist,goal,GameState.data)
+		if hud.map != null: hud.map.route = ground_route
+		if road_guidance != null:
+			road_guidance.sync_route(ground_route,protagonist,true,adaptive_graphics.effective_quality())
+		if route_chevron != null:
+			route_chevron.show_from_route(ground_route,protagonist,adaptive_graphics.effective_quality(),true)
+	if road_guidance != null:
+		road_guidance.visible = route_allowed and not cabinet_open and road_guidance.mesh != null
+	if route_chevron != null:
+		route_chevron.visible = route_allowed and not cabinet_open and route_chevron.active
+	# R162 sensor reads real scene velocities only at 4 Hz; no new rays
+	# or fake goals, and no effect on the vehicle physics time step.
+	drive_sensor_timer += delta
+	if not driving:
+		drive_nav_status = {}
+		drive_warning_status = {}
+	if drive_sensor_timer >= 0.25:
+		drive_sensor_timer = 0.0
+		if driving:
+			drive_nav_status = DRIVE_NAV.snapshot(hud.map.route,car.global_position) if route_allowed and hud.map != null else {}
+			drive_warning_status = DRIVER_SENSE.scan(car.global_position,car.rotation.y,
+				maxf(0.0,car.speed),ambient_cars,pedestrians)
 	if hud.map != null:
 		if patrols != null: hud.map.police_world = patrols.visible_positions()
 		var case_site: String = GameState.CITY_CASES.site(GameState.data)
 		hud.map.case_active = case_site != "" and world.locations.has(case_site)
 		if hud.map.case_active: hud.map.case_world = world.locations[case_site]["position"]
 	if Engine.get_physics_frames() % 3 == 0:
-		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y,goal_visible)
+		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y,goal_visible,drive_nav_status,drive_warning_status,car.indicator_mode,car.brake_response)
 	# Patrols use shared physical roads and do not warp while pursuing the player.
 	if patrols != null:
 		var heat: int = int(GameState.data.get("law",{}).get("heat",0))
@@ -549,7 +613,10 @@ func _physics_process(delta: float) -> void:
 		near_miss_sample = 0.0
 	previous_vehicle_health = car.health
 	GameState.sync_vehicle_live(car.fuel,car.health,car.mileage,driving)
-	if soundscape != null: soundscape.update_cues(driving,car.speed,current_weather_kind,int(GameState.data.get("law",{}).get("heat",0)),Input.get_action_strength("move_forward") if driving else 0.0,car.handbrake_on if driving else false,delta)
+	if soundscape != null: soundscape.update_cues(driving,car.speed,current_weather_kind,int(GameState.data.get("law",{}).get("heat",0)),Input.get_action_strength("move_forward") if driving else 0.0,car.handbrake_on if driving else false,delta,
+		car.lateral_speed if driving else 0.0,car.rear_traction_factor,
+		adaptive_graphics.effective_quality(),
+		COCKPIT_VIEW.enabled(GameSettings.camera_mode,driving,cabinet_open,interiors.is_inside()))
 	if skid_trails != null: skid_trails.call("update_trails",car,driving,adaptive_graphics.effective_quality(),delta)
 	if ground_spray != null: ground_spray.call("update_spray",car,driving,adaptive_graphics.effective_quality(),delta)
 	GameState.data["day_clock"] = fposmod(float(GameState.data["day_clock"])+delta*0.012,24.0)
@@ -610,12 +677,41 @@ func _input(event: InputEvent) -> void:
 		_buy_market()
 	elif event.is_action_pressed("enter_interior") and not hud.is_strategy_open():
 		_toggle_interior()
+	elif event.is_action_pressed("camera_cycle") and not hud.is_strategy_open() and not interiors.is_inside():
+		# Identical physical InputMap action on keyboard, gamepad and touch.
+		var next_view: String = CITY_REIGN_CAMERA.next_mode(GameSettings.camera_mode)
+		GameSettings.set_camera_mode(next_view)
+		hud.announce(CITY_REIGN_CAMERA.localized_mode(next_view,GameState.locale))
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("indicator_left") and driving and not hud.is_strategy_open():
+		_toggle_car_indicator("left")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("indicator_right") and driving and not hud.is_strategy_open():
+		_toggle_car_indicator("right")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("hazard_lights") and driving and not hud.is_strategy_open():
+		_toggle_car_indicator("hazard")
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("diagnostics"):
 		hud.toggle_diagnostics()
 	elif event.is_action_pressed("pay_traffic_fines"):
 		_pay_traffic_fines()
 	elif event.is_action_pressed("show_map"):
 		hud.toggle_map()
+
+func _toggle_car_indicator(side: String) -> void:
+	# Identical native InputMap action from keyboard, joypad and touch.
+	if not driving or car == null: return
+	var mode: String = car.toggle_indicator(side)
+	match mode:
+		"left":
+			hud.announce(_three("ПОВОРОТНИК · ЛЕВЫЙ","LEFT TURN SIGNAL","左转向灯"))
+		"right":
+			hud.announce(_three("ПОВОРОТНИК · ПРАВЫЙ","RIGHT TURN SIGNAL","右转向灯"))
+		"hazard":
+			hud.announce(_three("АВАРИЙНАЯ СИГНАЛИЗАЦИЯ","HAZARD LIGHTS","危险警示灯"))
+		_:
+			hud.announce(_three("СИГНАЛЫ ВЫКЛ.","SIGNALS OFF","转向灯已关闭"))
 
 func _pay_traffic_fines() -> void:
 	if driving or interiors.is_inside() or player.global_position.distance_to(world.locations["cityhall"]["position"])>35.0:
@@ -649,6 +745,8 @@ func _apply_visual_budget() -> void:
 		car.update_headlights(float(GameState.data.get("day_clock",12.0)),effective)
 	world.sun.shadow_enabled = effective != "low"
 	world.apply_visual_budget(effective)
+	if road_guidance != null: road_guidance.set_quality(effective)
+	if route_chevron != null: route_chevron.set_quality(effective)
 	# A17 real physical signal geometry: desktop 3-LED die-cast heads in
 	# nine shared GPU draws; LOW uses the EXACT original simple signals.
 	# No re-spawn, traffic AI update or shadow-map allocation on switches.
@@ -725,6 +823,7 @@ func _enter_or_exit_vehicle() -> void:
 			return
 		driving = false
 		car.driving = false
+		car.set_indicator_mode("off")
 		player.global_position = safe_exit
 		player.visible = true
 		player.active = true
@@ -1030,7 +1129,15 @@ func _on_contract_changed(_message_id: String) -> void:
 
 func _on_mission_done(_stage: int, reward: int) -> void:
 	if soundscape != null: soundscape.play_success()
-	hud.announce("ЗАДАНИЕ ВЫПОЛНЕНО · +%d ₽" % reward if GameState.locale == "ru" else "MISSION COMPLETE · +%d ₽" % reward)
+	var message: String = _three(
+		"ЗАДАНИЕ ВЫПОЛНЕНО","MISSION COMPLETE","任务完成")+" · +%d ₽" % reward
+	if _stage<R170_EPISODE.TOTAL_STEPS:
+		var next: Dictionary = R170_EPISODE.first_six(GameState.data,
+			ContractManager.current_offer(),ContractManager.POSITIONS,GameState.locale)
+		# Only actual MissionManager completion events trigger this notice;
+		# the director never awards money or writes GameState.
+		message+="  ·  "+str(next["progress"])
+	hud.announce(message)
 
 func _on_chapter_done(_chapter_id: String, reward: int) -> void:
 	# New localized one-time chapter finale is driven by a completed LIVE

@@ -5,6 +5,8 @@ const SAFETY = preload("res://scripts/traffic_safety.gd")
 const R47_CROSSING = preload("res://scripts/horizon_r47_crosswalk_prediction.gd")
 const CIVIC_CROSSING = preload("res://scripts/city_reign_civic_traffic_safety.gd")
 const SEDAN_SURFACE = preload("res://scripts/horizon_traffic_sedan_surface.gd")
+const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
+const FOLLOW = preload("res://scripts/city_reign_traffic_following.gd")
 const CAR_LENGTH := 4.1
 const DETECTION_RANGE := 27.0
 const ROAD_HEIGHT := 0.8
@@ -20,7 +22,13 @@ var travelled_metres := 0.0
 var emergency_stops := 0
 var wetness := 1.0
 var citizens: Array = []
+var neighbors: Array = []
+var last_follow_speed: float = 18.0
 var _last_braking := true
+var indicator_lamps: Dictionary = {}
+var _indicator_lit: Dictionary = {"left":true,"right":true}
+var indicator_mode: String = "off"
+var indicator_phase: float = 0.0
 var patrol_vehicle := false
 # CITY REIGN A5: authored visual model family. This affects ONLY the
 # original two existing cached 3D chassis meshes, never AI or physical box.
@@ -84,6 +92,11 @@ func _ready() -> void:
 		_part("Headlamp",Vector3(0.32,0.16,0.06),Vector3(x*0.67,0.3,-2.05),Color("c2eadc"),true)
 		var lamp := _part("BrakeLamp",Vector3(0.34,0.2,0.06),Vector3(x*0.67,0.3,2.05),Color("4a181f"),true)
 		brake_meshes.append(lamp)
+	indicator_lamps["left"] = _part("R161LeftIndicator",Vector3(0.22,0.15,0.065),
+		Vector3(-1.05,0.31,2.08),Color("b97725"),true)
+	indicator_lamps["right"] = _part("R161RightIndicator",Vector3(0.22,0.15,0.065),
+		Vector3(1.05,0.31,2.08),Color("b97725"),true)
+	_sync_indicator_lamps()
 	_update_brake_lights(false)
 
 func set_visual_quality(tier: String) -> void:
@@ -125,6 +138,17 @@ func _update_brake_lights(braking: bool) -> void:
 		material.albedo_color = color
 		material.emission = color
 		material.emission_energy_multiplier = 2.4 if braking else 0.25
+
+func _sync_indicator_lamps() -> void:
+	for side_name in ["left","right"]:
+		var lit: bool = SIGNAL_LOGIC.side_on(indicator_mode,side_name,indicator_phase)
+		if bool(_indicator_lit[side_name])==lit: continue
+		_indicator_lit[side_name]=lit
+		var lamp: MeshInstance3D = indicator_lamps[side_name] as MeshInstance3D
+		var paint: StandardMaterial3D = lamp.material_override as StandardMaterial3D
+		paint.albedo_color = Color("ffb13c") if lit else Color("795121")
+		paint.emission = Color("ffb13c") if lit else Color("795121")
+		paint.emission_energy_multiplier = 2.8 if lit else 0.16
 
 func set_route(waypoints: Array[Vector3], road_speed: float) -> void:
 	points = waypoints.duplicate()
@@ -177,6 +201,8 @@ func _obstacle_distance(direction: Vector3) -> float:
 func _physics_process(delta: float) -> void:
 	_flash_patrol(delta)
 	if points.size() < 2:
+		indicator_mode = "off"
+		_sync_indicator_lamps()
 		velocity = Vector3.ZERO
 		return
 	var destination: Vector3 = points[target_index]
@@ -193,8 +219,17 @@ func _physics_process(delta: float) -> void:
 	var corner_index: int = (target_index+1)%points.size()
 	var after_corner: Vector3 = points[corner_index]-destination
 	after_corner.y = 0.0
+	# R161: physical rear lamps indicate the genuine upcoming graph turn.
+	# Lights have NO influence on intersection permissions or braking limits.
+	indicator_mode = SIGNAL_LOGIC.upcoming(heading,after_corner,displacement.length())
+	indicator_phase = SIGNAL_LOGIC.phase_after(indicator_phase,delta)
+	_sync_indicator_lamps()
 	var bend_limit: float = SAFETY.corner_speed(heading,after_corner,displacement.length(),cruising_speed)
 	var goal: float = minf(bend_limit,SAFETY.desired_speed(cruising_speed,obstacle,signal_distance,wetness))
+	# R163: a physical neighboring convoy can only REDUCE the legacy
+	# raycast/signal/pedestrian target, never grant passage or extra speed.
+	last_follow_speed = FOLLOW.scan(self,neighbors,heading,speed,cruising_speed,wetness)
+	goal = minf(goal,last_follow_speed)
 	# B62: fund the real city's zebra crossings to actually calm ordinary
 	# resident traffic. One source-locked speed constraint, AFTER original
 	# pedestrian and signal safety. No change to physics, route or payout.

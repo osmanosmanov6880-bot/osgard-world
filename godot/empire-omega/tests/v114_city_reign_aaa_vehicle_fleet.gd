@@ -2,6 +2,10 @@ extends SceneTree
 ## CITY REIGN AAA A5: four genuinely different cached closed 3D traffic
 ## silhouettes on existing original CharacterBody3D physics and road routes.
 ## This validates real Godot geometry, not a style guide screenshot.
+## R167 maintenance: older A5 assumed 11/13 nodes. Since published R161,
+## every civilian car has 2 real indicator nodes (13 total), patrol has 15.
+## This test now validates those actual source improvements rather than
+## erasing turn-signal features just to restore stale numerical counts.
 const ART = preload("res://scripts/horizon_traffic_sedan_surface.gd")
 const TRAFFIC = preload("res://scripts/traffic_agent.gd")
 const STYLES = ["sedan","taxi","courier","executive"]
@@ -68,8 +72,10 @@ func _run() -> void:
 		names[style] = int(names.get(style,0))+1
 		var chassis: MeshInstance3D = car.get_node("CarBody") as MeshInstance3D
 		var cabin: MeshInstance3D = car.get_node("Cabin") as MeshInstance3D
-		check(chassis != null and cabin != null and car.get_child_count()==11,
-			"real city car has exactly original 11 nodes, no extra GPU draw nodes")
+		check(chassis != null and cabin != null and car.get_child_count()==13 and
+			car.get_node_or_null("R161LeftIndicator")!=null and
+			car.get_node_or_null("R161RightIndicator")!=null,
+			"current R161 traffic retains exactly 13 nodes including two genuine source indicators")
 		check(chassis.mesh==ART.body_mesh_for(style) and
 			cabin.mesh==ART.cabin_mesh_for(style),
 			"vehicle family actually changes source 3D geometry: "+style)
@@ -94,8 +100,8 @@ func _run() -> void:
 				"repeat instances of "+style+" share the exact same two GPU meshes")
 		car.call("set_visual_quality","low")
 		check(chassis.mesh==ART.body_mesh() and cabin.mesh==ART.cabin_mesh() and
-			car.get_child_count()==11,
-			"mobile low mode returns to the exact original shared meshes")
+			car.get_child_count()==13,
+			"LOW mode returns base meshes without dropping the real R161 turn signals")
 		car.call("set_visual_quality","cinematic")
 		check(chassis.mesh==ART.body_mesh_for(style) and
 			cabin.mesh==ART.cabin_mesh_for(style),
@@ -131,8 +137,10 @@ func _run() -> void:
 	root.add_child(patrol)
 	patrol.call("set_visual_quality","cinematic")
 	check((patrol.get_node("CarBody") as MeshInstance3D).mesh==ART.body_mesh()
-		and patrol.get_child_count()==13,
-		"original police model and two real siren nodes remain unchanged")
+		and patrol.get_child_count()==15 and
+		patrol.get_node_or_null("R161LeftIndicator")!=null and
+		patrol.get_node_or_null("R161RightIndicator")!=null,
+		"patrol retains original 2 sirens plus the 2 later R161 physical indicator nodes")
 	patrol.queue_free()
 	for car in fleet:
 		car.queue_free()
