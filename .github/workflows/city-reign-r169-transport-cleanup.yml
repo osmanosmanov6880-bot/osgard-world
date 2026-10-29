@@ -1,0 +1,105 @@
+name: CITY REIGN R169 - verified post-release transport cleanup only
+
+on:
+  push:
+    branches:
+      - ops/city-reign-r169-transport-cleanup-20261029
+    paths:
+      - .github/workflows/city-reign-r169-transport-cleanup.yml
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup-only:
+    name: Reverify live R169, remove only run 40874087579 temporary transport
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      EXPECTED_GAME_SHA: 8ea20f1b7699a9595800298a5acae6190d4871d2
+      DEPLOY_RUN_ID: "40874087579"
+      DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+    steps:
+      - name: Fetch exact source of original already-published R169 cleanup script
+        uses: actions/checkout@v4
+        with:
+          ref: 8ea20f1b7699a9595800298a5acae6190d4871d2
+          fetch-depth: 1
+      - name: Fail closed if the live public game is not still the verified R169
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 3 --retry-delay 2 --max-time 25 \
+            https://osgard.world/games/city-reign/release.json \
+            -o "$RUNNER_TEMP/city-reign-r169-release.json"
+          python3 - <<'PY'
+          import json,os
+          p=os.environ['RUNNER_TEMP']+'/city-reign-r169-release.json'
+          data=json.load(open(p,encoding='utf-8'))
+          assert data['source_commit']==os.environ['EXPECTED_GAME_SHA'], 'Live game was superseded: do not touch release transport'
+          assert data['channel']=='city-reign-preview'
+          assert data['engine']=='Godot 4.4.1'
+          print('R169 CLEANUP GATE: public source SHA and native Godot game verified')
+          PY
+          bash -n scripts/deploy-city-reign-ssh-remote.sh
+      - name: Prepare the existing VPS identity with protected SSH credentials
+        shell: bash
+        env:
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+          PINNED_HOSTS: ${{ secrets.OSGARD_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/city_reign_preview_key
+          chmod 600 ~/.ssh/city_reign_preview_key
+          if [ -n "$PINNED_HOSTS" ]; then
+            printf '%s\n' "$PINNED_HOSTS" > ~/.ssh/known_hosts
+          else
+            # Compatibility with the previously successful production SSH
+            # connection. Configure pinned known hosts for strict provenance.
+            for try in 1 2 3 4; do
+              if ssh-keyscan -T 12 -H "$DEPLOY_HOST" > ~/.ssh/known_hosts 2>/dev/null \
+                  && test -s ~/.ssh/known_hosts; then break; fi
+              sleep $((try*3))
+            done
+            echo "::warning::Pinned OSGARD host identity secret is recommended"
+          fi
+          test -s ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Retry ONLY the idempotent original temporary archive cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          for try in 1 2 3 4 5 6; do
+            echo "R169 exact transport cleanup attempt $try of 6"
+            if ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+                -o ConnectTimeout=15 -o ServerAliveInterval=10 \
+                -o ServerAliveCountMax=2 \
+                -i ~/.ssh/city_reign_preview_key \
+                "$DEPLOY_USER@$DEPLOY_HOST" \
+                "bash -s -- cleanup '$DEPLOY_RUN_ID' '$EXPECTED_GAME_SHA'" \
+                < scripts/deploy-city-reign-ssh-remote.sh; then
+              echo "R169: PASS - only this release's /tmp transport was cleaned"
+              exit 0
+            fi
+            if [ "$try" = 6 ]; then break; fi
+            sleep $((try*5))
+          done
+          echo "::error::Transient SSH transport never recovered; source game untouched"
+          exit 1
+      - name: Independently reconfirm public game source after maintenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 3 --max-time 25 \
+            https://osgard.world/games/city-reign/release.json \
+            -o "$RUNNER_TEMP/city-reign-r169-after-cleanup.json"
+          python3 - <<'PY'
+          import json,os
+          data=json.load(open(os.environ['RUNNER_TEMP']+'/city-reign-r169-after-cleanup.json'))
+          assert data['source_commit']==os.environ['EXPECTED_GAME_SHA']
+          assert data['channel']=='city-reign-preview'
+          print('R169: POST-CLEANUP PASS - public game and immutable source unchanged')
+          PY
