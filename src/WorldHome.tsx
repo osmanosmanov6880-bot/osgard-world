@@ -5,7 +5,6 @@ import './omegaWorld.css'
 import './developmentSignature.css'
 import { cases } from './featuredCases'
 import { BrandMark } from './BrandMark'
-import { formatEnquiry, validateEnquiry } from './projectEnquiry'
 import { recordBrandEvent } from './brandTelemetry'
 import { MOTION_CHANGE_EVENT } from './osgardRouting'
 import type { GlobeChapter, GlobeMode, GlobeView, GlobeQuality } from './OmegaGlobe'
@@ -124,9 +123,9 @@ export default function WorldHome({ development = false }: { development?: boole
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [brief, contact, saved])
-  const download = () => {
+  const download = (validatedContent: string) => {
     try {
-      const blob = new Blob([formatEnquiry(brief, contact)], { type: 'text/plain;charset=utf-8' })
+      const blob = new Blob([validatedContent], { type: 'text/plain;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = url
@@ -290,7 +289,7 @@ export default function WorldHome({ development = false }: { development?: boole
         <div className="world-case-art" style={item.visual === 'screenshot' ? { aspectRatio: '3 / 2' } : undefined}><img src={item.art} alt={(item.visual === 'screenshot' ? tx("Снимок публичной страницы кейса ") : tx("Визуальное превью ")) + item.name} width="1200" height={item.visual === 'screenshot' ? 800 : 630} loading="lazy" decoding="async" /><span className="brand-status">{locale === 'en' ? txCase(item.id, 'type') || item.type : item.type}</span></div>
         <div className="world-case-title"><span>0{index + 1} / {locale === 'en' ? txCase(item.id, 'category') || item.category : item.category}</span><h3>{item.name} <span aria-hidden="true">↗</span></h3><p>{locale === 'en' ? txCase(item.id, 'description') || item.description : item.description}</p><span className="world-case-open">{tx("Открыть кейс")} <span aria-hidden="true">→</span></span></div>
       </a>)}</div>
-      <p className="world-case-legend"><strong>{tx("Как читать статусы.")}</strong> {tx("Концепт показывает направление. Демо позволяет попробовать сценарий. Прототип проверяет часть продукта. Коммерческий запуск требует отдельного подтверждения. PHANTOM, TEDES и MERAKKI показаны на реальных снимках публичных страниц кейсов. ESSENTIA — визуальное превью. Снимки не подтверждают работу сервера или коммерческий запуск.")}</p>
+      <p className="world-case-legend"><strong>{tx("Как читать статусы.")}</strong> {tx("Концепт показывает направление. Демо позволяет попробовать сценарий. Прототип проверяет часть продукта. Коммерческий запуск требует отдельного подтверждения. PHANTOM, TEDES и MERAKKI — снимки публичных страниц; ESSENTIA — превью. Снимки не подтверждают работу сервера или коммерческий запуск.")}</p>
     </section>
 
     <section id="approach" className="brand-section" aria-labelledby="world-approach-title">
@@ -312,7 +311,7 @@ export default function WorldHome({ development = false }: { development?: boole
         <a href="mailto:osman.osmanov0099@gmail.com" onClick={() => recordBrandEvent('contact_opened')}>osman.osmanov0099@gmail.com <span aria-hidden="true">↗</span></a>
         <p className="world-contact-next">{tx("Первое обсуждение — задача, объём и следующий шаг. Сроки и стоимость определяются после разбора брифа.")}</p>
       </div>
-      <form noValidate onSubmit={event => { event.preventDefault(); const problem = validateEnquiry(brief, contact); if (problem) { setError(problem); briefInput.current?.focus(); return } download() }}>
+      <form noValidate onSubmit={async event => { event.preventDefault(); try { const { validateEnquiry, formatEnquiry } = await import('./projectEnquiry'); const problem = validateEnquiry(brief, contact); if (problem) { setError(problem); briefInput.current?.focus(); return } download(formatEnquiry(brief, contact)) } catch { setError(locale === 'ru' ? 'Не удалось подготовить файл. Скопируйте описание и отправьте его на указанный адрес.' : 'Could not prepare the file. Copy your description and email it to the address above.') } }}>
         <label htmlFor="project-brief">{tx("Что хотите создать?")}</label>
         <p id="brief-help" className="brand-field-help">{tx("Для кого продукт, какую задачу решает, что уже есть. От 20 до 5000 символов.")}</p>
         <textarea id="project-brief" name="project-brief" ref={briefInput} aria-invalid={Boolean(error)} aria-describedby="brief-help brief-feedback" required minLength={20} maxLength={5000} value={brief} onChange={event => { setBrief(event.target.value); setSaved(false); setError('') }} placeholder={tx("Например: сервис записи для небольшого клуба. Нужно показать расписание и собирать заявки…")} rows={5} />

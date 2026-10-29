@@ -1,7 +1,9 @@
 import { getPlayGame } from './redesignCatalog'
+import { getStudioWork } from './osaCinemaStudioRegistry'
 
 const cleanSeo: Record<string, { title: string; description: string }> = {
   '/osa-cinema': { title: 'OSA Original — интерактивный фильм об ИИ и власти знаний', description: 'Три акта об искусственном интеллекте, власти информации и будущем человека. Интерактивные решения, источники и прогресс на устройстве.' },
+  '/osa-cinema/studio': { title: 'OSA CINEMA STUDIO — оригинальные истории и производство', description: 'Двуязычная коллекция оригинальных интерактивных историй, незавершённого кино и локальных концепт-превизов с проверяемыми производственными статусами.' },
   '/': { title: 'OSA Intelligence — понимать, проверять, решать', description: 'Интерактивная среда OSA: изучайте возможности ИИ, проверяйте доказательства и принимайте ответственные решения.' },
   '/academy': { title: 'OSGARD AI Academy — понимать, проверять, применять ИИ', description: 'Учебные маршруты, интерактивный курс и практическая студия по применению искусственного интеллекта.' },
   '/learning/assessment': { title: 'OSA Learning — проверка знаний', description: 'Восемь проверочных вопросов по интерактивным урокам OSA.' },
@@ -54,7 +56,11 @@ export function updateRouteSeo(path: string): void {
     const game = gameId ? getPlayGame(gameId) : undefined
     const lessonTitles: Record<string,string> = {'intelligence-and-imitation':'Интеллект и имитация','how-language-models-work':'Как работают языковые модели','power-of-knowledge':'Власть знаний','signal-and-noise':'Сигнал и шум','verify-an-ai-answer':'Проверьте ответ ИИ','privacy-before-prompting':'Приватность до запроса','human-in-the-loop':'Человек в контуре','investigate-the-future':'Исследуйте будущее'}
     const lessonTitle = path.startsWith('/lectures/') ? lessonTitles[path.slice('/lectures/'.length)] : null
-    const data = lessonTitle ? {title:'OSA — '+lessonTitle,description:'Урок OSA: '+lessonTitle+'. Цели, материал, практика, самопроверка и источники.'} : (game ? { title: game.title+' — OSGARD PLAY', description: game.description+' '+game.platform+'. Инструкция, сохранение и запуск.' } : gameId ? { title: 'Мир не найден — OSGARD PLAY', description: 'Такого мира нет в каталоге. Откройте OSGARD PLAY и выберите доступный проект.' } : cleanSeo[path]) ?? (path.startsWith('/lectures/') ? { title: 'OSA Original — подробная лекция | OSGARD', description: 'Учебные цели, материал, словарь, самопроверка, практика и проверяемые источники OSA Original.' } : cleanSeo['/'])
+    const studioId = path.startsWith('/osa-cinema/studio/films/') ? path.slice('/osa-cinema/studio/films/'.length) : null
+    const studioWork = studioId ? getStudioWork(studioId) : undefined
+    const studioEnglish = new URLSearchParams(location.search).get('lang') === 'en'
+    const studioSeo = studioWork ? {title:(studioEnglish?studioWork.english:studioWork.title)+' — OSA CINEMA',description:studioEnglish?studioWork.descriptionEn:studioWork.description} : studioId ? {title:'Фильм не найден — OSA CINEMA',description:'Такого проекта нет в подтверждённой коллекции OSA CINEMA.'} : undefined
+    const data = studioSeo ?? (lessonTitle ? {title:'OSA — '+lessonTitle,description:'Урок OSA: '+lessonTitle+'. Цели, материал, практика, самопроверка и источники.'} : (game ? { title: game.title+' — OSGARD PLAY', description: game.description+' '+game.platform+'. Инструкция, сохранение и запуск.' } : gameId ? { title: 'Мир не найден — OSGARD PLAY', description: 'Такого мира нет в каталоге. Откройте OSGARD PLAY и выберите доступный проект.' } : cleanSeo[path]) ?? (path.startsWith('/lectures/') ? { title: 'OSA Original — подробная лекция | OSGARD', description: 'Учебные цели, материал, словарь, самопроверка, практика и проверяемые источники OSA Original.' } : cleanSeo['/']))
     const canonicalPath = path==='/entertainment'||path==='/games'?'/play':path
     const canonical = `https://osgard.world${canonicalPath === '/' ? '/' : canonicalPath}`
     document.title = data.title
@@ -71,13 +77,13 @@ export function updateRouteSeo(path: string): void {
     }
     setMeta('meta[name="description"]', 'content', data.description)
     const privateRoute = ['/account','/workspace','/workspace/overview','/teams','/deliveries','/purchases','/data','/learning/campus','/learning/organizer','/learning/enrollment'].includes(path)
-    setMeta('meta[name="robots"]', 'content', privateRoute || gameId && !game ? 'noindex,follow' : 'index,follow')
+    setMeta('meta[name="robots"]', 'content', privateRoute || gameId && !game || studioId && !studioWork ? 'noindex,follow' : 'index,follow')
     setMeta('meta[name="twitter:card"]', 'content', 'summary_large_image')
     setMeta('meta[property="og:title"]', 'content', data.title)
     setMeta('meta[property="og:description"]', 'content', data.description)
     setMeta('meta[property="og:url"]', 'content', canonical)
-    const theme = path==='/'&&(new URLSearchParams(location.search).has('project')||location.hash==='#project-studio')?'intelligence':path==='/play/partners'?'world':path==='/play'||path.startsWith('/play/')||path==='/games'||path==='/entertainment'?'play':path==='/intelligence'||path.startsWith('/learning')||path.startsWith('/lectures')||path==='/academy'||path==='/osa-cinema'?'intelligence':'world'
-    const preview = `https://osgard.world/brand/preview-${theme}.png`
+    const theme = path==='/'&&(new URLSearchParams(location.search).has('project')||location.hash==='#project-studio')?'intelligence':path==='/play/partners'?'world':path==='/play'||path.startsWith('/play/')||path==='/games'||path==='/entertainment'?'play':path==='/intelligence'||path.startsWith('/learning')||path.startsWith('/lectures')||path==='/academy'||path==='/osa-cinema'||path.startsWith('/osa-cinema/studio')?'intelligence':'world'
+    const preview = studioWork ? `https://osgard.world/osa-cinema/reference/${studioWork.artwork}` : `https://osgard.world/brand/preview-${theme}.png`
     setMeta('meta[property="og:image"]', 'content', preview)
     setMeta('meta[property="og:image:alt"]', 'content', data.title)
     setMeta('meta[name="twitter:title"]', 'content', data.title)
@@ -87,7 +93,7 @@ export function updateRouteSeo(path: string): void {
     let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
     if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.appendChild(link) }
     link.href = canonical
-    const jsonLd = { '@context': 'https://schema.org', '@type': 'WebPage', name: data.title, description: data.description, url: canonical, isPartOf: { '@type': 'WebSite', name: 'OSGARD WORLD', url: 'https://osgard.world/' } }
+    const jsonLd = studioWork ? { '@context': 'https://schema.org', '@type': 'CreativeWork', name: studioEnglish?studioWork.english:studioWork.title, description: data.description, url: canonical, inLanguage: ['ru','en'], dateCreated: studioWork.year, isPartOf: { '@type': 'WebSite', name: 'OSA CINEMA', url: 'https://osgard.world/osa-cinema/studio' } } : { '@context': 'https://schema.org', '@type': 'WebPage', name: data.title, description: data.description, url: canonical, isPartOf: { '@type': 'WebSite', name: 'OSGARD WORLD', url: 'https://osgard.world/' } }
     let script = document.head.querySelector<HTMLScriptElement>('script[data-route-seo]')
     if (!script) { script = document.createElement('script'); script.type = 'application/ld+json'; script.dataset.routeSeo = 'true'; document.head.appendChild(script) }
     script.textContent = JSON.stringify(jsonLd)

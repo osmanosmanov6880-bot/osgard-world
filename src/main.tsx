@@ -2,6 +2,8 @@ import React, { StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 const AcademyHome = React.lazy(() => import('./AcademyHome'))
 const OSACinema = React.lazy(() => import('./OSACinema'))
+const OSACinemaStudio = React.lazy(() => import('./OSACinemaStudio'))
+const OSACinemaFilm = React.lazy(() => import('./OSACinemaFilm'))
 const LectureLibrary = React.lazy(() => import('./LectureLibrary'))
 const OSAExperimentPage = React.lazy(() => import('./OSAExperimentPage'))
 const OSAProgramPage = React.lazy(() => import('./OSAProgramPage'))
@@ -66,7 +68,7 @@ function Seo({ path }: { path: string }) {
   React.useEffect(() => {
     const canonicalPath = path === '/entertainment' || path === '/games' ? '/play' : path
     const canonical = 'https://osgard.world' + canonicalPath
-    if (document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href === canonical) return
+    if (document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href === canonical && !path.startsWith('/osa-cinema/studio/films/')) return
     let cancelled = false
     import('./routeSeo').then(module => { if (!cancelled) module.updateRouteSeo(path) }).catch(() => {
       // Metadata failure must never prevent the actual route from opening.
@@ -110,6 +112,8 @@ function RoutedContent({ path, href }: { path: string; href: string }) {
   if (path === '/lectures') return <><Seo path="/lectures" /><LectureLibrary /></>
   if (path.startsWith('/lectures/')) return <><Seo path={path} /><OSALessonPage slug={path.slice('/lectures/'.length)} /></>
   if (path === '/portal') return <><Seo path="/" /><WorldHome /></>
+  if (path.startsWith('/osa-cinema/studio/films/')) return <><Seo path={path} /><OSACinemaFilm projectId={path.slice('/osa-cinema/studio/films/'.length)} /></>
+  if (path === '/osa-cinema/studio') return <><Seo path={path} /><OSACinemaStudio /></>
   if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>
   if (path === '/miniapp') return <MiniApp />
   if (path === '/games/time' || path === '/games/time-empire') return <><Seo path="/games/time" /><TimePrototype /></>
@@ -145,7 +149,10 @@ function RoutedRoot(){
   const { href, revision } = React.useSyncExternalStore(subscribeBrowserNavigation, getBrowserSnapshot, getServerSnapshot)
   const url = new URL(href, 'https://osgard.world')
   const path = normalizeReactPath(url.pathname)
-  const theme = path==='/'&&(url.searchParams.has('project')||url.hash==='#project-studio')?'intelligence':path==='/play/partners'?'world':path==='/play'||path.startsWith('/play/')||path==='/games'||path==='/entertainment'||path.startsWith('/games/')?'play':path==='/intelligence'||path.startsWith('/learning')||path==='/academy'||path.startsWith('/lectures')||path==='/osa-cinema'?'intelligence':'world'
-  return <OsgardTransitionProvider><BrandShell theme={theme}><RouteBoundary key={revision}><Suspense fallback={<OsgardRouteSkeleton theme={theme} path={path} />}><MeasuredRoute path={path} href={href} revision={revision} /></Suspense></RouteBoundary></BrandShell></OsgardTransitionProvider>
+  const theme = path==='/'&&(url.searchParams.has('project')||url.hash==='#project-studio')?'intelligence':path==='/play/partners'?'world':path==='/play'||path.startsWith('/play/')||path==='/games'||path==='/entertainment'||path.startsWith('/games/')?'play':path==='/intelligence'||path.startsWith('/learning')||path==='/academy'||path.startsWith('/lectures')||path==='/osa-cinema'||path.startsWith('/osa-cinema/studio')?'intelligence':'world'
+  const page = <RouteBoundary key={revision}><Suspense fallback={<OsgardRouteSkeleton theme={theme} path={path} />}><MeasuredRoute path={path} href={href} revision={revision} /></Suspense></RouteBoundary>
+  // Cinema Studio ships its own dark editorial header, navigation and footer.
+  // The general-purpose OSGARD shell would duplicate chrome and override legibility.
+  return <OsgardTransitionProvider>{path.startsWith('/osa-cinema/studio') ? page : <BrandShell theme={theme}>{page}</BrandShell>}</OsgardTransitionProvider>
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><RoutedRoot /></StrictMode>)
