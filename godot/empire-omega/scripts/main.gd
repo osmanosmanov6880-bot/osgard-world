@@ -453,7 +453,8 @@ func _physics_process(delta: float) -> void:
 	if car.horizon_visual != null:
 		car.horizon_visual.call("set_cockpit_active",cockpit_enabled)
 		if cockpit_enabled:
-			car.horizon_visual.call("set_cockpit_data",car.speed,car.steering_filter,car.brake_response)
+			car.horizon_visual.call("set_cockpit_data",car.speed,car.steering_filter,car.brake_response,
+				car.lateral_speed,GameSettings.reduced_motion)
 	if cockpit_enabled:
 		camera.global_position = COCKPIT_VIEW.eye(car.global_transform,phone_view)
 		camera.look_at(COCKPIT_VIEW.target(car.global_transform,phone_view),Vector3.UP)

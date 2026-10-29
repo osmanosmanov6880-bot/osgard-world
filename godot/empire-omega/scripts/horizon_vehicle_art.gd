@@ -305,9 +305,10 @@ func set_cockpit_active(value: bool) -> void:
 	if cockpit_interior != null:
 		cockpit_interior.set_active(value,self)
 
-func set_cockpit_data(forward_speed: float,steering: float,braking: float = 0.0) -> void:
+func set_cockpit_data(forward_speed: float,steering: float,braking: float = 0.0,
+		lateral_motion: float = 0.0,reduced_motion: bool = false) -> void:
 	if cockpit_interior != null and cockpit_interior.active:
-		cockpit_interior.set_live_data(forward_speed,steering,braking)
+		cockpit_interior.set_live_data(forward_speed,steering,braking,lateral_motion,reduced_motion)
 
 func sync_rotor_heat(axle_heat: Vector2) -> void:
 	# Real front/rear loads drive existing wheel rotors. Pooled meshes and

@@ -4,6 +4,7 @@ extends Node3D
 ## THREE draw meshes; ZERO extra collision objects, dynamic lights, textures,
 ## physics rays, autoloads or money/state writes. All meshes built only once.
 const RING_SEGMENTS: int = 24
+const R169_MIX = preload("res://scripts/city_reign_acoustic_mix.gd")
 var panel: MeshInstance3D
 var steering_wheel: MeshInstance3D
 var speed_needle: MeshInstance3D
@@ -12,6 +13,8 @@ var mesh_builds: int = 0
 var last_speed: float = 0.0
 var last_steering: float = 0.0
 var last_brake_response: float = 0.0
+var last_lateral_motion: float = 0.0
+var last_reduced_motion: bool = false
 
 static func _face(st: SurfaceTool,a: Vector3,b: Vector3,c: Vector3,
         d: Vector3,tint: Color) -> void:
@@ -121,12 +124,20 @@ func set_active(value: bool,vehicle_shell: Node3D) -> void:
         if part!=null:
             part.visible = not value
 
-func set_live_data(forward_speed: float,steering: float,braking: float = 0.0) -> void:
-    if not active or not is_finite(forward_speed) or not is_finite(steering) or not is_finite(braking):
+func set_live_data(forward_speed: float,steering: float,braking: float = 0.0,
+        lateral_motion: float = 0.0,reduced_motion: bool = false) -> void:
+    if not active or not is_finite(forward_speed) or not is_finite(steering) or not is_finite(braking) or not is_finite(lateral_motion):
         return
     last_speed = forward_speed
     last_steering = clampf(steering,-1.0,1.0)
     last_brake_response = clampf(braking,0.0,1.0)
+    last_lateral_motion = lateral_motion
+    last_reduced_motion = reduced_motion
+    # Physically situated wheel reacts to actual lateral motion and brake
+    # pressure, without a new mesh, additional collision or camera shake.
+    # Reduced-motion zeroes all newly introduced tilt and fore/aft motion.
+    steering_wheel.rotation.x = R169_MIX.cockpit_slip(lateral_motion,reduced_motion)
+    steering_wheel.position.z = -0.725-R169_MIX.cockpit_brake(braking,reduced_motion)
     steering_wheel.rotation.z = -last_steering*0.55
     speed_needle.rotation.z = -0.95+clampf(absf(forward_speed)/29.0,0.0,1.0)*1.90
     # Amber speed needle reacts to pedal effort and turns warmer on heavy
