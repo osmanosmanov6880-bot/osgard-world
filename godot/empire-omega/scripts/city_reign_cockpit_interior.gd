@@ -11,6 +11,7 @@ var active: bool = false
 var mesh_builds: int = 0
 var last_speed: float = 0.0
 var last_steering: float = 0.0
+var last_brake_response: float = 0.0
 
 static func _face(st: SurfaceTool,a: Vector3,b: Vector3,c: Vector3,
         d: Vector3,tint: Color) -> void:
@@ -69,6 +70,16 @@ func _ready() -> void:
     for index in range(3):
         _block(dash,Vector3(0.18+float(index)*0.23,0.242,-0.901),
             Vector3(0.071,0.017,0.009),Color("9ca9a8"))
+    # Real analogue dial tick marks are authored into the EXISTING panel
+    # surface rather than twenty separate draw calls or DOM overlays.
+    for tick in range(11):
+        var theta: float = -2.42+float(tick)*0.17
+        var x: float = -0.68+cos(theta)*0.161
+        var y: float = 0.245+sin(theta)*0.161
+        _face(dash,Vector3(x-0.008,y-0.009,-0.866),
+            Vector3(x+0.008,y-0.009,-0.866),
+            Vector3(x+0.008,y+0.009,-0.866),
+            Vector3(x-0.008,y+0.009,-0.866),Color("d8b77f"))
     panel = _mesh("PhysicalDashboard",dash)
 
     var ring := SurfaceTool.new()
@@ -110,10 +121,16 @@ func set_active(value: bool,vehicle_shell: Node3D) -> void:
         if part!=null:
             part.visible = not value
 
-func set_live_data(forward_speed: float,steering: float) -> void:
-    if not active or not is_finite(forward_speed) or not is_finite(steering):
+func set_live_data(forward_speed: float,steering: float,braking: float = 0.0) -> void:
+    if not active or not is_finite(forward_speed) or not is_finite(steering) or not is_finite(braking):
         return
     last_speed = forward_speed
     last_steering = clampf(steering,-1.0,1.0)
+    last_brake_response = clampf(braking,0.0,1.0)
     steering_wheel.rotation.z = -last_steering*0.55
     speed_needle.rotation.z = -0.95+clampf(absf(forward_speed)/29.0,0.0,1.0)*1.90
+    # Amber speed needle reacts to pedal effort and turns warmer on heavy
+    # braking, without new material instances or meshes per frame.
+    var needle_finish: StandardMaterial3D = speed_needle.material_override as StandardMaterial3D
+    if needle_finish!=null:
+        needle_finish.albedo_color = Color.WHITE.lerp(Color("ff9576"),last_brake_response*0.80)

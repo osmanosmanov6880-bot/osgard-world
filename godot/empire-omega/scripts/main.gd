@@ -450,7 +450,7 @@ func _physics_process(delta: float) -> void:
 	if car.horizon_visual != null:
 		car.horizon_visual.call("set_cockpit_active",cockpit_enabled)
 		if cockpit_enabled:
-			car.horizon_visual.call("set_cockpit_data",car.speed,car.steering_filter)
+			car.horizon_visual.call("set_cockpit_data",car.speed,car.steering_filter,car.brake_response)
 	if cockpit_enabled:
 		camera.global_position = COCKPIT_VIEW.eye(car.global_transform,phone_view)
 		camera.look_at(COCKPIT_VIEW.target(car.global_transform,phone_view),Vector3.UP)
@@ -564,7 +564,7 @@ func _physics_process(delta: float) -> void:
 		hud.map.case_active = case_site != "" and world.locations.has(case_site)
 		if hud.map.case_active: hud.map.case_world = world.locations[case_site]["position"]
 	if Engine.get_physics_frames() % 3 == 0:
-		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y,goal_visible,drive_nav_status,drive_warning_status,car.indicator_mode)
+		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y,goal_visible,drive_nav_status,drive_warning_status,car.indicator_mode,car.brake_response)
 	# Patrols use shared physical roads and do not warp while pursuing the player.
 	if patrols != null:
 		var heat: int = int(GameState.data.get("law",{}).get("heat",0))

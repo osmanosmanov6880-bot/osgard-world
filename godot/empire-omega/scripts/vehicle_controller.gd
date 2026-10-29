@@ -14,6 +14,7 @@ const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
 const R46_LOAD_TRANSFER = preload("res://scripts/horizon_r46_load_transfer.gd")
 const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
 const SIGNAL_CANCEL = preload("res://scripts/city_reign_signal_cancel.gd")
+const APEX_RESPONSE = preload("res://scripts/city_reign_brake_response.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -40,6 +41,10 @@ var indicator_angle_progress: float = 0.0
 var indicator_distance: float = 0.0
 var _indicator_lit: Dictionary = {"left":true,"right":true}
 var brake_lights_on := false
+## Modelled pedal actuation, NOT sensor-derived hydraulic brake pressure.
+var brake_response: float = 0.0
+var brake_estimated_stop_m: float = 0.0
+var apex_torque_factor: float = 1.0
 var handbrake_on := false
 var steering_filter := 0.0
 var speed := 0.0
@@ -290,6 +295,17 @@ func _physics_process(delta: float) -> void:
 	var applied_throttle: float = DRIVER_ASSISTS.drive_power(throttle,speed,lateral_speed,traction_factor,handbrake_on) if driving and assists_enabled else throttle
 	if applied_throttle > 0.0:
 		applied_throttle *= YAW_INERTIA.corner_power_factor(speed,current_yaw_rate,traction_factor,handbrake_on)
+	# R165: the original engine loses some torque close to its speed
+	# governor instead of a constant flat-acceleration curve.
+	apex_torque_factor = APEX_RESPONSE.power_factor(speed,forward_limit)
+	if applied_throttle>0.0 and speed>=0.0:
+		applied_throttle *= apex_torque_factor
+	# Real opposing pedal input progressively reaches braking force, while
+	# reverse from rest and positive drive remain under player authority.
+	brake_response = APEX_RESPONSE.step(brake_response,
+		APEX_RESPONSE.request(throttle,speed,handbrake_on) if driving else 0.0,delta)
+	if not driving:
+		brake_response = 0.0
 	power_assist_reduction = maxf(0.0,throttle-applied_throttle)
 	# R46: baseline driving remains identical with four planted wheels. Only
 	# true braking while contacts are missing loses available normal-force grip.
@@ -304,12 +320,16 @@ func _physics_process(delta: float) -> void:
 				prior_support[wheel_index] = bool(saved_support[wheel_index])
 	r46_brake_grip = R46_LOAD_TRANSFER.braking_grip(traction_factor,prior_support,r46_front_load_ratio)
 	var drive_grip: float = r46_brake_grip if braking_now else traction_factor
-	speed = DYNAMICS.speed_step(speed,applied_throttle,drive_grip,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
+	var phased_throttle: float = APEX_RESPONSE.effective_throttle(applied_throttle,speed,brake_response)
+	speed = DYNAMICS.speed_step(speed,phased_throttle,drive_grip,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
 	if not driving and absf(speed) < 0.35:
 		speed = 0.0
 	var applied_steering: float = DRIVER_ASSISTS.stabilize_steering(steering_filter,speed,lateral_speed,traction_factor,handbrake_on) if driving and assists_enabled else steering_filter
 	steering_assist_correction = absf(steering_filter-applied_steering)
 	var desired_yaw_rate: float = DYNAMICS.yaw_rate(speed,applied_steering*handling_factor,traction_factor,handbrake_on)
+	# Shared approximate friction budget: heavy braking reserves lateral grip.
+	# User steering and deliberate handbrake remain available.
+	desired_yaw_rate = APEX_RESPONSE.corner_yaw(desired_yaw_rate,speed,traction_factor,brake_response,handbrake_on)
 	current_yaw_rate = YAW_INERTIA.yaw_step(current_yaw_rate,desired_yaw_rate,speed,traction_factor,handbrake_on,delta)
 	rotation.y += current_yaw_rate * minf(delta,0.1)
 	var lateral_grip: float = rear_traction_factor if axle_grip_active else traction_factor
@@ -347,9 +367,12 @@ func _physics_process(delta: float) -> void:
 	last_wheel_support = wheel_support
 	r46_brake_diagnostics = R46_LOAD_TRANSFER.diagnostics(speed,longitudinal_acceleration,traction_factor,wheel_support["grounded"])
 	r46_front_load_ratio = float(r46_brake_diagnostics["front_axle_load_ratio"])
+	brake_estimated_stop_m = R46_LOAD_TRANSFER.estimated_brake_distance(speed,r46_brake_grip)
 	if horizon_visual != null:
 		horizon_visual.call("roll_wheels",covered * signf(speed),applied_steering)
 		horizon_visual.call("simulate_chassis",speed,current_yaw_rate,longitudinal_acceleration,traction_factor,handbrake_on,wheel_support["travel"],delta,wheel_support["grounded"])
+		# Existing brake lens is animated by actual sampled pedal response.
+		horizon_visual.call("sync_brake_response",brake_response,brake_lights_on,delta)
 	_update_drift_score(delta)
 	for wheel in wheel_nodes:
 		wheel.rotate_x(spin)
