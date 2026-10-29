@@ -160,6 +160,93 @@ export async function coreRequest<T>(route: string, body?: Record<string, unknow
         clearTimeout(timer);
     }
 }
+/* V63: real authenticated private byte transfer, never a public streaming URL. */
+export type CinemaVaultUploadResult = {
+ assetId:string; spaceId:string; spaceVersion:number; actualSha256:string;
+ checksumComputedFromBytes:true;bytes:number;mime:string;name:string;
+ malwareScanned:false;encryptionAtRest:false;releaseAuthorized:false;publicVideoUrl:null;replayed:boolean;
+};
+const cinemaVaultTypes: Record<string,string> = {
+ pdf:'application/pdf',txt:'text/plain',png:'image/png',jpg:'image/jpeg',
+ jpeg:'image/jpeg',webp:'image/webp',mp4:'video/mp4'
+};
+export function cinemaVaultMime(filename:string): string {
+ const ext=filename.toLowerCase().split('.').pop()||'';
+ return cinemaVaultTypes[ext]||'';
+}
+async function vaultError(response:Response):Promise<CoreError>{
+ if(!response.headers.get('Content-Type')?.includes('application/json'))
+  return new CoreError('server_offline','OSGARD Core не подключён.',response.status);
+ try{
+  const result=await response.json() as {error?:string;message?:string};
+  return new CoreError(result.error||'request',result.message||'Не удалось передать файл.',response.status);
+ }catch{return new CoreError('invalid_response','Сервер вернул неверный ответ.',response.status)}
+}
+export async function uploadCoreCinemaAsset(
+ spaceId:string,expectedVersion:number,file:File,key:string,evidenceId=''
+):Promise<CinemaVaultUploadResult>{
+ if(!/^[a-f0-9]{32}$/.test(spaceId)||!Number.isInteger(expectedVersion)||expectedVersion<1)
+  throw new CoreError('validation','Выберите действительное рабочее пространство.');
+ if(file.size<=0||file.size>8*1024*1024)
+  throw new CoreError('file_size','Доступны файлы до 8 МиБ.');
+ const mime=cinemaVaultMime(file.name);
+ if(!mime)throw new CoreError('file_type','Разрешены PDF, TXT, PNG, JPG, WebP и MP4.');
+ if(!/^[A-Za-z0-9_-]{16,100}$/.test(key))
+  throw new CoreError('idempotency','Неверный ключ загрузки.');
+ if(evidenceId&&!/^[a-f0-9]{32}$/.test(evidenceId))
+  throw new CoreError('validation','Неверный идентификатор материала.');
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
+ try{
+  const r=await fetch('/api/core/cinema/spaces/'+spaceId+'/vault/upload',{
+   method:'POST',credentials:'omit',cache:'no-store',signal:controller.signal,
+   headers:{'Authorization':'Bearer '+token,'Content-Type':mime,
+    'X-Cinema-File-Name':encodeURIComponent(file.name),
+    'X-Space-Version':String(expectedVersion),'Idempotency-Key':key,
+    ...(evidenceId?{'X-Cinema-Evidence-Id':evidenceId}:{})},
+   body:file
+  });
+  if(!r.ok)throw await vaultError(r);
+  if(!r.headers.get('Content-Type')?.includes('application/json'))
+   throw new CoreError('invalid_response','Сервер вернул неверный ответ.');
+  return await r.json() as CinemaVaultUploadResult;
+ }catch(e){
+  if(e instanceof CoreError)throw e;
+  throw new CoreError('connection','Связь прервалась. Повторите загрузку с тем же файлом и ключом.');
+ }finally{clearTimeout(timer)}
+}
+export async function downloadCoreCinemaAsset(
+ spaceId:string,assetId:string,name:string,knownSha256:string
+):Promise<void>{
+ if(!/^[a-f0-9]{32}$/.test(spaceId)||!/^[a-f0-9]{32}$/.test(assetId))
+  throw new CoreError('validation','Неверный идентификатор файла.');
+ if(!/^[a-f0-9]{64}$/.test(knownSha256))
+  throw new CoreError('validation','Неизвестная контрольная сумма файла.');
+ if(!crypto?.subtle)throw new CoreError('secure_context','Для проверки файла нужен защищённый контекст HTTPS/localhost.');
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+ try{
+  const r=await fetch('/api/core/cinema/spaces/'+spaceId+'/vault/'+assetId+'/download',{
+   method:'GET',credentials:'omit',cache:'no-store',signal:controller.signal,
+   headers:{'Authorization':'Bearer '+token,'Accept':'application/octet-stream'}
+  });
+  if(!r.ok)throw await vaultError(r);
+  if(!r.headers.get('Content-Type')?.includes('application/octet-stream'))
+   throw new CoreError('invalid_response','Ожидался закрытый бинарный файл.');
+  if(r.headers.get('X-OSA-Cinema-SHA256')!==knownSha256)
+   throw new CoreError('integrity','Контрольная сумма не совпадает с серверной записью.');
+  const bytes=await r.arrayBuffer();
+  if(bytes.byteLength>8*1024*1024)throw new CoreError('file_size','Файл превышает допустимый размер.');
+  const digest=await crypto.subtle.digest('SHA-256',bytes);
+  const localHash=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
+  if(localHash!==knownSha256)throw new CoreError('integrity','Контрольная сумма загруженного файла не совпадает. Сохранение отменено.');
+  const url=URL.createObjectURL(new Blob([bytes],{type:'application/octet-stream'}));
+  try{const a=document.createElement('a');a.href=url;a.download=name;a.click();}
+  finally{setTimeout(()=>URL.revokeObjectURL(url),1500);}
+ }catch(e){
+  if(e instanceof CoreError)throw e;
+  throw new CoreError('connection','Не удалось получить файл из Core.');
+ }finally{clearTimeout(timer);}
+}
+
 let memoryPending: PendingOperation | null | undefined
 export function readPending(): PendingOperation | null { if(memoryPending!==undefined)return memoryPending;try {
     const v = JSON.parse(sessionStorage.getItem(PENDING) || 'null');
