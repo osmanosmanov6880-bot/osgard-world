@@ -113,7 +113,8 @@ func _run() -> void:
     await process_frame
     await process_frame
     _assert(game.guide_panel!=null and not game.guide_panel.visible and
-        game.touch_guide_button.custom_minimum_size.y>=0.0,
+        game.touch_guide_button.get_global_rect().size.y>=44 and
+        game.touch_navigation_button.get_global_rect().size.y>=44,
         "Real game mounts optional help overlay, hidden at intro")
     _press(game,KEY_F1)
     _assert(not game.guide_panel.visible,"F1 cannot fabricate in-game help before start")
