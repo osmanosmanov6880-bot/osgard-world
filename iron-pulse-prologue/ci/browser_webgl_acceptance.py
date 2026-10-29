@@ -129,6 +129,24 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "real_relay_positions":positions,
                             "available_slots":2
                         }
+                        # G2: verify real 3D instances and real source state.
+                        # These read-only values are not injected game commands.
+                        g2_world=idle.get("g2_field_protocol",{})
+                        assert g2_world.get("schema")=="IRON_PULSE_FIELD_PROCEDURES_G2" and (
+                            g2_world.get("physical_station_count")==2),(
+                            "G2 actual field consoles missing from exported Godot 3D scene",name,g2_world)
+                        g2_positions=g2_world.get("physical_positions",[])
+                        assert len(g2_positions)==2 and [p[0] for p in g2_positions]==["sink","air"],(
+                            "Field protocols are decorative UI, not actual spatial stations",name,g2_world)
+                        assert abs(float(g2_positions[0][2])+32.5)<0.1 and (
+                            abs(float(g2_positions[1][2])+49.0)<0.1),(
+                            "Field protocols have wrong or nonexistent world positions",name,g2_positions)
+                        assert g2_world.get("selected")=="" and g2_world.get("available") is False and (
+                            g2_world.get("selected_from_real_engine") is True and
+                            g2_world.get("gameplay_simulated") is False and
+                            g2_world.get("telemetry_uploaded") is False),(
+                            "Optional field choice must not be pre-selected or fabricated",name,g2_world)
+                        report.setdefault("g2_actual_3d_field_consoles",{})[name]="2 source-bound 3D stations, locked until real scan PASS"
                         # V8 must render a NEW 15m side reactor chamber,
                         # not just rename old corridor meshes or substitute CGI.
                         bay = idle.get("reactor_atrium", {})
@@ -371,6 +389,10 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
+                        g2_after_start=state.get("g2_field_protocol",{})
+                        assert g2_after_start.get("selected")=="" and (
+                            g2_after_start.get("available") is False), (
+                            "New player received field resources without a real scanner",name,g2_after_start)
 
                         # G1: prove that the real Godot operator guide opens
                         # through the actual keyboard and mobile touch inputs.
