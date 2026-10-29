@@ -20,6 +20,10 @@ var _has_last: Array[bool] = [false,false]
 var _last: Array[Vector3] = [Vector3.ZERO,Vector3.ZERO]
 var _age_accumulator: float = 0.0
 var emitted_segments: int = 0
+## Last actual source transform submitted to headless/WebGL MultiMesh.
+## Some Godot headless renderers cannot read back 3D instance transforms;
+## test this truthful CPU submission in addition to GPU pool cardinality.
+var last_record_transform: Transform3D = Transform3D.IDENTITY
 
 func _ready() -> void:
 	name = "HorizonSkidMarkPool"
@@ -114,6 +118,7 @@ func _record_track(side: int, world_contact: Vector3, strength: float, spacing: 
 	var forward: Vector3 = projected.normalized()
 	var lateral: Vector3 = normal.cross(forward).normalized()
 	var transform := Transform3D(Basis(lateral,normal,forward*distance),center)
+	last_record_transform = transform
 	_ring.set_instance_transform(_write,transform)
 	_ring.set_instance_color(_write,Color(1.0,1.0,1.0,strength))
 	_lifetimes[_write] = LIFETIME

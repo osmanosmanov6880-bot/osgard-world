@@ -46,12 +46,14 @@ func _run() -> void:
 	var second: bool=marks._record_track(0,Vector3(0,0,0.41),0.38,0.22,road_normal)
 	check(not first and second,
 		"real contact creates segment only after a measurable second grounded movement")
-	var transform: Transform3D=mesh.multimesh.get_instance_transform(0)
+	# Read back the exact source-computed transform submitted to MultiMesh.
+	# Headless RenderingServer may report identity on GPU transform readback.
+	var transform: Transform3D=marks.last_record_transform
 	check(transform.basis.y.normalized().dot(road_normal)>0.99,
 		"pooled rubber quad lies along the actual sloped road normal")
 	var tangent_dot: float = transform.basis.z.normalized().dot(road_normal)
-	print("R166 SLOPE DIAGNOSTICS: road=",road_normal," quadY=",transform.basis.y,
-		" quadZ=",transform.basis.z," dot=",tangent_dot)
+	print("R166 SOURCE TRACK BASIS: road=",road_normal," submittedY=",transform.basis.y,
+		" submittedZ=",transform.basis.z," dot=",tangent_dot)
 	check(absf(tangent_dot)<0.02,
 		"tyre segment tangent follows the real asphalt plane; measured dot "+str(tangent_dot))
 	check(mesh.multimesh.instance_count==SKID.CAPACITY and
@@ -63,7 +65,7 @@ func _run() -> void:
 	marks._break_streak()
 	marks._record_track(1,Vector3(0,0,0),0.4,0.22,Vector3.DOWN)
 	marks._record_track(1,Vector3(0,0,-0.4),0.4,0.22,Vector3.DOWN)
-	var fallback: Transform3D=mesh.multimesh.get_instance_transform(1)
+	var fallback: Transform3D=marks.last_record_transform
 	check(fallback.basis.y.normalized().dot(Vector3.UP)>0.99,
 		"invalid underside road normals never invert visible tyre geometry")
 	for i in range(SKID.CAPACITY+15):
