@@ -111,15 +111,20 @@ func guidance(engine: IPCrisisEngine, locale: String = "ru") -> String:
             if tier >= 3:
                 var tradeoff_en: String = "HEAT: rapid Q lowers heat but costs air and crew." if engine.scenario_id == "thermal" else "AIR: rapid Q leaves a persistent oxygen leak."
                 var tradeoff_ru: String = "HEAT: быстрый Q снижает температуру ценой воздуха и здоровья." if engine.scenario_id == "thermal" else "AIR: быстрый Q оставляет постоянную микроутечку."
-                lines.append("GRID: repair with E; Q is unavailable." if en else "GRID: ремонт только E; Q недоступен." if engine.scenario_id == "blackout" else tradeoff_en if en else tradeoff_ru)
+                if engine.scenario_id == "blackout":
+                    lines.append("GRID: repair with E; Q is unavailable." if en else "GRID: ремонт только E; Q недоступен.")
+                else:
+                    lines.append(tradeoff_en if en else tradeoff_ru)
         "charge":
             lines.append("Route one power bus to DOOR at terminal A or B." if en
                 else "Перенаправьте линию A или B на DOOR у физического пульта.")
             if tier >= 2:
                 lines.append("E cycles a bus after repair. Two buses power three systems." if en
                     else "E переключает линию после ремонта. Есть две линии и три системы.")
-                lines.append("DOOR POWER: ON" if engine.powered("door") else "DOOR POWER: OFF" if en
-                    else "ПИТАНИЕ DOOR: ВКЛ." if engine.powered("door") else "ПИТАНИЕ DOOR: ВЫКЛ.")
+                if en:
+                    lines.append("DOOR POWER: ON" if engine.powered("door") else "DOOR POWER: OFF")
+                else:
+                    lines.append("ПИТАНИЕ DOOR: ВКЛ." if engine.powered("door") else "ПИТАНИЕ DOOR: ВЫКЛ.")
             if tier >= 3:
                 lines.append(("Wait for real DOOR charge to reach %.0f%% before override." % IPCrisisEngine.CHARGE_REQUIRED) if en
                     else ("Дождитесь реального заряда DOOR не менее %.0f%%." % IPCrisisEngine.CHARGE_REQUIRED))
