@@ -230,7 +230,7 @@ func _lesson_proven() -> bool:
         return false
     match lesson_step:
         0:
-            return operator.move_distance-source_started_distance >= 0.50
+            return operator.move_distance-source_started_distance >= 0.25
         1:
             return (camera_touch.real_camera_rotations >
                 source_started_camera_turns or
@@ -296,7 +296,7 @@ func _paint() -> void:
         headline.text = _phrase("ПЕРВЫЙ КОНТАКТ %d/%d",
             "FIRST CONTACT %d/%d") % [lesson_step+1,LESSON_TOTAL]
         var ru: Array[String] = [
-            "W/A/S/D: пройдите 0.5 м",
+            "W/A/S/D: пройдите 0.25 м",
             "СВАЙП: поверните камеру",
             "ПОМОЩЬ: откройте справочник",
             "ДО РЕАКТОРА: ближе 3.2 м",
@@ -305,7 +305,7 @@ func _paint() -> void:
             "СОХР: сохраните реальную игру",
         ]
         var en: Array[String] = [
-            "W/A/S/D: walk at least 0.5 m",
+            "W/A/S/D: walk at least 0.25 m",
             "SWIPE: turn your real camera",
             "GUIDE: open the field manual",
             "REACTOR: approach within 3.2 m",
