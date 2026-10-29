@@ -137,7 +137,7 @@ func report() -> Dictionary:
 
 func status_text(locale: String="ru") -> String:
 	var lang: String=locale if LANGUAGE.has(locale) else "ru"
-	var l: Dictionary=LANG[lang]
+	var l: Dictionary=LANGUAGE[lang]
 	var heading: String=str(l["complete"]) if full_run_observed() else (
 		str(l["resumed"]) if not first_run else str(l["progress"]))
 	var progress: String=str(last_step)+"/"+str(FIRST_SIX)
