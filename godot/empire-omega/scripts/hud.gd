@@ -11,6 +11,7 @@ const R90_SPEED = preload("res://scripts/horizon_r90_speed_dial.gd")
 const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
 const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
+const R170_EPISODE = preload("res://scripts/city_reign_episode_sequence.gd")
 const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_premium_garage.gd")
 const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
@@ -264,6 +265,9 @@ var city_reign_pulse_label: Label
 var city_reign_promise_title: Label
 var city_reign_promise_body: Label
 var city_reign_promise_hint: Label
+var r170_episode_progress: Label
+var r170_episode_direction: Label
+var r170_episode_controls: Label
 var controls_panel: PanelContainer
 var map_panel: PanelContainer
 var strategy_window: PanelContainer
@@ -508,6 +512,12 @@ func _make_hud() -> void:
 	city_reign_promise_title = _label(details,"",18,true)
 	city_reign_promise_body = _label(details,"",16)
 	city_reign_promise_hint = _label(details,"",15,true)
+	_separator(details)
+	# R170: one authoritative 6-action playable chapter rail inside the
+	# EXISTING scrollable city journal. Zero screen overlays or idle GPU draws.
+	r170_episode_progress = _label(details,"",17,true)
+	r170_episode_direction = _label(details,"",15)
+	r170_episode_controls = _label(details,"",14,true)
 	_separator(details)
 	_label(details,_v08("ЭКОНОМИКА И БЕЗОПАСНОСТЬ","ECONOMY AND SAFETY","经济和安全"),14,true)
 	context_label = _label(details,"",16)
@@ -811,6 +821,16 @@ func _refresh() -> void:
 		city_reign_promise_body.text = str(first_promise["body"])
 	if city_reign_promise_hint != null:
 		city_reign_promise_hint.text = str(first_promise["hint"])
+	# Every line comes from the SAME real mission index and existing contract
+	# authority as the physical E/F/B/Tab actions. Save/load needs no migration.
+	var episode: Dictionary = R170_EPISODE.first_six(d,
+		ContractManager.current_offer(),ContractManager.POSITIONS,GameState.locale)
+	if r170_episode_progress != null:
+		r170_episode_progress.text = str(episode["heading"])+"  ·  "+str(episode["progress"])
+	if r170_episode_direction != null:
+		r170_episode_direction.text = str(episode["title"])+"\n"+str(episode["body"])
+	if r170_episode_controls != null:
+		r170_episode_controls.text = str(episode["hint"])
 	if objective_details_button != null:
 		objective_details_button.tooltip_text = _v08("ПОДРОБНОСТИ ЗАДАНИЯ · ОТКРЫТЬ / ЗАКРЫТЬ","MISSION DETAILS · OPEN / CLOSE","任务详情 · 打开 / 关闭")
 	if trial_label != null:
