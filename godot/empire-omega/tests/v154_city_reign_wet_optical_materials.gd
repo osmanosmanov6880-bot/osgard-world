@@ -3,7 +3,7 @@ extends SceneTree
 const OPTICS = preload("res://scripts/city_reign_atmospheric_optics.gd")
 const ROAD = preload("res://scripts/horizon_road_materials.gd")
 const PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
+# World script depends on the live GameState autoload; defer loading until SceneTree initializes.
 var passed: int = 0
 var failed: int = 0
 
@@ -52,7 +52,13 @@ func _run() -> void:
 	check(not puddles.visible and not material.clearcoat_enabled,
 		"mobile LOW removes expensive puddle optics and visuals")
 	puddles.queue_free()
-	var world: Node3D = WORLD.new()
+	var world_script: Variant = load("res://scripts/world_builder.gd")
+	check(world_script is Script and world_script.can_instantiate(),
+		"existing city loads after SceneTree autoload initialization")
+	if not (world_script is Script and world_script.can_instantiate()):
+		quit(2)
+		return
+	var world: Node3D = world_script.new()
 	root.add_child(world)
 	world.apply_visual_budget("cinematic")
 	world.update_weather("rain")

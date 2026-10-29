@@ -2,7 +2,7 @@ extends SceneTree
 ## R168 actual sun, sky, night and source road landscape acceptance.
 const OPTICS = preload("res://scripts/city_reign_atmospheric_optics.gd")
 const GRADE = preload("res://scripts/horizon_light_grade.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
+# World script depends on the live GameState autoload; defer loading until SceneTree initializes.
 var passed: int = 0
 var failed: int = 0
 
@@ -47,7 +47,13 @@ func _run() -> void:
 	OPTICS.apply_sky(env,sun,sky,22.0,"clear","cinematic")
 	check(is_equal_approx(original_night,sun.light_energy) and original_night < 0.04,
 		"R44 nocturnal exposure remains authoritative")
-	var world: Node3D = WORLD.new()
+	var world_script: Variant = load("res://scripts/world_builder.gd")
+	check(world_script is Script and world_script.can_instantiate(),
+		"existing city loads after SceneTree autoload initialization")
+	if not (world_script is Script and world_script.can_instantiate()):
+		quit(2)
+		return
+	var world: Node3D = world_script.new()
 	root.add_child(world)
 	world.update_daynight(12.0)
 	var midday: Vector3 = world.sun.rotation_degrees
