@@ -24,6 +24,9 @@ var quality: String = "standard"
 var hour: float = 12.0
 var energy: int = 100
 var weather: String = "clear"
+var city_vitality: Dictionary = {}
+var last_vitality_power: int = -1
+var vitality_updates: int = 0
 
 func _init() -> void:
 	for district in DISTRICTS:
@@ -263,3 +266,47 @@ func graphics_are_bounded() -> bool:
 		if mesh.multimesh==null or mesh.get_child_count()!=0: return false
 		if mesh.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF: return false
 	return true
+
+## R175: Exactly four EXISTING GPU MultiMeshes respond to saved city
+## district_scores/energy. No replacement architecture/geometry, NO new
+## draw nodes, no per-frame allocation. Updated only after real source events.
+static func living_color(district: String,score: int,power: int) -> Color:
+	if not STONE.has(district): return Color.WHITE
+	var health: float=clampf(float(score)/100.0,0.0,1.0)
+	var brightness: float=lerpf(0.56,1.10,health)
+	if power<20: brightness*=0.81
+	var original: Color=STONE[district]
+	# Each source MultiMesh ALREADY owns its original per-building tint.
+	# Adjust the shared source PBR material once; do not double-tint geometry.
+	return Color(clampf(brightness,0.0,1.0),
+		clampf(brightness*(0.92+original.g*0.08),0.0,1.0),
+		clampf(brightness*(0.88+original.b*0.12),0.0,1.0),1.0)
+
+func sync_city_vitality(state: Dictionary) -> void:
+	if not finalized: return
+	var source: Variant=state.get("district_scores",{})
+	var indicators: Dictionary=source if source is Dictionary else {}
+	var electricity: int=clampi(int(state.get("energy",0)),0,100)
+	var next_scores: Dictionary={}
+	for district in DISTRICTS:
+		next_scores[district]=clampi(int(indicators.get(district,50)),0,100)
+	if next_scores==city_vitality and electricity==last_vitality_power:
+		return
+	for district in DISTRICTS:
+		var material: StandardMaterial3D=materials.get("District_"+district)
+		if material==null: continue
+		# Godot headless cannot reliably read back per-instance GPU colors.
+		# Source-authored shared physical PBR material is deterministic and
+		# actually controls EVERY original building in that district at once.
+		material.albedo_color=living_color(district,next_scores[district],electricity)
+	city_vitality=next_scores
+	last_vitality_power=electricity
+	vitality_updates+=1
+
+func vitality_is_bounded() -> bool:
+	if not graphics_are_bounded() or city_vitality.size()!=4:
+		return false
+	for district in DISTRICTS:
+		var value: int=int(city_vitality.get(district,-1))
+		if value<0 or value>100: return false
+	return vitality_updates>0
