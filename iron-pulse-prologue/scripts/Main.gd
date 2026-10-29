@@ -1084,6 +1084,136 @@ func _make_hud() -> void:
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
 
+func _make_device_lab_overlay() -> void:
+    # G4: real native, opt-in local hardware test overlay. A deliberate
+    # button/key action starts recording; opening never uploads statistics.
+    device_lab_panel = _panel(hud_root,Rect2(-300,-245,300,245),
+        Rect2(0.5,0.5,0.5,0.5),Color(0.011,0.018,0.025,0.995))
+    device_lab_panel.name = "G4_RealLocalDeviceLab"
+    device_lab_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+    var lab_box := VBoxContainer.new()
+    lab_box.add_theme_constant_override("separation",9)
+    device_lab_panel.add_child(lab_box)
+    var headline := _label(lab_box,"G4 / DEVICE LAB",24,CYAN)
+    headline.name = "LocalPhysicalQAHeadline"
+    device_lab_label = _label(lab_box,"",13,WHITE)
+    device_lab_label.name = "RealClientFrameDeltaEvidence"
+    device_lab_label.custom_minimum_size = Vector2(475,185)
+    device_lab_start_button = Button.new()
+    device_lab_start_button.name = "BeginOrStopActualLocalMeasurement"
+    device_lab_start_button.custom_minimum_size = Vector2(0,52)
+    device_lab_start_button.pressed.connect(_device_lab_toggle_record)
+    lab_box.add_child(device_lab_start_button)
+    device_lab_export_button = Button.new()
+    device_lab_export_button.name = "ExplicitLocalJSONReportAndClipboard"
+    device_lab_export_button.custom_minimum_size = Vector2(0,52)
+    device_lab_export_button.pressed.connect(_device_lab_export)
+    lab_box.add_child(device_lab_export_button)
+    device_lab_export_note = _label(lab_box,"",11,DIM)
+    device_lab_export_note.custom_minimum_size = Vector2(0,35)
+    device_lab_close_button = Button.new()
+    device_lab_close_button.name = "ReturnToOriginal3DGame"
+    device_lab_close_button.custom_minimum_size = Vector2(0,52)
+    device_lab_close_button.pressed.connect(_close_device_lab)
+    lab_box.add_child(device_lab_close_button)
+    device_lab_panel.visible = false
+    _refresh_device_lab_ui()
+
+func _refresh_device_lab_ui() -> void:
+    if device_lab_panel == null:
+        return
+    var english: bool = locale == "en"
+    device_lab_label.text = device_lab.panel_text(locale)
+    device_lab_start_button.text = "F7 / START MEASUREMENT" if english else "F7 / НАЧАТЬ ИЗМЕРЕНИЕ"
+    if device_lab.state == "recording":
+        device_lab_start_button.text = "F7 / STOP AND REVIEW" if english else "F7 / ОСТАНОВИТЬ И ПРОВЕРИТЬ"
+    device_lab_export_button.text = "SAVE LOCAL JSON / TRY COPY" if english else "СОХРАНИТЬ JSON / КОПИРОВАТЬ"
+    device_lab_export_button.disabled = device_lab.state != "complete"
+    device_lab_close_button.text = "RETURN TO GAME / F6" if english else "ВЕРНУТЬСЯ В ИГРУ / F6"
+    if device_lab_export_note.text == "":
+        device_lab_export_note.text = (
+            "No uploads. Physical hardware testing is not certified." if english
+            else "Без отправки данных. Физические устройства не проверены."
+        )
+
+func _toggle_device_lab() -> void:
+    if device_lab_panel == null:
+        return
+    if device_lab_panel.visible:
+        _close_device_lab()
+        return
+    if device_lab.state == "recording":
+        device_lab.finish()
+    _lab_preexisting_pause = paused
+    if started and not session.finished():
+        paused = true
+        audio_director.set_active(false)
+    device_lab_panel.visible = true
+    _refresh_device_lab_ui()
+    if DisplayServer.get_name() != "headless":
+        _set_player_pointer_capture(false)
+
+func _close_device_lab() -> void:
+    if device_lab_panel == null or not device_lab_panel.visible:
+        return
+    device_lab_panel.visible = false
+    if started and not session.finished():
+        paused = _lab_preexisting_pause
+        audio_director.set_active(not paused)
+    if DisplayServer.get_name() != "headless":
+        _set_player_pointer_capture(started and not paused and not session.finished())
+
+func _device_lab_toggle_record() -> void:
+    if device_lab.state == "recording":
+        device_lab.finish()
+        if device_lab_panel == null or not device_lab_panel.visible:
+            _toggle_device_lab()
+        _refresh_device_lab_ui()
+        return
+    # Don't fake a playable session by recording menu, pause, overlay or
+    # intro frames; a real running mission is a hard prerequisite.
+    if device_lab_panel != null and device_lab_panel.visible:
+        if _lab_preexisting_pause or not started or session.finished():
+            device_lab_export_note.text = (
+                "Resume a real mission first." if locale=="en"
+                else "Сначала продолжите настоящую миссию."
+            )
+            return
+        _close_device_lab()
+    var viewport: Vector2 = get_viewport().get_visible_rect().size
+    var accepted: bool = device_lab.begin(quality_mode,locale,
+        Vector2i(roundi(viewport.x),roundi(viewport.y)),
+        started and not paused and not session.finished())
+    if not accepted:
+        _toggle_device_lab()
+        device_lab_export_note.text = (
+            "Start and unpause an operation." if locale=="en"
+            else "Начните операцию и снимите паузу."
+        )
+    else:
+        device_lab_export_note.text = ""
+        _refresh_device_lab_ui()
+
+func _device_lab_export() -> void:
+    if device_lab.state != "complete":
+        return
+    var written: bool = device_lab.save_local_report()
+    if written:
+        # Explicit user gesture. Browser/OS clipboard permissions can deny
+        # a copy; never promise successful clipboard delivery.
+        if DisplayServer.get_name() != "headless":
+            DisplayServer.clipboard_set(JSON.stringify(device_lab.report(),"  "))
+        device_lab_export_note.text = (
+            "LOCAL JSON SAVED. Clipboard copy attempted; paste to verify." if locale=="en"
+            else "JSON СОХРАНЁН ЛОКАЛЬНО. Попытка копирования — проверьте вставку."
+        )
+    else:
+        device_lab_export_note.text = (
+            "LOCAL FILE SAVE FAILED. No data uploaded." if locale=="en"
+            else "НЕ УДАЛОСЬ СОХРАНИТЬ. ДАННЫЕ НЕ ОТПРАВЛЕНЫ."
+        )
+    _refresh_device_lab_ui()
+
 func _make_vital_meter(parent: VBoxContainer, key: String, caption: String, tint: Color) -> void:
     _label(parent,caption,11,DIM)
     var meter := ProgressBar.new()
