@@ -276,9 +276,11 @@ static func living_color(district: String,score: int,power: int) -> Color:
 	var brightness: float=lerpf(0.56,1.10,health)
 	if power<20: brightness*=0.81
 	var original: Color=STONE[district]
-	return Color(clampf(original.r*brightness,0.0,1.0),
-		clampf(original.g*brightness,0.0,1.0),
-		clampf(original.b*brightness,0.0,1.0),1.0)
+	# Each source MultiMesh ALREADY owns its original per-building tint.
+	# Adjust the shared source PBR material once; do not double-tint geometry.
+	return Color(clampf(brightness,0.0,1.0),
+		clampf(brightness*(0.92+original.g*0.08),0.0,1.0),
+		clampf(brightness*(0.88+original.b*0.12),0.0,1.0),1.0)
 
 func sync_city_vitality(state: Dictionary) -> void:
 	if not finalized: return
@@ -291,11 +293,12 @@ func sync_city_vitality(state: Dictionary) -> void:
 	if next_scores==city_vitality and electricity==last_vitality_power:
 		return
 	for district in DISTRICTS:
-		var model: MultiMeshInstance3D=nodes.get("District_"+district)
-		if model==null: continue
-		var tint: Color=living_color(district,next_scores[district],electricity)
-		for i in range(model.multimesh.instance_count):
-			model.multimesh.set_instance_color(i,tint)
+		var material: StandardMaterial3D=materials.get("District_"+district)
+		if material==null: continue
+		# Godot headless cannot reliably read back per-instance GPU colors.
+		# Source-authored shared physical PBR material is deterministic and
+		# actually controls EVERY original building in that district at once.
+		material.albedo_color=living_color(district,next_scores[district],electricity)
 	city_vitality=next_scores
 	last_vitality_power=electricity
 	vitality_updates+=1
