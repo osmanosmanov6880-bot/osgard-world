@@ -846,7 +846,7 @@ func _restore_strategy_scroll(offset: int) -> void:
 
 func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true,
         drive_nav: Dictionary = {}, drive_warning: Dictionary = {},
-        indicator_mode: String = "off") -> void:
+        indicator_mode: String = "off",brake_response: float = 0.0) -> void:
 	if map != null:
 		map.player_world = player_at
 		map.vehicle_world = vehicle_at
@@ -907,6 +907,10 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		var assist_intensity: float = clampf(maxf(assist_power,assist_steering*3.0),0.0,1.0)
 		if assist_intensity >= 0.025 and not compact_hud:
 			speed_label.text += "\n" + _v08("ПОМОЩЬ СЦЕПЛЕНИЮ","GRIP ASSIST","抓地辅助") + " %d%%" % roundi(assist_intensity*100.0)
+		# R165: actual modelled pedal response, never a fabricated ABS sensor.
+		# Keep phone HUD compact without adding a third row or overlays.
+		if not compact_hud and is_finite(brake_response) and brake_response>=0.08:
+			speed_label.text += "\n" + _v08("ОТКЛИК ТОРМОЗА","BRAKE RESPONSE","制动响应") + " %d%%" % roundi(clampf(brake_response,0.0,1.0)*100.0)
 		hint_label.text = _v08("ГАЗ · ТОРМ · РУЛЬ · АВТО","GAS · BRAKE · STEER · CAR","油门 · 刹车 · 转向 · 车辆") if compact_hud else _v08("W / S — газ и тормоз · A / D — руль · Пробел — ручник · E — выйти","W / S — drive and brake · A / D — steer · Space — handbrake · E — exit","W / S 油门刹车 · A / D 方向 · 空格 手刹 · E 下车")
 		if not drive_warning.is_empty():
 			# An actual risk overrides noncritical guidance, never mission

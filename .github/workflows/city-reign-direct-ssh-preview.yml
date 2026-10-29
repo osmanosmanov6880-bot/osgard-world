@@ -90,6 +90,12 @@ jobs:
             v140_city_reign_real_road_chevron \
             v141_city_reign_cockpit_camera \
             v142_city_reign_cockpit_render_budget \
+            v143_city_reign_apex_braking \
+            v144_city_reign_apex_real_road \
+            v145_city_reign_apex_cockpit_hud \
+            v21_vehicle_dynamics \
+            v27_driver_assists \
+            v67_r46_load_transfer_brake_grip \
             v97_r123_real_pedestrian_body_gait \
             v68_r47_predictive_crosswalk_traffic \
             v110_city_reign_first_mandate \

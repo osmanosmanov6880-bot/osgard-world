@@ -293,9 +293,9 @@ func set_cockpit_active(value: bool) -> void:
 	if cockpit_interior != null:
 		cockpit_interior.set_active(value,self)
 
-func set_cockpit_data(forward_speed: float,steering: float) -> void:
+func set_cockpit_data(forward_speed: float,steering: float,braking: float = 0.0) -> void:
 	if cockpit_interior != null and cockpit_interior.active:
-		cockpit_interior.set_live_data(forward_speed,steering)
+		cockpit_interior.set_live_data(forward_speed,steering,braking)
 
 func set_detail_quality(tier: String) -> void:
 	for item in wheel_detail_nodes:
@@ -369,6 +369,18 @@ func set_brake_lights(on: bool) -> void:
 	var mat := brake_strip.material_override as StandardMaterial3D
 	if mat != null:
 		mat.emission_energy_multiplier = 3.5 if on else 0.45
+
+func sync_brake_response(pressure: float,braking: bool,dt: float) -> void:
+	# R165: source-physical brake LIGHT RESPONSE, no new lights/draw
+	# surfaces/materials or frame-local GPU allocations.
+	if brake_strip==null or not is_finite(pressure) or not is_finite(dt):
+		return
+	var mat: StandardMaterial3D = brake_strip.material_override as StandardMaterial3D
+	if mat==null:
+		return
+	var intensity: float = 0.38+3.20*clampf(pressure,0.0,1.0) if braking else 0.38
+	var alpha: float = 1.0-exp(-clampf(dt,0.0,0.1)*19.0)
+	mat.emission_energy_multiplier = lerpf(mat.emission_energy_multiplier,intensity,alpha)
 
 func simulate_chassis(forward_speed: float, yaw_rate: float, forward_acceleration: float,
 		grip: float, handbrake: bool, contacts: Array[float], dt: float,

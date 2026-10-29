@@ -72,5 +72,5 @@ Engine systems and infrastructure can be iterated in code. World-class photoreal
 
 ## Tracking / status
 R163: verified and published with original Godot build, SSH and independent public Chromium PASS.
-R164: experimental driver-camera and real interior work proposed on separate branch; status determined by CI and public evidence, NOT by this document.
-R165-R200: planned only; never describe unimplemented roadmap items as completed.
+R164: published at canonical site (767a64fe, SSH run 40789722171, original 3D cockpit and public Chromium PASS).
+R165: under native/private CI development (brake input response, combined grip reserve, torque and optical feedback). NOT published until QA and public SSH PASS. R166-R200 remain planned only.
