@@ -73,6 +73,9 @@ func _run() -> void:
 	sim.data["district_scores"]["forum"]=100
 	world.update_development()
 	var up: Color=(street.nodes["District_forum"] as MultiMeshInstance3D).multimesh.get_instance_color(0)
+	print("R175 ACTUAL MULTIMESH PROOF forum_count=%d samples original=%s low=%s high=%s vitality=%s revisions=%d" % [
+		(street.nodes["District_forum"] as MultiMeshInstance3D).multimesh.instance_count,
+		str(old_shade),str(down),str(up),str(street.city_vitality),int(street.vitality_updates)])
 	check(up.r>down.r and up.g>down.g and is_finite(old_shade.r) and is_finite(old_shade.g),
 		"same REAL original 3D facades visually change with live city district health")
 	world.apply_visual_budget("low")
