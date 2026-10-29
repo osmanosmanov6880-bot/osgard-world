@@ -177,6 +177,10 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "РЕАКТОР" in obsidian["sign_text"][0]) and (
                             obsidian.get("light_energy",0)>0 and obsidian.get("emission_multiplier",0)>0),(
                             "Actual RU sector labels or real emissive lighting missing",name,obsidian)
+                        assert 6.0<float(obsidian.get("visible_cassette_surface_x",99))<6.65 and (
+                            obsidian.get("foreground_machined_panels")==2) and (
+                            "ОХЛАЖДЕНИЕ" in obsidian.get("foreground_sign_text",[""])[0]),(
+                            "G3 material geometry exists but is buried behind original solid wall",name,obsidian)
                         report.setdefault("g3_true_pbr_3d_stage",{})[name]={
                             "hero_meshes":obsidian["hero_mesh_count"],
                             "gpu_instances":obsidian["batched_instances"],
@@ -952,7 +956,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             assert translated_art.get("quality")=="hero" and (
                                 translated_art.get("hero_visible") is True and
                                 translated_art.get("safety_visible") is True and
-                                translated_art.get("sign_text",[])[1].find("SERVICE")>=0),(
+                                translated_art.get("sign_text",[])[1].find("SERVICE")>=0 and
+                                "CONTROL" in translated_art.get("foreground_sign_text",["",""])[1]),(
                                 "Actual live 3D sector signs failed to localize or HERO restore",name,translated_art)
                             page.keyboard.press("Escape")
                             deadline = time.monotonic() + 20
