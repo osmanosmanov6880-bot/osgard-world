@@ -312,6 +312,15 @@ var _browser_window: Variant = null
 var _browser_css_size: Vector2i = Vector2i.ZERO
 var _last_web_resize_check: float = -99.0
 
+func _set_player_pointer_capture(wants_capture: bool) -> void:
+    # Godot mouse capture is for desktop mouselook only. In a genuine
+    # touchscreen UI pointer lock can swallow physical click/tap releases
+    # after the journal, pause or restart overlay is dismissed.
+    if DisplayServer.get_name() == "headless":
+        return
+    var is_touch_screen: bool = touch_ui != null and touch_ui.visible
+    Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if wants_capture and not is_touch_screen else Input.MOUSE_MODE_VISIBLE)
+
 func _ready() -> void:
     var initial_query: String = ""
     if OS.has_feature("web"):
@@ -411,6 +420,7 @@ func _publish_web_state() -> void:
     state["window_size"] = [get_window().size.x, get_window().size.y]
     state["content_scale_size"] = [get_window().content_scale_size.x, get_window().content_scale_size.y]
     state["touch_controls_visible"] = touch_ui.visible
+    state["mouse_captured"] = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
     state["intro_visible"] = intro_panel.visible
     var scenario_rects: Dictionary = {}
     for scenario_key in scenario_buttons:
@@ -1194,8 +1204,10 @@ func _make_touch_controls() -> void:
     var archive := _touch_button(touch_ui,"J / LOG",216,-357,94)
     archive.pressed.connect(_toggle_journal)
     var camera_button := _touch_button(touch_ui,"CAM / C",216,-414,94)
+    camera_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
     camera_button.pressed.connect(_toggle_cinematic_view)
     touch_shot_button = _touch_button(touch_ui,"SHOT / P",216,-471,94)
+    touch_shot_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
     touch_shot_button.pressed.connect(_cycle_director_shot)
     touch_shot_button.visible = false
     touch_forecast_button = _touch_button(touch_ui,"PLAN / T",6,-299,94)
@@ -1605,7 +1617,7 @@ func _toggle_journal() -> void:
     pause_panel.visible = false
     audio_director.set_active(not paused)
     if DisplayServer.get_name() != "headless":
-        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED)
+        _set_player_pointer_capture(not paused)
     _refresh_radio_ui()
 
 func _checkpoint_payload() -> Dictionary:
@@ -1723,7 +1735,7 @@ func _continue_checkpoint() -> bool:
     _refresh_radio_ui()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
-        Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+        _set_player_pointer_capture(true)
     return true
 
 func _update_scenario_picker() -> void:
@@ -1802,7 +1814,7 @@ func start_run() -> void:
     _save_checkpoint()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
-        Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+        _set_player_pointer_capture(true)
 
 func _restart() -> void:
     _clear_operator_overlay()
@@ -1847,7 +1859,7 @@ func _restart() -> void:
     _save_checkpoint()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
-        Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+        _set_player_pointer_capture(true)
 
 func _resume() -> void:
     _clear_operator_overlay()
@@ -1855,7 +1867,7 @@ func _resume() -> void:
     pause_panel.visible = false
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
-        Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+        _set_player_pointer_capture(true)
 
 func _pause_toggle() -> void:
     if not started or session.finished():
@@ -1868,7 +1880,7 @@ func _pause_toggle() -> void:
     pause_panel.visible = paused
     audio_director.set_active(not paused)
     if DisplayServer.get_name() != "headless":
-        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED)
+        _set_player_pointer_capture(not paused)
 
 func _toggle_language() -> void:
     locale = "en" if locale == "ru" else "ru"
@@ -2094,7 +2106,7 @@ func _input(event: InputEvent) -> void:
         _look(event.relative)
     elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
         if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and DisplayServer.get_name() != "headless":
-            Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+            _set_player_pointer_capture(true)
 
 func _look(motion: Vector2) -> void:
     yaw -= motion.x * 0.0021
