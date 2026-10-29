@@ -12,6 +12,7 @@ const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
 const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
 const R170_EPISODE = preload("res://scripts/city_reign_episode_sequence.gd")
+const R171_COACH = preload("res://scripts/city_reign_episode_live_coach.gd")
 const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
 const CITY_REIGN_GARAGE = preload("res://scripts/city_reign_premium_garage.gd")
 const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
@@ -268,6 +269,7 @@ var city_reign_promise_hint: Label
 var r170_episode_progress: Label
 var r170_episode_direction: Label
 var r170_episode_controls: Label
+var r171_live_context: Label
 var controls_panel: PanelContainer
 var map_panel: PanelContainer
 var strategy_window: PanelContainer
@@ -518,6 +520,9 @@ func _make_hud() -> void:
 	r170_episode_progress = _label(details,"",17,true)
 	r170_episode_direction = _label(details,"",15)
 	r170_episode_controls = _label(details,"",14,true)
+	# Dynamic real-world coaching stays INSIDE the journal scroll view: no
+	# extra always-on HUD, no new 3D scene, no obstructed 320px display.
+	r171_live_context = _label(details,"",15,true)
 	_separator(details)
 	_label(details,_v08("ЭКОНОМИКА И БЕЗОПАСНОСТЬ","ECONOMY AND SAFETY","经济和安全"),14,true)
 	context_label = _label(details,"",16)
@@ -867,6 +872,19 @@ func _restore_strategy_scroll(offset: int) -> void:
 func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true,
         drive_nav: Dictionary = {}, drive_warning: Dictionary = {},
         indicator_mode: String = "off",brake_response: float = 0.0) -> void:
+	# R171: compute context ONLY while the original mission journal is open.
+	# No frame allocations while collapsed and no safety/traffic HUD overrides.
+	if r171_live_context != null and journal_panel != null and journal_panel.visible:
+		var guidance: Dictionary = R171_COACH.recommend(
+			GameState.data,ContractManager.current_offer(),
+			ContractManager.POSITIONS,GameState.locale,player_at,vehicle_at,
+			is_driving,speed,fuel,condition,open,
+			int(GameState.BUSINESSES["market_stall"]["cost"]))
+		var current_text: String = str(guidance["text"])
+		if bool(guidance["show_distance"]):
+			current_text+="  ·  %d м" % int(guidance["distance_m"])
+		if r171_live_context.text != current_text:
+			r171_live_context.text = current_text
 	if map != null:
 		map.player_world = player_at
 		map.vehicle_world = vehicle_at
