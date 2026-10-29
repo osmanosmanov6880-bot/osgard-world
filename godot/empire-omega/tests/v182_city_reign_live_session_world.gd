@@ -28,20 +28,22 @@ func _run() -> void:
 		await physics_frame
 	var game: Node3D=current_scene as Node3D
 	var observer: RefCounted=game.get("first_session_observer")
-	var hud: Node3D=game.get("hud")
+	var hud: CanvasLayer=game.get("hud") as CanvasLayer
+	var export_control: Button=hud.get("r177_playtest_export") as Button
+	var status_label: Label=hud.get("r177_playtest_status") as Label
 	check(observer!=null and observer.started and
 		observer.initial_step==0 and observer.last_step==0,
 		"original live game owns same initial real six-mission observer")
 	check(hud.has_signal("playtest_export_requested") and
-		hud.r177_playtest_export!=null and hud.r177_playtest_status!=null,
+		export_control!=null and status_label!=null,
 		"real GPU HUD diagnostics has opt-in local first-six export control")
-	check(hud.r177_playtest_export.custom_minimum_size.y>=40.0,
+	check(export_control.custom_minimum_size.y>=40.0,
 		"native real diagnostics retains usable touch/keyboard playtest export")
 	check((game.get("ambient_cars") as Array).size()==12 and
 		(game.get("pedestrians") as Array).size()==34,
 		"true original 3D urban traffic/citizens unchanged")
-	hud.update_playtest_status(observer.status_text("en"))
-	check(hud.r177_playtest_status.text.contains("0/6") and
+	hud.call("update_playtest_status",observer.status_text("en"))
+	check(status_label.text.contains("0/6") and
 		observer.report()["first_six_verified"]==false,
 		"actual fresh game displays objective 0/6 without invented completion")
 	check(observer.invariants_hold() and
