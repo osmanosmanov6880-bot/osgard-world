@@ -32,9 +32,10 @@ func _run() -> void:
 		"actual playable city owns original 12 physical economic meter nodes")
 	check(street!=null and street.vitality_is_bounded(),
 		"all 128 already existing 3D district marks read REAL saved vitality")
-	check(int(world.get("building_count"))==128 or
-		int(world.get("building_count"))==meters.get("building_count"),
-		"real generated physical city building count remains source-derived")
+	check(int(world.get("building_count"))>0 and
+		int(world.get("building_count"))<=128 and
+		int(world.get("building_count"))==int(street.get("count")),
+		"real original building count matches exact existing authored 3D building instances")
 	check((game.get("ambient_cars") as Array).size()==12 and
 		(game.get("pedestrians") as Array).size()==34,
 		"original 12 NPC cars, 34 real citizens continue unmodified")
@@ -72,7 +73,7 @@ func _run() -> void:
 	sim.data["district_scores"]["forum"]=100
 	world.update_development()
 	var up: Color=(street.nodes["District_forum"] as MultiMeshInstance3D).multimesh.get_instance_color(0)
-	check(up.r>down.r and up.g>down.g and old_shade.is_finite(),
+	check(up.r>down.r and up.g>down.g and is_finite(old_shade.r) and is_finite(old_shade.g),
 		"same REAL original 3D facades visually change with live city district health")
 	world.apply_visual_budget("low")
 	check(not (meters.foundations["forum"] as Node3D).visible and
