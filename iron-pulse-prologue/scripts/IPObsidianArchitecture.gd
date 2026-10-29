@@ -22,6 +22,7 @@ var critical_layer: Node3D
 var marker_lamps: Array[OmniLight3D] = []
 var marker_materials: Array[StandardMaterial3D] = []
 var sector_labels: Array[Label3D] = []
+var close_range_labels: Array[Label3D] = []
 var marker_positions: Array[Vector3] = []
 var material_library: Dictionary = {}
 var quality_mode: String = "hero"
@@ -108,6 +109,7 @@ func _ready() -> void:
         "safety_glow":_mat(ICE,0.08,0.22,1.08)
     }
     _industrial_wall_cassettes()
+    _foreground_control_bays()
     _deck_surface_language()
     _make_critical_wayfinding()
     set_locale("ru")
@@ -126,7 +128,10 @@ func _industrial_wall_cassettes() -> void:
             if side > 0.0 and depth >= -33.0 and depth <= -9.0:
                 continue
             var prefix: String = "G3_Cassette_%d_%d" % [int(depth),int(side)]
-            var x: float = side * 6.77
+            # Original inner collision-wall face is at x=+/-6.65.
+            # Mount *inside* that plane, otherwise the PBR details exist
+            # but are visually buried behind opaque original walls.
+            var x: float = side * 6.42
             _box(hero_detail,prefix+"_Body",Vector3(x,2.58,depth),Vector3(0.17,2.96,3.20),housing)
             _box(hero_detail,prefix+"_Recess",Vector3(x-side*0.11,2.62,depth),Vector3(0.035,2.48,2.74),recess)
             for groove in range(3):
@@ -142,6 +147,38 @@ func _industrial_wall_cassettes() -> void:
                 Vector3(x,4.26,depth),Vector3(0.34,1.26,0.34),housing)
             _box(hero_detail,"G3_SectorCollar_%d_%d" % [int(depth),int(side)],
                 Vector3(x,4.94,depth),Vector3(0.46,0.14,0.44),edge)
+
+func _foreground_control_bays() -> void:
+    # Physical close-range illuminated-but-subtle status wall panels.
+    # On the right, mount at x<6.65 and face the player corridor (-X);
+    # left panel mirrors it. Nothing enters the central walk/terminal lane.
+    var backing: StandardMaterial3D = material_library["black_titanium"]
+    var inset: StandardMaterial3D = material_library["recessed_obsidian"]
+    var metal: StandardMaterial3D = material_library["brushed_silver"]
+    var warm: StandardMaterial3D = material_library["aged_bronze"]
+    var accent: StandardMaterial3D = material_library["safety_glow"]
+    for side in [-1.0,1.0]:
+        var face_x: float = side*6.18
+        var z: float = -6.2 if side > 0.0 else -5.2
+        var prefix: String = "G3_VisibleControlBay_%d" % int(side)
+        _box(hero_detail,prefix+"_TitaniumHousing",
+            Vector3(face_x,2.65,z),Vector3(0.12,1.65,2.78),backing)
+        _box(hero_detail,prefix+"_ObsidianScreen",
+            Vector3(face_x-side*0.10,2.66,z),Vector3(0.04,1.27,2.45),inset)
+        _box(hero_detail,prefix+"_TopMachinedEdge",
+            Vector3(face_x-side*0.14,3.33,z),Vector3(0.035,0.075,2.49),metal)
+        _box(hero_detail,prefix+"_BottomBronzeEdge",
+            Vector3(face_x-side*0.14,2.00,z),Vector3(0.035,0.065,2.49),warm)
+        _box(hero_detail,prefix+"_SingleStatusSlit",
+            Vector3(face_x-side*0.15,2.95,z-0.85),Vector3(0.042,0.085,0.42),accent)
+        for groove in range(4):
+            _box(hero_detail,prefix+"_MachinedVent_%d" % groove,
+                Vector3(face_x-side*0.15,2.27,z-0.8+float(groove)*0.50),
+                Vector3(0.04,0.055,0.28),metal)
+        var sign := _label(hero_detail,prefix+"_PhysicalLabel",
+            Vector3(face_x-side*0.175,2.72,z-0.87),"",38,Color(0.88,0.94,0.95))
+        sign.rotation_degrees.y = -90.0 if side > 0.0 else 90.0
+        close_range_labels.append(sign)
 
 func _deck_surface_language() -> void:
     var fastener_positions: Array[Vector3] = []
@@ -207,6 +244,10 @@ func set_locale(next_locale: String) -> void:
     ]
     for i in range(sector_labels.size()):
         sector_labels[i].text = en[i] if locale == "en" else ru[i]
+    var close_ru: Array[String] = ["A7 / ОХЛАЖДЕНИЕ","A7 / КОНТРОЛЬ"]
+    var close_en: Array[String] = ["A7 / COOLANT","A7 / CONTROL"]
+    for i in range(close_range_labels.size()):
+        close_range_labels[i].text = close_en[i] if locale == "en" else close_ru[i]
 
 func set_quality(next_quality: String) -> void:
     quality_mode = "eco" if next_quality == "eco" else "hero"
@@ -244,8 +285,12 @@ func readout() -> Dictionary:
     var displayed_signs: Array[String] = []
     for sign in sector_labels:
         displayed_signs.append(sign.text)
+    var near_panel: MeshInstance3D = hero_detail.get_node_or_null("G3_Cassette_-5_1_Body") as MeshInstance3D
     return {
         "schema":FORMAT,
+        "visible_cassette_surface_x":near_panel.position.x if near_panel != null else 99.0,
+        "foreground_machined_panels":close_range_labels.size(),
+        "foreground_sign_text":[close_range_labels[0].text,close_range_labels[1].text] if close_range_labels.size() == 2 else [],
         "world_geometry_authentic":true,
         "source_simulation_changed":false,
         "hero_mesh_count":hero_mesh_count,
