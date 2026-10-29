@@ -611,7 +611,10 @@ func _physics_process(delta: float) -> void:
 		near_miss_sample = 0.0
 	previous_vehicle_health = car.health
 	GameState.sync_vehicle_live(car.fuel,car.health,car.mileage,driving)
-	if soundscape != null: soundscape.update_cues(driving,car.speed,current_weather_kind,int(GameState.data.get("law",{}).get("heat",0)),Input.get_action_strength("move_forward") if driving else 0.0,car.handbrake_on if driving else false,delta)
+	if soundscape != null: soundscape.update_cues(driving,car.speed,current_weather_kind,int(GameState.data.get("law",{}).get("heat",0)),Input.get_action_strength("move_forward") if driving else 0.0,car.handbrake_on if driving else false,delta,
+		car.lateral_speed if driving else 0.0,car.rear_traction_factor,
+		adaptive_graphics.effective_quality(),
+		COCKPIT_VIEW.enabled(GameSettings.camera_mode,driving,cabinet_open,interiors.is_inside()))
 	if skid_trails != null: skid_trails.call("update_trails",car,driving,adaptive_graphics.effective_quality(),delta)
 	if ground_spray != null: ground_spray.call("update_spray",car,driving,adaptive_graphics.effective_quality(),delta)
 	GameState.data["day_clock"] = fposmod(float(GameState.data["day_clock"])+delta*0.012,24.0)
