@@ -75,12 +75,19 @@ func _run() -> void:
     air.reset("breach")
     air.scan_core()
     air.emergency_repair()
-    var air_before: float=air.oxygen
-    var heat_before: float=air.heat
+    var equal_time_control := IPCrisisEngine.new()
+    equal_time_control.reset("breach")
+    equal_time_control.scan_core()
+    equal_time_control.emergency_repair()
+    equal_time_control.tick(IPCrisisEngine.AIR_TIME)
     _check(air.activate_field_protocol("air"),"Field air buffer activates after real AIR patch")
-    _check(air.field_protocol=="air" and air.oxygen>air_before+12 and
-        air.heat>heat_before+5 and air.crew_health<77.0,
-        "Air buffer restores oxygen but increases actual heat and harms crew")
+    # Engine cooling continues during the 11-second intervention, so compare
+    # against the SAME simulation after the SAME elapsed time, not its start.
+    _check(air.field_protocol=="air" and
+        air.oxygen>=equal_time_control.oxygen+15.8 and
+        air.heat>=equal_time_control.heat+6.9 and
+        air.crew_health<=equal_time_control.crew_health-4.9,
+        "Air buffer restores oxygen and measurably heats/harms crew versus equal-time baseline")
     var air_saved: Dictionary=air.checkpoint()
     _check(air_saved["schema"]=="IRON_PULSE_ENGINE_V6" and air_saved["field_protocol"]=="air",
         "Existing V6 engine format retains actual optional field choice")
