@@ -24,7 +24,6 @@ func _run() -> void:
 		foot.size()>route.size(),
 		"player's actual A* endpoints preserved while the human footpath gains sidewalk bends")
 	var east:=Vector3(-130,0.8,-150)
-	var north:=Vector3(-98,0.8,-130)
 	check(foot.has(east)==false and foot.has(Vector3(-156,0.8,-150)) and
 		foot.has(Vector3(-104,0.8,-150)) and
 		foot.has(Vector3(-98,0.8,-104)),
