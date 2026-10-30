@@ -536,6 +536,101 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "local_only":True
                         }
 
+                        # G10: F2 opens a REAL pause-safe canvas-rendered
+                        # tactical atlas. The objective/markers come only
+                        # from actual Godot scene and current IPCrisisEngine.
+                        # Never inject fake engine state or accept a mock UI.
+                        previous_actions=(resumed.get("switches"),resumed.get("faults"),
+                                          resumed.get("scanned"),resumed.get("scenario"))
+                        page.keyboard.press("F2")
+                        deadline=time.monotonic()+20
+                        mapped={}
+                        while time.monotonic()<deadline:
+                            mapped=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            atlas=mapped.get("g10_tactical_atlas",{})
+                            if atlas.get("panel_visible") is True and mapped.get("paused") is True:
+                                break
+                            page.wait_for_timeout(180)
+                        atlas=mapped.get("g10_tactical_atlas",{})
+                        assert atlas.get("schema")=="IRON_PULSE_TACTICAL_ATLAS_G10" and (
+                            atlas.get("panel_visible") is True and atlas.get("active") is True
+                            and atlas.get("source")=="actual_godot_engine_and_physical_scene_coordinates"
+                            and atlas.get("local_only") is True
+                            and atlas.get("telemetry_uploaded") is False
+                            and atlas.get("route_solver_used") is False), (
+                            "F2 must show actual native Godot 3D-sector schematic, not fake navigation",name,atlas)
+                        assert atlas.get("target")=="scan" and atlas.get("marker_count",0)>=8 and (
+                            atlas.get("straight_line_m",0)>1 and
+                            atlas.get("distance_kind")=="straight_line_schematic_not_walkable_path"), (
+                            "Actual world marker coordinates or distance honesty missing",name,atlas)
+                        assert (mapped.get("switches"),mapped.get("faults"),
+                                mapped.get("scanned"),mapped.get("scenario"))==previous_actions, (
+                            "Tactical map must not scan, switch buses or alter source gameplay",name,mapped)
+                        page.screenshot(path=str(output/f"g10-real-tactical-atlas-{name}.png"),
+                                        animations="disabled",timeout=60000)
+                        page.keyboard.press("Escape")
+                        deadline=time.monotonic()+18
+                        after_map={}
+                        while time.monotonic()<deadline:
+                            after_map=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if (after_map.get("paused") is False and
+                                    after_map.get("g10_tactical_atlas",{}).get("panel_visible") is False):
+                                break
+                            page.wait_for_timeout(180)
+                        assert after_map.get("paused") is False and (
+                            after_map.get("g10_tactical_atlas",{}).get("panel_visible") is False and
+                            after_map.get("scanned") is False), (
+                            "F2 / ESC must return to real gameplay without progress",name,after_map)
+                        if mobile:
+                            rect=after_map.get("touch_button_rects",{}).get("MAP / F2")
+                            assert rect and rect[2]>=44 and rect[3]>=44, (
+                                "Missing physically usable mobile MAP button",name,rect)
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            mx=bounds["x"]+(rect[0]+rect[2]/2)*bounds["width"]/after_map["viewport"][0]
+                            my=bounds["y"]+(rect[1]+rect[3]/2)*bounds["height"]/after_map["viewport"][1]
+                            assert 0<=mx<=size["width"] and 0<=my<=size["height"], (
+                                "Native mobile MAP button clipped outside viewport",name,rect)
+                            page.touchscreen.tap(mx,my)
+                            deadline=time.monotonic()+18
+                            touch_map={}
+                            while time.monotonic()<deadline:
+                                touch_map=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if touch_map.get("g10_tactical_atlas",{}).get("panel_visible") is True:
+                                    break
+                                page.wait_for_timeout(180)
+                            assert touch_map.get("paused") is True and (
+                                touch_map.get("g10_tactical_atlas",{}).get("panel_visible") is True), (
+                                "Actual mobile Godot MAP touch cannot open tactical atlas",name,touch_map)
+                            close_rect=touch_map["g10_tactical_atlas"]["close_rect"]
+                            assert close_rect and close_rect[2]>=44 and close_rect[3]>=44, (
+                                "Map close button not accessible on touch",name,close_rect)
+                            bounds=canvas.bounding_box()
+                            page.touchscreen.tap(
+                                bounds["x"]+(close_rect[0]+close_rect[2]/2)*bounds["width"]/touch_map["viewport"][0],
+                                bounds["y"]+(close_rect[1]+close_rect[3]/2)*bounds["height"]/touch_map["viewport"][1]
+                            )
+                            deadline=time.monotonic()+18
+                            while time.monotonic()<deadline:
+                                touch_map=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if touch_map.get("paused") is False and (
+                                        touch_map.get("g10_tactical_atlas",{}).get("panel_visible") is False):
+                                    break
+                                page.wait_for_timeout(180)
+                            assert touch_map.get("paused") is False and (
+                                touch_map.get("g10_tactical_atlas",{}).get("panel_visible") is False), (
+                                "Native mobile close does not return control to player",name,touch_map)
+                        report.setdefault("g10_real_tactical_atlas",{})[name]={
+                            "source":"original Godot 3D scene + live engine state",
+                            "native_map_markers":atlas["marker_count"],
+                            "objective":atlas["target"],
+                            "screenshot":f"g10-real-tactical-atlas-{name}.png",
+                            "actual_inputs":"F2/Escape + real MAP touch" if mobile else "F2/Escape",
+                            "player_actions_unchanged":True,
+                            "physical_device_certified":False,
+                            "telemetry_uploaded":False
+                        }
+
                         # G1: prove that the real Godot operator guide opens
                         # through the actual keyboard and mobile touch inputs.
                         # No JavaScript method injects an objective or victory.
