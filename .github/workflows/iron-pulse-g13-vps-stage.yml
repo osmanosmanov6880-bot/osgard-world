@@ -1,0 +1,85 @@
+name: IRON PULSE G13 isolated VPS web staging
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: "Successful G13 CI workflow run ID"
+        required: true
+        default: "41076394045"
+      activate:
+        description: "Set true only after release GO and real-device acceptance"
+        required: true
+        default: false
+        type: boolean
+permissions:
+  actions: read
+  contents: read
+concurrency:
+  group: iron-pulse-g13-vps
+  cancel-in-progress: false
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Confirm exact G13 source and release approval
+        env:
+          ACTIVATE: ${{ inputs.activate }}
+        run: |
+          set -euo pipefail
+          test -f iron-pulse-prologue/project.godot
+          if [ "$ACTIVATE" = true ]; then
+            echo "::error::Production activation is disabled until physical-device, player and licensing release gates are documented."
+            exit 1
+          fi
+      - name: Install Godot 4.4.1 and Web export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Export genuine HTML5 game from checked-out G13 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path iron-pulse-prologue --import --quit
+          mkdir -p "$RUNNER_TEMP/iron-pulse-web"
+          godot --headless --path iron-pulse-prologue --export-release "Web" "$RUNNER_TEMP/iron-pulse-web/index.html"
+          test -s "$RUNNER_TEMP/iron-pulse-web/index.html"
+          test -n "$(find "$RUNNER_TEMP/iron-pulse-web" -maxdepth 1 -name '*.wasm' -size +1000k -print -quit)"
+          test -n "$(find "$RUNNER_TEMP/iron-pulse-web" -maxdepth 1 -name '*.pck' -size +100k -print -quit)"
+          (cd "$RUNNER_TEMP/iron-pulse-web" && sha256sum * > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          tar -czf "$RUNNER_TEMP/iron-pulse-g13.tgz" -C "$RUNNER_TEMP/iron-pulse-web" .
+      - name: Stage under isolated VPS directory without changing live Nginx
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$HOST" && test -n "$USER" && test -n "$KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/g13
+          chmod 600 ~/.ssh/g13
+          ssh-keyscan -T 10 -H "$HOST" >> ~/.ssh/known_hosts
+          remote="/tmp/osgard-iron-pulse-g13-${GITHUB_RUN_ID}"
+          ssh -o BatchMode=yes -i ~/.ssh/g13 "$USER@$HOST" "mkdir -m 700 -p '$remote'"
+          scp -i ~/.ssh/g13 "$RUNNER_TEMP/iron-pulse-g13.tgz" "$USER@$HOST:$remote/game.tgz"
+          ssh -o BatchMode=yes -i ~/.ssh/g13 "$USER@$HOST" "bash -s -- '$remote'" <<'REMOTE'
+          set -euo pipefail
+          directory="$1"
+          mkdir -p "$directory/verified"
+          tar -xzf "$directory/game.tgz" -C "$directory/verified" --no-same-owner
+          cd "$directory/verified"
+          sha256sum -c SHA256SUMS.txt
+          test -s index.html
+          echo "G13 VERIFIED STAGING ONLY: $directory/verified"
+          REMOTE
+      - name: Publish staging summary
+        run: |
+          echo "G13 Web export verified and copied to isolated VPS staging. Production unchanged." >> "$GITHUB_STEP_SUMMARY"
+          echo "Next: operator release GO, configure a dedicated Nginx route, smoke-test HTTPS, then update catalog Play link." >> "$GITHUB_STEP_SUMMARY"
