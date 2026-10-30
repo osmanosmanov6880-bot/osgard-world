@@ -62,11 +62,11 @@ func _run() -> void:
 	check(car.get("last_signal_phase")=="green" and green_limit>red_limit and
 		green_speed>=stopped_speed,
 		"same genuine moving NPC resumes real traffic progress on Z green")
-	var signal: Dictionary=RULE.driver_warning(Vector3(-156,1.3,-169),PI,9.0,0.0)
-	check(signal.get("phase")=="red" and
-		SENSE.localized(signal,"ru").contains("КРАСНЫЙ") and
-		SENSE.localized(signal,"en").contains("RED") and
-		SENSE.localized(signal,"zh").contains("红灯"),
+	var warning_data: Dictionary=RULE.driver_warning(Vector3(-156,1.3,-169),PI,9.0,0.0)
+	check(warning_data.get("phase")=="red" and
+		SENSE.localized(warning_data,"ru").contains("КРАСНЫЙ") and
+		SENSE.localized(warning_data,"en").contains("RED") and
+		SENSE.localized(warning_data,"zh").contains("红灯"),
 		"source-powered true driver signal warning in three real locales")
 	var main_src: String=FileAccess.get_file_as_string("res://scripts/main.gd")
 	var traffic_src: String=FileAccess.get_file_as_string("res://scripts/traffic_agent.gd")
