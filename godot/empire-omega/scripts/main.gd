@@ -595,6 +595,9 @@ func _physics_process(delta: float) -> void:
 	if diagnostic_timer >= 1.0:
 		diagnostic_timer = 0.0
 		car.update_headlights(float(GameState.data.get("day_clock",12.0)),adaptive_graphics.effective_quality())
+		# R188: source-locked real roadside barriers share the original
+		# city night/power, sampled at the existing 1Hz diagnostic clock.
+		if roadworks != null:roadworks.sync_city(GameState.data)
 		if adaptive_graphics.observe_frame_pacing(float(Engine.get_frames_per_second()),frame_metrics.p95_ms(),frame_metrics.samples(),1.0,DisplayServer.window_is_focused()):
 			_apply_visual_budget()
 			_update_agent_lod(protagonist)
@@ -678,6 +681,11 @@ func _physics_process(delta: float) -> void:
 						"urgency":"caution",
 						"distance_m":blocked_box["stop_distance_m"],
 						"reason":blocked_box["reason"]}
+			if drive_warning_status.is_empty() and roadworks!=null:
+				# Only already-rendered real physical A* closures: no fake
+				# road guidance, new sensors or control of the player car.
+				drive_warning_status=roadworks.driver_warning(
+					car.global_position,car.rotation.y,car.speed)
 			if drive_warning_status.is_empty():
 				drive_warning_status=R184_SPEED_RULE.player_warning(car.speed)
 	if hud.map != null:
@@ -898,6 +906,8 @@ func _apply_visual_budget() -> void:
 	# No re-spawn, traffic AI update or shadow-map allocation on switches.
 	if traffic_signals != null:
 		traffic_signals.call("set_quality",effective)
+	if roadworks != null:
+		roadworks.set_quality(effective)
 	if city_reign_opening_director != null:
 		city_reign_opening_director.call("set_quality",effective)
 	# Switching live mobile quality adjusts ONLY cached traffic render
