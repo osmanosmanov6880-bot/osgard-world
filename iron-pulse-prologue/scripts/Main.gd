@@ -328,6 +328,8 @@ var touch_device_lab_button: Button
 var touch_atlas_button: Button
 var touch_vision_button: Button
 var touch_pause_button: Button
+var _g13_story_layout: String = "desktop"
+var _g13_touch_safe_top: float = 0.0
 var device_lab_panel: PanelContainer
 var device_lab_label: Label
 var device_lab_start_button: Button
@@ -628,6 +630,7 @@ func _publish_web_state() -> void:
     if continue_button != null:
         state["continue_button_visible"] = continue_button.visible
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
+    state["g13_mobile_hud"] = _g13_mobile_layout_readout()
     state["hud_rects"] = {
         "header": _hud_rect(header_panel),
         "telemetry": _hud_rect(side_panel),
@@ -1659,9 +1662,11 @@ func _layout_hud() -> void:
     if hud_root == null:
         return
     var width: float = get_viewport().get_visible_rect().size.x
+    var height: float = get_viewport().get_visible_rect().size.y
     # Browser CSS pixels are the authority for touch targets and typography.
     if _browser_css_size.x > 0:
         width = float(_browser_css_size.x)
+        height = float(_browser_css_size.y)
     var narrow: bool = width < 650.0
     touch_ui.visible = (width < 850.0 or DisplayServer.is_touchscreen_available()) and (not paused or pause_panel == null or not pause_panel.visible)
     vitals_panel.visible = width >= 1000.0
@@ -1687,7 +1692,7 @@ func _layout_hud() -> void:
     side_panel.offset_left = 17.0 if not narrow else 12.0
     side_panel.offset_right = minf(366.0,width-16.0)
     side_panel.offset_top = 154.0 if not narrow else 130.0
-    side_panel.offset_bottom = 295.0 if not narrow else 274.0
+    side_panel.offset_bottom = 295.0 if not narrow else 240.0
     prompt_panel.offset_left = 17.0 if not narrow else 12.0
     prompt_panel.offset_right = minf(545.0,width-16.0)
     prompt_panel.offset_top = -128.0
@@ -1702,6 +1707,8 @@ func _layout_hud() -> void:
     allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     threat_label.add_theme_font_size_override("font_size",10 if narrow else 11)
     quality_state_label.add_theme_font_size_override("font_size",10 if narrow else 11)
+    # Detailed quality metrics remain available via F3; save screen space.
+    quality_state_label.visible = not narrow
     adaptive_performance.compact_device = narrow
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
@@ -1768,15 +1775,29 @@ func _layout_hud() -> void:
         overlay.anchor_top = radio_anchor
         overlay.anchor_bottom = radio_anchor
     if narrow:
+        # Real touch controls begin at viewport height - 471 CSS px.
+        # Radio and priority must finish ABOVE physical LAB/MAP/SHOT buttons.
+        _g13_touch_safe_top = height-471.0
+        var short_screen: bool = height < 790.0
+        var slot_top: float = 120.0 if short_screen else 248.0
+        var slot_bottom: float = _g13_touch_safe_top-10.0
         radio_panel.offset_left = 12.0
         radio_panel.offset_right = width-12.0
-        radio_panel.offset_top = 295.0
-        radio_panel.offset_bottom = 390.0
+        radio_panel.offset_top = slot_top
+        radio_panel.offset_bottom = maxf(slot_top+92.0,slot_bottom)
         priority_panel.offset_left = 12.0
         priority_panel.offset_right = width-12.0
-        priority_panel.offset_top = 401.0
-        priority_panel.offset_bottom = 464.0
+        priority_panel.offset_top = slot_top
+        priority_panel.offset_bottom = maxf(slot_top+76.0,minf(slot_bottom,slot_top+105.0))
+        radio_dialogue.add_theme_font_size_override("font_size",11 if short_screen else 12)
+        radio_speaker.add_theme_font_size_override("font_size",11)
+        crew_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
+        core_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
+        _g13_story_layout = "single_story_card" if short_screen else "stacked_story_below_telemetry"
     else:
+        _g13_touch_safe_top = 0.0
+        _g13_story_layout = "desktop"
+
         radio_panel.offset_left = -420.0
         radio_panel.offset_right = -18.0
         radio_panel.offset_top = -207.0
@@ -1789,7 +1810,8 @@ func _layout_hud() -> void:
     journal_panel.offset_left = -journal_half_width
     journal_panel.offset_right = journal_half_width
     journal_text.custom_minimum_size.x = journal_half_width*2.0-58.0
-    radio_dialogue.add_theme_font_size_override("font_size",12 if narrow else 14)
+    if not narrow:
+        radio_dialogue.add_theme_font_size_override("font_size",14)
     _refresh_radio_ui()
     _apply_cinematic_view()
     _apply_vision_profile()
@@ -2080,11 +2102,49 @@ func _refresh_radio_ui() -> void:
         radio_dialogue.text = str(line["text"])
     radio_panel.visible = started and not paused and not journal_panel.visible and not cinematic_view and radio_ttl > 0.0
     priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible and not cinematic_view
+    _reflow_mobile_story_ui()
     crew_priority_button.text = _copy("choice_crew")
     core_priority_button.text = _copy("choice_core")
     journal_text.text = story.journal_localized(locale)
     if continue_button != null:
         continue_button.text = _copy("continue")
+
+func _reflow_mobile_story_ui() -> void:
+    if side_panel == null or radio_panel == null or priority_panel == null:
+        return
+    var width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
+    var height: float = float(_browser_css_size.y) if _browser_css_size.y > 0 else get_viewport().get_visible_rect().size.y
+    if width >= 650.0:
+        side_panel.visible = not cinematic_view
+        return
+    # Preserve the original crew/core decision; suppress only competing
+    # transient radio while a real selection is physically accessible.
+    if priority_panel.visible:
+        radio_panel.visible = false
+    var short_screen: bool = height < 790.0
+    side_panel.visible = not cinematic_view and (
+        not short_screen or not radio_panel.visible and not priority_panel.visible)
+
+func _g13_mobile_layout_readout() -> Dictionary:
+    var width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
+    var height: float = float(_browser_css_size.y) if _browser_css_size.y > 0 else get_viewport().get_visible_rect().size.y
+    return {
+        "schema":"IRON_PULSE_MOBILE_HUD_REFLOW_G13",
+        "source":"real_godot_native_panels_and_actual_crisis_engine",
+        "compact":width < 650.0,
+        "layout":_g13_story_layout,
+        "css_viewport":[roundi(width),roundi(height)],
+        "touch_first_row_y":_g13_touch_safe_top,
+        "hud_card_visible":side_panel != null and side_panel.visible,
+        "radio_visible":radio_panel != null and radio_panel.visible,
+        "priority_visible":priority_panel != null and priority_panel.visible,
+        "radio_rect":_hud_rect(radio_panel) if radio_panel != null else [],
+        "priority_rect":_hud_rect(priority_panel) if priority_panel != null else [],
+        "telemetry_rect":_hud_rect(side_panel) if side_panel != null else [],
+        "main_dialogue_source":"actual_story_director",
+        "source_engine_mutated":false,
+        "remote_analytics":false
+    }
 
 func _story_event(event_name: String) -> void:
     if story.on_game_event(event_name,session.priority_id):
@@ -3007,8 +3067,22 @@ func _refresh_hud() -> void:
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
         _copy("rescue_count").format({"used":session.relays_activated.size()})]
     quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
+    var compact_ui: bool = (_browser_css_size.x > 0 and _browser_css_size.x < 650) or (
+        _browser_css_size.x == 0 and get_viewport().get_visible_rect().size.x < 650)
+    if compact_ui:
+        # Strictly source-derived numbers. Compact, not a simulated summary.
+        telemetry_label.text = ("H %d°C   AIR %d%%   CREW %d%%\nDOOR %d%%   TIME %02d:%02d" if locale == "en" else
+            "Т %d°C   ВОЗД %d%%   ЭКИП %d%%\nШЛЮЗ %d%%   ВРЕМЯ %02d:%02d") % [
+                int(session.heat),int(session.oxygen),int(session.crew_health),
+                int(session.door_charge),floori(session.time_left/60.0),int(session.time_left)%60]
+        allocation_label.text = "A:%s  B:%s  %s%d/2" % [
+            session.bus_a.to_upper(),session.bus_b.to_upper(),
+            "RESCUE " if locale == "en" else "СПАС ",
+            session.relays_activated.size()]
     var risk: Dictionary = threat_radar.snapshot(session)
-    threat_label.text = threat_radar.cockpit_text(risk,locale)
+    var full_risk_text: String = threat_radar.cockpit_text(risk,locale)
+    threat_label.text = full_risk_text.split("\n")[0] if compact_ui else full_risk_text
+    threat_label.tooltip_text = full_risk_text
     var risk_color: Color = RED if str(risk["tier"]) in ["CRITICAL","FAILED"] else AMBER if str(risk["tier"]) == "WATCH" else CYAN
     threat_label.add_theme_color_override("font_color",risk_color)
     (vitals_meters["heat"] as ProgressBar).value = session.heat
