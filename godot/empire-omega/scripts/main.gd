@@ -15,6 +15,7 @@ const CITY_REIGN_ROUTE_CHEVRON = preload("res://scripts/city_reign_route_chevron
 const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
 const DRIVER_SENSE = preload("res://scripts/city_reign_driver_awareness.gd")
 const R178_SIGNAL = preload("res://scripts/city_reign_intersection_policy.gd")
+const R179_RED_LAW = preload("res://scripts/city_reign_red_light_evidence.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
@@ -63,6 +64,8 @@ var route_chevron: MeshInstance3D
 var drive_nav_status: Dictionary = {}
 var drive_warning_status: Dictionary = {}
 var drive_sensor_timer: float = 0.0
+var red_law_previous_at: Vector3=Vector3.INF
+var red_law_previous_clock: float=-1.0
 var cargo_visual
 var current_weather_kind := "clear"
 var base_road_grip := 1.0
@@ -610,11 +613,14 @@ func _physics_process(delta: float) -> void:
 	# or fake goals, and no effect on the vehicle physics time step.
 	drive_sensor_timer += delta
 	if not driving:
+		red_law_previous_at=Vector3.INF
+		red_law_previous_clock=-1.0
 		drive_nav_status = {}
 		drive_warning_status = {}
 	if drive_sensor_timer >= 0.25:
 		drive_sensor_timer = 0.0
 		if driving:
+			_sample_true_red_light_law()
 			drive_nav_status = DRIVE_NAV.snapshot(hud.map.route,car.global_position) if route_allowed and hud.map != null else {}
 			drive_warning_status = DRIVER_SENSE.scan(car.global_position,car.rotation.y,
 				maxf(0.0,car.speed),ambient_cars,pedestrians)
@@ -763,6 +769,30 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("show_map"):
 		hud.toggle_map()
 
+func _sample_true_red_light_law() -> void:
+	# R179: a continuous FORWARD crossing under TWO original red phase
+	# samples is the only trigger. Original GameState alone debits fines.
+	# No saved location, new fine wallet or automatic network telemetry.
+	if (not driving or car==null or traffic_signals==null or
+			(hud!=null and (hud.is_pause_open() or hud.is_strategy_open())) or
+			(interiors!=null and interiors.is_inside())):
+		red_law_previous_at=Vector3.INF
+		red_law_previous_clock=-1.0
+		return
+	var at: Vector3=car.global_position
+	var phase_clock: float=float(traffic_signals.get("elapsed"))
+	if red_law_previous_at.is_finite() and red_law_previous_clock>=0.0:
+		var proof: Dictionary=R179_RED_LAW.crossing(
+			red_law_previous_at,at,car.rotation.y,
+			float(car.speed),red_law_previous_clock,phase_clock)
+		if bool(proof.get("violation",false)) and GameState.register_traffic_offence("red_light"):
+			hud.announce(_three(
+				"ПРОЕЗД НА КРАСНЫЙ · НАЗНАЧЕН ШТРАФ",
+				"RED SIGNAL VIOLATION · FINE ISSUED",
+				"闯红灯 · 已开具罚单"))
+	red_law_previous_at=at
+	red_law_previous_clock=phase_clock
+
 func _toggle_car_indicator(side: String) -> void:
 	# Identical native InputMap action from keyboard, joypad and touch.
 	if not driving or car == null: return
@@ -870,6 +900,9 @@ func _safe_vehicle_exit() -> Variant:
 	return null
 
 func _enter_or_exit_vehicle() -> void:
+	# Different driver sessions cannot inherit stale line-crossing samples.
+	red_law_previous_at=Vector3.INF
+	red_law_previous_clock=-1.0
 	if not driving:
 		if player.global_position.distance_to(car.global_position) > 8.0:
 			hud.announce(hud.t("too_far"))
@@ -1154,6 +1187,8 @@ func _on_game_changed(reason: String) -> void:
 	if traffic_signals!=null: traffic_signals.call("sync_city_power",GameState.data)
 	_sync_trial_marker()
 	if reason == "load" or reason == "migrated" or reason == "reset":
+		red_law_previous_at=Vector3.INF
+		red_law_previous_clock=-1.0
 		first_session_observer.begin(GameState.data,reason)
 		_sync_positions_from_state()
 		if hud.map != null:
