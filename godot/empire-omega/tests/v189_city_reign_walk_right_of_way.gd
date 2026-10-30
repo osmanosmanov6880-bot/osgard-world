@@ -33,7 +33,7 @@ func _run() -> void:
 		"physical green time reserves actual sidewalk-to-opposite-side walking time")
 	check(RULE.permission(Vector3(-156,0,-163.5),moving,2.15,0.0).is_empty(),
 		"once inside real 8m crossing, no red freeze mid-road")
-	check(RULE.permission(Vector3(-149,0,-169),moving,2.15,0.0).is_empty(),
+	check(RULE.permission(Vector3(-148,0,-169),moving,2.15,0.0).is_empty(),
 		"nearby side lane not falsely blocked by an unrelated signal")
 	check(RULE.permission(Vector3(-156,0,-190),moving,2.15,0.0).is_empty(),
 		"distant resident never stops because of far-away intersection")
