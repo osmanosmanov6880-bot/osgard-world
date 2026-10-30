@@ -85,6 +85,11 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                     "?scenario=blackout&lang=ru"
                 ), "Original RU GRID launch link not real"
                 assert page.evaluate("document.documentElement.scrollWidth") <= 1368
+                assert page.locator("#g13-mobile-feature-title").count() == 1 and (
+                    page.locator(".g13-mobile-triad > div").count() == 3), (
+                    "G13 actual 320/390px scene reflow feature missing from RU international site")
+                assert "ПРИБОРЫ" in page.locator("#g13-mobile-feature-title").inner_text(), (
+                    "Mobile HUD/source telemetry story description not localized in Russian")
                 assert page.locator("#comfort-feature-title").count() == 1 and (
                     page.locator(".comfort-preset-grid > div").count() == 3), (
                     "G12 true source control presets section missing in RU portal")
@@ -103,6 +108,10 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                                 animations="disabled",timeout=60000)
                 page.locator("#language").click()
                 assert page.evaluate("document.documentElement.lang") == "en"
+                assert "STORY, INSTRUMENTS" in page.locator("#g13-mobile-feature-title").inner_text(), (
+                    "G13 real mobile Godot HUD feature missing in English")
+                assert "physical" in page.locator(".g13-mobile-limitation").inner_text().lower(), (
+                    "G13 mobile emulation cannot claim certified physical devices")
                 assert "GAME SHOULD ADAPT" in page.locator("#comfort-feature-title").inner_text().upper(), (
                     "G12 real Godot keyboard comfort controls not localized to EN")
                 assert "F7" in page.locator(".comfort-feature-head").inner_text() and (
@@ -164,6 +173,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 mwidth = m.evaluate("document.documentElement.scrollWidth")
                 assert mwidth <= 392, f"Mobile world-class portal overflows 390px: {mwidth}"
                 assert m.locator("a[data-play]").first.is_visible(), "Mobile play CTA missing"
+                assert m.locator("#g13-mobile-feature-title").is_visible(), (
+                    "G13 real source-backed HUD explanation missing at 320/390px")
                 assert m.locator("#comfort-feature-title").is_visible(), (
                     "Actual Godot G12 keyboard presets explanation hidden on compact phone")
                 assert m.locator("#vision-feature-title").is_visible(), (
@@ -181,6 +192,12 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 ), "Mobile campaign route not connected to real playable build"
                 m.screenshot(path=str(output/"world-mobile-en.png"),full_page=True,
                              animations="disabled",timeout=60000)
+                result["g13_real_mobile_hud"] = {
+                    "real_source": True,
+                    "bilingual": True,
+                    "css_320_and_390": True,
+                    "no_fake_hardware_claim": True
+                }
                 result["g12_portal_control_comfort"] = {
                     "actual_source_modes": 3,
                     "ru_en": True,
@@ -210,6 +227,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 assert narrow_width <= 322, (
                     f"Narrow 320px portal overflows horizontally: {narrow_width}"
                 )
+                assert m.locator("#g13-mobile-feature-title").is_visible(), (
+                    "G13 real source-backed HUD explanation missing at 320/390px")
                 assert m.locator("#comfort-feature-title").is_visible(), (
                     "Actual Godot G12 keyboard presets explanation hidden on compact phone")
                 assert m.locator("#vision-feature-title").is_visible(), (
