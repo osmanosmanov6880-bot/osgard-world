@@ -45,7 +45,7 @@ class GateTests(unittest.TestCase):
             "p99_ms": 18.9 if quality == "hero" else 32.0,
             "average_ms": avg, "estimated_fps": round(1000/avg, 1),
             "hitches_over_50ms": 0, "stalls_over_250ms": 0,
-            "paused_frames_excluded": 0,
+            "paused_frames_excluded": self.counter,
             "background_interruption_count": 0, "invalid_deltas_excluded": 0,
             "quality_start": quality, "quality_end": quality,
             "quality_changed": False, "viewport_start": [1280,720],
