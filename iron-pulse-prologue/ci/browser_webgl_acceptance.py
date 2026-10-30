@@ -448,17 +448,25 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "G13 must report honest source-based native panel layout",name,layout)
                         if mobile:
                             radio_rect=layout.get("radio_rect")
-                            stat_rect=layout.get("telemetry_rect")
                             actual_touch_top=layout.get("touch_first_row_y",0)
-                            assert layout.get("layout")=="stacked_story_below_telemetry" and (
+                            head_rect=state.get("hud_rects",{}).get("header",[])
+                            assert layout.get("layout")=="single_story_card" and (
                                 layout.get("radio_visible") is True and
-                                layout.get("hud_card_visible") is True and
-                                radio_rect and stat_rect and actual_touch_top>300), (
-                                "Real 390px requires distinct visible telemetry and MARA cards",name,layout)
-                            assert stat_rect[1]+stat_rect[3]+2<radio_rect[1] and (
-                                radio_rect[1]+radio_rect[3]+1<actual_touch_top), (
-                                "Real 390px original story must never cover telemetry or LAB/MAP controls",
+                                layout.get("hud_card_visible") is False and
+                                layout.get("emergency_footer_from_real_engine") is True and
+                                radio_rect and head_rect and actual_touch_top>300), (
+                                "Real 390px must show one authentic source-story card while retaining full live vitals",
                                 name,layout)
+                            assert head_rect[1]+head_rect[3]+4<radio_rect[1] and (
+                                radio_rect[1]+radio_rect[3]+2<actual_touch_top), (
+                                "Real 390px story must clear both mission header and physical touch buttons",
+                                name,layout)
+                            footer=layout.get("emergency_footer","")
+                            assert str(int(state["heat"])) in footer and (
+                                str(int(state["oxygen"])) in footer and
+                                str(int(state["crew"])) in footer and
+                                str(int(state["door"])) in footer), (
+                                "G13 must retain all four real engine vitals in the mobile story footer",name,footer)
                             assert state.get("scanned") is False and state.get("switches",0)==0, (
                                 "G13 visual layout cannot fabricate source gameplay",name)
                             page.screenshot(path=str(output/f"g13-real-story-no-overlap-{name}.png"),
