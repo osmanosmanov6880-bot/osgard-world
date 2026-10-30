@@ -87,6 +87,12 @@ func _run() -> void:
     radio = m["radio_rect"]
     print("G13_REAL_NATIVE_GEOMETRY_320 ",JSON.stringify(m))
     print("G13_REAL_NATIVE_HEADER_320 ",JSON.stringify(game._hud_rect(game.header_panel)))
+    _test(_bottom(game._hud_rect(game.header_panel))+3.0 < float(radio[1]),
+        "Original Godot 320px mission header must not overlap source MARA story")
+    _test(game.objective_label.max_lines_visible == 2 and
+        game.guidance_label.max_lines_visible == 1 and
+        game.objective_label.tooltip_text != "",
+        "Compact header keeps two-line real mission text with full source on demand")
     _test(m["layout"] == "single_story_card" and not m["hud_card_visible"] and
         m["radio_visible"] and not m["priority_visible"],
         "320x720 gives priority to unaltered real narrative instead of overlapping telemetry")
