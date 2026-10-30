@@ -1,0 +1,1000 @@
+      const mixed=component*shade*(1-fog)+[.015,.038,.07][idx]*fog;
+      return clamp(Math.round(255*Math.pow(Math.max(0,mixed),.88)),0,255);
+    });
+    items.push({z,coords,color:`rgb(${rgb.join(',')})`});
+  }
+  items.sort((a,b)=>b.z-a.z);
+  for(const item of items){ctx.fillStyle=item.color;ctx.beginPath();ctx.moveTo(item.coords[0][0],item.coords[0][1]);for(let j=1;j<item.coords.length;j++)ctx.lineTo(item.coords[j][0],item.coords[j][1]);ctx.closePath();ctx.fill();}
+ }
+ function fallback2d(canvas,state,lang){const c=canvas.getContext('2d');if(!c)return;const w=canvas.width,h=canvas.height;c.fillStyle='#07121c';c.fillRect(0,0,w,h);const scale=Math.min(w/10,h/43),xx=x=>w/2+x*scale,yy=z=>h*.91-(2.8-z)*scale;
+  c.fillStyle='#152938';c.fillRect(xx(-4),yy(3.8),8*scale,38*scale);c.strokeStyle='#6c879a';c.strokeRect(xx(-4),yy(-33),8*scale,37*scale);
+  for(let z=2;z>=-32;z-=2){c.fillStyle='#203744';c.fillRect(xx(-4),yy(z),8*scale,1);}
+  for(let i=0;i<3;i++){const s=STATIONS[i];c.fillStyle=state.done.includes(i)?'#75e6e9':i===state.order[state.done.length]?'#f5b275':'#ca7770';c.fillRect(xx(s.x)-7,yy(s.z)-7,14,14);}
+  c.fillStyle=state.done.length===3?'#64e2cb':'#e47b75';c.fillRect(xx(-4),yy(-27),8*scale,5);
+  c.fillStyle='#f7f8fa';c.beginPath();c.arc(xx(state.x),yy(state.z),7,0,7);c.fill();c.strokeStyle='#fff';c.beginPath();c.moveTo(xx(state.x),yy(state.z));c.lineTo(xx(state.x)+Math.sin(state.yaw)*19,yy(state.z)-Math.cos(state.yaw)*19);c.stroke();
+  c.fillStyle='#b6d0df';c.font=`${Math.max(12,w/50)}px monospace`;c.fillText(text[lang].low,18,30);
+ }
+ function create(root,opts){
+  if(!root)throw Error('transit root missing');const lang=opts.lang==='en'?'en':'ru',copy=text[lang],pc=PHASE_COPY[lang],phaseMode=opts.challenge==='phase',wing=WINGS[clamp(opts.act|0,0,2)],state={x:0,z:2.8,yaw:0,pitch:0,done:[],order:wing.sequence,door:0,shield:100,mistakes:0,strikes:0,finished:false,phase:[0,0,0],phaseTargets:PHASE_TARGETS[clamp(opts.act|0,0,2)],phaseOps:0,seal:false,sealDoor:0};
+  const oldCanvas=root.querySelector('#transit31Canvas'),canvas=oldCanvas.cloneNode(false),keyset=new Set();oldCanvas.replaceWith(canvas);let stopped=false,last=performance.now(),elapsedMs=0,paused=false,lastHud=0,lastHit=-100,frameId=0,moved=0,mobilePoint=null,gl=setupGl(canvas),lastCpuFrame=0,frames=0;
+  const authoredGeometry=structure(wing.accent,phaseMode),staticCpu=gl?null:cpuTriangles(authoredGeometry);
+  if(gl)gl.setStatic(authoredGeometry);const actions=['w','a','s','d','arrowleft','arrowright','shift'];
+  const fields={label:'#transit31Kicker',name:'#transit31Name',brief:'#transit31Brief',sequence:'#transit31Sequence',next:'#transit31Next',shield:'#transit31Shield',time:'#transit31Time',errors:'#transit31Errors',hint:'#transit31Hint',status:'#transit31Status',renderer:'#transit31Renderer',complete:'#transit31Complete',completeTitle:'#transit31CompleteTitle',completeText:'#transit31CompleteText',completeStats:'#transit31CompleteStats'};
+  const $=s=>root.querySelector(s),field=(key,val)=>{const el=$(fields[key]);if(el)el.textContent=val;};
+  root.querySelector('#transit31Close').textContent=copy.exit;
+  root.querySelector('#transit31Interact').textContent=copy.interact;
+  root.querySelector('#transit31Restart').textContent=copy.retry;
+  root.querySelector('#transit31Return').textContent=copy.continue;
+  root.querySelectorAll('[data-transit-control]').forEach(b=>{b.textContent=copy[b.dataset.transitControl]||b.textContent;});
+  field('label',(phaseMode?pc.intro:copy.top)+' / '+wing.code);field('name',phaseMode?'PHASE CHAMBER / '+wing.code:wing.name[lang==='ru'?0:1]);field('brief',phaseMode?pc.objective:copy.objective);
+  const phaseCard=$('#transit32Phase'),pauseButton=$('#transit32Pause');if(phaseCard)phaseCard.hidden=!phaseMode;
+  const restorePauseLabel=()=>{if(pauseButton)pauseButton.textContent=paused?pc.resume:pc.pause;};restorePauseLabel();
+  field('renderer',copy.render+' / '+(gl?'WEBGL2':'CPU 3D'));field('completeTitle',phaseMode?pc.complete:copy.completed);field('completeText',phaseMode?pc.completeLead:copy.completeLead);
+  function clock(){return Math.floor(elapsedMs/1000);}
+  function togglePause(force){if(stopped||state.finished)return;paused=typeof force==='boolean'?force:!paused;keyset.clear();restorePauseLabel();field('status',paused?pc.paused:'');}
+  if(pauseButton)pauseButton.onclick=()=>togglePause();
+  function nearest(){let chosen=null;for(let i=0;i<3;i++){const s=STATIONS[i],d=Math.hypot(state.x-s.x,state.z-s.z);if(d<2.05&&(!chosen||d<chosen.d))chosen={kind:'station',i,d};}
+   if(state.done.length===3){
+    if(phaseMode){
+     for(let i=0;i<3;i++){const s=PHASE_STATIONS[i],d=Math.hypot(state.x-s.x,state.z-s.z);if(d<2.05&&(!chosen||d<chosen.d))chosen={kind:'phase',i,d};}
+     const md=Math.hypot(state.x,state.z+52.35);if(md<2.05&&(!chosen||md<chosen.d))chosen={kind:'master',d:md};
+     if(state.seal){const ed=Math.hypot(state.x,state.z+58.15);if(ed<2.05&&(!chosen||ed<chosen.d))chosen={kind:'exit',d:ed};}
+    }else{const d=Math.hypot(state.x,state.z+30.7);if(d<2.25&&(!chosen||d<chosen.d))chosen={kind:'exit',d};}
+   }return chosen;}
+  function message(msg){field('status',msg);clearTimeout(message.timer);message.timer=setTimeout(()=>{if(!stopped)field('status','');},2900);}
+  function interact(){if(stopped||state.finished||paused)return;const target=nearest();if(!target){message(copy.away);return;}
+   if(target.kind==='exit'){state.finished=true;keyset.clear();field('completeStats',`${copy.time} ${clock()} s  /  ${copy.mistakes} ${state.mistakes}  /  ${copy.oxygen} ${Math.round(state.shield)}%${phaseMode?' / PHASE '+state.phaseOps:''}`);
+    $(fields.complete).hidden=false;opts.onComplete?.({act:opts.act,challenge:phaseMode?'phase':'transit',elapsedMs:Math.max(1000,Math.round(elapsedMs)),mistakes:state.mistakes,shield:Math.round(state.shield),phaseOps:phaseMode?state.phaseOps:0});return;}
+   if(target.kind==='phase'){
+    state.phase[target.i]=(state.phase[target.i]%3)+1;state.phaseOps=Math.min(500,state.phaseOps+1);
+    message(state.phase[target.i]===state.phaseTargets[target.i]?pc.calibrated:pc.tuning+' / '+state.phase[target.i]);return;
+   }
+   if(target.kind==='master'){
+    if(state.seal){message(pc.sealed);return;}
+    if(!state.phase.every((v,i)=>v===state.phaseTargets[i])){state.mistakes++;state.shield=Math.max(1,state.shield-12);message(pc.mismatch);return;}
+    state.seal=true;message(pc.sealed);return;
+   }
+   if(state.done.includes(target.i)){message(copy.active);return;}
+   if(target.i!==state.order[state.done.length]){state.mistakes++;state.shield=Math.max(1,state.shield-16);message(copy.wrong);return;}
+   state.done.push(target.i);message(state.done.length===3?copy.gateOpen:copy.correct);
+  }
+  function refresh(){const next=state.order[state.done.length];field('sequence',copy.route+' / '+state.order.map((i,j)=>state.done.includes(i)?'✓':(j===state.done.length?'['+(i+1)+']':String(i+1))).join('   '));
+   field('next',state.done.length===3?copy.gate+' · '+copy.unlocked:`${copy.next} · ${copy.relay} ${next+1}`);
+   field('shield',Math.round(state.shield)+'%');field('time',String(clock()).padStart(3,'0')+' s');field('errors',String(state.mistakes));
+   if(phaseMode){
+    const signals=state.phase.map((v,i)=>v===state.phaseTargets[i]?`✓ ${v}`:`${v||'—'} / ${state.phaseTargets[i]}`);
+    const phaseValue=$('#transit32PhaseValues');if(phaseValue)phaseValue.textContent=signals.join('     ');
+    const status=$('#transit32PhaseState');if(status)status.textContent=state.seal?pc.sealed:pc.phaseHint;
+    if(state.done.length===3)field('next',state.seal?pc.sealed:pc.phase+' / '+state.phase.filter((v,i)=>v===state.phaseTargets[i]).length+'/3');
+   }
+   const n=nearest();let hint;
+   if(n?.kind==='phase')hint=pc.tuning+' '+(n.i+1)+' · '+state.phase[n.i]+' → '+state.phaseTargets[n.i]+' · E';
+   else if(n?.kind==='master')hint=pc.master+' · E';
+   else if(n?.kind==='exit')hint=copy.exitHint;
+   else if(n?.kind==='station')hint=`${copy.relay} ${n.i+1} · ${copy.press}`;
+   else if(phaseMode&&state.seal)hint=copy.exitHint;
+   else if(phaseMode&&state.done.length===3)hint=pc.phaseNext;
+   else hint=state.done.length===3?copy.gateOpen:copy.move;
+   field('hint',paused?pc.paused:hint);
+  }
+  const blocked=(x,z)=>Math.abs(x)>3.30||z>3.3||z<(phaseMode?-60.1:-32.3)||(state.done.length<3&&z< -25.85)||(z< -29.2&&z> -31.5&&Math.abs(x)>2.3)||(phaseMode&&!state.seal&&z< -54.55);
+  function update(dt,sec){if(state.finished)return;
+   const shift=keyset.has('shift'),speed=(shift?6.8:4.5)*dt,forward=(keyset.has('w')?1:0)-(keyset.has('s')?1:0),lateral=(keyset.has('d')?1:0)-(keyset.has('a')?1:0);
+   if(keyset.has('arrowleft'))state.yaw-=1.5*dt;if(keyset.has('arrowright'))state.yaw+=1.5*dt;
+   let dx=Math.sin(state.yaw)*forward+Math.cos(state.yaw)*lateral,dz=-Math.cos(state.yaw)*forward+Math.sin(state.yaw)*lateral;
+   const len=Math.hypot(dx,dz);if(len>0){dx=dx/len*speed;dz=dz/len*speed;
+    if(!blocked(state.x+dx,state.z)){state.x+=dx;moved+=Math.abs(dx);}if(!blocked(state.x,state.z+dz)){state.z+=dz;moved+=Math.abs(dz);}}
+   state.door+=((state.done.length===3?1:0)-state.door)*Math.min(1,dt*2.5);
+   if(phaseMode)state.sealDoor+=((state.seal?1:0)-state.sealDoor)*Math.min(1,dt*2.5);
+   // Two visible timed pressure fields: player can skirt them at the walls. Shield never affects reactor missions.
+   const risky=Math.abs(state.x)<1.85&&[-12.2,-20.2].some(z=>Math.abs(state.z-z)<.67);
+   const on=Math.sin(sec*1.1)> .45||Math.sin(sec*1.1+2.1)>.45;
+   const scanner=phaseMode&&state.done.length===3&&[-39.8,-46.2].some((z,i)=>Math.abs(state.z-z)<.62&&Math.abs(state.x-2.6*Math.sin(sec*.8+i*2.1))<.67);
+   if((risky&&on||scanner)&&sec-lastHit>.8){lastHit=sec;state.shield-=scanner?11:9;message(scanner?pc.scanner:copy.signal);}
+   else if(!risky)state.shield=Math.min(100,state.shield+dt*1.6);
+   if(state.shield<=0){state.strikes++;state.shield=55;state.x=0;state.z=2.8;message(copy.reset);}
+  }
+  function draw(now){if(stopped)return;frames++;const rawDelta=Math.max(0,(now-last)/1000),dt=Math.min(.05,rawDelta);last=now;
+   if(!paused&&!state.finished){elapsedMs+=Math.min(.25,rawDelta)*1000;update(dt,elapsedMs/1000);}
+   const sec=elapsedMs/1000;
+   if(window.__SABLEFAULT_TRANSIT31_SKIP_PAINT!==true){if(gl){gl.frame(state,sec,phaseMode);}else if(now-lastCpuFrame>105){lastCpuFrame=now;fallbackPerspective(canvas,state,staticCpu,cpuTriangles(liveGeometry(state,sec,phaseMode)));}}
+   if(now-lastHud>200){lastHud=now;refresh();}frameId=requestAnimationFrame(draw);}
+  function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(1.5,window.devicePixelRatio||1);canvas.width=Math.max(360,Math.round(rect.width*dpr));canvas.height=Math.max(240,Math.round(rect.height*dpr));}
+  function keydown(e){const k=e.key.toLowerCase();if(stopped||state.finished)return;
+   if((k==='p'||k==='escape')&&!e.repeat){e.preventDefault();togglePause();return;}
+   if(paused)return;
+   if(actions.includes(k)||k==='e'){e.preventDefault();if(k==='e'&&!e.repeat)interact();else keyset.add(k);}}
+  function keyup(e){keyset.delete(e.key.toLowerCase());}
+  function leave(){if(stopped)return;stopped=true;cancelAnimationFrame(frameId);clearTimeout(message.timer);window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);window.removeEventListener('resize',resize);document.removeEventListener('visibilitychange',visibility);if(document.pointerLockElement===canvas&&document.exitPointerLock)document.exitPointerLock();gl?.destroy();canvas.removeEventListener('mousemove',mouse);canvas.removeEventListener('pointerdown',pointer);canvas.removeEventListener('pointermove',drag);canvas.removeEventListener('pointerup',endpointer);canvas.removeEventListener('pointercancel',endpointer);opts.onExit?.();}
+  const blur=()=>{keyset.clear();if(!stopped&&!state.finished)togglePause(true);};const visibility=()=>{if(document.hidden&&!stopped&&!state.finished)togglePause(true);};const mouse=e=>{if(stopped)return;if(document.pointerLockElement===canvas){state.yaw+=e.movementX*.0023;state.pitch=clamp(state.pitch-e.movementY*.0017,-.52,.52);}};
+  const pointer=e=>{if(stopped)return;if(e.pointerType==='touch'){mobilePoint={x:e.clientX,y:e.clientY,id:e.pointerId};canvas.setPointerCapture(e.pointerId);}else if(!state.finished&&canvas.requestPointerLock)canvas.requestPointerLock().catch(()=>{});};
+  const drag=e=>{if(!mobilePoint||mobilePoint.id!==e.pointerId)return;state.yaw+=(e.clientX-mobilePoint.x)*.006;state.pitch=clamp(state.pitch-(e.clientY-mobilePoint.y)*.004,-.52,.52);mobilePoint.x=e.clientX;mobilePoint.y=e.clientY;};
+  const endpointer=e=>{if(mobilePoint?.id===e.pointerId)mobilePoint=null;};
+  window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',blur);window.addEventListener('resize',resize);document.addEventListener('visibilitychange',visibility);
+  canvas.addEventListener('mousemove',mouse);canvas.addEventListener('pointerdown',pointer);canvas.addEventListener('pointermove',drag);canvas.addEventListener('pointerup',endpointer);canvas.addEventListener('pointercancel',endpointer);
+  $('#transit31Interact').onclick=interact;$('#transit31Close').onclick=leave;$('#transit31Return').onclick=leave;
+  $('#transit31Restart').onclick=()=>{state.x=0;state.z=2.8;state.yaw=0;state.pitch=0;state.done=[];state.shield=100;state.mistakes=0;state.strikes=0;state.finished=false;state.door=0;state.phase=[0,0,0];state.phaseOps=0;state.seal=false;state.sealDoor=0;elapsedMs=0;lastHit=-100;moved=0;keyset.clear();paused=false;restorePauseLabel();last=performance.now();$(fields.complete).hidden=true;refresh();};
+  root.querySelectorAll('[data-transit-hold]').forEach(old=>{const button=old.cloneNode(true);old.replaceWith(button);const k=button.dataset.transitHold;let pointerId=null;
+   button.addEventListener('pointerdown',e=>{e.preventDefault();pointerId=e.pointerId;button.setPointerCapture(pointerId);keyset.add(k);});
+   for(const ev of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(ev,()=>{keyset.delete(k);pointerId=null;});});
+  resize();refresh();frameId=requestAnimationFrame(draw);canvas.focus({preventScroll:true});
+  return {exit:leave,inspect:()=>({active:!stopped,act:opts.act,challenge:phaseMode?'phase':'transit',paused,phase:[...state.phase],phaseTargets:[...state.phaseTargets],phaseOps:state.phaseOps,seal:state.seal,sealDoor:+state.sealDoor.toFixed(2),elapsedMs:Math.round(elapsedMs),renderer:gl?'webgl2':'cpu-perspective',x:+state.x.toFixed(2),z:+state.z.toFixed(2),yaw:+state.yaw.toFixed(3),order:[...state.order],done:[...state.done],shield:+state.shield.toFixed(1),mistakes:state.mistakes,finished:state.finished,door:+state.door.toFixed(2),moved:+moved.toFixed(2),frames,staticTriangles:gl?.stats().staticTriangles||staticCpu.length})};
+ }
+ window.SABLEFAULT_TRANSIT_31=Object.freeze({create,wingCount:WINGS.length});
+ window.SABLEFAULT_TRANSIT_32=window.SABLEFAULT_TRANSIT_31;
+})();
+</script>
+<script>
+/* SABLEFAULT WORLD 1.1 — offline-first playable game platform.
+   No accounts, uploads, network analytics or simulated multiplayer.
+   Results originate from game-frame postMessage events or explicitly user-imported local backups; not server-verifiable.
+   Does not mutate reactor physics, save contents, mission gates or outcomes. */
+(() => {
+  'use strict';
+  const $=id=>document.getElementById(id);
+  const root=$('worldApp');
+  const STORAGE_KEY='sablefault.world.11.profile'; // Retained for lossless upgrade from 1.1
+  const STORY_KEY='sablefault.monolith.09.checkpoint';
+  const REDLINE_KEY='sablefault.world.11.redline.checkpoint';
+  const AFTERSHOCK_KEY='sablefault.world.12.aftershock.checkpoint';
+  const SECTOR12_KEY='sablefault.world.13.sector12.checkpoint';
+  const GRIDSHADOW_KEY='sablefault.world.14.gridshadow.checkpoint';
+  const SIGNALFALL_KEY='sablefault.world.15.signalfall.checkpoint';
+  const CRYO_KEY='sablefault.world.17.cryofracture.checkpoint';
+  const ECHO_KEY='sablefault.world.18.pressureecho.checkpoint';
+  const MODE=['story','redline','aftershock','sector12','gridshadow','signalfall','cryofracture','pressureecho'];
+  const ACHIEVEMENTS=[
+    {id:'operator',icon:'◈',ru:['Первый сигнал','Запустите любой эпизод'],en:['First signal','Start a playable operation']},
+    {id:'survivor',icon:'✚',ru:['Контроль сохранён','Завершите любую миссию'],en:['Containment','Finish any mission']},
+    {id:'archivist',icon:'▣',ru:['Архивариус','Сохраните архив'],en:['Archivist','Preserve the archive']},
+    {id:'mechanic',icon:'⌁',ru:['Инженер','Почините резервный контур S-21'],en:['Engineer','Repair service line S-21']},
+    {id:'truth',icon:'✧',ru:['Нулевая истина','Раскройте секрет ZERO CODE'],en:['Zero truth','Solve ZERO CODE']},
+    {id:'redline',icon:'⚑',ru:['На пределе','Завершите испытание REDLINE'],en:['At the edge','Complete the REDLINE trial']},
+    {id:'aftershock',icon:'✦',ru:['После удара','Завершите AFTERSHOCK с ремонтом S-21'],en:['After impact','Complete AFTERSHOCK with S-21 repaired']},
+    {id:'sector12',icon:'⌬',ru:['Фазовый контакт','Завершите SECTOR 12 со связанными реле'],en:['Field alignment','Complete SECTOR 12 with three coupled relays']},
+    {id:'gridshadow',icon:'◇',ru:['Тёмный ток','Завершите GRID SHADOW с распределением мощности'],en:['Dark current','Complete GRID SHADOW with the grid routed']},
+    {id:'signalfall',icon:'◎',ru:['На связи','Восстановите три антенны и северный U-14'],en:['Signal restored','Recover three antennas and the northern U-14 uplink']},
+    {id:'cryofracture',icon:'❖',ru:['Криоразлом','Герметизируйте криоконтур после перераспределения четырёх зарядов'],en:['Cryo fracture','Seal the cryogenic circuit after balancing four charges']},
+    {id:'pressureecho',icon:'⬡',ru:['Эхо давления','Перекройте три затвора по порядку и выдержите волны давления'],en:['Pressure echo','Close three bulkheads in order and contain the pressure echoes']}
+  ];
+  const COPY={
+    ru:{skip:'К содержанию',navHome:'Обзор',navMissions:'Эпизоды',navArchive:'Архив',navSettings:'Настройки',local:'ЛОКАЛЬНЫЙ ПРОФИЛЬ',
+      heroEyebrow:'ОРИГИНАЛЬНЫЙ НАУЧНО-ФАНТАСТИЧЕСКИЙ ТРИЛЛЕР',heroTag:'У КАЖДОЙ СИСТЕМЫ ЕСТЬ ПРЕДЕЛ.',heroDescription:'Восемь операций, три финала и реакторный комплекс, где каждое решение имеет цену.',
+      playNow:'НАЧАТЬ ИНЦИДЕНТ',continueNow:'ПРОДОЛЖИТЬ',proofAlpha:'ИГРАЕМАЯ ALPHA / v3.0',heroBottom:'ОПЕРАЦИЯ // SECTOR 09',liveSystem:'ДОСТУПНО СЕЙЧАС',featureTitle:'РЕАКТОРНЫЙ ПРОТОКОЛ',featureText:'От перегрева до эвакуации. Каждое решение меняет состояние комплекса.',enterSector:'ВОЙТИ В СЕКТОР',redlineText:'Три минуты. Более жёсткий кризис. Отдельный прогресс.',takeChallenge:'ПРИНЯТЬ ВЫЗОВ',signatureKicker:'СИСТЕМА ОТВЕЧАЕТ НА КАЖДОЕ ДЕЙСТВИЕ',signatureText:'Не наблюдай за катастрофой. Управляй её последствиями.',stations:'ТЕРМИНАЛОВ',endings:'ФИНАЛА',modes:'РЕЖИМА',
+      missionEyebrow:'ОПЕРАЦИИ / ПОЛЯРНЫЙ КОМПЛЕКС',missionsTitle:'ВЫБЕРИ СВОЙ ПРОТОКОЛ.',missionsLead:'Восемь игровых операций. SECTOR 16 — шахта давления, три затвора B → C → A, аварийные волны и герметизация E-16.',storyTitle:'КОНТУР СДЕРЖИВАНИЯ',storySummary:'Стандартный протокол. 4 минуты. Возможность сохранить экипаж, архив или раскрыть тайный код.',playMission:'ИГРАТЬ',redlineSummary:'180 секунд, ухудшенные стартовые показатели, ускоренные аварии. Независимое сохранение.',aftershockSummary:'210 секунд. S-21 обязателен до стабилизации ядра. Ранний каскад аварий и отдельное сохранение.',aftershockRule:'S-21 / ОБЯЗАТЕЛЬНО',newOperation:'НОВАЯ ОПЕРАЦИЯ',hardRules:'ПОВЫШЕННЫЙ РИСК',startTrial:'НАЧАТЬ ИСПЫТАНИЕ',futureTitle:'ПОД УРОВНЕМ',futureSummary:'Новая локация пока в разработке. Она не является доступным игровым уровнем.',notReady:'НЕ ВЫПУЩЕНО',
+      sector12Summary:'Новый физический корпус восточнее главного зала. Три узла в связанном кольце: каждый импульс меняет две фазы. Соберите вектор 0 · 1 · 0 и стабилизируйте ядро.',sector12Rule:'ФАЗОВАЯ ГОЛОВОЛОМКА',
+      gridshadowSummary:'Новое западное крыло. Три физические подстанции, шесть единиц общей мощности, перегрузки и реальная цена ошибочного маршрута.',gridshadowRule:'ЭНЕРГОСЕТЬ / 2 · 1 · 3',gridshadowTitle:'ТЁМНЫЙ ТОК',
+      signalfallSummary:'Северный узел связи. Найдите три приёмника, снимите образцы, настройте частоты и запустите центральный U-14.',signalfallRule:'ТРИАНГУЛЯЦИЯ / 3 + 1',
+      cryoSummary:'Новый северный криосектор. Осмотрите три камеры, перераспределите четыре заряда по контуру и закройте V-15. Цель: 2 · 1 · 1.',cryoRule:'КРИОБАЛАНС / 4 ЗАРЯДА',echoSummary:'Сектор E-16: три датчика, затворы B → C → A. Три аварийных системы: H-20 защищает от волн, F-21 ремонтирует пробои, B-22 временно снижает утечку.',echoRule:'E-16 / 3 ЗАТВОРА',
+      commandLabel:'CRISIS COMMAND / МАРШРУТ КОМПЛЕКСА',commandOperations:'операций закрыто в последних 40 попытках',commandNextLabel:'СЛЕДУЮЩИЙ ПРОТОКОЛ',commandPlay:'ОТКРЫТЬ ОПЕРАЦИЮ ↗',commandReady:'Все восемь операций пройдены. Можно улучшать рекорды.',commandPending:'Следующий не пройденный сектор в твоём маршруте. Все восемь режимов доступны без блокировок.',directiveLabel:'ЕЖЕДНЕВНАЯ ДИРЕКТИВА / UTC',directivePlay:'ВЫПОЛНИТЬ ДИРЕКТИВУ ↗',directiveGoal:'Победа · минимум {score} очков · кислород на финише от {oxygen}%',directiveDone:'ДИРЕКТИВА ВЫПОЛНЕНА · локальный результат {score}',directivePending:'ЗАДАНИЕ НЕ ВЫПОЛНЕНО',directiveDisclaimer:'Проверяется по локальным записям за UTC-день. Директива не меняет физику игры и не является онлайн-рейтингом.',compareLabel:'BLACKBOX / АНАЛИТИКА ОПЕРАЦИЙ',compareTitle:'СРАВНЕНИЕ ОПЕРАЦИЙ.',compareLead:'Два настоящих записанных прохождения одной операции. Только локальные данные.',compareExport:'ЭКСПОРТ СРАВНЕНИЯ JSON ↓',compareModeLabel:'ОПЕРАЦИЯ',compareRunALabel:'ЗАПИСЬ A',compareRunBLabel:'ЗАПИСЬ B',compareChannelLabel:'ТЕЛЕМЕТРИЯ',compareEmpty:'Для сравнения нужны две завершённые попытки одной операции.',compareOnlyOne:'Недостаточно записей этой операции: нужно минимум две.',compareDifferent:'Выбери две разные записи.',compareNoFlight:'Нет телеметрии в одной или обеих записях; численные итоги доступны.',comparePartial:'Есть частичная запись после загрузки сохранения; линии не показывают всю сессию.',compareComplete:'Непрерывные записи двух сессий, нормализованные по времени операции.',compareScore:'СЧЁТ',compareDuration:'ВРЕМЯ',compareOxygen:'КИСЛОРОД',comparePower:'ПИТАНИЕ',compareDelta:'B − A',compareInsight:'АНАЛИЗ ПО ФАКТИЧЕСКИМ ПОКАЗАТЕЛЯМ',compareMissing:'Недостаточно записанных датчиков для инженерных выводов.',compareHighHeat:'В финале обнаружена высокая температура. Проверь действия охлаждения в журнале.',compareHighPressure:'В финале обнаружено высокое давление. Посмотри моменты скачков и утечек.',compareLowPower:'В финале мало энергии. Сравни время энергозатратных действий.',compareLowOxygen:'В финале мало кислорода. Проверь события до эвакуации.',compareNoCause:'Это пороговые подсказки по последним измерениям, а не доказательство причин аварии.',compareDownload:'Локальный JSON сохранён.',
+      campaignTitle:'ВОСЕМЬ ОПЕРАЦИЙ. ОДИН КОМПЛЕКС.',campaignLabel:'ПУТЬ ОПЕРАТОРА',campaignHint:'Пройденные миссии отмечаются по настоящим результатам, но запуск любой операции доступен без блокировок.',campaignComplete:'ПРОЙДЕНО',campaignAvailable:'ДОСТУПНО',
+      historyFilter:'ФИЛЬТР ЖУРНАЛА',historyAny:'ВСЕ РЕЖИМЫ',historyWins:'ТОЛЬКО ПОБЕДЫ',historyAll:'ВСЕ ИСХОДЫ',exportRuns:'ЭКСПОРТ ЖУРНАЛА CSV ↓',incidentView:'АНАЛИЗ',incidentLabel:'ЧЁРНЫЙ ЯЩИК / ЛОКАЛЬНАЯ ЗАПИСЬ',incidentClose:'ЗАКРЫТЬ',
+      incidentExport:'ЭКСПОРТ ИНЦИДЕНТА JSON ↓',incidentTraceTitle:'ЗАПИСАННЫЕ СОБЫТИЯ',incidentLegacy:'Для старых прохождений подробная запись недоступна.',incidentNote:'Телеметрия записывается каждые ~5 секунд, события ограничены 96 записями. После загрузки сохранения доступна только часть прохождения. Это воспроизведение измерений, не повтор игрового мира. Нет серверной проверки.',flightTitle:'ТЕЛЕМЕТРИЯ ОПЕРАЦИИ',flightMetricLabel:'ПОКАЗАТЕЛЬ',flightPressure:'Давление',flightHeat:'Температура',flightPower:'Питание',flightOxygen:'Кислород',flightStress:'Нагрузка',flightWaves:'Волны',flightMoment:'МОМЕНТ',flightValue:'ЗНАЧЕНИЕ',flightExtremum:'ЭКСТРЕМУМ',flightScrubLabel:'ШКАЛА ЗАПИСИ',flightPlay:'ВОСПРОИЗВЕСТИ ДАННЫЕ',flightPause:'ПАУЗА',flightCsv:'ЭКСПОРТ ТЕЛЕМЕТРИИ CSV ↓',flightFull:'ПОЛНАЯ ЗАПИСЬ СЕССИИ',flightPartial:'ЧАСТИЧНАЯ ЗАПИСЬ ПОСЛЕ ЗАГРУЗКИ',flightDiscarded:'событий вытеснено',flightNoOld:'Доступна только история старого формата.',noMatchingRuns:'Нет попыток по выбранному фильтру.',
+      archiveEyebrow:'ДОСЬЕ ОПЕРАТОРА / ЛОКАЛЬНЫЕ ДАННЫЕ',archiveTitle:'ТВОИ РЕШЕНИЯ. ИХ ПОСЛЕДСТВИЯ.',archiveLead:'Результаты настоящих игровых сессий на этом устройстве. Никакой облачной синхронизации или вымышленных игроков.',operatorStats:'СТАТИСТИКА ОПЕРАТОРА',completedRuns:'ЗАВЕРШЕНО',wins:'ПОБЕД',bestScore:'ЛУЧШИЙ СЧЁТ',achievements:'ДОСТИЖЕНИЯ',historyTitle:'ЖУРНАЛ ВЫХОДОВ',noHistory:'Здесь появятся реальные завершённые попытки после прохождения игры.',
+      settingsEyebrow:'ЛОКАЛЬНО / КОНТРОЛИРУЕМО',settingsTitle:'НАСТРОЙ СВОЙ ОПЫТ.',settingsLead:'Данные остаются в этом браузере. Здесь нет серверных учётных записей, подписок и скрытой аналитики.',presentation:'ОТОБРАЖЕНИЕ',settingLang:'ЯЗЫК ПЛАТФОРМЫ',settingLangHint:'Русский / English',settingMotion:'УМЕНЬШИТЬ ДВИЖЕНИЕ',settingMotionHint:'Отключить лишние анимации интерфейса',settingContrast:'ВЫСОКИЙ КОНТРАСТ',settingContrastHint:'Более чёткие границы и текст',settingQuality:'ГРАФИКА В ИГРЕ',settingQualityHint:'CINEMA или экономичный режим',localData:'ЛОКАЛЬНЫЕ ДАННЫЕ',localDescription:'Можно сохранить досье оператора в JSON и перенести его. Контрольные точки миссий экспортируются отдельно в самой игре.',exportProfile:'ЭКСПОРТ ДОСЬЕ ↓',importProfile:'ИМПОРТ ДОСЬЕ ↑',resetProfile:'СБРОСИТЬ ДОСЬЕ',noCloud:'Сохранения хранятся локально, без подключения к аккаунту.',diagTitle:'ДИАГНОСТИКА СРЕДЫ',debriefLabel:'ПОСЛЕДНИЙ ВЫХОД',debriefScore:'СЧЁТ ОПЕРАЦИИ',debriefReplay:'ПОВТОРИТЬ ПРОТОКОЛ',recordEmpty:'ПОКА НЕТ РЕЗУЛЬТАТОВ',recordBest:'ЛУЧШИЙ РЕЗУЛЬТАТ',gradeGold:'ЗОЛОТО',gradeSilver:'СЕРЕБРО',gradeBronze:'БРОНЗА',gradeNo:'ПОКА БЕЗ МЕДАЛИ',settingText:'КРУПНЫЙ ТЕКСТ',settingTextHint:'Больше основные подписи и размер интерактивных элементов',exportBundle:'СОХРАНИТЬ ВСЁ ↓',importBundle:'ВОССТАНОВИТЬ ВСЁ ↑',bundleExported:'Полная резервная копия сохранена.',bundleImported:'Профиль и восемь контрольных точек восстановлены.',bundleInvalid:'Некорректная копия. Данные не изменены.',hardwareDisclaimer:'Доступность WebGL2 не означает сертификацию реального GPU или 60 FPS.',footerLegal:'Оригинальная художественная игра. Не является реальной системой управления оборудованием. Нет облачного аккаунта и сетевой аналитики.',exitGame:'ВЕРНУТЬСЯ В WORLD',fullscreen:'ПОЛНЫЙ ЭКРАН',
+      profileExported:'Досье сохранено в JSON-файл.',profileImported:'Досье успешно импортировано.',profileInvalid:'Неподдерживаемое или повреждённое досье.',resetConfirm:'Удалить историю и достижения этого профиля? Контрольные точки миссий сохранятся.',profileReset:'Локальное досье очищено.',storageReady:'Локальное хранилище доступно.',storageMissing:'Хранилище недоступно: прогресс будет утрачен после закрытия страницы.',achievementUnlocked:'Новое достижение',wonText:'ПОБЕДА',lostText:'АВАРИЯ',storyText:'СЮЖЕТ',redlineMode:'ИСПЫТАНИЕ',resumeText:'СОХРАНЕНИЕ',noSave:'НЕТ СОХРАНЕНИЯ',offlineReady:'УСТАНОВКА ДОСТУПНА',offlineLimited:'ТОЛЬКО ПРИ HTTPS / LOCALHOST'},
+    en:{skip:'Skip to content',navHome:'Overview',navMissions:'Episodes',navArchive:'Archive',navSettings:'Settings',local:'LOCAL OPERATOR PROFILE',
+      heroEyebrow:'AN ORIGINAL SCI-FI TECHNO-THRILLER',heroTag:'EVERY SYSTEM HAS A BREAKING POINT.',heroDescription:'Eight playable operations, three endings and a reactor facility where every decision has a cost.',
+      playNow:'BEGIN INCIDENT',continueNow:'CONTINUE',proofAlpha:'PLAYABLE ALPHA / v3.0',heroBottom:'OPERATION // SECTOR 09',liveSystem:'AVAILABLE NOW',featureTitle:'CONTAINMENT PROTOCOL',featureText:'From overheating to evacuation. Every action changes the facility.',enterSector:'ENTER THE SECTOR',redlineText:'Three minutes. Harder crisis. Separate progress.',takeChallenge:'ACCEPT CHALLENGE',signatureKicker:'THE SYSTEM RESPONDS TO EVERY ACTION',signatureText:'Don’t watch the disaster. Shape the consequences.',stations:'TERMINALS',endings:'ENDINGS',modes:'MODES',
+      missionEyebrow:'OPERATIONS / POLAR FACILITY',missionsTitle:'CHOOSE YOUR PROTOCOL.',missionsLead:'Eight playable operations. SECTOR 16 adds pressure-wave hazards, three ordered bulkheads and the E-16 master seal.',storyTitle:'CONTAINMENT PROTOCOL',storySummary:'Standard protocol. 4 minutes. Save the crew, preserve the archive or unlock ZERO CODE.',playMission:'PLAY',redlineSummary:'180 seconds, worse initial conditions, earlier emergencies. Independent save.',aftershockSummary:'210 seconds. Repair S-21 before containment. Earlier cascade failures and a separate checkpoint.',aftershockRule:'S-21 / REQUIRED',newOperation:'NEW OPERATION',hardRules:'HIGHER RISK',startTrial:'BEGIN CHALLENGE',futureTitle:'BENEATH THE LEVEL',futureSummary:'A future chapter is planned, not currently playable.',notReady:'NOT RELEASED',
+      sector12Summary:'A real new east wing. Three coupled relay nodes: every pulse shifts two channels. Align vector 0 · 1 · 0, then stabilize the reactor.',sector12Rule:'COUPLED PHASE PUZZLE',
+      gridshadowSummary:'New west wing. Three physical substations, a shared six-unit power budget, cascading overloads, and real consequences for wrong routing.',gridshadowRule:'GRID / 2 · 1 · 3',gridshadowTitle:'DARK CURRENT',
+      signalfallSummary:'North communications wing. Sample and tune three physical antennas, then confirm the restored U-14 uplink.',signalfallRule:'SIGNAL TRIANGULATION / 3 + 1',
+      cryoSummary:'New north cryogenic vault. Inspect three reservoirs, route four conserved charges and seal V-15. Target: 2 · 1 · 1.',cryoRule:'CRYO BALANCE / 4 CHARGES',echoSummary:'New sector 16. Inspect sensors A, B, C, then close bulkheads B → C → A. Every 22 seconds pressure waves arrive until E-16 is sealed.',echoRule:'E-16 / 3 BULKHEADS',
+      commandLabel:'CRISIS COMMAND / FACILITY ROUTE',commandOperations:'operations won in the most recent 40 runs',commandNextLabel:'NEXT PROTOCOL',commandPlay:'LAUNCH OPERATION ↗',commandReady:'All eight operations completed. Improve your personal records.',commandPending:'The next unfinished sector in your route. All modes remain unlocked.',directiveLabel:'DAILY DIRECTIVE / UTC',directivePlay:'PLAY DIRECTIVE ↗',directiveGoal:'Win · score at least {score} · finish with oxygen {oxygen}%+',directiveDone:'DIRECTIVE COMPLETE · local score {score}',directivePending:'DIRECTIVE NOT COMPLETED',directiveDisclaimer:'Checked against local results for the UTC day. Does not modify game physics or constitute a global ranking.',compareLabel:'BLACKBOX / MISSION INTELLIGENCE',compareTitle:'RUN COMPARISON.',compareLead:'Two genuinely recorded attempts of the same mission. Local data only.',compareExport:'EXPORT COMPARISON JSON ↓',compareModeLabel:'OPERATION',compareRunALabel:'RECORD A',compareRunBLabel:'RECORD B',compareChannelLabel:'TELEMETRY',compareEmpty:'Complete two runs of the same mission to compare them.',compareOnlyOne:'Fewer than two records for this operation.',compareDifferent:'Select two different runs.',compareNoFlight:'One or both runs lack telemetry; numerical results are still shown.',comparePartial:'At least one run has partial telemetry after resuming a save.',compareComplete:'Recorded sessions normalized to operation timeline.',compareScore:'SCORE',compareDuration:'TIME',compareOxygen:'OXYGEN',comparePower:'POWER',compareDelta:'B − A',compareInsight:'OBSERVATIONS FROM RECORDED SENSORS',compareMissing:'No usable sensor records for a meaningful observation.',compareHighHeat:'High temperature at finish. Inspect the cooling actions in the incident log.',compareHighPressure:'High final pressure. Inspect spikes and leak events.',compareLowPower:'Low power at finish. Compare the timing of power-intensive actions.',compareLowOxygen:'Low oxygen at finish. Inspect the events leading up to evacuation.',compareNoCause:'Threshold hints from recorded endpoints, not a verified root-cause assessment.',compareDownload:'Local comparison JSON saved.',
+      campaignTitle:'EIGHT OPERATIONS. ONE FACILITY.',campaignLabel:'OPERATOR JOURNEY',campaignHint:'Real completions mark finished operations. No artificial locks: launch any available mission.',campaignComplete:'COMPLETED',campaignAvailable:'AVAILABLE',
+      historyFilter:'RUN FILTER',historyAny:'ALL MODES',historyWins:'WINS ONLY',historyAll:'ALL OUTCOMES',exportRuns:'EXPORT RUN LOG CSV ↓',incidentView:'REVIEW',incidentLabel:'BLACKBOX / LOCAL RECORD',incidentClose:'CLOSE',
+      incidentExport:'EXPORT INCIDENT JSON ↓',incidentTraceTitle:'RECORDED EVENTS',incidentLegacy:'Detailed telemetry is unavailable for legacy runs.',incidentNote:'Telemetry is sampled about every 5 seconds, with up to 96 events. A resumed save has partial coverage. This replays captured measurements, not the gameplay world. No server verification.',flightTitle:'OPERATION TELEMETRY',flightMetricLabel:'METRIC',flightPressure:'Pressure',flightHeat:'Temperature',flightPower:'Power',flightOxygen:'Oxygen',flightStress:'Stress',flightWaves:'Waves',flightMoment:'MOMENT',flightValue:'VALUE',flightExtremum:'EXTREME',flightScrubLabel:'RECORDING TIMELINE',flightPlay:'PLAY RECORDED DATA',flightPause:'PAUSE',flightCsv:'EXPORT TELEMETRY CSV ↓',flightFull:'FULL SESSION CAPTURE',flightPartial:'PARTIAL CAPTURE AFTER RESUME',flightDiscarded:'older events dropped',flightNoOld:'Only the legacy event tail is available.',noMatchingRuns:'No runs match these filters.',
+      archiveEyebrow:'OPERATOR DOSSIER / LOCAL DATA',archiveTitle:'YOUR CHOICES. THEIR CONSEQUENCES.',archiveLead:'Real results from sessions on this device. No cloud sync and no fictitious players.',operatorStats:'OPERATOR STATISTICS',completedRuns:'COMPLETED',wins:'WINS',bestScore:'BEST SCORE',achievements:'ACHIEVEMENTS',historyTitle:'AFTER-ACTION LOG',noHistory:'Completed game runs will appear here after you play.',
+      settingsEyebrow:'LOCAL / IN YOUR CONTROL',settingsTitle:'MAKE IT YOURS.',settingsLead:'Your data stays in this browser. No accounts, subscriptions or hidden analytics.',presentation:'PRESENTATION',settingLang:'LANGUAGE',settingLangHint:'Русский / English',settingMotion:'REDUCED MOTION',settingMotionHint:'Disable unnecessary UI animation',settingContrast:'HIGH CONTRAST',settingContrastHint:'Increase legibility and boundaries',settingQuality:'GAME QUALITY',settingQualityHint:'CINEMA or economy mode',localData:'LOCAL DATA',localDescription:'Export the operator dossier as JSON. Mission checkpoints can be exported separately inside the game.',exportProfile:'EXPORT DOSSIER ↓',importProfile:'IMPORT DOSSIER ↑',resetProfile:'RESET DOSSIER',noCloud:'Save data is local, with no account connection.',diagTitle:'ENVIRONMENT DIAGNOSTICS',debriefLabel:'LAST VERIFIED RUN',debriefScore:'RUN SCORE',debriefReplay:'REPLAY PROTOCOL',recordEmpty:'NO COMPLETED RUNS YET',recordBest:'BEST SCORE',gradeGold:'GOLD',gradeSilver:'SILVER',gradeBronze:'BRONZE',gradeNo:'UNRANKED',settingText:'LARGER TEXT',settingTextHint:'Increase key labels and interactive controls',exportBundle:'BACK UP EVERYTHING ↓',importBundle:'RESTORE EVERYTHING ↑',bundleExported:'Full local backup saved.',bundleImported:'Operator dossier and all eight checkpoints restored.',bundleInvalid:'Invalid backup. No existing data was changed.',hardwareDisclaimer:'WebGL2 API availability is not proof of physical GPU performance or 60 FPS.',footerLegal:'Original fictional game. Not actual industrial control software. No cloud account or analytics.',exitGame:'BACK TO WORLD',fullscreen:'FULL SCREEN',
+      profileExported:'Dossier saved as JSON.',profileImported:'Dossier imported successfully.',profileInvalid:'Invalid or incompatible dossier.',resetConfirm:'Clear this profile’s history and achievements? Game checkpoints will be preserved.',profileReset:'Local dossier cleared.',storageReady:'Local storage available.',storageMissing:'Storage unavailable: progress will be lost after this page closes.',achievementUnlocked:'Achievement unlocked',wonText:'SUCCESS',lostText:'FAILURE',storyText:'STORY',redlineMode:'CHALLENGE',resumeText:'SAVE FOUND',noSave:'NO CHECKPOINT',offlineReady:'INSTALLATION AVAILABLE',offlineLimited:'HTTPS / LOCALHOST ONLY'}
+  };
+  const safeSet=(key,value)=>{try{localStorage.setItem(key,value);return true;}catch(_){return false;}};
+  const safeGet=key=>{try{return localStorage.getItem(key);}catch(_){return null;}};
+  const safeRemove=key=>{try{localStorage.removeItem(key);return true;}catch(_){return false;}};
+  const storageWorks=()=>{const k='__sablefault_world_storage_check__';try{localStorage.setItem(k,'1');const ok=localStorage.getItem(k)==='1';localStorage.removeItem(k);return ok;}catch(_){return false;}};
+  const knownIds=new Set(ACHIEVEMENTS.map(a=>a.id));
+  // All imported blackbox data is untrusted local data, not authoritative server evidence.
+  const METRIC_RANGES={heat:100,pressure:100,power:100,oxygen:100,stress:9,fractures:3,waves:24,
+                       braces:4,repairs:3,buffers:4,bypasses:3,governors:4};
+  const METRIC_KEYS=Object.keys(METRIC_RANGES);
+  function canonicalTrace(value,elapsed){
+    if(value===undefined||value===null)return [];
+    if(!Array.isArray(value)||value.length>18)throw Error('blackbox trace length');
+    let last=-1;
+    return value.map(e=>{
+      if(!e||typeof e!=='object'||Array.isArray(e)||!Number.isInteger(e.at)||e.at<0||e.at>480||e.at>elapsed+1||e.at<last||
+         typeof e.code!=='string'||!/^[A-Za-z][A-Za-z0-9]{0,49}$/.test(e.code)||!['normal','warning','good'].includes(e.kind))throw Error('blackbox trace');
+      last=e.at;return {at:e.at,code:e.code,kind:e.kind};
+    });
+  }
+  function canonicalMetrics(value){
+    if(value===undefined||value===null)return null;
+    if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==METRIC_KEYS.length)throw Error('blackbox metrics shape');
+    const clean={};for(const key of METRIC_KEYS){
+      const n=value[key];if(!Number.isInteger(n)||n<0||n>METRIC_RANGES[key])throw Error('blackbox metrics '+key);clean[key]=n;
+    }return clean;
+  }
+  const FLIGHT_SAMPLE_RANGES=[480,100,100,100,100,9,24];
+  const FLIGHT_KEYS=['version','period','start','partial','samples','events','droppedEvents'];
+  function canonicalFlight(value,elapsed){
+    if(value===undefined||value===null)return null;
+    if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==FLIGHT_KEYS.length||
+       !FLIGHT_KEYS.every(key=>Object.prototype.hasOwnProperty.call(value,key))||
+       value.version!==1||value.period!==5||!Number.isInteger(value.start)||value.start<0||value.start>elapsed||
+       typeof value.partial!=='boolean'||value.partial!==(value.start>0)||
+       !Number.isInteger(value.droppedEvents)||value.droppedEvents<0||value.droppedEvents>10000||
+       !Array.isArray(value.samples)||value.samples.length<1||value.samples.length>100||
+       !Array.isArray(value.events)||value.events.length>96)throw Error('flight shape');
+    let last=-1;
+    const samples=value.samples.map((row,i)=>{
+      if(!Array.isArray(row)||row.length!==7||row.some((n,j)=>!Number.isInteger(n)||n<0||n>FLIGHT_SAMPLE_RANGES[j])||
+         row[0]>elapsed+1||row[0]<=last||(i===0&&row[0]!==value.start))throw Error('flight sample');
+      last=row[0];return row.slice();
+    });
+    if(samples[samples.length-1][0]<elapsed-1)throw Error('flight missing finish');
+    let lastEvent=-1;
+    const events=value.events.map(ev=>{
+      if(!ev||typeof ev!=='object'||Array.isArray(ev)||Object.keys(ev).length!==3||
+         !Number.isInteger(ev.at)||ev.at<value.start||ev.at>elapsed+1||ev.at<lastEvent||
+         typeof ev.code!=='string'||!/^[A-Za-z][A-Za-z0-9]{0,49}$/.test(ev.code)||
+         !['normal','warning','good'].includes(ev.kind))throw Error('flight event');
+      lastEvent=ev.at;return {at:ev.at,code:ev.code,kind:ev.kind};
+    });
+    if(!value.partial&&value.start!==0)throw Error('flight coverage');
+    return {version:1,period:5,start:value.start,partial:value.partial,samples,events,droppedEvents:value.droppedEvents};
+  }
+  // WORLD 3.0: campaign milestones are local narrative records, not an online verification of gameplay.
+  // Optional in schema-1 dossiers so every 2.9 backup remains importable without migration.
+  const freshStory=()=>({version:1,records:[],act1:null,act2:null});
+  const CAMPAIGN_ACT_ONE=['rescue','evidence'],CAMPAIGN_ACT_TWO=['contain','signal'];
+  function canonicalStory(value){
+    if(value===undefined||value===null)return freshStory();
+    if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==4||
+       !['version','records','act1','act2'].every(k=>Object.prototype.hasOwnProperty.call(value,k))||
+       value.version!==1||!Array.isArray(value.records)||value.records.length>8||
+       ![null,...CAMPAIGN_ACT_ONE].includes(value.act1)||![null,...CAMPAIGN_ACT_TWO].includes(value.act2))throw Error('story shape');
+    const modes=['story','redline','aftershock','sector12','gridshadow','signalfall','cryofracture','pressureecho'];
+    let last=0;
+    const records=value.records.map((r,i)=>{
+      if(!r||typeof r!=='object'||Array.isArray(r)||Object.keys(r).length!==5||
+         !['mode','score','elapsed','timestamp','choice'].every(k=>Object.prototype.hasOwnProperty.call(r,k))||
+         r.mode!==modes[i]||!Number.isInteger(r.score)||r.score<0||r.score>10000000||
+         !Number.isInteger(r.elapsed)||r.elapsed<0||r.elapsed>480||
+         !Number.isSafeInteger(r.timestamp)||r.timestamp<last||r.timestamp>Date.now()+86400000||
+         ![null,'crew','archive','truth'].includes(r.choice))throw Error('story milestone');
+      last=r.timestamp;return {mode:r.mode,score:r.score,elapsed:r.elapsed,timestamp:r.timestamp,choice:r.choice};
+    });
+    if(records.length<3&&value.act1!==null||records.length>3&&value.act1===null||
+       records.length<6&&value.act2!==null||records.length>6&&value.act2===null)throw Error('story decision gate');
+    return {version:1,records,act1:value.act1,act2:value.act2};
+  }
+  // WORLD 3.1: a separate, optional mini-level record. Missing on 3.0 backups by design.
+  const freshTransit31=()=>({version:1,records:[]});
+  function canonicalTransit31(value){
+    if(value===undefined||value===null)return freshTransit31();
+    if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==2||value.version!==1||!Array.isArray(value.records)||value.records.length>3)throw Error('transit shape');
+    const seen=new Set();
+    const rows=value.records.map(r=>{
+      if(!r||typeof r!=='object'||Array.isArray(r)||Object.keys(r).length!==6||
+        !['act','elapsedMs','mistakes','shield','completedAt','completions'].every(k=>Object.prototype.hasOwnProperty.call(r,k))||
+        !Number.isInteger(r.act)||r.act<0||r.act>2||seen.has(r.act)||
+        !Number.isInteger(r.elapsedMs)||r.elapsedMs<1000||r.elapsedMs>1800000||
+        !Number.isInteger(r.mistakes)||r.mistakes<0||r.mistakes>500||
+        !Number.isInteger(r.shield)||r.shield<1||r.shield>100||
+        !Number.isSafeInteger(r.completedAt)||r.completedAt<0||r.completedAt>Date.now()+86400000||
+        !Number.isInteger(r.completions)||r.completions<1||r.completions>99999)throw Error('transit record');
+      seen.add(r.act);return {act:r.act,elapsedMs:r.elapsedMs,mistakes:r.mistakes,shield:r.shield,completedAt:r.completedAt,completions:r.completions};
+    });
+    return {version:1,records:rows.sort((a,b)=>a.act-b.act)};
+  }
+  // WORLD 3.2 PHASE CHAMBER: strictly isolated optional records; 3.1 dossiers migrate unchanged.
+  const freshBreach32=()=>({version:1,records:[]});
+  function canonicalBreach32(value){
+    if(value===undefined||value===null)return freshBreach32();
+    if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==2||value.version!==1||!Array.isArray(value.records)||value.records.length>3)throw Error('phase challenge shape');
+    const seen=new Set();
+    const rows=value.records.map(r=>{
+      if(!r||typeof r!=='object'||Array.isArray(r)||Object.keys(r).length!==7||
+        !['act','elapsedMs','mistakes','shield','completedAt','completions','phaseOps'].every(k=>Object.prototype.hasOwnProperty.call(r,k))||
+        !Number.isInteger(r.act)||r.act<0||r.act>2||seen.has(r.act)||
+        !Number.isInteger(r.elapsedMs)||r.elapsedMs<1000||r.elapsedMs>1800000||
+        !Number.isInteger(r.mistakes)||r.mistakes<0||r.mistakes>500||
+        !Number.isInteger(r.shield)||r.shield<1||r.shield>100||
+        !Number.isSafeInteger(r.completedAt)||r.completedAt<0||r.completedAt>Date.now()+86400000||
+        !Number.isInteger(r.completions)||r.completions<1||r.completions>99999||
+        !Number.isInteger(r.phaseOps)||r.phaseOps<3||r.phaseOps>500)throw Error('phase challenge record');
+      seen.add(r.act);return {act:r.act,elapsedMs:r.elapsedMs,mistakes:r.mistakes,shield:r.shield,completedAt:r.completedAt,completions:r.completions,phaseOps:r.phaseOps};
+    });
+    return {version:1,records:rows.sort((a,b)=>a.act-b.act)};
+  }
+  const fresh=()=>({schema:1,game:'SABLEFAULT_WORLD',settings:{lang:'ru',motion:window.matchMedia('(prefers-reduced-motion: reduce)').matches,contrast:false,textLarge:false,quality:'cinema'},history:[],achievements:[],bestScore:0,plays:0,campaign:freshStory(),transit:freshTransit31(),breach:freshBreach32()});
+  function sanitize(data){
+    if(!data||typeof data!=='object'||data.schema!==1||data.game!=='SABLEFAULT_WORLD')throw Error('invalid dossier');
+    const base=fresh(),s=data.settings;
+    if(!s||typeof s!=='object')throw Error('invalid preferences');
+    base.settings={lang:s.lang==='en'?'en':'ru',motion:s.motion===true,contrast:s.contrast===true,textLarge:s.textLarge===true,quality:s.quality==='eco'?'eco':'cinema'};
+    if(!Array.isArray(data.achievements)||data.achievements.length>30)throw Error('invalid achievements');
+    base.achievements=[...new Set(data.achievements.filter(x=>typeof x==='string'&&knownIds.has(x)))];
+    if(!Array.isArray(data.history)||data.history.length>60)throw Error('invalid history');
+    const clamp=(n,min,max)=>Number.isFinite(n)?Math.max(min,Math.min(max,n)):min;
+    base.history=data.history.slice(0,40).map(x=>{
+      if(!x||typeof x!=='object'||!MODE.includes(x.mode)||!['won','lost'].includes(x.phase)||
+         ![null,'crew','archive','truth'].includes(x.choice)||!Number.isFinite(x.timestamp)||x.timestamp<0||x.timestamp>Date.now()+86400000)throw Error('invalid run');
+      return {mode:x.mode,phase:x.phase,choice:x.choice,score:Math.floor(clamp(x.score,0,10000000)),elapsed:Math.floor(clamp(x.elapsed,0,480)),timestamp:x.timestamp,serviceFixed:x.serviceFixed===true,cipherSolved:x.cipherSolved===true,phaseSolved:x.phaseSolved===true,gridSolved:x.gridSolved===true,gridMistakes:Number.isInteger(x.gridMistakes)?Math.max(0,Math.min(500,x.gridMistakes)):0,signalSolved:x.signalSolved===true,signalSamples:Number.isInteger(x.signalSamples)?Math.max(0,Math.min(3,x.signalSamples)):0,signalFailures:Number.isInteger(x.signalFailures)?Math.max(0,Math.min(100,x.signalFailures)):0,vaultSolved:x.vaultSolved===true,vaultInspected:Number.isInteger(x.vaultInspected)?Math.max(0,Math.min(3,x.vaultInspected)):0,vaultFailures:Number.isInteger(x.vaultFailures)?Math.max(0,Math.min(200,x.vaultFailures)):0,echoSealed:x.echoSealed===true,echoScans:Number.isInteger(x.echoScans)?Math.max(0,Math.min(3,x.echoScans)):0,echoWaves:Number.isInteger(x.echoWaves)?Math.max(0,Math.min(24,x.echoWaves)):0,echoFailures:Number.isInteger(x.echoFailures)?Math.max(0,Math.min(200,x.echoFailures)):0,
+        trace:canonicalTrace(x.trace,Math.floor(clamp(x.elapsed,0,480))),metrics:canonicalMetrics(x.metrics),
+        flight:canonicalFlight(x.flight,Math.floor(clamp(x.elapsed,0,480)))};
+    });
+    base.campaign=canonicalStory(data.campaign);
+    base.transit=canonicalTransit31(data.transit);
+    base.breach=canonicalBreach32(data.breach);
+    base.plays=Math.floor(clamp(data.plays,0,1000000));
+    base.bestScore=base.history.reduce((a,x)=>Math.max(a,x.score),0);
+    return base;
+  }
+  let profile=fresh();
+  try{const raw=safeGet(STORAGE_KEY);if(raw)profile=sanitize(JSON.parse(raw));}catch(_){profile=fresh();}
+  const save=()=>safeSet(STORAGE_KEY,JSON.stringify(profile));
+  const t=k=>COPY[profile.settings.lang][k]||k;
+  const toast=msg=>{const box=$('toast');box.textContent=msg;box.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>box.hidden=true,3700);};
+  let activeView='home',isPlaying=false,activeMode='story',pendingAction='start',frameReady=false,closeTimeout=null;
+  let activeSession=null,finishedSessions=new Set();
+  function applyLanguage(){
+    document.documentElement.lang=profile.settings.lang;
+    // Authored typography: no user content is ever rendered as HTML.
+    const rich={
+      ru:{featureTitle:'РЕАКТОРНЫЙ<br>ПРОТОКОЛ',signatureText:'Не наблюдай за катастрофой. <em>Управляй её последствиями.</em>',missionsTitle:'ВЫБЕРИ СВОЙ<br><em>ПРОТОКОЛ.</em>',archiveTitle:'ТВОИ РЕШЕНИЯ.<br><em>ИХ ПОСЛЕДСТВИЯ.</em>',settingsTitle:'НАСТРОЙ<br><em>СВОЙ ОПЫТ.</em>'},
+      en:{featureTitle:'CONTAINMENT<br>PROTOCOL',signatureText:'Don’t watch the disaster. <em>Shape the consequences.</em>',missionsTitle:'CHOOSE YOUR<br><em>PROTOCOL.</em>',archiveTitle:'YOUR CHOICES.<br><em>THE CONSEQUENCES.</em>',settingsTitle:'MAKE IT<br><em>YOURS.</em>'}
+    };
+    document.querySelectorAll('[data-copy]').forEach(el=>{const k=el.dataset.copy;
+      if(Object.prototype.hasOwnProperty.call(rich[profile.settings.lang],k))el.innerHTML=rich[profile.settings.lang][k];
+      else el.textContent=t(k);
+    });
+    $('langToggle').textContent=profile.settings.lang==='ru'?'EN':'RU';
+    $('settingsLanguage').textContent=profile.settings.lang.toUpperCase();
+    root.setAttribute('data-language',profile.settings.lang);
+    renderArchive();refreshSaves();renderSettings();renderCampaign();
+  }
+  function renderSettings(){
+    document.body.classList.toggle('reduce-motion',profile.settings.motion);
+    document.body.classList.toggle('high-contrast',profile.settings.contrast);
+    document.body.classList.toggle('text-large',profile.settings.textLarge);
+    for(const [id,key] of [['settingsMotion','motion'],['settingsContrast','contrast'],['settingsText','textLarge']]){
+      $(id).setAttribute('aria-checked',String(profile.settings[key]));
+      $(id).textContent=profile.settings[key]?'ON':'OFF';
+    }
+    $('settingsQuality').textContent=profile.settings.quality.toUpperCase();
+    const works=storageWorks();
+    $('storageStatus').textContent=t(works?'storageReady':'storageMissing');
+    $('diagStorage').textContent=works?'AVAILABLE':'UNAVAILABLE';
+    let webgl=false;try{const gl=document.createElement('canvas').getContext('webgl2',{powerPreference:'low-power'});webgl=!!gl;gl?.getExtension('WEBGL_lose_context')?.loseContext();}catch(_){webgl=false;}
+    $('diagWebgl').textContent=webgl?'API AVAILABLE':'NOT AVAILABLE';
+    $('diagPwa').textContent=(window.isSecureContext && 'serviceWorker' in navigator)?'SUPPORTED':'NOT ACTIVE';
+  }
+  const ECHO_IDS=['echoA','echoB','echoC'],ECHO_ORDER=[1,2,0];
+  function validEchoSnapshot(s){
+    return !!s&&Array.isArray(s.echoScans)&&s.echoScans.length<=3&&new Set(s.echoScans).size===s.echoScans.length&&s.echoScans.every(x=>ECHO_IDS.includes(x))&&
+      Array.isArray(s.echoSequence)&&s.echoSequence.length<=3&&s.echoSequence.every((x,i)=>x===ECHO_ORDER[i])&&
+      typeof s.echoSealed==='boolean'&&Number.isInteger(s.echoFailures)&&s.echoFailures>=0&&s.echoFailures<=200&&
+      Number.isInteger(s.echoWaves)&&s.echoWaves>=0&&s.echoWaves<=24&&
+      (s.echoSequence.length===0||s.echoScans.length===3)&&(!s.echoSealed||(s.echoScans.length===3&&s.echoSequence.length===3))&&
+      (s.phase!=='boot'||(s.echoScans.length===0&&s.echoSequence.length===0&&!s.echoSealed&&s.echoFailures===0&&s.echoWaves===0))&&
+      Number.isFinite(s.elapsed)&&s.echoWaves<=Math.floor(s.elapsed/22);
+  }
+  function validBufferSnapshot(s,schema){
+    if(schema===7)return !Object.prototype.hasOwnProperty.call(s,'bufferHistory')&&!Object.prototype.hasOwnProperty.call(s,'bufferArmed');
+    const h=s?.bufferHistory;
+    return Array.isArray(h)&&h.length<=4&&h.every((v,i)=>Number.isInteger(v)&&v>=0&&v<=s.echoWaves&&(i===0||v>h[i-1]))&&
+      typeof s.bufferArmed==='boolean'&&s.bufferArmed===h.includes(s.echoWaves)&&!(s.phase==='boot'&&h.length);
+  }
+  function validFractureSnapshot(s){
+    if(!Number.isInteger(s.fractureBaseline)||s.fractureBaseline<0||s.fractureBaseline>s.echoWaves||
+       !Array.isArray(s.fractureHistory)||!Array.isArray(s.repairHistory)||
+       s.fractureHistory.length>3||s.repairHistory.length>s.fractureHistory.length)return false;
+    const expected=[];
+    for(let i=s.fractureBaseline+1;i<=s.echoWaves;i++)if(i<=5&&i%2===1&&!s.bufferHistory.includes(i-1))expected.push(i);
+    if(expected.length!==s.fractureHistory.length||expected.some((v,i)=>s.fractureHistory[i]!==v))return false;
+    if(s.repairHistory.some((v,i)=>!Number.isInteger(v)||v<s.fractureHistory[i]||v>s.echoWaves||
+       (i>0&&v<s.repairHistory[i-1])))return false;
+    return !(s.phase==='boot'&&(s.fractureBaseline||s.fractureHistory.length||s.repairHistory.length));
+  }
+  function validGovernorSnapshot(s){
+    const h=s.governorHistory;
+    if(!Array.isArray(h)||h.length>4||h.some((v,i)=>!Array.isArray(v)||v.length!==2||!Number.isInteger(v[0])||v[0]<0||v[0]>s.echoWaves||!['cool','relief'].includes(v[1])||(i>0&&v[0]<=h[i-1][0])))return false;
+    const last=h.length?h[h.length-1]:null;
+    return s.governorMode===(last&&last[0]===s.echoWaves&&!s.echoSealed?last[1]:'off')&&!(s.phase==='boot'&&h.length);
+  }
+  function validBraceSnapshot(s){
+    const h=s.braceHistory;
+    return Array.isArray(h)&&h.length<=4&&h.every((v,i)=>Number.isInteger(v)&&v>=0&&v<=s.echoWaves&&(i===0||v>h[i-1]))&&
+      typeof s.braceArmed==='boolean'&&s.braceArmed===(h.includes(s.echoWaves)&&!s.echoSealed)&&
+      !(s.phase==='boot'&&h.length);
+  }
+  const CRYO_IDS=['vaultA','vaultB','vaultC'];
+  function validVaultSnapshot(s){
+    if(!Array.isArray(s?.vaultInspected)||s.vaultInspected.length>3||new Set(s.vaultInspected).size!==s.vaultInspected.length||
+       s.vaultInspected.some(id=>!CRYO_IDS.includes(id))||!Array.isArray(s.vaultSequence)||s.vaultSequence.length>48||
+       !Array.isArray(s.vaultLevels)||s.vaultLevels.length!==3||
+       typeof s.vaultSolved!=='boolean'||!Number.isInteger(s.vaultFailures)||s.vaultFailures<0||s.vaultFailures>200)return false;
+    const levels=[4,0,0];
+    for(const id of s.vaultSequence){
+      if(!Number.isInteger(id)||id<0||id>2||!s.vaultInspected.includes(CRYO_IDS[id]))return false;
+      const dest=(id+1)%3;if(levels[id]===0||levels[dest]===4)return false;
+      levels[id]--;levels[dest]++;
+    }
+    return levels.every((n,i)=>n===s.vaultLevels[i])&&(!s.vaultSolved||(s.vaultInspected.length===3&&levels.join(',')==='2,1,1'));
+  }
+  function checkpointValid(key){
+    const raw=safeGet(key);
+    if(!raw||raw.length>20000)return false;
+    try{const d=JSON.parse(raw);return d.game==='SABLEFAULT'&&[1,2,3,4,5,6,7,8,9,10,11,12].includes(d.schema)&&d.state&&
+      ['boot','stabilize','decision','escape'].includes(d.state.phase)&&Number.isFinite(d.state.seconds)&&d.state.seconds>0&&d.state.seconds<=(key===ECHO_KEY?480:key===CRYO_KEY?420:key===SIGNALFALL_KEY?360:key===GRIDSHADOW_KEY?330:key===SECTOR12_KEY?300:key===AFTERSHOCK_KEY?210:key===REDLINE_KEY?180:240)&&(key!==AFTERSHOCK_KEY||!['decision','escape'].includes(d.state.phase)||d.state.serviceFixed===true)&&
+      (key!==SECTOR12_KEY||(d.schema===3&&d.state.phaseValues&&d.state.phaseRotations&&
+        (!['decision','escape'].includes(d.state.phase)||d.state.phaseSolved===true)))&&
+      (key!==GRIDSHADOW_KEY||(d.schema===4&&Array.isArray(d.state.gridLevels)&&d.state.gridLevels.length===3&&
+        (!['decision','escape'].includes(d.state.phase)||d.state.gridSolved===true)))&&
+      (key!==SIGNALFALL_KEY||(d.schema===5&&Array.isArray(d.state.signalSamples)&&Array.isArray(d.state.signalValues)&&d.state.signalValues.length===3&&
+        (!['decision','escape'].includes(d.state.phase)||d.state.signalSolved===true)))&&
+      (key!==ECHO_KEY||([7,8,9,10,11,12].includes(d.schema)&&validEchoSnapshot(d.state)&&validBufferSnapshot(d.state,d.schema)&&
+        (d.schema<9||validFractureSnapshot(d.state))&&(d.schema<10||validBypassSnapshot(d.state))&&(d.schema<11||validGovernorSnapshot(d.state))&&(d.schema<12?!('braceHistory' in d.state||'braceArmed' in d.state):validBraceSnapshot(d.state))&&
+        (!['decision','escape'].includes(d.state.phase)||d.state.echoSealed===true)))&&
+      (key!==CRYO_KEY||(d.schema===6&&validVaultSnapshot(d.state)&&
+        (!['decision','escape'].includes(d.state.phase)||d.state.vaultSolved===true))); }
+    catch(_){return false;}
+  }
+  function refreshSaves(){
+    const story=checkpointValid(STORY_KEY),redline=checkpointValid(REDLINE_KEY),aftershock=checkpointValid(AFTERSHOCK_KEY),sector12=checkpointValid(SECTOR12_KEY),gridshadow=checkpointValid(GRIDSHADOW_KEY),signalfall=checkpointValid(SIGNALFALL_KEY),cryo=checkpointValid(CRYO_KEY),echo=checkpointValid(ECHO_KEY);
+    $('heroContinue').hidden=!story;$('missionStoryContinue').hidden=!story;$('missionRedlineContinue').hidden=!redline;$('missionAftershockContinue').hidden=!aftershock;$('missionSector12Continue').hidden=!sector12;$('missionGridshadowContinue').hidden=!gridshadow;$('missionSignalfallContinue').hidden=!signalfall;$('missionCryofractureContinue').hidden=!cryo;$('missionPressureechoContinue').hidden=!echo;
+    renderCampaign();
+  }
+  function showView(name){
+    if(!['home','missions','archive','settings'].includes(name))return;
+    if(name!=='archive')stopFlight();
+    activeView=name;
+    for(const view of ['home','missions','archive','settings'])$(view+'View').hidden=view!==name;
+    document.querySelectorAll('[data-nav]').forEach(button=>{
+      const active=button.dataset.nav===name;button.classList.toggle('active',active);
+      if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+    });
+    $('mobileNavPanel').hidden=true;$('mobileNav').setAttribute('aria-expanded','false');
+    if(name==='archive')renderArchive();if(name==='settings')renderSettings();
+    window.scrollTo({top:0,behavior:profile.settings.motion?'instant':'smooth'});
+  }
+  const campaignModes=[
+    {id:'story',code:'01',title:'CONTAINMENT',time:'04:00'},
+    {id:'redline',code:'02',title:'REDLINE',time:'03:00'},
+    {id:'aftershock',code:'03',title:'AFTERSHOCK',time:'03:30'},
+    {id:'sector12',code:'04',title:'PHASE ARRAY',time:'05:00'},
+    {id:'gridshadow',code:'05',title:'GRID SHADOW',time:'05:30'},
+    {id:'signalfall',code:'06',title:'NULL SIGNAL',time:'06:00'},
+    {id:'cryofracture',code:'07',title:'CRYO FRACTURE',time:'07:00'},
+    {id:'pressureecho',code:'08',title:'PRESSURE ECHO',time:'08:00'}
+  ];
+  function renderCampaign(){
+    const container=$('campaignSequence');if(!container)return;
+    container.replaceChildren();
+    for(const mode of campaignModes){
+      const won=profile.history.some(item=>item.mode===mode.id&&item.phase==='won');
+      const card=document.createElement('button');card.type='button';card.className='campaign-node'+(won?' completed':'');
+      card.setAttribute('aria-label',mode.title+' — '+t(won?'campaignComplete':'campaignAvailable'));
+      const number=document.createElement('span');number.className='campaign-number';number.textContent=mode.code;
+      const title=document.createElement('strong');title.textContent=mode.title;
+      const status=document.createElement('span');status.className='campaign-status';status.textContent=t(won?'campaignComplete':'campaignAvailable')+' · '+mode.time;
+      card.append(number,title,status);card.addEventListener('click',()=>launch(mode.id));container.append(card);
+    }
+    renderCommand();renderStoryCampaign();
+  }
+
+  // ORIGINAL FICTIONAL CAMPAIGN / 3 ACTS / 8 EXISTING PLAYABLE OPERATIONS.
+  // The two act-level decisions change narrative continuity and the epilogue, not reactor physics.
+  const STORY_COPY={
+    ru:{
+      marker:'BLACKSITE CAMPAIGN / СЮЖЕТНАЯ ЛИНИЯ',title:'ПОСЛЕДНЯЯ НОЧЬ ПОЛЯРНОГО КОМПЛЕКСА',
+      lead:'Три акта. Восемь действующих операций. Два решения, четыре финала. Победа в каждой миссии продвигает сюжет.',
+      complete:'ЗАВЕРШЕНО',current:'ТЕКУЩАЯ ОПЕРАЦИЯ',pending:'ВПЕРЕДИ',act:'АКТ',
+      actNames:['ПЕРВЫЙ СИГНАЛ','СЛОМАННЫЙ ПРОТОКОЛ','ПОСЛЕДНИЙ КОНТУР'],
+      launch:'ПРОДОЛЖИТЬ КАМПАНИЮ ↗',checkpoint:'ПРОДОЛЖИТЬ СОХРАНЕНИЕ ↗',
+      decisionTitle:'РЕШЕНИЕ КОМАНДОВАНИЯ',decisionHint:'Это сюжетное решение сохраняется в локальном досье. Оно меняет последующий текст и финал, но не игровые параметры.',
+      decision1:['ЭВАКУИРОВАТЬ ПЕРСОНАЛ','СОХРАНИТЬ ДОКАЗАТЕЛЬСТВА'],
+      decision2:['ЗАПЕЧАТАТЬ КОМПЛЕКС','ПЕРЕДАТЬ СИГНАЛ НАРУЖУ'],
+      act1Prompt:'Врачи требуют открыть спасательный тоннель. Аналитики уверены: в архиве содержится доказательство того, что авария не была случайностью. Времени на обе операции не осталось.',
+      act2Prompt:'Стабилизация даёт несколько минут. Можно запечатать источник аномалии навсегда или отправить предупреждение за пределы станции и рискнуть его распространением.',
+      rescueEcho:'Ты оставил архив позади, но спасательные маяки ещё отвечают. Спасённые свидетели будут помнить цену решения.',
+      evidenceEcho:'Ты сохранил компрометирующую телеметрию. Коридоры опустели; теперь в распоряжении комиссии только документы и голос твоего оператора.',
+      containEcho:'Командование требует тишины. Герметичные шлюзы могут остановить распространение, но правду придётся похоронить вместе со станцией.',
+      signalEcho:'Коротковолновый передатчик уже разогрет. Стоит послать сигнал — и у станции больше не будет монополии на собственную историю.',
+      logLabel:'ПЕРЕХВАЧЕННЫЙ БОРТОВОЙ ЖУРНАЛ',runLabel:'МАРШРУТ ОПЕРАЦИЙ',
+      ending:'ОПЕРАЦИЯ ЗАВЕРШЕНА / ЭПИЛОГ',finish:'ВОСЕМЬ ОПЕРАЦИЙ ЗАКРЫТО',
+      reset:'НАЧАТЬ КАМПАНИЮ ЗАНОВО',resetAsk:'Сбросить сюжетную кампанию и три записи TRANSIT SPINE? Результаты основных миссий и сохранения останутся.',
+      export:'ЭКСПОРТ ХРОНИКИ JSON ↓',local:'Локальные записи можно изменять. Три новых перехода TRANSIT SPINE не меняют физику восьми основных операций.',
+      progress:'ПРОЙДЕНО',launchHome:'СЮЖЕТНАЯ КАМПАНИЯ ↗',milestone:'Миссия кампании завершена. Новый акт открыт.',
+      scripts:[
+        ['01 / КРИТИЧЕСКИЙ КОНТУР','Шесть минут назад на станции погасли внешние огни. Связь с северным куполом исчезла, а автоматический регулятор просит подтвердить невозможный приказ: оставить реактор активным.','Диспетчер Лея: «Не верь зелёным индикаторам. Они показывали норму даже тогда, когда люди уже кричали в эфире».'],
+        ['02 / ПОД КРАСНОЙ ЛИНИЕЙ','Восстановленная шина едва выдержала первый удар. Приказ из центра требует ускорить остановку — даже если это уничтожит резервное питание медицинского отсека.','Инженер Коваль: «Времени здесь всегда было много. Но его выдавали не нам».'],
+        ['03 / ПОСЛЕ УДАРА','Второй импульс прошёл через S-21. На карте проявился неизвестный тоннель между карантинным архивом и обитаемым сектором. Отказ цепи теперь угрожает всей станции.','Лея: «Почини S-21. После этого я открою дверь, которую нам запрещали видеть».'],
+        ['04 / ПОЛЕВАЯ ПАМЯТЬ','Восточное крыло хранит запись распределения фаз за ночь до аварии. Она зашифрована физическими реле: удалённый доступ намеренно отключён.','Коваль: «Кто-то пытался убедить машину забыть то, что уже произошло».'],
+        ['05 / ТЁМНАЯ ЭНЕРГИЯ','Система питания делит станцию на тех, кого нужно спасти, и тех, чей голос больше не учитывается. Ошибка маршрутизации на самом деле оказалась чьим-то выбором.','Лея: «Каждый ампер теперь может стать доказательством. Или последним светом в коридоре».'],
+        ['06 / НУЛЕВОЙ СИГНАЛ','Северный ретранслятор начинает передавать один и тот же фрагмент: координаты аварии, которых нет на наших картах. За стеной станции кто-то ждёт ответа.','Неизвестный голос: «Вы не первые, кто пытался запечатать источник».'],
+        ['07 / ХОЛОДНАЯ ГРАНИЦА','Криохранилище держит аномалию в четырёх замкнутых контурах. Чтобы пройти дальше, придётся перераспределить ресурс так, чтобы не перегрузить ни один из них.','Коваль: «Это не просто холодильник. Это последняя дверь между нами и тем, что подо льдом».'],
+        ['08 / ЭХО ДАВЛЕНИЯ','Три затвора отделяют станцию от источника повторяющихся волн. Каждый удар оставляет след в конструкции, а окно для окончательной герметизации закрывается.','Лея: «Заверши протокол. Что произошло здесь — теперь решишь ты».']
+      ],
+      endings:{
+        'rescue-contain':['ТИХОЕ СПАСЕНИЕ','Люди добрались до поверхности. Шлюзы подо льдом закрылись, а последние бортовые журналы исчезли вместе с комплексом. Через годы выжившие расскажут разные версии этой ночи. Истина останется между ними.'],
+        'rescue-signal':['ГОЛОСА ПОВЕРХ ЛЬДА','Спасательные капсулы вышли к берегу, а предупреждение ушло в открытый эфир. Власти назвали его помехой. Но у десятков свидетелей осталась одна и та же запись, которую уже нельзя стереть.'],
+        'evidence-contain':['АРХИВ ПОД ПЕЧАТЬЮ','Доказательства сохранились внутри герметичного ядра. Комплекс замолчал. Однажды комиссия найдёт журнал, в котором каждое число совпадает с каждой ошибкой, но уже никто не сможет спросить людей, что они видели.'],
+        'evidence-signal':['ОТКРЫТЫЙ ПРОТОКОЛ','Запись отправлена наружу вместе с координатами. Станцию больше нельзя назвать несчастным случаем: исследователи смогут восстановить последовательность решений. Цена этого выбора ещё неизвестна, но скрыть её уже нельзя.']
+      }
+    },
+    en:{
+      marker:'BLACKSITE CAMPAIGN / STORY ROUTE',title:'THE LAST NIGHT AT THE POLAR COMPLEX',
+      lead:'Three acts. Eight playable existing operations. Two decisions and four endings. Each victory advances the narrative.',
+      complete:'COMPLETED',current:'CURRENT OPERATION',pending:'UP NEXT',act:'ACT',
+      actNames:['THE FIRST SIGNAL','BROKEN PROTOCOL','THE FINAL BULKHEAD'],
+      launch:'CONTINUE THE CAMPAIGN ↗',checkpoint:'RESUME CHECKPOINT ↗',
+      decisionTitle:'COMMAND DECISION',decisionHint:'This choice is saved in your local dossier. It changes later narrative and the ending, not reactor parameters.',
+      decision1:['EVACUATE THE CREW','PRESERVE THE EVIDENCE'],
+      decision2:['SEAL THE FACILITY','TRANSMIT THE SIGNAL'],
+      act1Prompt:'The medics demand an escape corridor. Analysts say the archive proves the accident was no accident. There is no longer time to accomplish both.',
+      act2Prompt:'Stabilization buys a few minutes. Seal the anomaly forever or send a warning beyond the station and risk spreading it.',
+      rescueEcho:'The archive was left behind, but the rescue beacons still answer. Survivors will remember the cost of that decision.',
+      evidenceEcho:'The incriminating telemetry survived. The corridors are empty. The inquiry has only its documents and your testimony.',
+      containEcho:'Command demands silence. The sealed doors might stop the breach, but the truth would be buried with the facility.',
+      signalEcho:'The long-range transmitter is hot. Once the message leaves, the station no longer owns its own history.',
+      logLabel:'INTERCEPTED OPERATIONS LOG',runLabel:'OPERATIONS ROUTE',
+      ending:'OPERATION COMPLETE / EPILOGUE',finish:'EIGHT OPERATIONS CLEARED',
+      reset:'RESTART CAMPAIGN',resetAsk:'Reset the story, TRANSIT SPINE and PHASE CHAMBER records? Mission history and checkpoints remain.',
+      export:'EXPORT CHRONICLE JSON ↓',local:'Local progress can be edited. This is not server-verified and does not add new 3D levels.',
+      progress:'COMPLETED',launchHome:'STORY CAMPAIGN ↗',milestone:'Campaign mission completed. The next chapter is available.',
+      scripts:[
+        ['01 / CRITICAL CIRCUIT','Six minutes ago, the outer station lights died. Contact with the northern dome vanished while the regulator asked for an impossible order: keep the reactor running.','Dispatcher Lea: “Never trust a green indicator. They were green even when people were screaming on the radio.”'],
+        ['02 / INTO THE RED','The restored bus barely survived the first impact. Command wants a faster shutdown, even if it kills reserve power to the medical wing.','Engineer Koval: “There was always plenty of time in this place. It just was never ours.”'],
+        ['03 / AFTER THE IMPACT','The second impulse crossed S-21. A forbidden tunnel appears on the map, linking the quarantine archive to living quarters. Another failure will threaten the entire station.','Lea: “Repair S-21. Then I will open a door we were never meant to see.”'],
+        ['04 / FIELD MEMORY','The east wing holds a phase-routing record from the night before the accident. It is locked behind physical relays; remote access was deliberately disabled.','Koval: “Someone wanted the machine to forget what had already happened.”'],
+        ['05 / THE DARK GRID','Power routing divides the station into those worth saving and those whose voices no longer count. Its apparent error was somebody’s decision.','Lea: “Every amp can become evidence. Or the final light in a corridor.”'],
+        ['06 / NULL SIGNAL','The northern relay repeats a fragment: coordinates absent from every map we own. Someone beyond the station is waiting for an answer.','Unknown voice: “You are not the first to try to seal the source.”'],
+        ['07 / THE COLD EDGE','The cryogenic vault holds the anomaly in four closed loops. Reach the core without overloading a single reservoir.','Koval: “This is not a refrigerator. It is the last door between us and what lies under the ice.”'],
+        ['08 / PRESSURE ECHO','Three bulkheads separate the facility from recurrent pressure waves. Every hit scars the structure, and the final seal window is closing.','Lea: “Finish the protocol. What happened here — that choice belongs to you.”']
+      ],
+      endings:{
+        'rescue-contain':['THE QUIET RESCUE','People reached the surface. Below the ice, the bulkheads shut and the station logs vanished. Years later, survivors will tell different versions of that night. Truth will remain between them.'],
+        'rescue-signal':['VOICES ABOVE THE ICE','The rescue pods reached shore as a warning escaped on open frequencies. Officials called it interference. Dozens of witnesses retained the same recording, and it can no longer be erased.'],
+        'evidence-contain':['THE SEALED ARCHIVE','Evidence survived inside the sealed core. The facility went silent. One day an inquiry may find the log where every number matches every failure, but no one will be left to ask what they saw.'],
+        'evidence-signal':['OPEN PROTOCOL','The record and coordinates escaped. No one can dismiss the facility as an accident now. Investigators can reconstruct the chain of decisions. The price is unknown, but the evidence cannot be hidden.']
+      }
+    }
+  };
+  // Physical, optional intermission. Old story saves always remain playable as-is.
+  let transit31Session=null;
+  const BREACH32_COPY={
+    ru:{tag:'WORLD 3.2 / ВТОРАЯ 3D-ЗОНА',title:'PHASE CHAMBER.',lead:'После первых трёх реле пройдите в новый сектор. Настройте три физические частоты, запустите главный пульт и пересеките второй шлюз, избегая движущихся разрядов.',available:'ПРОЙТИ ИСПЫТАНИЕ',locked:'НУЖЕН СЛЕДУЮЩИЙ АКТ',completed:'ЛИЧНЫЙ РЕКОРД',hint:'3 УЗЛА · 2 ШЛЮЗА · РАЗРЯДЫ'},
+    en:{tag:'WORLD 3.2 / SECOND 3D ZONE',title:'PHASE CHAMBER.',lead:'Beyond the first three relays, enter a new zone. Tune three physical frequencies, activate the master console and cross the second bulkhead while dodging moving scanners.',available:'PLAY CHALLENGE',locked:'UNLOCKS WITH NEXT ACT',completed:'PERSONAL BEST',hint:'3 NODES · 2 BULKHEADS · SCANNERS'}
+  };
+  const TRANSIT31_COPY={
+    ru:{tag:'BLACKSITE / ИГРОВОЙ 3D-ПЕРЕХОД',title:'TRANSIT SPINE.',lead:'Три архитектурных крыла. Пройдите по коридору, активируйте три физических реле по схеме и откройте шлюз. Прогресс кампании не блокируется.',locked:'ЗАКРЫТ ДО СЛЕДУЮЩЕГО АКТА',available:'ВОЙТИ В КРЫЛО',complete:'ПРОЙДЕНО',best:'ЛУЧШЕЕ ВРЕМЯ',stored:'Прохождение сохранено локально. Досье не является серверным рейтингом.',storage:'Не удалось сохранить результат. Доступ к хранилищу запрещён.'},
+    en:{tag:'BLACKSITE / PLAYABLE 3D TRANSIT',title:'TRANSIT SPINE.',lead:'Three authored wings. Walk the corridor, synchronize physical relays in order and open the bulkhead. The story remains playable without transit.',locked:'UNLOCKS IN A LATER ACT',available:'ENTER WING',complete:'COMPLETED',best:'BEST TIME',stored:'Transit result recorded locally. No authenticated online scores.',storage:'Cannot save the result. Browser storage is unavailable.'}
+  };
+  function canEnterTransit31(act){const n=profile.campaign.records.length;return act===0||(act===1&&n>=3&&profile.campaign.act1!==null)||(act===2&&n>=6&&profile.campaign.act2!==null);}
+  function renderTransit31(){
+    const holder=$('transit31ActButtons');if(!holder)return;const copy=TRANSIT31_COPY[profile.settings.lang];
+    $('transit31EntryTag').textContent=copy.tag;$('transit31EntryTitle').textContent=copy.title;$('transit31EntryLead').textContent=copy.lead;
+    $('transit31EntryCount').textContent=profile.transit.records.length+' / 3';
+    holder.replaceChildren();
+    for(let act=0;act<3;act++){
+      const row=profile.transit.records.find(r=>r.act===act),available=canEnterTransit31(act);
+      const button=document.createElement('button');button.className='transit-act'+(row?' completed':'');button.type='button';button.disabled=!available;
+      const heading=document.createElement('strong');heading.textContent=['01 / ENGINEERING SPINE','02 / GRID CONCOURSE','03 / POLAR AIRLOCK'][act];
+      const sub=document.createElement('span');sub.textContent=!available?copy.locked:row?copy.complete+' / '+copy.best+' '+(row.elapsedMs/1000).toFixed(1)+' s':copy.available;
+      button.append(heading,sub);button.addEventListener('click',()=>openTransit31(act));holder.append(button);
+    }
+    const breachHolder=$('breach32ActButtons');if(!breachHolder)return;
+    const bc=BREACH32_COPY[profile.settings.lang];
+    $('breach32EntryTag').textContent=bc.tag;$('breach32EntryTitle').textContent=bc.title;$('breach32EntryLead').textContent=bc.lead;
+    $('breach32EntryCount').textContent=profile.breach.records.length+' / 3';breachHolder.replaceChildren();
+    for(let act=0;act<3;act++){
+      const row=profile.breach.records.find(r=>r.act===act),available=canEnterTransit31(act);
+      const button=document.createElement('button');button.className='transit-act breach32-act'+(row?' completed':'');button.type='button';button.disabled=!available;
+      const title=document.createElement('strong');title.textContent=['A-01 / CONTAINMENT','B-02 / CIRCUIT LAB','C-03 / RESONANCE'][act];
+      const detail=document.createElement('span');detail.textContent=!available?bc.locked:row?bc.completed+' · '+(row.elapsedMs/1000).toFixed(1)+' s':bc.available;
+      button.append(title,detail);button.addEventListener('click',()=>openTransit31(act,'phase'));breachHolder.append(button);
+    }
+  }
+  function openTransit31(act,challenge='transit'){
+    if(isPlaying||transit31Session||!canEnterTransit31(act)||!window.SABLEFAULT_TRANSIT_31)return;
+    const overlay=$('transit31Overlay');overlay.hidden=false;document.body.style.overflow='hidden';
+    transit31Session=window.SABLEFAULT_TRANSIT_31.create(overlay,{act,challenge,lang:profile.settings.lang,
+      onComplete:result=>{
+        const bucket=challenge==='phase'?profile.breach:profile.transit;
+        const old=bucket.records.find(x=>x.act===act),stamp=Date.now();
+        const better=!old||result.elapsedMs<old.elapsedMs;
+        const record={act,elapsedMs:better?result.elapsedMs:old.elapsedMs,mistakes:better?result.mistakes:old.mistakes,shield:better?result.shield:old.shield,completedAt:better?stamp:old.completedAt,completions:Math.min(99999,(old?.completions||0)+1)};
+        if(challenge==='phase')record.phaseOps=better?result.phaseOps:old.phaseOps;
+        bucket.records=bucket.records.filter(x=>x.act!==act).concat([record]).sort((a,b)=>a.act-b.act);
+        if(!save())toast(TRANSIT31_COPY[profile.settings.lang].storage);renderTransit31();
+      },
+      onExit:()=>{transit31Session=null;overlay.hidden=true;document.body.style.overflow='';renderTransit31();$(challenge==='phase'?'breach32ActButtons':'transit31ActButtons').querySelectorAll('button')[act]?.focus();}
+    });
+  }
+  let campaignArmed=false;
+  function campaignDecisionPending(){const n=profile.campaign.records.length;return n===3&&!profile.campaign.act1||n===6&&!profile.campaign.act2;}
+  function storyEl(tag,klass,content){const el=document.createElement(tag);if(klass)el.className=klass;if(content!==undefined)el.textContent=content;return el;}
+  function storyAct(step){return step<3?0:step<6?1:2;}
+  function renderStoryCampaign(){
+    const out=$('storyCampaignRoute');if(!out)return;
+    const text=STORY_COPY[profile.settings.lang],story=profile.campaign,n=story.records.length;
+    renderTransit31();
+    $('storyCampaignMarker').textContent=text.marker;
+    $('storyCampaignTitle').textContent=text.title;
+    $('storyCampaignLead').textContent=text.lead;
+    $('storyCampaignProgress').textContent=n+' / 8';
+    $('storyCampaignMeter').setAttribute('aria-valuenow',String(n));
+    $('storyCampaignMeterFill').style.width=12.5*n+'%';
+    $('storyCampaignLocal').textContent=text.local+(storageWorks()?'':' '+t('storageMissing'));
+    $('storyCampaignExport').textContent=text.export;
+    $('storyCampaignRestart').textContent=text.reset;
+    $('storyCampaignExport').hidden=n===0;
+    $('storyCampaignRestart').hidden=n===0;
+    $('storyCampaignLogLabel').textContent=text.logLabel;
+    $('storyCampaignRouteLabel').textContent=text.runLabel;
+    $('storyCampaignHome').textContent=text.launchHome;
+    const current=Math.min(n,7),act=storyAct(campaignDecisionPending()?Math.max(0,n-1):current);
+    $('storyCampaignAct').textContent=text.act+' '+String(act+1).padStart(2,'0')+' / '+text.actNames[act];
+    const route=document.createDocumentFragment();
+    for(let i=0;i<campaignModes.length;i++){
+      const mode=campaignModes[i],done=i<n,status=done?text.complete:i===n?text.current:text.pending;
+      const row=storyEl('div','story-route-row '+(done?'done':i===n?'active':'queued'));
+      row.setAttribute('role','listitem');
+      row.append(storyEl('span','story-route-index',mode.code),storyEl('span','story-route-name',mode.title),storyEl('span','story-route-state',status));
+      route.append(row);
+    }
+    out.replaceChildren(route);
+    const play=$('storyCampaignPlay'),decision=$('storyCampaignChoices'),epilogue=$('storyCampaignEpilogue');
+    const briefing=$('storyCampaignBriefing');
+    if(n===8){
+      const end=text.endings[story.act1+'-'+story.act2];
+      briefing.hidden=true;decision.hidden=true;play.hidden=true;epilogue.hidden=false;
+      $('storyCampaignEndLabel').textContent=text.ending;
+      $('storyCampaignEndTitle').textContent=end[0];
+      $('storyCampaignEndBody').textContent=end[1];
+      $('storyCampaignAct').textContent=text.finish;
+      return;
+    }
+    epilogue.hidden=true;
+    if(campaignDecisionPending()){
+      briefing.hidden=true;play.hidden=true;decision.hidden=false;
+      $('storyCampaignDecisionTitle').textContent=text.decisionTitle;
+      $('storyCampaignDecisionBody').textContent=n===3?text.act1Prompt:text.act2Prompt;
+      $('storyCampaignDecisionHint').textContent=text.decisionHint;
+      $('storyCampaignChoiceA').textContent=n===3?text.decision1[0]:text.decision2[0];
+      $('storyCampaignChoiceB').textContent=n===3?text.decision1[1]:text.decision2[1];
+      return;
+    }
+    decision.hidden=true;briefing.hidden=false;play.hidden=false;
+    const mission=text.scripts[n];
+    $('storyCampaignScene').textContent=mission[0];
+    $('storyCampaignLog').textContent=mission[1];
+    $('storyCampaignDialogue').textContent=mission[2];
+    const prior=n>=3?(story.act1==='rescue'?text.rescueEcho:text.evidenceEcho):'';
+    const later=n>=6?(story.act2==='contain'?text.containEcho:text.signalEcho):'';
+    $('storyCampaignContinuity').textContent=[prior,later].filter(Boolean).join(' ');
+    const key=BACKUP_KEYS[campaignModes[n].id];
+    play.textContent=key&&checkpointValid(key)?text.checkpoint:text.launch;
+  }
+  function chooseStory(letter){
+    const story=profile.campaign,n=story.records.length;
+    if(n===3&&story.act1===null)story.act1=letter==='a'?'rescue':'evidence';
+    else if(n===6&&story.act2===null)story.act2=letter==='a'?'contain':'signal';
+    else return;
+    if(!save())toast(t('storageMissing'));renderStoryCampaign();$('storyCampaignPlay').focus();
+  }
+  function launchStory(){
+    const n=profile.campaign.records.length;
+    if(isPlaying||n>=campaignModes.length||campaignDecisionPending())return;
+    campaignArmed=true;launchSmart(campaignModes[n].id);
+  }
+  function exportStory(){
+    const data={schema:1,game:'SABLEFAULT_LOCAL_CHRONICLE',localOnly:true,serverVerified:false,
+      narrativeOnly:true,missionRunsAreLocal:true,exportedAt:new Date().toISOString(),campaign:canonicalStory(profile.campaign),transit:canonicalTransit31(profile.transit),breach:canonicalBreach32(profile.breach)};
+    const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'}));
+    a.href=url;a.download='sablefault-world-blacksite-chronicle.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }
+
+  const DIRECTIVE_BASE={story:1900,redline:1550,aftershock:1850,sector12:2200,gridshadow:2500,signalfall:2600,cryofracture:3100,pressureecho:3600};
+  let commandNextMode='story',directiveMode='story';
+  function getDailyDirective(now=Date.now()){
+    const day=Math.floor(now/86400000),mode=campaignModes[((day%campaignModes.length)+campaignModes.length)%campaignModes.length];
+    return {day,mode:mode.id,title:mode.title,start:day*86400000,end:(day+1)*86400000,
+      score:DIRECTIVE_BASE[mode.id]+(day%3)*100,oxygen:25+(day%3)*5};
+  }
+  function directiveQualifies(run,task){
+    return run.mode===task.mode&&run.phase==='won'&&run.timestamp>=task.start&&run.timestamp<task.end&&
+      run.score>=task.score&&!!run.metrics&&run.metrics.oxygen>=task.oxygen;
+  }
+  function renderCommand(){
+    const won=new Set(profile.history.filter(r=>r.phase==='won').map(r=>r.mode));
+    const completed=campaignModes.filter(x=>won.has(x.id)).length;
+    const next=campaignModes.find(x=>!won.has(x.id))||campaignModes[0];commandNextMode=next.id;
+    $('commandProgress').textContent=completed+' / '+campaignModes.length;
+    $('commandMeter').setAttribute('aria-valuenow',String(completed));
+    $('commandMeterFill').style.width=(100*completed/campaignModes.length)+'%';
+    $('commandNext').textContent=completed===8?t('commandReady'):next.title;
+    $('commandSummary').textContent=t(completed===8?'commandReady':'commandPending');
+    const task=getDailyDirective();directiveMode=task.mode;
+    $('directiveDay').textContent=new Date(task.start).toLocaleDateString(profile.settings.lang==='ru'?'ru-RU':'en-GB',{timeZone:'UTC',day:'2-digit',month:'short',year:'numeric'});
+    $('directiveTitle').textContent=task.title;
+    $('directiveGoal').textContent=t('directiveGoal').replace('{score}',task.score.toLocaleString(profile.settings.lang==='ru'?'ru-RU':'en-US')).replace('{oxygen}',String(task.oxygen));
+    const valid=profile.history.filter(r=>directiveQualifies(r,task));const best=valid.reduce((max,r)=>Math.max(max,r.score),0);
+    $('directiveProgress').textContent=valid.length?t('directiveDone').replace('{score}',best.toLocaleString(profile.settings.lang==='ru'?'ru-RU':'en-US')):t('directivePending');
+    $('directiveProgress').classList.toggle('complete',valid.length>0);
+    // All progress is derived from actual local result rows, including imported backups.
+  }
+
+  let historyModeFilter='all',historyWinFilter='all',selectedIncidentIndex=null;
+  const EVENT_TITLES={
+    ru:{success:'Миссия завершена',failure:'Миссия провалена',echoWave:'Ударная волна',bufferAbsorb:'Аккумулятор поглотил удар',
+        fractureEvent:'Пробой F-21',fractureRepair:'Ремонт трубопровода',bypassSpent:'Байпас отключён ударом',
+        cascadeDamped:'Распорка поглотила удар',cascadeDamage:'Вторичная авария конструкции',
+        stabilized:'Стабилизация завершена',surge:'Скачок давления',loss:'Потеря питания',flare:'Тепловой выброс'},
+    en:{success:'Mission completed',failure:'Mission failed',echoWave:'Pressure wave',bufferAbsorb:'Buffer absorbed impact',
+        fractureEvent:'F-21 pipeline rupture',fractureRepair:'Pipeline repaired',bypassSpent:'Bypass tripped',
+        cascadeDamped:'Structural brace absorbed impact',cascadeDamage:'Secondary structural cascade',
+        stabilized:'Reactor stabilized',surge:'Pressure surge',loss:'Power loss',flare:'Thermal flare'}
+  };
+  function incidentName(run){return campaignModes.find(x=>x.id===run.mode)?.title||run.mode.toUpperCase();}
+  function exportIncident(run){
+    const data={schema:1,game:'SABLEFAULT_WORLD_INCIDENT',localOnly:true,serverVerified:false,
+      exportTime:new Date().toISOString(),disclaimer:'Locally recorded game-event summary, not an authenticated replay or online leaderboard result.',run};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download='sablefault-incident-'+run.mode+'-'+run.timestamp+'.json';
+    document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+  const FLIGHT_CHANNELS={pressure:{index:2,max:100,color:'#8cddf2'},heat:{index:1,max:100,color:'#ffb28e'},power:{index:3,max:100,color:'#b8f4c1'},oxygen:{index:4,max:100,color:'#cebcff'},stress:{index:5,max:9,color:'#f1cb85'},waves:{index:6,max:24,color:'#81c4ff'}};
+  let flightTimer=null,flightCursor=0;
+  function stopFlight(){if(flightTimer!==null){clearInterval(flightTimer);flightTimer=null;}const b=$('flightPlay');if(b)b.textContent=t('flightPlay');}
+  function flightTime(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
+  function flightRowAt(rows,time){let row=rows[0];for(const sample of rows){if(sample[0]>time)break;row=sample;}return row;}
+  const NS='http://www.w3.org/2000/svg';
+  function flightSvg(tag,attributes){const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attributes))e.setAttribute(k,String(v));return e;}
+  function drawFlight(run){
+    const chart=$('flightGraph');chart.replaceChildren();if(!run.flight)return;
+    const rows=run.flight.samples,channel=FLIGHT_CHANNELS[$('flightMetric').value],left=42,right=706,top=22,bottom=198;
+    const start=run.flight.start,end=Math.max(start+1,run.elapsed);
+    const x=t=>left+(t-start)/(end-start)*(right-left),y=v=>bottom-(v/channel.max)*(bottom-top);
+    const band=flightSvg('rect',{x:left,y:top,width:right-left,height:bottom-top,fill:'#07121d','fill-opacity':.7});chart.append(band);
+    for(let i=0;i<=4;i++){
+      const level=channel.max*i/4,yy=y(level);
+      chart.append(flightSvg('line',{x1:left,y1:yy,x2:right,y2:yy,stroke:'#608395','stroke-opacity':.23}));
+      const tick=flightSvg('text',{x:32,y:yy+4,'text-anchor':'end',fill:'#b8cad5','font-size':'11'});tick.textContent=String(Math.round(level));chart.append(tick);
+    }
+    const points=rows.map(r=>x(r[0]).toFixed(2)+','+y(r[channel.index]).toFixed(2)).join(' ');
+    chart.append(flightSvg('polyline',{points,fill:'none',stroke:channel.color,'stroke-width':3.1,'stroke-linejoin':'round','stroke-linecap':'round'}));
+    const cursor=flightSvg('line',{id:'flightChartCursor',x1:x(flightCursor),x2:x(flightCursor),y1:top,y2:bottom,stroke:'#f7f4e6','stroke-opacity':.72,'stroke-width':1.5});chart.append(cursor);
+    for(const [t,anchor] of [[start,'start'],[run.elapsed,'end']]){const tick=flightSvg('text',{x:x(t),y:222,'text-anchor':anchor,fill:'#b4c9d6','font-size':12});tick.textContent=flightTime(t);chart.append(tick);}
+    const label=flightSvg('title',{});label.textContent=t('flightTitle')+' / '+t('flight'+$('flightMetric').value[0].toUpperCase()+$('flightMetric').value.slice(1));chart.prepend(label);
+  }
+  function setFlightCursor(next,redraw=false){
+    const run=profile.history[selectedIncidentIndex];if(!run?.flight)return;
+    const f=run.flight;flightCursor=Math.max(f.start,Math.min(run.elapsed,Math.round(Number(next)||0)));
+    $('flightScrub').value=String(flightCursor);$('flightMoment').textContent=flightTime(flightCursor);
+    const channel=FLIGHT_CHANNELS[$('flightMetric').value];const row=flightRowAt(f.samples,flightCursor);
+    $('flightValue').textContent=String(row[channel.index])+(channel.max===100?'%':'');
+    const values=f.samples.map(r=>r[channel.index]);const extreme=$('flightMetric').value==='power'||$('flightMetric').value==='oxygen'?Math.min(...values):Math.max(...values);
+    $('flightExtremum').textContent=String(extreme)+(channel.max===100?'%':'');
+    if(redraw)drawFlight(run);
+    else{const cursor=$('flightChartCursor');if(cursor){const x=42+(flightCursor-f.start)/Math.max(1,run.elapsed-f.start)*664;cursor.setAttribute('x1',String(x));cursor.setAttribute('x2',String(x));}}
+    $('incidentTimeline').querySelectorAll('li[data-at]').forEach(el=>{
+      const selected=Number(el.dataset.at)<=flightCursor;
+      el.classList.toggle('already-recorded',selected);
+    });
+  }
+  function exportFlightCsv(run){
+    if(!run?.flight)return;
+    const cols=['time_seconds','heat','pressure','power','oxygen','stress','waves'];
+    const csv=[cols.join(','),...run.flight.samples.map(row=>row.join(','))].join('\r\n')+'\r\n';
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download='sablefault-flight-'+run.mode+'-'+run.timestamp+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }
+  // 2.9 / RISK LAB: source = canonical locally recorded flight samples only.
+  // Classifying samples is not estimating continuous exposure or replaying physics.
+  function riskLabels(){return profile.settings.lang==='ru'?{
+    title:'КАРТА РИСКОВ.',description:'Пороговый анализ фактически записанных измерений. Нажми сегмент, чтобы перейти к его моменту в BLACKBOX.',
+    export:'ЭКСПОРТ АНАЛИЗА JSON ↓',samples:'ИЗМЕРЕНИЯ ПО 5 СЕКУНД',coverage:'Частичная запись',complete:'Запись с начала',
+    peak:'МАКС. УРОВЕНЬ',critical:'КРИТИЧЕСКИХ ЗАМЕРОВ',high:'ВЫСОКИЙ РИСК',levels:['НОРМА','НАБЛЮДЕНИЕ','ВЫСОКИЙ','КРИТИЧНО'],
+    changed:'Изменение уровня',note:'Числа обозначают отдельные замеры, не длительность опасности. Пороги игровые. Данные локальные и не защищены от редактирования.'
+  }:{title:'RISK MAP.',description:'Threshold analysis of actually recorded sensor samples. Select a segment to jump to its moment in BLACKBOX.',
+    export:'EXPORT ANALYSIS JSON ↓',samples:'5-SECOND RECORDED SAMPLES',coverage:'Partial capture',complete:'Capture from mission start',
+    peak:'MAX RISK LEVEL',critical:'CRITICAL SAMPLES',high:'HIGH-RISK SAMPLES',levels:['NORMAL','WATCH','HIGH','CRITICAL'],
+    changed:'Risk level changed',note:'Counts reflect individual samples, not time spent in danger. Fictional thresholds only. Local records can be edited.'};}
+  function renderRiskLab(run){
+    const wrap=$('riskLab'),data=run?.flight?window.SABLEFAULT_RISK_29.summarize(run.flight):null;
+    wrap.hidden=!data;if(!data)return;
+    const t29=riskLabels();
+    $('riskTitle').textContent=t29.title;$('riskDescription').textContent=t29.description;
+    $('riskExport').textContent=t29.export;$('riskTimelineTitle').textContent=t29.samples;
+    $('riskCoverage').textContent=(data.partial?t29.coverage:t29.complete)+' · '+data.sampleCount+' '+(profile.settings.lang==='ru'?'замеров':'samples');
+    $('riskNote').textContent=t29.note;
+    const stats=$('riskStats');stats.replaceChildren();
+    for(const [label,value,level] of [[t29.peak,t29.levels[data.peak],data.peak],[t29.critical,String(data.counts[3]),3],[t29.high,String(data.counts[2]),2]]){
+      const box=document.createElement('div');box.className='risk-stat';box.dataset.level=String(level);
+      const title=document.createElement('span');title.textContent=label;
+      const val=document.createElement('strong');val.textContent=value;box.append(title,val);stats.append(box);
+    }
+    const heatmap=$('riskHeatmap');heatmap.replaceChildren();
+    for(const row of run.flight.samples){
+      const classified=window.SABLEFAULT_RISK_29.classify(row),slice=document.createElement('button');
+      slice.type='button';slice.className='risk-slice';slice.dataset.level=String(classified.level);
+      slice.setAttribute('aria-label',flightTime(row[0])+' / '+t29.levels[classified.level]);
+      slice.title=flightTime(row[0])+' · '+t29.levels[classified.level];
+      slice.addEventListener('click',()=>{stopFlight();setFlightCursor(row[0]);$('flightGraph').scrollIntoView({block:'nearest',behavior:'instant'});});
+      heatmap.append(slice);
+    }
+    const transitions=$('riskTransitions');transitions.replaceChildren();
+    for(const ev of data.transitions.filter(x=>x.to>=2).slice(0,6)){
+      const card=document.createElement('div');card.className='risk-transition';card.dataset.level=String(ev.to);
+      const time=document.createElement('time');time.textContent=flightTime(ev.at);
+      const label=document.createElement('span');label.textContent=t29.changed+': '+t29.levels[ev.from]+' → '+t29.levels[ev.to];
+      card.append(time,label);transitions.append(card);
+    }
+  }
+  function exportRiskLab(){
+    const run=selectedIncidentIndex===null?null:profile.history[selectedIncidentIndex];
+    if(!run?.flight)return;
+    const summary=window.SABLEFAULT_RISK_29.summarize(run.flight);if(!summary)return;
+    const payload={game:'SABLEFAULT_LOCAL_RISK_AUDIT',schema:1,thresholdVersion:'3.0.0',localOnly:true,serverVerified:false,
+      exportedAt:new Date().toISOString(),run:{mode:run.mode,timestamp:run.timestamp,phase:run.phase,elapsed:run.elapsed,score:run.score},
+      analysis:summary,disclaimer:'Fictional threshold classification of locally recorded samples; not a predictive engine, continuous exposure estimate or independently authenticated record.'};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)+'\n'],{type:'application/json;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download='sablefault-risk-'+run.mode+'.json';document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2200);
+  }
+
+  function renderIncident(){
+    const panel=$('incidentPanel');if(!panel)return;
+    const run=selectedIncidentIndex===null?null:profile.history[selectedIncidentIndex];
+    panel.hidden=!run;if(!run){stopFlight();return;}
+    $('incidentOperation').textContent=incidentName(run);
+    $('incidentOutcome').textContent=t(run.phase==='won'?'wonText':'lostText')+' / '+run.score.toLocaleString(profile.settings.lang==='ru'?'ru-RU':'en-US');
+    $('incidentDuration').textContent=run.elapsed+'s';
+    const metrics=$('incidentMetrics');metrics.replaceChildren();
+    if(run.metrics){
+      const values=[['TEMP / °',run.metrics.heat],['PRESSURE / %',run.metrics.pressure],['POWER / %',run.metrics.power],['O₂ / %',run.metrics.oxygen]];
+      if(run.mode==='pressureecho')values.push(['STRESS / 9',run.metrics.stress],['WAVES',run.metrics.waves],['F-21',run.metrics.fractures],['BRACES',run.metrics.braces]);
+      for(const [label,value] of values){const el=document.createElement('div');el.className='incident-metric';
+        const small=document.createElement('span');small.textContent=label;const strong=document.createElement('strong');strong.textContent=String(value);
+        el.append(small,strong);metrics.append(el);}
+    }else{const missing=document.createElement('p');missing.className='incident-empty';missing.textContent=t('incidentLegacy');metrics.append(missing);}
+    const flight=run.flight;stopFlight();
+    $('flightDesk').hidden=!flight;renderRiskLab(run);
+    if(flight){
+      $('flightScrub').min=String(flight.start);$('flightScrub').max=String(run.elapsed);
+      $('flightScrub').disabled=flight.samples.length<2;
+      $('flightPlay').disabled=flight.samples.length<2;
+      flightCursor=flight.start;
+      $('flightCoverage').textContent=t(flight.partial?'flightPartial':'flightFull')+' · '+flight.samples.length+' samples / 5 s';
+      $('flightStatus').textContent=flight.droppedEvents?flight.droppedEvents+' '+t('flightDiscarded'):'';
+      drawFlight(run);
+    }
+    const timeline=$('incidentTimeline');timeline.replaceChildren();
+    const eventRows=flight?flight.events:run.trace;
+    for(const event of eventRows){const row=document.createElement('li');row.className='incident-event '+event.kind;
+      row.dataset.at=String(event.at);
+      const time=document.createElement('time');time.textContent=flightTime(event.at);
+      const label=document.createElement('span');label.textContent=EVENT_TITLES[profile.settings.lang][event.code]||event.code.replace(/([a-z])([A-Z])/g,'$1 $2');
+      row.append(time,label);timeline.append(row);}
+    if(!eventRows.length){const empty=document.createElement('li');empty.className='incident-empty';empty.textContent=t('incidentLegacy');timeline.append(empty);}
+    $('incidentTraceCount').textContent=eventRows.length+' / '+(flight?'96':'18');
+    if(flight)setFlightCursor(flight.start);
+  }
+  function openIncident(index){if(!Number.isInteger(index)||index<0||index>=profile.history.length)return;
+    selectedIncidentIndex=index;renderIncident();$('incidentPanel').scrollIntoView({behavior:profile.settings.motion?'instant':'smooth',block:'nearest'});}
+
+  let compareModeChoice=null,compareModePicked=false;
+  const compareChannelIndexes={pressure:2,heat:1,power:3,oxygen:4};
+  function compareRows(){return profile.history.map((run,index)=>({run,index})).filter(item=>item.run.mode===compareModeChoice);}
+  function renderCompareOptions(){
+    const mode=$('compareMode'),a=$('compareRunA'),b=$('compareRunB');
+    if(!compareModePicked&&profile.history.length)compareModeChoice=profile.history[0].mode;
+    if(!compareModeChoice||!MODE.includes(compareModeChoice))compareModeChoice=profile.history[0]?.mode||'story';
+    mode.replaceChildren();
+    for(const m of campaignModes){const opt=document.createElement('option');opt.value=m.id;
+      opt.textContent=m.title+' ('+profile.history.filter(x=>x.mode===m.id).length+')';mode.append(opt);}
+    mode.value=compareModeChoice;
+    const rows=compareRows();const prevA=a.value,prevB=b.value;a.replaceChildren();b.replaceChildren();
+    for(const {run,index} of rows){const label=new Date(run.timestamp).toLocaleDateString(profile.settings.lang==='ru'?'ru-RU':'en-US')+' · '+t(run.phase==='won'?'wonText':'lostText')+' · '+run.score.toLocaleString();
+      for(const select of [a,b]){const opt=document.createElement('option');opt.value=String(index);opt.textContent=label;select.append(opt);}}
+    const choices=rows.map(x=>String(x.index));
+    a.value=choices.includes(prevA)?prevA:(choices[0]||'');
+    b.value=choices.includes(prevB)&&prevB!==a.value?prevB:(choices.find(x=>x!==a.value)||'');
+    a.disabled=rows.length<2;b.disabled=rows.length<2;
+    renderComparison();
+  }
+  function comparisonSelection(){
+    const ai=Number($('compareRunA').value),bi=Number($('compareRunB').value);
+    const items=compareRows();if(items.length<2||!Number.isInteger(ai)||!Number.isInteger(bi)||ai===bi)return null;
+    const A=profile.history[ai],B=profile.history[bi];
+    if(!A||!B||A.mode!==compareModeChoice||B.mode!==compareModeChoice)return null;
+    return {A,B,ai,bi};
+  }
+  function comparisonStat(label,one,two,suffix='',benefit=0){
+    const cell=document.createElement('div');cell.className='compare-stat';
+    const title=document.createElement('span');title.textContent=label;
+    const val=document.createElement('strong');val.textContent=one+suffix+' / '+two+suffix;
+    const delta=document.createElement('small');delta.textContent=t('compareDelta')+' · '+(two-one>0?'+':'')+(two-one)+suffix;
+    if(benefit!==0&&two!==one)delta.classList.add((two-one)*benefit>0?'better':'worse');
+    cell.append(title,val,delta);return cell;
+  }
+  function drawCompareGraph(A,B){
+    const svg=$('compareGraph');svg.replaceChildren();
+    if(!A.flight||!B.flight)return;
+    const channel=compareChannelIndexes[$('compareMetric').value],left=40,right=704,top=24,bottom=204;
+    const shade=flightSvg('rect',{x:left,y:top,width:right-left,height:bottom-top,fill:'#08121d'});svg.append(shade);
+    for(let n=0;n<=4;n++){
+      const yy=bottom-(n/4)*(bottom-top);svg.append(flightSvg('line',{x1:left,x2:right,y1:yy,y2:yy,stroke:'#aac6d4','stroke-opacity':.19}));
+      const txt=flightSvg('text',{x:31,y:yy+4,'text-anchor':'end',fill:'#bcd2dd','font-size':12});txt.textContent=String(n*25);svg.append(txt);
+    }
+    // Horizontal axis is full mission time (0..elapsed) for both runs; resumed flights start late.
+    for(const [run,color] of [[A,'#8de1ed'],[B,'#efbd88']]){
+      const pts=run.flight.samples.map(row=>{
+        const x=left+(row[0]/Math.max(1,run.elapsed))*(right-left);
+        const y=bottom-(row[channel]/100)*(bottom-top);return x.toFixed(2)+','+y.toFixed(2);
+      });
+      if(pts.length===1){const [x,y]=pts[0].split(',');svg.append(flightSvg('circle',{cx:x,cy:y,r:4.5,fill:color}));}
+      else svg.append(flightSvg('polyline',{points:pts.join(' '),fill:'none',stroke:color,'stroke-width':3,'stroke-linecap':'round','stroke-linejoin':'round'}));
+    }
+    for(let pct=0;pct<=100;pct+=25){const txt=flightSvg('text',{x:left+(right-left)*pct/100,y:230,'text-anchor':'middle',fill:'#b7cdd7','font-size':11});txt.textContent=pct+'%';svg.append(txt);}
+  }
+  function renderComparison(){
+    const chosen=comparisonSelection(),empty=$('compareEmpty'),content=$('compareContent');
+    content.hidden=!chosen;$('compareExport').disabled=!chosen;
+    if(!chosen){
+      const rows=compareRows();empty.textContent=t(rows.length<2?'compareOnlyOne':'compareDifferent');
+      $('compareGraph').replaceChildren();return;
+    }
+    empty.textContent='';const {A,B}=chosen,stats=$('compareStats');stats.replaceChildren();
+    stats.append(comparisonStat(t('compareScore'),A.score,B.score,'',1),comparisonStat(t('compareDuration'),A.elapsed,B.elapsed,'s',-1));
+    for(const [key,label,benefit] of [['oxygen','compareOxygen',1],['power','comparePower',1]]){
+      if(A.metrics&&B.metrics)stats.append(comparisonStat(t(label),A.metrics[key],B.metrics[key],'%',benefit));
+    }
+    const hasFlight=!!(A.flight&&B.flight);
+    $('compareGraph').parentElement.hidden=!hasFlight;
+    $('compareGraph').closest('.compare-content').querySelector('.compare-legend').hidden=!hasFlight;
+    $('compareSignal').textContent=hasFlight?t(A.flight.partial||B.flight.partial?'comparePartial':'compareComplete'):t('compareNoFlight');
+    $('compareGraph').setAttribute('aria-label',t('compareChannelLabel')+' / '+$('compareMetric').selectedOptions[0]?.textContent+' / A & B');
+    if(hasFlight)drawCompareGraph(A,B);
+    if(hasFlight){const ra=window.SABLEFAULT_RISK_29.summarize(A.flight),rb=window.SABLEFAULT_RISK_29.summarize(B.flight);
+      if(ra&&rb){const name=profile.settings.lang==='ru'?'КРИТИЧЕСКИЕ ЗАМЕРЫ':'CRITICAL SAMPLES';
+        stats.append(comparisonStat(name,ra.counts[3],rb.counts[3],'',-1));}}
+    const insights=$('compareInsights');insights.replaceChildren();
+    const heading=document.createElement('h3');heading.textContent=t('compareInsight');insights.append(heading);
+    const hints=[];
+    for(const {run,name} of [{run:A,name:'A'},{run:B,name:'B'}]){
+      if(!run.metrics)continue;
+      if(run.metrics.heat>=70)hints.push(name+' · '+t('compareHighHeat'));
+      if(run.metrics.pressure>=70)hints.push(name+' · '+t('compareHighPressure'));
+      if(run.metrics.power<=32)hints.push(name+' · '+t('compareLowPower'));
+      if(run.metrics.oxygen<=32)hints.push(name+' · '+t('compareLowOxygen'));
+    }
+    for(const hint of (hints.length?hints.slice(0,4):[t('compareMissing')])){const p=document.createElement('p');p.textContent=hint;insights.append(p);}
+    const foot=document.createElement('small');foot.textContent=t('compareNoCause');insights.append(foot);
+  }
+  function exportComparison(){
+    const chosen=comparisonSelection();if(!chosen)return;
+    const payload={game:'SABLEFAULT_WORLD_LOCAL_COMPARISON',schema:1,serverVerified:false,localOnly:true,exportedAt:new Date().toISOString(),
+      disclaimer:'Two local captured game records; comparisons and explanations are not authenticated or deterministic simulation replays.',
+      mode:chosen.A.mode,deltaScore:chosen.B.score-chosen.A.score,runs:[chosen.A,chosen.B]};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)+'\n'],{type:'application/json;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download='sablefault-compare-'+chosen.A.mode+'.json';document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);toast(t('compareDownload'));
+  }
+
+  function renderArchive(){
+    $('statRuns').textContent=String(profile.history.length);
+    $('statWins').textContent=String(profile.history.filter(x=>x.phase==='won').length);
+    $('statBest').textContent=profile.bestScore?profile.bestScore.toLocaleString(profile.settings.lang==='ru'?'ru-RU':'en-US'):'—';
+    $('achievementCount').textContent=profile.achievements.length+' / '+ACHIEVEMENTS.length;
+    const grid=$('achievementGrid');grid.replaceChildren();
+    ACHIEVEMENTS.forEach(a=>{
+      const unlocked=profile.achievements.includes(a.id);
+      const el=document.createElement('div');el.className='achievement'+(unlocked?'':' locked-achievement');
+      const icon=document.createElement('div');icon.className='achievement-symbol';icon.textContent=unlocked?a.icon:'—';
+      const desc=document.createElement('div');const h=document.createElement('h3'),p=document.createElement('p');
+      [h.textContent,p.textContent]=a[profile.settings.lang];desc.append(h,p);el.append(icon,desc);grid.append(el);
