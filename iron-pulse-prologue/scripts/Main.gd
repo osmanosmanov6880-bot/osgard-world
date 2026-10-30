@@ -3067,8 +3067,22 @@ func _refresh_hud() -> void:
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
         _copy("rescue_count").format({"used":session.relays_activated.size()})]
     quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
+    var compact_ui: bool = (_browser_css_size.x > 0 and _browser_css_size.x < 650) or (
+        _browser_css_size.x == 0 and get_viewport().get_visible_rect().size.x < 650)
+    if compact_ui:
+        # Strictly source-derived numbers. Compact, not a simulated summary.
+        telemetry_label.text = ("H %d°C   AIR %d%%   CREW %d%%\nDOOR %d%%   TIME %02d:%02d" if locale == "en" else
+            "Т %d°C   ВОЗД %d%%   ЭКИП %d%%\nШЛЮЗ %d%%   ВРЕМЯ %02d:%02d") % [
+                int(session.heat),int(session.oxygen),int(session.crew_health),
+                int(session.door_charge),floori(session.time_left/60.0),int(session.time_left)%60]
+        allocation_label.text = "A:%s  B:%s  %s%d/2" % [
+            session.bus_a.to_upper(),session.bus_b.to_upper(),
+            "RESCUE " if locale == "en" else "СПАС ",
+            session.relays_activated.size()]
     var risk: Dictionary = threat_radar.snapshot(session)
-    threat_label.text = threat_radar.cockpit_text(risk,locale)
+    var full_risk_text: String = threat_radar.cockpit_text(risk,locale)
+    threat_label.text = full_risk_text.split("\n")[0] if compact_ui else full_risk_text
+    threat_label.tooltip_text = full_risk_text
     var risk_color: Color = RED if str(risk["tier"]) in ["CRITICAL","FAILED"] else AMBER if str(risk["tier"]) == "WATCH" else CYAN
     threat_label.add_theme_color_override("font_color",risk_color)
     (vitals_meters["heat"] as ProgressBar).value = session.heat
