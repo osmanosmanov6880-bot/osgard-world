@@ -79,6 +79,13 @@ static func scan(origin: Vector3,angle: float,speed: float,
 static func localized(state: Dictionary,locale: String) -> String:
     if state.is_empty(): return ""
     var lang: String = locale if ["ru","en","zh"].has(locale) else "ru"
+    # R184: native short legal 90km/h hint, strictly LESS urgent than
+    # actual R162 collision, pedestrian or R178 red-signal awareness.
+    if str(state.get("kind",""))=="speed_limit":
+        var limit: int=int(state.get("limit_kmh",90))
+        if lang=="ru":return "⚠ ОГРАНИЧЕНИЕ %d КМ/Ч" % limit
+        if lang=="en":return "⚠ SPEED LIMIT %d KM/H" % limit
+        return "⚠ 限速 %d 公里/小时" % limit
     # The same original signal phase that stops REAL NPC cars also informs
     # the physical human driver. This advisor does not control player input.
     if str(state.get("kind",""))=="signal":
