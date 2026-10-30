@@ -230,6 +230,9 @@ var reduced_motion: bool = false
 var cinematic_view: bool = false
 var muted_audio: bool = false
 var quality_mode: String = "hero"
+var vision: IPVisionProfile = IPVisionProfile.new()
+var vision_last_save_ok: bool = false
+var _vision_panel_baselines: Dictionary = {}
 var walking_phase: float = 0.0
 var _terminal_active_material: StandardMaterial3D
 var _terminal_idle_material: StandardMaterial3D
@@ -298,6 +301,7 @@ var pause_panel: PanelContainer
 var pause_title: Label
 var resume_button: Button
 var auto_quality_button: Button
+var vision_button: Button
 var end_panel: PanelContainer
 var end_title: Label
 var end_stats: Label
@@ -319,6 +323,7 @@ var touch_guide_button: Button
 var touch_navigation_button: Button
 var touch_device_lab_button: Button
 var touch_atlas_button: Button
+var touch_vision_button: Button
 var device_lab_panel: PanelContainer
 var device_lab_label: Label
 var device_lab_start_button: Button
@@ -369,6 +374,7 @@ func _ready() -> void:
     _apply_world_launch(initial_query)
     if DisplayServer.get_name() != "headless":
         run_archive.load_archive()
+        vision.load_from()
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -535,6 +541,10 @@ func _publish_web_state() -> void:
         "requested_campaign":bool(world_launch.get("campaign",false))
     }
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
+    state["g11_visual_readability"] = vision.readout(_browser_css_size.x > 0 and _browser_css_size.x < 650)
+    state["g11_visual_readability"]["local_save_ok"] = vision_last_save_ok
+    state["g11_visual_readability"]["button_rect"] = _hud_rect(vision_button) if vision_button != null else []
+    state["g11_visual_readability"]["touch_rect"] = _hud_rect(touch_vision_button) if touch_vision_button != null else []
     state["g10_tactical_atlas"] = tactical_atlas.readout() if tactical_atlas != null else {}
     state["g10_tactical_atlas"]["panel_visible"] = atlas_panel != null and atlas_panel.visible
     state["g10_tactical_atlas"]["focus_backdrop_visible"] = atlas_dimmer != null and atlas_dimmer.visible
@@ -1396,10 +1406,10 @@ func _make_overlays() -> void:
     start_box.add_child(archive_intro_button)
     continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
-    pause_panel = _panel(hud_root,Rect2(-240,-150,240,150),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
+    pause_panel = _panel(hud_root,Rect2(-240,-187,240,187),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var pause_box := VBoxContainer.new()
-    pause_box.add_theme_constant_override("separation",20)
+    pause_box.add_theme_constant_override("separation",12)
     pause_panel.add_child(pause_box)
     pause_title = _label(pause_box,_copy("pause"),30,AMBER)
     resume_button = Button.new()
@@ -1413,6 +1423,12 @@ func _make_overlays() -> void:
     auto_quality_button.add_theme_font_size_override("font_size",13)
     auto_quality_button.pressed.connect(_toggle_auto_quality)
     pause_box.add_child(auto_quality_button)
+    vision_button = Button.new()
+    vision_button.name = "G11_NativeContrastAndReadableTypography"
+    vision_button.custom_minimum_size = Vector2(0,52)
+    vision_button.add_theme_font_size_override("font_size",13)
+    vision_button.pressed.connect(_cycle_vision_profile)
+    pause_box.add_child(vision_button)
     pause_panel.visible = false
     end_panel = _panel(hud_root,Rect2(-300,-220,300,220),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
     end_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1561,6 +1577,10 @@ func _make_touch_controls() -> void:
     touch_atlas_button = _touch_button(touch_ui,"MAP / F2",111,-471,94)
     touch_atlas_button.add_theme_font_size_override("font_size",14)
     touch_atlas_button.pressed.connect(_toggle_tactical_atlas)
+    # G11: middle-column touch affordance; preserves existing CAM/NAV spacing.
+    touch_vision_button = _touch_button(touch_ui,"VIEW / F6",111,-414,94)
+    touch_vision_button.add_theme_font_size_override("font_size",14)
+    touch_vision_button.pressed.connect(_cycle_vision_profile)
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1751,6 +1771,7 @@ func _layout_hud() -> void:
     radio_dialogue.add_theme_font_size_override("font_size",12 if narrow else 14)
     _refresh_radio_ui()
     _apply_cinematic_view()
+    _apply_vision_profile()
 
 func _apply_cinematic_view() -> void:
     # One-key playable environment inspection. No movement, game timers,
@@ -1783,10 +1804,82 @@ func _apply_cinematic_view() -> void:
         touch_navigation_button.visible = not cinematic_view and touch_ui.visible
     if touch_atlas_button != null:
         touch_atlas_button.visible = not cinematic_view and touch_ui.visible
+    if touch_vision_button != null:
+        touch_vision_button.visible = not cinematic_view and touch_ui.visible
     if cinematic_view and guide_panel != null:
         guide_panel.visible = false
     if cinematic_view and forecast_panel != null:
         forecast_panel.visible = false
+
+func _refresh_vision_label() -> void:
+    if vision_button != null:
+        vision_button.text = "F6  /  " + vision.label(locale)
+    if touch_vision_button != null:
+        touch_vision_button.text = "VIEW / F6"
+
+func _apply_vision_profile() -> void:
+    # Same real HUD, now with reversible, high-contrast art direction and
+    # measured mobile-size typography. No camera/gameplay resource mutation.
+    if header_panel == null:
+        return
+    var width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
+    var compact: bool = width < 650.0
+    var font_scale: float = vision.text_scale(compact)
+    var high: bool = vision.high_contrast()
+    for item in [
+        {"node":intro_title,"size":20 if compact else 29},
+        {"node":intro_body,"size":13 if compact else 15},
+        {"node":brand_label,"size":20 if compact else 27},
+        {"node":objective_label,"size":15 if compact else 17},
+        {"node":guidance_label,"size":11 if compact else 12},
+        {"node":telemetry_label,"size":12 if compact else 14},
+        {"node":allocation_label,"size":12 if compact else 14},
+        {"node":threat_label,"size":10 if compact else 11},
+        {"node":interaction_label,"size":12 if compact else 17},
+        {"node":feedback_label,"size":12 if compact else 15},
+        {"node":footer_label,"size":9 if compact else 11}
+    ]:
+        var label: Label = item["node"]
+        if label != null:
+            label.add_theme_font_size_override("font_size",roundi(float(item["size"])*font_scale))
+    var nodes: Array[PanelContainer] = [
+        header_panel,side_panel,prompt_panel,vitals_panel,pause_panel,intro_panel,end_panel
+    ]
+    for index in range(nodes.size()):
+        var node: PanelContainer = nodes[index]
+        if node == null:
+            continue
+        var key: String = str(index)
+        if not _vision_panel_baselines.has(key):
+            _vision_panel_baselines[key] = node.get_theme_stylebox("panel").duplicate()
+        var border: StyleBoxFlat = (_vision_panel_baselines[key] as StyleBoxFlat).duplicate() as StyleBoxFlat
+        if high:
+            border.bg_color = Color(0.004,0.014,0.023,0.994)
+            border.border_color = Color(0.65,0.88,0.93,0.92)
+            border.set_border_width_all(2)
+        node.add_theme_stylebox_override("panel",border)
+    if high:
+        objective_label.add_theme_color_override("font_color",Color(0.98,0.99,1.0))
+        guidance_label.add_theme_color_override("font_color",Color(1.0,0.81,0.53))
+        interaction_label.add_theme_color_override("font_color",Color(0.68,0.96,1.0))
+    else:
+        objective_label.add_theme_color_override("font_color",WHITE)
+        guidance_label.add_theme_color_override("font_color",AMBER)
+        interaction_label.add_theme_color_override("font_color",CYAN)
+    if obsidian_world != null:
+        obsidian_world.set_accessibility(high)
+    _refresh_vision_label()
+
+func _cycle_vision_profile() -> void:
+    # A deliberate user action; saved to a separate settings file, not to
+    # the engine checkpoint. No participant identity, telemetry or network.
+    vision.cycle()
+    vision_last_save_ok = false
+    if DisplayServer.get_name() != "headless":
+        vision_last_save_ok = vision.save_to()
+    _layout_hud()
+    _refresh_hud()
+    _publish_web_state()
 
 func _toggle_cinematic_view() -> void:
     if not started or paused or session.finished():
@@ -2267,6 +2360,7 @@ func _toggle_language() -> void:
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
     _refresh_auto_quality_ui()
+    _refresh_vision_label()
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
     campaign_echoes.sync(campaign,locale)
@@ -2357,6 +2451,9 @@ func _gamepad_button(button_index: int) -> void:
             _toggle_journal()
         return
     if not started or paused:
+        if button_index == JOY_BUTTON_Y and paused:
+            _cycle_vision_profile()
+            return
         if button_index == JOY_BUTTON_X and not started:
             _toggle_run_archive()
         return
@@ -2390,6 +2487,9 @@ func _input(event: InputEvent) -> void:
         _gamepad_button(event.button_index)
         return
     if event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == KEY_F6 and (atlas_panel == null or not atlas_panel.visible):
+            _cycle_vision_profile()
+            return
         if atlas_panel != null and atlas_panel.visible:
             if event.keycode in [KEY_F2,KEY_ESCAPE]:
                 _close_tactical_atlas()
