@@ -61,7 +61,9 @@ static func hatch_transform(x: float,z: float,
 	var basis:=Basis(Vector3.UP,yaw)
 	# The hatch mesh is a 1m strip scaled by actual clipped physical
 	# length, so all 80 native strips share just ONE source 3D mesh.
-	basis=basis.scaled(Vector3(1.0,1.0,line.length()))
+	# Local-space z-axis scaling: global Basis.scaled() distorts the
+	# rotated 45-degree strip and would paint beyond original asphalt.
+	basis.z=basis.z*line.length()
 	return Transform3D(basis,
 		Vector3(x+midpoint.x,Y_ABOVE_ORIGINAL_ASPHALT_M,
 			z+midpoint.y))
