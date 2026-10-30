@@ -22,6 +22,10 @@ var critical_layer: Node3D
 var marker_lamps: Array[OmniLight3D] = []
 var marker_materials: Array[StandardMaterial3D] = []
 var sector_labels: Array[Label3D] = []
+var risk_status_labels: Array[Label3D] = []
+var high_contrast_signs: bool = false
+var safety_tier: String = "stable"
+var _vision_words: IPVisionProfile = IPVisionProfile.new()
 var close_range_labels: Array[Label3D] = []
 var marker_positions: Array[Vector3] = []
 var material_library: Dictionary = {}
@@ -219,6 +223,12 @@ func _make_critical_wayfinding() -> void:
             Vector3(-5.91,3.34,z-0.9),"",32,Color(0.87,0.92,0.94))
         sign.rotation_degrees.y = 90.0
         sector_labels.append(sign)
+        var status_sign := _label(critical_layer,prefix+"_ReadableHazardWord",
+            Vector3(-5.91,2.98,z-0.85),"",25,Color(0.90,0.94,0.96))
+        status_sign.rotation_degrees.y = 90.0
+        status_sign.outline_size = 7
+        status_sign.outline_modulate = Color(0.0,0.017,0.029,1.0)
+        risk_status_labels.append(status_sign)
         var lamp := OmniLight3D.new()
         lamp.name = prefix+"_ActualIllumination"
         lamp.position = Vector3(-5.70,3.70,z)
@@ -248,6 +258,16 @@ func set_locale(next_locale: String) -> void:
     var close_en: Array[String] = ["A7 / COOLANT","A7 / CONTROL"]
     for i in range(close_range_labels.size()):
         close_range_labels[i].text = close_en[i] if locale == "en" else close_ru[i]
+    _update_visual_state(0.0,true)
+
+func set_accessibility(contrast: bool) -> void:
+    # Real 3D signage remains occluded by world geometry. Text carries
+    # status independently from alarm color; no accessibility x-ray.
+    high_contrast_signs = contrast
+    for sign in risk_status_labels:
+        sign.outline_size = 13 if contrast else 7
+        sign.outline_modulate = Color(0.0,0.005,0.008,1.0)
+    _update_visual_state(0.0,true)
 
 func set_quality(next_quality: String) -> void:
     quality_mode = "eco" if next_quality == "eco" else "hero"
@@ -263,6 +283,8 @@ func update_hazard(scenario_id: String,heat: float,oxygen: float,elapsed: float,
     var hot: float = clampf((heat-68.0)/32.0,0.0,1.0)
     var air: float = clampf((48.0-oxygen)/48.0,0.0,1.0)
     measured_risk = maxf(hot,air)
+    # Based on actual fictional crisis values, never a decorative random pulse.
+    safety_tier = "critical" if heat >= 85.0 or oxygen <= 24.0 else "watch" if heat >= 69.0 or oxygen <= 48.0 else "stable"
     reduced_animation = reduce_motion
     _update_visual_state(elapsed,reduce_motion)
 
@@ -277,6 +299,12 @@ func _update_visual_state(elapsed: float,reduce_motion: bool) -> void:
     for light in marker_lamps:
         light.light_color = danger_tint
         light.light_energy = (0.12 if quality_mode == "eco" else 0.24) + measured_risk*0.27*breath
+    # Color + words + punctuation survive HERO/ECO and reduced-motion modes.
+    var readable: String = _vision_words.hazard_words(safety_tier,locale)
+    for sign in risk_status_labels:
+        sign.text = readable
+        sign.modulate = Color(1.0,0.92,0.77) if safety_tier == "watch" else Color(1.0,0.87,0.90) if safety_tier == "critical" else Color(0.91,0.96,0.98)
+        sign.pixel_size = 0.00255 if high_contrast_signs else 0.00235
 
 func readout() -> Dictionary:
     var actual_positions: Array = []
@@ -304,6 +332,11 @@ func readout() -> Dictionary:
         "physical_lamp_positions":actual_positions,
         "sign_text":displayed_signs,
         "sign_count":sector_labels.size(),
+        "g11_status_labels":risk_status_labels.size(),
+        "g11_risk_words":[risk_status_labels[0].text,risk_status_labels[1].text,risk_status_labels[2].text] if risk_status_labels.size() == 3 else [],
+        "g11_status_tier":safety_tier,
+        "g11_high_contrast":high_contrast_signs,
+        "g11_color_independent_warning":risk_status_labels.size() == 3,
         "light_count":marker_lamps.size(),
         "scenario":current_scenario,
         "risk":snappedf(measured_risk,0.001),

@@ -436,6 +436,11 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
+                        # Source story radio is visible immediately; its real
+                        # 12-second TTL must not be defeated by slow browser QA.
+                        assert state.get("radio_visible") is True and (
+                            state.get("story",{}).get("latest_key")=="arrival_blackout"), (
+                            "Original MARA radio absent at true shift opening",name)
                         g2_after_start=state.get("g2_field_protocol",{})
                         assert g2_after_start.get("selected")=="" and (
                             g2_after_start.get("available") is False), (
@@ -633,6 +638,95 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "actual_inputs":"F2/Escape + real MAP touch" if mobile else "F2/Escape",
                             "player_actions_unchanged":True,
                             "physical_device_certified":False,
+                            "telemetry_uploaded":False
+                        }
+
+                        # G11: genuine F6/native touch visual readability.
+                        # Source-bound Godot control, never a mock CSS overlay.
+                        # Status words are placed on real 3D sector safety signs.
+                        vision_init=json.loads(marker.get_attribute("data-state",timeout=10000))
+                        g11_init=vision_init.get("g11_visual_readability",{})
+                        signage=vision_init.get("g3_obsidian_architecture",{})
+                        assert g11_init.get("schema")=="IRON_PULSE_VISUAL_READABILITY_G11" and (
+                            g11_init.get("mode")=="standard" and
+                            g11_init.get("presentation_only") is True and
+                            g11_init.get("telemetry_uploaded") is False and
+                            signage.get("g11_status_labels")==3 and
+                            signage.get("g11_color_independent_warning") is True), (
+                            "Actual Godot visual accessibility/sign language is missing",name,g11_init,signage)
+                        vision_actions=(vision_init.get("switches"),vision_init.get("faults"),
+                                        vision_init.get("scanned"),vision_init.get("scenario"))
+                        page.keyboard.press("F6")
+                        deadline=time.monotonic()+18
+                        high_state={}
+                        while time.monotonic()<deadline:
+                            high_state=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if high_state.get("g11_visual_readability",{}).get("mode")=="contrast":
+                                break
+                            page.wait_for_timeout(180)
+                        high=high_state.get("g11_visual_readability",{})
+                        assert high.get("mode")=="contrast" and high.get("high_contrast") is True and (
+                            high_state.get("g3_obsidian_architecture",{}).get("g11_high_contrast") is True), (
+                            "F6 failed to apply real 2D HUD plus 3D readable signs",name,high)
+                        assert (high_state.get("switches"),high_state.get("faults"),
+                                high_state.get("scanned"),high_state.get("scenario"))==vision_actions, (
+                                "Presentation mode modified actual crisis engine actions",name)
+                        page.screenshot(path=str(output/f"g11-real-high-contrast-{name}.png"),
+                                        animations="disabled",timeout=60000)
+                        page.keyboard.press("F6")
+                        deadline=time.monotonic()+18
+                        large_state={}
+                        while time.monotonic()<deadline:
+                            large_state=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if large_state.get("g11_visual_readability",{}).get("mode")=="large":
+                                break
+                            page.wait_for_timeout(180)
+                        large=large_state.get("g11_visual_readability",{})
+                        assert large.get("mode")=="large" and (
+                            large.get("text_scale",0)>1.0 and
+                            large.get("account_ids_collected") is False and
+                            large.get("device_identifiers_collected") is False), (
+                            "Actual G11 large text / privacy contract violated",name,large)
+                        page.keyboard.press("F6")
+                        deadline=time.monotonic()+18
+                        rest={}
+                        while time.monotonic()<deadline:
+                            rest=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if rest.get("g11_visual_readability",{}).get("mode")=="standard":
+                                break
+                            page.wait_for_timeout(180)
+                        assert rest.get("g11_visual_readability",{}).get("mode")=="standard", (
+                            "Real Godot F6 readability mode not reversible",name)
+                        if mobile:
+                            rect=rest.get("touch_button_rects",{}).get("VIEW / F6")
+                            assert rect and rect[2]>=44 and rect[3]>=44, (
+                                "VIEW touch control missing from genuine Godot mobile canvas",name,rect)
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            px=bounds["x"]+(rect[0]+rect[2]/2)*bounds["width"]/rest["viewport"][0]
+                            py=bounds["y"]+(rect[1]+rect[3]/2)*bounds["height"]/rest["viewport"][1]
+                            assert 0<=px<=size["width"] and 0<=py<=size["height"], (
+                                "G11 VIEW mobile touch button physically clipped",name,rect)
+                            page.touchscreen.tap(px,py)
+                            deadline=time.monotonic()+18
+                            while time.monotonic()<deadline:
+                                rest=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if rest.get("g11_visual_readability",{}).get("mode")=="contrast":
+                                    break
+                                page.wait_for_timeout(180)
+                            assert rest.get("g11_visual_readability",{}).get("mode")=="contrast", (
+                                "Native mobile VIEW touch fails to change true scene presentation",name)
+                            for _ in range(2):
+                                page.touchscreen.tap(px,py)
+                                page.wait_for_timeout(500)
+                        report.setdefault("g11_native_readability",{})[name]={
+                            "physical_source":"real Godot world safety labels and HUD",
+                            "localized_sign_count":3,
+                            "input":"actual F6 and physical VIEW touch" if mobile else "actual F6",
+                            "high_contrast_screenshot":f"g11-real-high-contrast-{name}.png",
+                            "modes":["standard","contrast","large"],
+                            "source_actions_unchanged":True,
+                            "physical_hardware_certified":False,
                             "telemetry_uploaded":False
                         }
 
@@ -900,8 +994,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         narrative = state.get("story",{})
                         assert narrative.get("latest_key") == "arrival_blackout", (
                             "Wrong chapter opening after real scenario selection",narrative)
-                        assert narrative.get("journal_entries",0) >= 1 and state.get("radio_visible") is True, (
-                            "Story radio not truly visible after starting game",narrative,state)
+                        assert narrative.get("journal_entries",0) >= 1 and type(state.get("radio_visible")) is bool, (
+                            "Original localized story journal lost after normal timed radio dismissal",narrative)
                         assert state.get("priority_visible") is False, (
                             "Crew/core priority offered before real scanner",state)
                         assert "МАРА" in state.get("radio_text","") or "MARA" in state.get("radio_text",""), (
