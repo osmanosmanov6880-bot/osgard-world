@@ -33,6 +33,10 @@ func _run() -> void:
 		"source signal stop bar is 8 metres before original physical junction")
 	check(RULE.approach(Vector3(-149,0,-169),zaxis,0.0).is_empty(),
 		"neighboring lane eight metres away never receives phantom signal stop")
+	var at_bar:=Vector3(-156,0,-163.5)
+	check(not RULE.approach(at_bar,zaxis,0.0).is_empty() and
+		RULE.speed_cap(at_bar,zaxis,2.0,12.0,1.0,0.0)==0.0,
+		"actual red stop holds through minor physics overshoot at the existing road line")
 	check(RULE.approach(Vector3(-156,0,-162),zaxis,0.0).is_empty(),
 		"once the car enters actual junction it cannot freeze on red mid-crossing")
 	var red_cap: float=RULE.speed_cap(at,zaxis,8.0,12.0,1.0,0.0)
