@@ -85,10 +85,18 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                     "?scenario=blackout&lang=ru"
                 ), "Original RU GRID launch link not real"
                 assert page.evaluate("document.documentElement.scrollWidth") <= 1368
+                assert page.locator("#atlas-feature-title").count() == 1, (
+                    "G10 actual Godot tactical atlas feature missing from portal")
+                assert page.locator(".tactical-atlas-facts > div").count() == 3, (
+                    "G10 real native input / source feature list lost")
                 page.screenshot(path=str(output/"world-desktop-ru.png"),full_page=True,
                                 animations="disabled",timeout=60000)
                 page.locator("#language").click()
                 assert page.evaluate("document.documentElement.lang") == "en"
+                assert "SEE THE FACILITY" in page.locator("#atlas-feature-title").inner_text(), (
+                    "G10 tactical atlas not translated into real EN portal")
+                assert "not walkable routes" in page.locator(".tactical-atlas-note").inner_text().lower(), (
+                    "G10 portal may not portray straight-line diagram as traversable routing")
                 assert page.locator("#hero-title").is_visible()
                 assert "THE REACTOR IS DYING" in page.locator(".hero-lead").inner_text()
                 page.locator('[data-scenario="thermal"]').click()
@@ -136,6 +144,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 mwidth = m.evaluate("document.documentElement.scrollWidth")
                 assert mwidth <= 392, f"Mobile world-class portal overflows 390px: {mwidth}"
                 assert m.locator("a[data-play]").first.is_visible(), "Mobile play CTA missing"
+                assert m.locator("#atlas-feature-title").is_visible(), (
+                    "Real-game G10 tactical atlas explanation missing on mobile")
                 btn = m.locator("a[data-play]").first.bounding_box()
                 assert btn is not None and btn["height"] >= 44, "Mobile touch CTA too small"
                 lang_btn = m.locator("#language").bounding_box()
@@ -147,6 +157,12 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 ), "Mobile campaign route not connected to real playable build"
                 m.screenshot(path=str(output/"world-mobile-en.png"),full_page=True,
                              animations="disabled",timeout=60000)
+                result["g10_portal_atlas"] = {
+                    "actual_godot_feature": True,
+                    "ru_en": True,
+                    "responsive_390": True,
+                    "straight_line_disclaimer": True
+                }
                 result["mobile_responsive"] = True
                 result["portal_mobile"] = "world-mobile-en.png"
                 # Real 320px compact touch check: no horizontal scrolling,
@@ -157,6 +173,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 assert narrow_width <= 322, (
                     f"Narrow 320px portal overflows horizontally: {narrow_width}"
                 )
+                assert m.locator("#atlas-feature-title").is_visible(), (
+                    "G10 atlas info hidden at 320px")
                 assert m.locator("#campaign-play").is_visible(), (
                     "Three-act campaign becomes inaccessible on 320px phones"
                 )
