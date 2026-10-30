@@ -36,8 +36,8 @@ static func crossing(before: Vector3,after: Vector3,yaw: float,
 	var fwd: Vector3=Vector3(axis.x,0.0,axis.y)
 	# Both authoritative real signal samples MUST be RED. A light that
 	# becomes red halfway through a 4Hz frame does not punish the driver.
-	if INTERSECTION.state_at(prior_signal_seconds,fwd)!="red" or
-			INTERSECTION.state_at(next_signal_seconds,fwd)!="red":
+	if (INTERSECTION.state_at(prior_signal_seconds,fwd)!="red" or
+			INTERSECTION.state_at(next_signal_seconds,fwd)!="red"):
 		return {}
 	var lateral_axis: Vector2=Vector2(-axis.y,axis.x)
 	var forward_travel: float=movement.dot(axis)
