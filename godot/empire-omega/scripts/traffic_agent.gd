@@ -10,6 +10,7 @@ const FOLLOW = preload("res://scripts/city_reign_traffic_following.gd")
 const R178_SIGNAL = preload("res://scripts/city_reign_intersection_policy.gd")
 const R182_CROSSING = preload("res://scripts/city_reign_crosswalk_occupancy.gd")
 const R186_BOX = preload("res://scripts/city_reign_junction_box_clearance.gd")
+const R188_STEER = preload("res://scripts/city_reign_physical_corner_steering.gd")
 const CAR_LENGTH := 4.1
 const DETECTION_RANGE := 27.0
 const ROAD_HEIGHT := 0.8
@@ -20,6 +21,12 @@ var speed := 0.0
 var signal_controller
 var brake_meshes: Array[MeshInstance3D] = []
 var wheels: Array[MeshInstance3D] = []
+var front_steer_wheels: Array[MeshInstance3D] = []
+# R188 actual physical body direction and in-world steering, source only.
+var last_steer_command_rad: float = 0.0
+var last_steer_yaw_step: float = 0.0
+var last_steer_fallback: bool = false
+var lateral_safety_rejections: int = 0
 var stopped_seconds := 0.0
 var travelled_metres := 0.0
 var emergency_stops := 0
@@ -106,6 +113,8 @@ func _ready() -> void:
 			wheel.mesh = SEDAN_SURFACE.wheel_mesh()
 			wheel.material_override = SEDAN_SURFACE.wheel_finish()
 			wheels.append(wheel)
+			if z<0.0:
+				front_steer_wheels.append(wheel)
 		_part("Headlamp",Vector3(0.32,0.16,0.06),Vector3(x*0.67,0.3,-2.05),Color("c2eadc"),true)
 		var lamp := _part("BrakeLamp",Vector3(0.34,0.2,0.06),Vector3(x*0.67,0.3,2.05),Color("4a181f"),true)
 		brake_meshes.append(lamp)
@@ -174,6 +183,13 @@ func set_route(waypoints: Array[Vector3], road_speed: float) -> void:
 	if not points.is_empty():
 		global_position = points[0]
 		target_index = 1 % points.size()
+		if not patrol_vehicle and points.size()>1:
+			# Initial authentic traffic cars face their ACTUAL source
+			# right-hand R185 lane. No 90° sideways slide on first tick.
+			var first_leg: Vector3=points[1]-points[0]
+			first_leg.y=0.0
+			if first_leg.length_squared()>0.001:
+				rotation.y=R188_STEER.yaw_of(first_leg)
 
 func retarget(waypoints: Array[Vector3]) -> void:
 	# Preserve physical position/velocity. set_route would teleport a pursuer.
@@ -235,6 +251,9 @@ func _physics_process(delta: float) -> void:
 	if points.size() < 2:
 		last_junction_guard_active = false
 		last_junction_guard_reason = ""
+		last_steer_command_rad = 0.0
+		last_steer_yaw_step = 0.0
+		last_steer_fallback = false
 		indicator_mode = "off"
 		_sync_indicator_lamps()
 		velocity = Vector3.ZERO
@@ -319,9 +338,47 @@ func _physics_process(delta: float) -> void:
 	if last_junction_guard_active and speed<2.0 and is_finite(delta):
 		junction_hold_seconds=minf(86400.0,
 			junction_hold_seconds+clampf(delta,0.0,0.1))
-	rotation.y = lerp_angle(rotation.y,atan2(-heading.x,-heading.z),clampf(delta*4.8,0.0,1.0))
+	# R188: in the original 12 non-patrol traffic NPCs, the physical
+	# CharacterBody3D movement vector now matches the VISIBLE chassis yaw.
+	# The old controller smoothly rotated the body but instantly snapped
+	# velocity 90°, creating severe sideways traffic sliding at R185 turns.
+	# Original A* path points, R178 signal phase, R186 box, R47 walker scan
+	# and all other source speed caps above are intentionally unchanged.
+	var actual_direction: Vector3=heading
+	last_steer_command_rad=0.0
+	last_steer_yaw_step=0.0
+	last_steer_fallback=false
+	if not patrol_vehicle:
+		var actual_aim: Vector3=R188_STEER.source_aim(
+			global_position,destination,points[corner_index])
+		var steer: Dictionary=R188_STEER.steer(
+			rotation.y,global_position,actual_aim,speed,delta,wetness)
+		if bool(steer.get("valid",false)):
+			var candidate: Vector3=steer["direction"]
+			rotation.y=float(steer["yaw"])
+			last_steer_command_rad=float(steer["wheel_radians"])
+			last_steer_yaw_step=float(steer["actual_yaw_step"])
+			if R188_STEER.safe_next_step(global_position,candidate,speed,delta):
+				actual_direction=candidate
+			else:
+				# Road edge or corrupt route: physically STOP the car rather
+				# than cut its box collider through an original building or
+				# teleport to the correct side. Steering may still turn in place.
+				last_steer_fallback=true
+				lateral_safety_rejections+=1
+				speed=0.0
+				_update_brake_lights(true)
+	else:
+		# Original actual patrol chases are deliberately unchanged. Their
+		# pursuit may be off the 9×9 civilian traffic road graph.
+		rotation.y = lerp_angle(rotation.y,
+			atan2(-heading.x,-heading.z),clampf(delta*4.8,0.0,1.0))
+	# The real FRONT wheel meshes steer around their vertical axes
+	# before rolling; rear wheels stay straight. No new meshes or nodes.
+	for front_wheel in front_steer_wheels:
+		front_wheel.rotation.y=last_steer_command_rad
 	var before: Vector3 = global_position
-	velocity = Vector3(heading.x*speed,0.0,heading.z*speed)
+	velocity = Vector3(actual_direction.x*speed,0.0,actual_direction.z*speed)
 	move_and_slide()
 	var travelled: float = Vector2(global_position.x-before.x,global_position.z-before.z).length()
 	travelled_metres += travelled
