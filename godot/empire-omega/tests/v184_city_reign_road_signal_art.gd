@@ -2,6 +2,7 @@ extends SceneTree
 ## R178 original real traffic signal Node3D controls 16 native 3D junctions.
 const GRID=preload("res://scripts/traffic_signal_controller.gd")
 const RULE=preload("res://scripts/city_reign_intersection_policy.gd")
+const MARKINGS=preload("res://scripts/city_reign_intersection_stopbars.gd")
 var passed: int=0
 var failed: int=0
 func check(ok: bool,why: String) -> void:
@@ -25,8 +26,8 @@ func _run() -> void:
 	check(road.draws["x_reflectors"].multimesh.instance_count==32 and
 		road.draws["z_reflectors"].multimesh.instance_count==32,
 		"exact 64 reflective signal-linked approach studs, not 64 new lights")
-	var xline: Transform3D=road.source_position(-156.0,-156.0,"x",1)
-	var zline: Transform3D=road.source_position(-156.0,-156.0,"z",-1)
+	var xline: Transform3D=MARKINGS.source_position(-156.0,-156.0,"x",1)
+	var zline: Transform3D=MARKINGS.source_position(-156.0,-156.0,"z",-1)
 	check(absf(xline.origin.x-(-148.0))<0.01 and
 		absf(zline.origin.z-(-164.0))<0.01 and
 		absf(xline.origin.y-0.204)<0.01,
