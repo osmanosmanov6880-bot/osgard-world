@@ -34,6 +34,33 @@ func _run() -> void:
     root.add_child(game)
     await process_frame
     await process_frame
+    # G13 real-geometry regression: original V17 source archive MUST remain
+    # fully closable from a mobile touch viewport, before any gameplay begins.
+    for dims in [Vector2i(390,844),Vector2i(320,720)]:
+        game._browser_css_size = dims
+        game._layout_hud()
+        game._toggle_run_archive()
+        await process_frame
+        var history: Dictionary = game._g13_mobile_layout_readout()
+        var modal_rect: Rect2 = game.archive_panel.get_global_rect()
+        var close_rect: Rect2 = game.archive_close_button.get_global_rect()
+        _test(game.archive_panel.visible and not game.touch_ui.visible,
+            "Real operator archive suspends gameplay touch hitboxes during the modal")
+        _test(modal_rect.position.x >= 0.0 and modal_rect.end.x <= dims.x + 1.0 and
+            modal_rect.position.y >= 0.0 and modal_rect.end.y <= dims.y + 1.0,
+            "Original run history modal must fit within actual 320/390 phone viewport")
+        _test(close_rect.position.x >= 0.0 and close_rect.end.x <= dims.x + 1.0 and
+            close_rect.position.y >= 0.0 and close_rect.end.y <= dims.y + 1.0 and
+            close_rect.size.y >= 44.0,
+            "Physical private-archive close button must be onscreen and finger-sized")
+        _test(game.archive_label.get_parent().size.y >= 130.0,
+            "History remains scrollable on compact real screens")
+        game._toggle_run_archive()
+        await process_frame
+        _test(not game.archive_panel.visible and game.touch_ui.visible,
+            "Closing the original records screen restores real physical gameplay touch controls")
+    game._browser_css_size = Vector2i(390,844)
+    game._layout_hud()
     game.start_run()
     var engine_actions: Dictionary = game.session.checkpoint()
 
