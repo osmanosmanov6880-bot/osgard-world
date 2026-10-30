@@ -85,6 +85,11 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                     "?scenario=blackout&lang=ru"
                 ), "Original RU GRID launch link not real"
                 assert page.evaluate("document.documentElement.scrollWidth") <= 1368
+                assert page.locator("#caption-feature-title").count() == 1 and (
+                    page.locator(".caption-continuity-modes > div").count()==3), (
+                    "G14 actual F4/CC Godot caption continuity missing in RU world portal")
+                assert "СЛОВА" in page.locator("#caption-feature-title").inner_text(), (
+                    "G14 original author-led dialogue continuity has no Russian explanation")
                 assert page.locator("#comfort-feature-title").count() == 1 and (
                     page.locator(".comfort-preset-grid > div").count() == 3), (
                     "G12 true source control presets section missing in RU portal")
@@ -103,6 +108,11 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                                 animations="disabled",timeout=60000)
                 page.locator("#language").click()
                 assert page.evaluate("document.documentElement.lang") == "en"
+                assert "IMPORTANT WORDS" in page.locator("#caption-feature-title").inner_text(), (
+                    "G14 authentic IPStoryDirector caption accessibility missing in English")
+                assert "F4" in page.locator(".caption-continuity-heading").inner_text() and (
+                    "physical-device" in page.locator(".caption-continuity-note").inner_text().lower()), (
+                    "G14 real keyboard and physical-hardware limitations must be disclosed")
                 assert "GAME SHOULD ADAPT" in page.locator("#comfort-feature-title").inner_text().upper(), (
                     "G12 real Godot keyboard comfort controls not localized to EN")
                 assert "F7" in page.locator(".comfort-feature-head").inner_text() and (
@@ -164,6 +174,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 mwidth = m.evaluate("document.documentElement.scrollWidth")
                 assert mwidth <= 392, f"Mobile world-class portal overflows 390px: {mwidth}"
                 assert m.locator("a[data-play]").first.is_visible(), "Mobile play CTA missing"
+                assert m.locator("#caption-feature-title").is_visible(), (
+                    "G14 real-game subtitle access hidden from 320/390px phone")
                 assert m.locator("#comfort-feature-title").is_visible(), (
                     "Actual Godot G12 keyboard presets explanation hidden on compact phone")
                 assert m.locator("#vision-feature-title").is_visible(), (
@@ -181,6 +193,13 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 ), "Mobile campaign route not connected to real playable build"
                 m.screenshot(path=str(output/"world-mobile-en.png"),full_page=True,
                              animations="disabled",timeout=60000)
+                result["g14_world_caption_access"] = {
+                    "three_real_game_modes": True,
+                    "original_story_only": True,
+                    "ru_en": True,
+                    "mobile_320_390": True,
+                    "physical_device_certified": False
+                }
                 result["g12_portal_control_comfort"] = {
                     "actual_source_modes": 3,
                     "ru_en": True,
@@ -210,6 +229,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 assert narrow_width <= 322, (
                     f"Narrow 320px portal overflows horizontally: {narrow_width}"
                 )
+                assert m.locator("#caption-feature-title").is_visible(), (
+                    "G14 real-game subtitle access hidden from 320/390px phone")
                 assert m.locator("#comfort-feature-title").is_visible(), (
                     "Actual Godot G12 keyboard presets explanation hidden on compact phone")
                 assert m.locator("#vision-feature-title").is_visible(), (
