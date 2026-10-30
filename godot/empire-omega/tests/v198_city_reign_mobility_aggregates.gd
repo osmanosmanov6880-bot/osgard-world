@@ -60,8 +60,17 @@ func _run() -> void:
 	check(data["x_green_signal_observations"]>0 and
 		data["z_green_signal_observations"]>0 and
 		data["x_amber_signal_observations"]>0 and
-		data["z_amber_signal_observations"]>0,
-		"actual 24s ORIGINAL traffic source phases cover each direction, never new clocks")
+		data["z_amber_signal_observations"]==0,
+		"20s actual capture MUST NOT fabricate Z amber absent from sampled clock window")
+	var shifted=LAB.new()
+	shifted.begin()
+	for i in range(48):
+		shifted.observe(0.5,cars,citizens,12.0+float(i)*0.5,true,true)
+	var later: Dictionary=shifted.report()
+	check(later.get("status","")=="complete" and
+		later["z_amber_signal_observations"]>0 and
+		later["x_amber_signal_observations"]==0,
+		"independent shifted REAL source interval now genuinely observes opposing amber")
 	var report_json: String=JSON.stringify(data)
 	check(not report_json.contains("global_position") and
 		not report_json.contains("citizen_id") and
