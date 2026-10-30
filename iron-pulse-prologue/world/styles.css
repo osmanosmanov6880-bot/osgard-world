@@ -598,3 +598,72 @@ a:focus-visible,button:focus-visible {
   .comfort-preset-grid > div {padding: 15px 16px;gap: 6px;}
   .comfort-feature-head h3 {font-size:clamp(23px,7vw,32px);}
 }
+
+
+/* G14 — genuine original Godot story access, no synthetic character imagery. */
+.caption-continuity-feature {
+  margin: clamp(26px,4vw,55px) 0;
+  padding: clamp(23px,4vw,45px);
+  background: linear-gradient(145deg,#111923 0%,#0b1d26 100%);
+  border: 1px solid rgba(160,196,207,.48);
+  border-radius: 15px;
+  color: #f3f7f9;
+}
+.caption-continuity-heading {max-width:830px;}
+.caption-continuity-heading h3 {
+  font-size:clamp(25px,3.7vw,49px);
+  letter-spacing:-.034em;
+  line-height:1.09;
+  text-wrap:balance;
+  margin:18px 0;
+  max-width:800px;
+}
+.caption-continuity-heading p {
+  font-size:clamp(14px,1.45vw,17px);
+  color:#c2d5da;
+  line-height:1.7;
+  max-width:780px;
+}
+.caption-continuity-modes {
+  margin:28px 0 20px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+.caption-continuity-modes>div {
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  gap:12px;
+  padding:20px 18px;
+  background:#102934;
+  border:1px solid rgba(131,202,212,.32);
+  border-radius:11px;
+}
+.caption-continuity-modes span {
+  color:#a8dfe7;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.1em;
+}
+.caption-continuity-modes strong {
+  color:#f0f6f6;
+  line-height:1.5;
+  font-size:clamp(13px,1.36vw,16px);
+  overflow-wrap:anywhere;
+}
+.caption-continuity-note {
+  color:#afc5ce;
+  font-size:13px;
+  line-height:1.6;
+  max-width:890px;
+}
+@media(max-width:650px) {
+  .caption-continuity-feature {padding:20px 16px;}
+  .caption-continuity-modes {grid-template-columns:1fr;}
+  .caption-continuity-modes>div {padding:14px 16px;gap:6px;}
+  .caption-continuity-heading h3 {font-size:clamp(23px,7.0vw,32px);}
+}
+@media(prefers-reduced-motion: reduce) {
+  .caption-continuity-feature,.caption-continuity-feature * {transition-duration:.001ms!important;animation-duration:.001ms!important;}
+}
