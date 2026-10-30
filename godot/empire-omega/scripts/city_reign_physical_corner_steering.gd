@@ -22,6 +22,7 @@ const MAX_FRAME_STEP_S: float=0.10
 const WHEEL_STEER_SCALE: float=0.62
 const MAX_FRONT_WHEEL_RAD: float=0.45
 const ORIGINAL_VEHICLE_HALF_WIDTH_M: float=1.125
+const ORIGINAL_VEHICLE_HALF_LENGTH_M: float=2.05
 const SOURCE_ROAD_CLEAR_HALF_M: float=3.82
 const LOOKAHEAD_EPSILON_M2: float=0.0001
 
@@ -30,18 +31,35 @@ static func yaw_of(vector: Vector3) -> float:
 		return 0.0
 	return atan2(-vector.x,-vector.z)
 
-static func source_road_footprint_safe(point: Vector3) -> bool:
-	if not point.is_finite() or not LANES.on_original_asphalt(point):
+static func source_road_footprint_safe(point: Vector3,
+		facing: Vector3=Vector3.ZERO) -> bool:
+	if (not point.is_finite() or not facing.is_finite() or
+		not LANES.on_original_asphalt(point)):
 		return false
-	# The car's existing real 2.25m-wide BoxShape3D must fit inside
-	# original 10m road, not only the car CENTRE. At junctions either
-	# of the two true orthogonal asphalt corridors is acceptable.
+	# Native BoxShape3D 2.25m x 4.1m: BOTH safe body centre margin
+	# AND FOUR physical rotated corners must be inside the original
+	# 10m cross-shaped asphalt, not merely the wheelbase centre.
+	var center_clear: bool=false
 	for index in range(9):
 		var at: float=-208.0+float(index)*SOURCE_ROAD_SPACING_M
 		if (absf(point.x-at)<=SOURCE_ROAD_CLEAR_HALF_M or
 				absf(point.z-at)<=SOURCE_ROAD_CLEAR_HALF_M):
-			return true
-	return false
+			center_clear=true
+			break
+	if not center_clear:return false
+	var axis:=Vector3(facing.x,0.0,facing.z)
+	if axis.length_squared()<LOOKAHEAD_EPSILON_M2:
+		return true # fixture / waypoint check with no known orientation
+	axis=axis.normalized()
+	var sideways:=Vector3(-axis.z,0.0,axis.x)
+	for front in [-1.0,1.0]:
+		for side in [-1.0,1.0]:
+			var actual_corner: Vector3=(point+
+				axis*ORIGINAL_VEHICLE_HALF_LENGTH_M*front+
+				sideways*ORIGINAL_VEHICLE_HALF_WIDTH_M*side)
+			if not LANES.on_original_asphalt(actual_corner):
+				return false
+	return true
 
 static func source_aim(position: Vector3,destination: Vector3,
 		next_waypoint: Vector3) -> Vector3:
@@ -105,10 +123,10 @@ static func safe_next_step(position: Vector3,heading: Vector3,
 		not is_finite(speed) or not is_finite(delta) or
 		delta<0.0):
 		return false
-	if not source_road_footprint_safe(position):
+	if not source_road_footprint_safe(position,heading):
 		return false
 	var step: Vector3=heading*maxf(0.0,speed)*clampf(delta,0.0,MAX_FRAME_STEP_S)
-	return source_road_footprint_safe(position+step)
+	return source_road_footprint_safe(position+step,heading)
 
 static func source_integrity() -> bool:
 	return (LANES.source_integrity() and SIGNAL.source_grid_valid() and
