@@ -307,6 +307,16 @@ jobs:
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - run: npm run build
+      - name: Verify SABLEFAULT WORLD playable release assets before SSH deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/games/sablefault-world/index.html
+          grep -Fq 'SABLEFAULT WORLD 3.2' dist/games/sablefault-world/index.html
+          for n in 1 2 3; do
+            test -s "dist/games/sablefault-world/parts/world32-${n}.txt"
+          done
+          node -e 'const fs=require("fs");const d=[1,2,3].map(n=>fs.readFileSync("dist/games/sablefault-world/parts/world32-"+n+".txt","utf8")).join("\\n");if(d.length<1000000||!d.includes("SABLEFAULT WORLD"))process.exit(1);console.log("SABLEFAULT WORLD 3.2 source payload verified:",d.length,"characters")'
       - name: Stage exact reviewed W14 Godot Web archive, fail-closed on any mismatch
         shell: bash
         env:
