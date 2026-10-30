@@ -43,7 +43,7 @@ static func player_warning(speed: float) -> Dictionary:
 	}
 
 static func source_rule_valid() -> bool:
-	return (LIMIT_MPS*MPS_TO_KMH==float(LIMIT_KMH) and
+	return (is_equal_approx(LIMIT_MPS*MPS_TO_KMH,float(LIMIT_KMH)) and
 		LIMIT_KMH==90 and
 		LAW.OFFENCES.has("speeding") and LAW.OFFENCES["speeding"]==90 and
 		LAW.OFFENCE_COOLDOWN==18.0 and
