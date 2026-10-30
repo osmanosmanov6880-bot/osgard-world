@@ -85,6 +85,11 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                     "?scenario=blackout&lang=ru"
                 ), "Original RU GRID launch link not real"
                 assert page.evaluate("document.documentElement.scrollWidth") <= 1368
+                assert page.locator("#vision-feature-title").count()==1 and (
+                    page.locator(".vision-feature-options > div").count()==3), (
+                    "G11 real Godot readability feature/3 modes missing from source portal")
+                assert "ОПАСНОСТЬ" in page.locator("#vision-feature-title").inner_text(), (
+                    "G11 color-independent hazard sign messaging missing in RU")
                 assert page.locator("#atlas-feature-title").count() == 1, (
                     "G10 actual Godot tactical atlas feature missing from portal")
                 assert page.locator(".tactical-atlas-facts > div").count() == 3, (
@@ -93,6 +98,11 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                                 animations="disabled",timeout=60000)
                 page.locator("#language").click()
                 assert page.evaluate("document.documentElement.lang") == "en"
+                assert "RISK SHOULD NEVER BE COLOR ALONE" in page.locator("#vision-feature-title").inner_text(), (
+                    "G11 real scene hazard readability is not translated into English")
+                assert "F6" in page.locator(".vision-feature-header").inner_text() and (
+                    "physical" in page.locator(".vision-feature-note").inner_text().lower()), (
+                    "G11 bilingual keyboard/accessibility limitations must be explicit")
                 assert "SEE THE FACILITY" in page.locator("#atlas-feature-title").inner_text(), (
                     "G10 tactical atlas not translated into real EN portal")
                 assert "not walkable routes" in page.locator(".tactical-atlas-note").inner_text().lower(), (
@@ -144,6 +154,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 mwidth = m.evaluate("document.documentElement.scrollWidth")
                 assert mwidth <= 392, f"Mobile world-class portal overflows 390px: {mwidth}"
                 assert m.locator("a[data-play]").first.is_visible(), "Mobile play CTA missing"
+                assert m.locator("#vision-feature-title").is_visible(), (
+                    "Real Godot G11 high-contrast/large-text feature must be visible on phone")
                 assert m.locator("#atlas-feature-title").is_visible(), (
                     "Real-game G10 tactical atlas explanation missing on mobile")
                 btn = m.locator("a[data-play]").first.bounding_box()
@@ -157,6 +169,13 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 ), "Mobile campaign route not connected to real playable build"
                 m.screenshot(path=str(output/"world-mobile-en.png"),full_page=True,
                              animations="disabled",timeout=60000)
+                result["g11_world_accessibility"] = {
+                    "actual_godot_controls": True,
+                    "ru_en": True,
+                    "mobile_390_and_320": True,
+                    "three_real_native_modes": True,
+                    "no_physical_device_fps_claim": True
+                }
                 result["g10_portal_atlas"] = {
                     "actual_godot_feature": True,
                     "ru_en": True,
@@ -173,6 +192,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 assert narrow_width <= 322, (
                     f"Narrow 320px portal overflows horizontally: {narrow_width}"
                 )
+                assert m.locator("#vision-feature-title").is_visible(), (
+                    "Real Godot G11 high-contrast/large-text feature must be visible on phone")
                 assert m.locator("#atlas-feature-title").is_visible(), (
                     "G10 atlas info hidden at 320px")
                 assert m.locator("#campaign-play").is_visible(), (
