@@ -7,6 +7,7 @@ const CIVIC_CROSSING = preload("res://scripts/city_reign_civic_traffic_safety.gd
 const SEDAN_SURFACE = preload("res://scripts/horizon_traffic_sedan_surface.gd")
 const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
 const FOLLOW = preload("res://scripts/city_reign_traffic_following.gd")
+const R178_SIGNAL = preload("res://scripts/city_reign_intersection_policy.gd")
 const CAR_LENGTH := 4.1
 const DETECTION_RANGE := 27.0
 const ROAD_HEIGHT := 0.8
@@ -24,6 +25,8 @@ var wetness := 1.0
 var citizens: Array = []
 var neighbors: Array = []
 var last_follow_speed: float = 18.0
+var last_signal_speed: float = 18.0
+var last_signal_phase: String = "none"
 var _last_braking := true
 var indicator_lamps: Dictionary = {}
 var _indicator_lit: Dictionary = {"left":true,"right":true}
@@ -214,8 +217,17 @@ func _physics_process(delta: float) -> void:
 	var heading: Vector3 = displacement.normalized()
 	var obstacle: float = _obstacle_distance(heading)
 	var signal_distance: float = 1000000.0
-	if signal_controller != null and displacement.length() < 22.0 and not signal_controller.permitted(destination,heading):
-		signal_distance = displacement.length()
+	var signal_elapsed: float=float(signal_controller.get("elapsed")) if signal_controller!=null else 0.0
+	var source_stop: Dictionary=R178_SIGNAL.approach(global_position,heading,signal_elapsed) if signal_controller!=null else {}
+	last_signal_phase=str(source_stop.get("phase","none"))
+	last_signal_speed=R178_SIGNAL.speed_cap(global_position,heading,speed,
+		cruising_speed,wetness,signal_elapsed) if signal_controller!=null else cruising_speed
+	# If it is already physically impossible to stop safely on AMBER, the
+	# conservative dilemma-zone rule commits the car to clearing the line.
+	# Do not let the legacy signal-gap limiter secretly override that.
+	if (signal_controller!=null and not source_stop.is_empty() and
+			last_signal_speed<cruising_speed-0.001):
+		signal_distance=float(source_stop["stop_distance"])+SAFETY.MIN_GAP
 	var corner_index: int = (target_index+1)%points.size()
 	var after_corner: Vector3 = points[corner_index]-destination
 	after_corner.y = 0.0
@@ -230,6 +242,9 @@ func _physics_process(delta: float) -> void:
 	# raycast/signal/pedestrian target, never grant passage or extra speed.
 	last_follow_speed = FOLLOW.scan(self,neighbors,heading,speed,cruising_speed,wetness)
 	goal = minf(goal,last_follow_speed)
+	# Real phase + existing wet braking. Can only LOWER the original
+	# convoy, obstacle, pedestrian, civic and corner safety limits.
+	goal=minf(goal,last_signal_speed)
 	# B62: fund the real city's zebra crossings to actually calm ordinary
 	# resident traffic. One source-locked speed constraint, AFTER original
 	# pedestrian and signal safety. No change to physics, route or payout.

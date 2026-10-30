@@ -103,6 +103,9 @@ func _process(delta: float) -> void:
 	var velocity: Vector3 = travel.normalized() * speed
 	planned_velocity = velocity
 	if _yield_to_vehicle(velocity):
+		# The real waiting pedestrian is stationary. Never advertise a
+		# fictional walking velocity to the active R47 crossing predictor.
+		planned_velocity=Vector3.ZERO
 		if body_mesh != null:
 			body_mesh.mesh = STREET_ART.mesh_for(citizen_id,0)
 		return

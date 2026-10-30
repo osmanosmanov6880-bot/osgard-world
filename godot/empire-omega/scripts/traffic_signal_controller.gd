@@ -6,6 +6,7 @@ const CYCLE_SECONDS = 24.0
 const CHANGE_SECONDS = 12.0
 const SIGNAL_REACH = 9.0
 const CINEMATIC_ART = preload("res://scripts/city_reign_signal_art.gd")
+const R178_STOP_BARS = preload("res://scripts/city_reign_intersection_stopbars.gd")
 const AMBER_SECONDS: float = 1.5
 
 var elapsed := 0.0
@@ -14,6 +15,7 @@ var last_phase := -1
 var last_visual_state := -1
 var legacy_signal_roots: Array[Node3D] = []
 var cinematic_art: Node3D
+var stop_bars: Node3D
 var quality: String = "standard"
 
 func _ready() -> void:
@@ -36,6 +38,8 @@ func _ready() -> void:
 	# AI timers are unchanged; the original box art stays as LOW fallback.
 	cinematic_art = CINEMATIC_ART.new()
 	add_child(cinematic_art)
+	stop_bars=R178_STOP_BARS.new()
+	add_child(stop_bars)
 	set_quality("standard")
 	_update_lights()
 
@@ -81,10 +85,13 @@ func _update_lights() -> void:
 		var red: MeshInstance3D = record["red"]
 		var green_mat: StandardMaterial3D = green.material_override as StandardMaterial3D
 		var red_mat: StandardMaterial3D = red.material_override as StandardMaterial3D
-		green_mat.albedo_color = Color("30dfb4") if last_phase == 1 else Color("174e42")
+		green_mat.albedo_color = (Color("d5a044") if _warning() else Color("30dfb4")) if last_phase == 1 else Color("174e42")
 		red_mat.albedo_color = Color("802c34") if last_phase == 1 else Color("ff5965")
 	if cinematic_art != null:
 		cinematic_art.call("sync_phase",last_phase,_warning())
+	var game: Node=get_node_or_null("/root/GameState")
+	var current: Dictionary=game.get("data") if game!=null else {}
+	sync_city_power(current)
 
 func set_quality(tier: String) -> void:
 	quality = tier if ["low","standard","cinematic"].has(tier) else "standard"
@@ -93,6 +100,13 @@ func set_quality(tier: String) -> void:
 		original.visible = not use_source_art
 	if cinematic_art!=null:
 		cinematic_art.call("set_quality",quality)
+	if stop_bars!=null:
+		stop_bars.call("set_quality",quality)
+
+func sync_city_power(state: Dictionary) -> void:
+	if stop_bars!=null:
+		stop_bars.call("sync_phase",elapsed,int(state.get("energy",100)),
+			float(state.get("day_clock",12.0)))
 
 func visual_state_is_consistent() -> bool:
 	if cinematic_art==null or lights.size()!=16 or legacy_signal_roots.size()!=16:
@@ -102,7 +116,9 @@ func visual_state_is_consistent() -> bool:
 	var indicators: Dictionary = cinematic_art.get("lamp_state")
 	var x_go: bool = _phase()==0
 	var yellow: bool = _warning()
-	return (bool(indicators.get("x_red",true))==not x_go and
+	return (stop_bars!=null and bool(stop_bars.call("source_budget_ok")) and
+		bool(stop_bars.call("phases_match",elapsed)) and
+		bool(indicators.get("x_red",true))==not x_go and
 		bool(indicators.get("z_red",true))==x_go and
 		bool(indicators.get("x_amber",false))==(x_go and yellow) and
 		bool(indicators.get("z_amber",false))==((not x_go) and yellow) and
@@ -119,4 +135,6 @@ func permitted(waypoint: Vector3, direction: Vector3) -> bool:
 	if absf(direction.x) + absf(direction.z) < 0.001:
 		return true
 	var along_z: bool = absf(direction.z) > absf(direction.x)
+	# Amber is a real caution/stop phase, not an unconditional green pass.
+	if _warning(): return false
 	return along_z if _phase() == 1 else not along_z

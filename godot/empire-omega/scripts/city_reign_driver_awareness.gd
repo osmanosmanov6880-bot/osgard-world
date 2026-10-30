@@ -79,6 +79,13 @@ static func scan(origin: Vector3,angle: float,speed: float,
 static func localized(state: Dictionary,locale: String) -> String:
     if state.is_empty(): return ""
     var lang: String = locale if ["ru","en","zh"].has(locale) else "ru"
+    # The same original signal phase that stops REAL NPC cars also informs
+    # the physical human driver. This advisor does not control player input.
+    if str(state.get("kind",""))=="signal":
+        var amber: bool=str(state.get("phase",""))=="amber"
+        if lang=="ru": return "⚠ ЖЁЛТЫЙ СИГНАЛ ВПЕРЕДИ" if amber else "⚠ КРАСНЫЙ СИГНАЛ ВПЕРЕДИ"
+        if lang=="en": return "⚠ AMBER SIGNAL AHEAD" if amber else "⚠ RED SIGNAL AHEAD"
+        return "⚠ 前方黄灯" if amber else "⚠ 前方红灯"
     var urgent: bool = str(state.get("urgency",""))=="urgent"
     var pedestrian: bool = str(state.get("kind",""))=="pedestrian"
     if lang=="ru":
