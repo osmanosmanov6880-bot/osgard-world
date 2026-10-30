@@ -41,8 +41,8 @@ func _run() -> void:
 	physical.set("wetness",1.0)
 	var original_children: int=physical.get_child_count()
 	var route: Array[Vector3]=[
-		Vector3(-130,0.8,-154),Vector3(-106,0.8,-154),
-		Vector3(-106,0.8,-104)]
+		Vector3(130,0.8,158),Vector3(154,0.8,158),
+		Vector3(154,0.8,208)]
 	physical.call("set_route",route,7.0)
 	check(physical.front_steer_wheels.size()==2 and
 		physical.wheels.size()==4 and
@@ -62,7 +62,9 @@ func _run() -> void:
 	check(physical.velocity.normalized().dot(heading)>0.999 and
 		not physical.get("last_steer_fallback"),
 		"real physics movement direction is now identical to VISIBLE vehicle chassis yaw, no sideways slide")
-	physical.global_position=Vector3(-110,0.8,-154)
+	# A true 156/156 source asphalt junction away from the twelve
+	# independent background cars; preserve ALL physical world colliders.
+	physical.global_position=Vector3(150,0.8,158)
 	physical.set("target_index",1)
 	physical.set("speed",4.0)
 	physical.rotation.y=-PI/2.0
