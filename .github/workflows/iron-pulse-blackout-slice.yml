@@ -292,6 +292,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 220s godot --headless --path iron-pulse-prologue --script res://tests/test_g4_local_device_lab.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"
           grep -q '^IRON PULSE G4 LOCAL DEVICE LAB PASS:' "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"; then exit 1; fi
+      - name: G11 real 3D hazard language, contrast/large text, local privacy and game checkpoint QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 240s godot --headless --path iron-pulse-prologue --script res://tests/test_g11_visual_readability.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g11-visual-readability.log"
+          grep -q '^IRON PULSE G11 READABILITY PASS:' "$RUNNER_TEMP/iron-pulse-g11-visual-readability.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g11-visual-readability.log"; then exit 1; fi
       - name: G10 real native Godot tactical atlas — true coordinates, safe pause, touch and RU/EN
         shell: bash
         run: |
