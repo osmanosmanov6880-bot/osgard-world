@@ -81,6 +81,10 @@ static func localized(state: Dictionary,locale: String) -> String:
     var lang: String = locale if ["ru","en","zh"].has(locale) else "ru"
     # R184: native short legal 90km/h hint, strictly LESS urgent than
     # actual R162 collision, pedestrian or R178 red-signal awareness.
+    if str(state.get("kind",""))=="road_closed":
+        if lang=="ru":return "⚠ ДОРОГА ПЕРЕКРЫТА · ОБЪЕЗД"
+        if lang=="en":return "⚠ ROAD CLOSED · DETOUR"
+        return "⚠ 道路封闭 · 请绕行"
     if str(state.get("kind",""))=="junction_blocked":
         if lang=="ru":return "⚠ ПЕРЕКРЁСТОК ЗАНЯТ"
         if lang=="en":return "⚠ JUNCTION OCCUPIED"
