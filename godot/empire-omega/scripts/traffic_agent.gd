@@ -220,9 +220,13 @@ func _physics_process(delta: float) -> void:
 	var signal_elapsed: float=float(signal_controller.get("elapsed")) if signal_controller!=null else 0.0
 	var source_stop: Dictionary=R178_SIGNAL.approach(global_position,heading,signal_elapsed) if signal_controller!=null else {}
 	last_signal_phase=str(source_stop.get("phase","none"))
-	if signal_controller!=null and not source_stop.is_empty() and (
-			str(source_stop["phase"])=="red" or str(source_stop["phase"])=="amber"):
-		# Red/amber stop BEFORE the original road line, not inside the crossing.
+	last_signal_speed=R178_SIGNAL.speed_cap(global_position,heading,speed,
+		cruising_speed,wetness,signal_elapsed) if signal_controller!=null else cruising_speed
+	# If it is already physically impossible to stop safely on AMBER, the
+	# conservative dilemma-zone rule commits the car to clearing the line.
+	# Do not let the legacy signal-gap limiter secretly override that.
+	if (signal_controller!=null and not source_stop.is_empty() and
+			last_signal_speed<cruising_speed-0.001):
 		signal_distance=float(source_stop["stop_distance"])+SAFETY.MIN_GAP
 	var corner_index: int = (target_index+1)%points.size()
 	var after_corner: Vector3 = points[corner_index]-destination
@@ -240,8 +244,6 @@ func _physics_process(delta: float) -> void:
 	goal = minf(goal,last_follow_speed)
 	# Real phase + existing wet braking. Can only LOWER the original
 	# convoy, obstacle, pedestrian, civic and corner safety limits.
-	last_signal_speed=R178_SIGNAL.speed_cap(global_position,heading,speed,
-		cruising_speed,wetness,signal_elapsed) if signal_controller!=null else cruising_speed
 	goal=minf(goal,last_signal_speed)
 	# B62: fund the real city's zebra crossings to actually calm ordinary
 	# resident traffic. One source-locked speed constraint, AFTER original
