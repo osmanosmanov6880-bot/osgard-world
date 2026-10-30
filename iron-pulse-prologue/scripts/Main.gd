@@ -1789,14 +1789,35 @@ func _layout_hud() -> void:
         priority_panel.offset_right = width-12.0
         priority_panel.offset_top = slot_top
         priority_panel.offset_bottom = maxf(slot_top+76.0,minf(slot_bottom,slot_top+105.0))
+        # PanelContainer honors child minimum heights, not just offsets.
+        # Bound the 320/390 dialogue preview while J/LOG keeps full words.
+        radio_dialogue.custom_minimum_size.y = 42.0
+        radio_dialogue.max_lines_visible = 3
+        radio_dialogue.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+        radio_dialogue.tooltip_text = radio_dialogue.text
         radio_dialogue.add_theme_font_size_override("font_size",11 if short_screen else 12)
         radio_speaker.add_theme_font_size_override("font_size",11)
+        var radio_style := (radio_panel.get_theme_stylebox("panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+        radio_style.content_margin_top = 5
+        radio_style.content_margin_bottom = 5
+        radio_style.content_margin_left = 11
+        radio_style.content_margin_right = 11
+        radio_panel.add_theme_stylebox_override("panel",radio_style)
         crew_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
         core_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
         _g13_story_layout = "single_story_card" if short_screen else "stacked_story_below_telemetry"
     else:
         _g13_touch_safe_top = 0.0
         _g13_story_layout = "desktop"
+        radio_dialogue.custom_minimum_size.y = 70.0
+        radio_dialogue.max_lines_visible = -1
+        radio_dialogue.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+        var radio_style := (radio_panel.get_theme_stylebox("panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
+        radio_style.content_margin_top = 9
+        radio_style.content_margin_bottom = 9
+        radio_style.content_margin_left = 14
+        radio_style.content_margin_right = 14
+        radio_panel.add_theme_stylebox_override("panel",radio_style)
 
         radio_panel.offset_left = -420.0
         radio_panel.offset_right = -18.0
@@ -2103,6 +2124,7 @@ func _refresh_radio_ui() -> void:
     if not line.is_empty():
         radio_speaker.text = str(line["speaker"]) + "   /   ACT " + str(line["act"])
         radio_dialogue.text = str(line["text"])
+        radio_dialogue.tooltip_text = radio_dialogue.text
     radio_panel.visible = started and not paused and not journal_panel.visible and not cinematic_view and radio_ttl > 0.0
     priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible and not cinematic_view
     _reflow_mobile_story_ui()
