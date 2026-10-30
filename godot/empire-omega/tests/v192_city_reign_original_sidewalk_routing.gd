@@ -44,7 +44,9 @@ func _run() -> void:
 	check(PAVEMENT.to_sidewalk_route(route,0)==foot,
 		"same saved city and citizen deterministically produce same sidewalk route")
 	var malformed: Array[Vector3]=[first,Vector3(NAN,0,0),finish]
-	check(PAVEMENT.to_sidewalk_route(malformed,0)==malformed,
+	var unchanged: Array[Vector3]=PAVEMENT.to_sidewalk_route(malformed,0)
+	check(unchanged.size()==3 and unchanged[0]==first and
+		not unchanged[1].is_finite() and unchanged[2]==finish,
 		"invalid coordinate fails to original route instead of inventing navigation")
 	check(not PAVEMENT.on_original_sidewalk(Vector3(300,0,300)) and
 		PAVEMENT.on_original_sidewalk(Vector3(52+6,0,52)),
