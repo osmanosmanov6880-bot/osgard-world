@@ -112,7 +112,10 @@ func sync_real_city(camera_focus: Vector3,clock: float,
 		selected.clear()
 		_hide_all()
 		return
-	reselect_elapsed+=clampf(delta,0.0,0.10)
+	# Count authentic foreground elapsed time up to ONE selection period.
+	# A long valid render frame may delay but never trigger multiple
+	# reselect scans or allocate additional native light nodes.
+	reselect_elapsed+=clampf(delta,0.0,RESELECT_INTERVAL_S)
 	if changed or reselect_elapsed>=RESELECT_INTERVAL_S or selected.is_empty():
 		_choose_nearest(camera_focus,quality)
 		reselect_elapsed=0.0
