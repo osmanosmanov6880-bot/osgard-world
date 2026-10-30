@@ -234,6 +234,8 @@ var vision: IPVisionProfile = IPVisionProfile.new()
 var vision_last_save_ok: bool = false
 var control_comfort: IPControlComfort = IPControlComfort.new()
 var control_comfort_last_save_ok: bool = false
+var captions: IPCaptionContinuity = IPCaptionContinuity.new()
+var caption_last_save_ok: bool = false
 var _vision_panel_baselines: Dictionary = {}
 var walking_phase: float = 0.0
 var _terminal_active_material: StandardMaterial3D
@@ -328,6 +330,7 @@ var touch_device_lab_button: Button
 var touch_atlas_button: Button
 var touch_vision_button: Button
 var touch_pause_button: Button
+var touch_caption_button: Button
 var _g13_story_layout: String = "desktop"
 var _g13_touch_safe_top: float = 0.0
 var device_lab_panel: PanelContainer
@@ -382,6 +385,7 @@ func _ready() -> void:
         run_archive.load_archive()
         vision.load_from()
         control_comfort.load_from()
+        captions.load_from()
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -631,6 +635,12 @@ func _publish_web_state() -> void:
         state["continue_button_visible"] = continue_button.visible
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
     state["g13_mobile_hud"] = _g13_mobile_layout_readout()
+    state["g14_caption_continuity"] = captions.readout()
+    state["g14_caption_continuity"]["visible"] = radio_panel != null and radio_panel.visible
+    state["g14_caption_continuity"]["local_save_ok"] = caption_last_save_ok
+    state["g14_caption_continuity"]["remaining_seconds"] = snappedf(radio_ttl,0.1)
+    state["g14_caption_continuity"]["touch_rect"] = _hud_rect(touch_caption_button) if touch_caption_button != null else []
+    state["g14_caption_continuity"]["localized_label"] = captions.label(locale)
     state["hud_rects"] = {
         "header": _hud_rect(header_panel),
         "telemetry": _hud_rect(side_panel),
@@ -1605,6 +1615,12 @@ func _make_touch_controls() -> void:
     touch_pause_button = _touch_button(touch_ui,"PAUSE",111,-357,94)
     touch_pause_button.add_theme_font_size_override("font_size",14)
     touch_pause_button.pressed.connect(_pause_toggle)
+    # Free middle-column 51px touch area between PLAN and FAST.
+    touch_caption_button = _touch_button(touch_ui,"CC / F4",111,-299,94)
+    touch_caption_button.name = "G14_RealStoryCaptionContinuity"
+    touch_caption_button.add_theme_font_size_override("font_size",13)
+    touch_caption_button.pressed.connect(_cycle_caption_mode)
+    _refresh_caption_button()
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1875,6 +1891,8 @@ func _apply_cinematic_view() -> void:
         touch_vision_button.visible = not cinematic_view and touch_ui.visible
     if touch_pause_button != null:
         touch_pause_button.visible = not cinematic_view and touch_ui.visible
+    if touch_caption_button != null:
+        touch_caption_button.visible = not cinematic_view and touch_ui.visible
     if cinematic_view and guide_panel != null:
         guide_panel.visible = false
     if cinematic_view and forecast_panel != null:
@@ -1946,6 +1964,7 @@ func _apply_vision_profile() -> void:
         obsidian_world.set_accessibility(high)
     _refresh_vision_label()
     _refresh_control_comfort_label()
+    _refresh_caption_button()
 
 func _refresh_control_comfort_label() -> void:
     if control_comfort_button != null:
@@ -2124,6 +2143,31 @@ func _cycle_director_shot() -> void:
     if started and not paused and not session.finished() and cinematic_view:
         reactor_atrium.cycle_director_shot()
 
+func _refresh_caption_button() -> void:
+    if touch_caption_button == null:
+        return
+    match captions.mode:
+        "extended":
+            touch_caption_button.text = "CC / 24S"
+        "pinned":
+            touch_caption_button.text = "CC / PIN"
+        _:
+            touch_caption_button.text = "CC / F4"
+    touch_caption_button.tooltip_text = captions.label(locale)
+
+func _cycle_caption_mode() -> void:
+    # Player-selected original IPStoryDirector display timing only.
+    # No speech synthesis, network translator, or simulated source event.
+    captions.cycle()
+    caption_last_save_ok = false
+    if DisplayServer.get_name() != "headless":
+        caption_last_save_ok = captions.save_to()
+    if captions.mode == "extended" and started and not session.finished() and not story.latest(locale).is_empty():
+        radio_ttl = maxf(radio_ttl,captions.duration_seconds(11.0))
+    _refresh_caption_button()
+    _refresh_radio_ui()
+    _publish_web_state()
+
 func _refresh_radio_ui() -> void:
     if radio_panel == null:
         return
@@ -2132,8 +2176,11 @@ func _refresh_radio_ui() -> void:
         radio_speaker.text = str(line["speaker"]) + "   /   ACT " + str(line["act"])
         radio_dialogue.text = str(line["text"])
         radio_dialogue.tooltip_text = radio_dialogue.text
-    radio_panel.visible = started and not paused and not journal_panel.visible and not cinematic_view and radio_ttl > 0.0
     priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible and not cinematic_view
+    radio_panel.visible = captions.should_display(
+        started and not session.finished(),not line.is_empty(),radio_ttl,
+        priority_panel.visible,
+        paused or journal_panel.visible or cinematic_view)
     _reflow_mobile_story_ui()
     crew_priority_button.text = _copy("choice_crew")
     core_priority_button.text = _copy("choice_core")
@@ -2197,7 +2244,7 @@ func _g13_mobile_layout_readout() -> Dictionary:
 
 func _story_event(event_name: String) -> void:
     if story.on_game_event(event_name,session.priority_id):
-        radio_ttl = 11.0
+        radio_ttl = captions.duration_seconds(11.0)
     _refresh_radio_ui()
 
 func _choose_priority(choice: String) -> void:
@@ -2334,7 +2381,7 @@ func _continue_checkpoint() -> bool:
     intro_panel.visible = false
     pause_panel.visible = false
     end_panel.visible = false
-    radio_ttl = 11.0
+    radio_ttl = captions.duration_seconds(11.0)
     _update_scenario_picker()
     _refresh_hud()
     _refresh_radio_ui()
@@ -2412,7 +2459,7 @@ func start_run() -> void:
     cinematic_view = false
     _apply_cinematic_view()
     story.reset(selected_scenario)
-    radio_ttl = 12.0
+    radio_ttl = captions.duration_seconds(12.0)
     checkpoint_clock = 0.0
     started = true
     paused = false
@@ -2449,7 +2496,7 @@ func _restart() -> void:
     if campaign.active and campaign.index > 0:
         story.on_campaign_carryover(str(campaign.records[campaign.index-1]["priority"]))
     campaign_echoes.sync(campaign,locale)
-    radio_ttl = 12.0
+    radio_ttl = captions.duration_seconds(12.0)
     checkpoint_clock = 0.0
     if DisplayServer.get_name() != "headless":
         checkpoint_store.clear(checkpoint_path)
@@ -2515,6 +2562,7 @@ func _toggle_language() -> void:
     _refresh_auto_quality_ui()
     _refresh_vision_label()
     _refresh_control_comfort_label()
+    _refresh_caption_button()
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
     campaign_echoes.sync(campaign,locale)
@@ -2649,6 +2697,9 @@ func _input(event: InputEvent) -> void:
             return
         if event.keycode == KEY_F7 and (atlas_panel == null or not atlas_panel.visible):
             _cycle_control_comfort()
+            return
+        if event.keycode == KEY_F4 and (atlas_panel == null or not atlas_panel.visible):
+            _cycle_caption_mode()
             return
         if event.keycode == KEY_SHIFT and control_comfort.handle_shift_pressed(
                 started and not paused and not session.finished()):
@@ -2874,7 +2925,7 @@ func _process(delta: float) -> void:
         if sector != active_sector:
             active_sector = sector
             if story.enter_sector(sector):
-                radio_ttl = 11.0
+                radio_ttl = captions.duration_seconds(11.0)
                 _refresh_radio_ui()
         if not visited_sectors.has(sector):
             visited_sectors.append(sector)
