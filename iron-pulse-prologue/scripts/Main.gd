@@ -1671,6 +1671,13 @@ func _layout_hud() -> void:
     touch_ui.visible = (width < 850.0 or DisplayServer.is_touchscreen_available()) and (not paused or pause_panel == null or not pause_panel.visible)
     vitals_panel.visible = width >= 1000.0
     subtitle_label.visible = not narrow
+    # The original long objective and guidance were forcing a 158px header
+    # onto a 101px mobile slot. Bound REAL Label min heights, not only offsets.
+    # Original full strings remain in the guide and as native tooltip text.
+    objective_label.max_lines_visible = 2 if narrow else -1
+    guidance_label.max_lines_visible = 1 if narrow else -1
+    objective_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if narrow else TextServer.OVERRUN_NO_TRIMMING
+    guidance_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if narrow else TextServer.OVERRUN_NO_TRIMMING
     if narrow and quality_mode == "hero" and art_stage != null:
         quality_mode = "eco"
         art_stage.set_quality("eco")
@@ -1928,9 +1935,9 @@ func _apply_vision_profile() -> void:
             border.bg_color = Color(0.004,0.014,0.023,0.994)
             border.border_color = Color(0.65,0.88,0.93,0.92)
             border.set_border_width_all(2)
-        if compact and node == side_panel:
-            # G13: margins are part of the native minimum panel height.
-            # This must remain true in BOTH G11 contrast and large-text modes.
+        if compact and (node == side_panel or node == header_panel):
+            # G13: minimum content height, not offsets, owns native geometry.
+            # Keep both areas compact in G11 standard/contrast/large modes.
             border.content_margin_top = 5
             border.content_margin_bottom = 5
             border.content_margin_left = 10
@@ -3104,12 +3111,14 @@ func _refresh_hud() -> void:
     if objective_key == "repair" and session.scenario_id != "blackout":
         display_key = "repair_" + session.scenario_id
     objective_label.text = _copy(display_key)
+    objective_label.tooltip_text = objective_label.text
     subtitle_label.text = _copy("scenario_title_" + selected_scenario)
     if started:
         subtitle_label.text += " / " + _copy("sector_" + active_sector)
     if campaign.active:
         subtitle_label.text += " / " + _copy("campaign_progress").format({"index":campaign.index+1})
     _update_guidance(objective_key)
+    guidance_label.tooltip_text = guidance_label.text
     _update_terminal_highlights(objective_key)
     telemetry_label.text = "%s  %d°C    |    %s  %d%%\n%s  %d%%    |    %s  %d%%    |    %s  %02d:%02d" % [
         _copy("heat"),int(session.heat),_copy("oxygen"),int(session.oxygen),
