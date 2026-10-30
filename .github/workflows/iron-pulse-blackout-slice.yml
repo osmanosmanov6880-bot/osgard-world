@@ -55,13 +55,14 @@ jobs:
           python3 iron-pulse-prologue/ci/test_release_vault_g5.py 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g5-unit.log"
           grep -q 'Ran 5 tests' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
           grep -q '^OK$' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
-      - name: G6 physical-device evidence schema and fail-closed security (synthetic tests only)
+      - name: G6 security schema tests (SYNTHETIC ONLY)
         shell: bash
         run: |
           set -euo pipefail
           python3 iron-pulse-prologue/ci/test_device_acceptance_g6.py 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g6-unit.log"
           grep -q 'Ran 17 tests' "$RUNNER_TEMP/iron-pulse-g6-unit.log"
-          grep -q '^OK
+          grep -q '^OK$' "$RUNNER_TEMP/iron-pulse-g6-unit.log"
+      - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
           use-dotnet: false
@@ -388,7 +389,7 @@ jobs:
             --vault "$RUNNER_TEMP/iron-pulse-g5-offline-stage"
           test ! -e "$RUNNER_TEMP/iron-pulse-g5-offline-stage/state/current.json"
           printf '%s\n' 'G5 actual release package and staged verification PASS; no activation, no deployment, PRODUCTION HOLD' > iron-pulse-prologue/build/proof/G5_STAGE_RELEASE_HOLD.txt
-      - name: G6 verify real exact-head release ZIP but REFUSE hardware GO without actual evidence
+      - name: G6 actual G5 archive verified; physical device evidence missing -> HARD RELEASE HOLD
         shell: bash
         run: |
           set -euo pipefail
@@ -405,15 +406,14 @@ jobs:
             --expect-hold
           python3 - <<'PY'
           import json
-          p='iron-pulse-prologue/build/g6-proof/G6_HARDWARE_RELEASE_HOLD.json'
-          d=json.load(open(p,encoding='utf-8'))
+          d=json.load(open('iron-pulse-prologue/build/g6-proof/G6_HARDWARE_RELEASE_HOLD.json'))
           assert d['status']=='RELEASE_HOLD'
           assert d['production_approved'] is False
           assert d['commercial_release_allowed'] is False
           assert d['physical_hardware_independently_verified'] is False
           assert d['validated_g4_reports']==0
           assert d['deployment_performed'] is False
-          print('G6 PASS: true release verified, no physical hardware evidence; PRODUCTION HOLD')
+          print('G6 TRUE BUNDLE PASS / PHYSICAL DEVICE RELEASE HOLD')
           PY
       - name: Retain build proof even if packaging fails
         if: always()
