@@ -146,7 +146,7 @@ def assess(archive,source,bundle,root,ops_head=""):
             require(child.get("production_approved") is False
                     and child.get("commercial_release_allowed") is False,
                     "upstream subgate falsely grants production")
-        except (g6.EvidenceError,g7.TrialError,g9.OpsError,vault.VaultError,
+        except (LaunchError,g6.EvidenceError,g7.TrialError,g9.OpsError,vault.VaultError,
                 OSError,ValueError,KeyError,TypeError) as ex:
             out["upstream_statuses"][key]="RELEASE_HOLD"
             out["errors"].append(key+" invalid evidence: "+str(ex)[:100])
