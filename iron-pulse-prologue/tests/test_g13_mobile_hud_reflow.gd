@@ -48,7 +48,8 @@ func _run() -> void:
         typeof(m["source_engine_mutated"]) == TYPE_BOOL and m["source_engine_mutated"] == false,
         "G13 must honestly derive scene positions and never change IPCrisisEngine")
     _test(m["layout"] == "stacked_story_below_telemetry" and
-        m["hud_card_visible"] and m["radio_visible"] and not m["priority_visible"],
+        m["hud_card_visible"] and m["radio_visible"] and not m["priority_visible"] and
+        not m["emergency_footer_from_real_engine"],
         "390x844 uses separate live telemetry and authentic MARA radio card")
     _test(_bottom(telemetry) < float(radio[1])-2.0,
         "Real 390px top HUD card must not overlap actual radio panel")
@@ -74,8 +75,13 @@ func _run() -> void:
         m["radio_visible"] and not m["priority_visible"],
         "320x720 gives priority to unaltered real narrative instead of overlapping telemetry")
     _test(float(radio[1]) >= 116.0 and
-        _bottom(radio) < float(m["touch_first_row_y"]) - 1.0,
+        _bottom(radio) < float(m["touch_first_row_y"]) - 1.0 and
+        m["touch_first_row_y"] == 249.0,
         "Real short-screen radio must fit between native header and physical controls")
+    _test(m["emergency_footer_from_real_engine"] and
+        str(m["emergency_footer"]).contains(str(int(game.session.oxygen))) and
+        str(m["emergency_footer"]).contains(str(int(game.session.heat))),
+        "Real source heat/oxygen must remain readable while short-screen MARA replaces the telemetry card")
     _test(game.radio_dialogue.text.contains("МАРА") and
         game.session.checkpoint()["switches"] == engine_actions["switches"],
         "Reflow keeps original MARA text and cannot switch a real power bus")
@@ -88,14 +94,23 @@ func _run() -> void:
 
     # Source-only scenario fixture: show a real-game priority selection panel,
     # not a fake completion, player identity or external telemetry.
+    # When a real timed radio ends, full telemetry must recover without
+    # having to reload a mission or change source-engine choices.
+    game.radio_ttl = 0.0
+    game._refresh_radio_ui()
+    m = game._g13_mobile_layout_readout()
+    _test(not m["radio_visible"] and m["hud_card_visible"] and
+        not m["emergency_footer_from_real_engine"],
+        "Original live telemetry must automatically return after MARA's authored TTL")
+    game.radio_ttl = 11.0
     game.session.core_scanned = true
     game.session.priority_id = ""
     game._refresh_radio_ui()
     await process_frame
     m = game._g13_mobile_layout_readout()
     _test(m["priority_visible"] and not m["radio_visible"] and
-        not m["hud_card_visible"],
-        "Critical real crew/core decision must take visual precedence over radio")
+        not m["hud_card_visible"] and m["emergency_footer_from_real_engine"],
+        "Real crew/core choice takes precedence without hiding source-derived emergency vitals")
     _test(_bottom(m["priority_rect"]) <= float(m["touch_first_row_y"])-1.0,
         "Real native priority buttons must remain above touch actions at 320px")
     _test(game.crew_priority_button.get_rect().size.y >= 44 and
