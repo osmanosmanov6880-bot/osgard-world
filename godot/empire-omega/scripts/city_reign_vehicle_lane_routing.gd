@@ -17,8 +17,8 @@ static func _grid_axis(value: float) -> bool:
 	if not is_finite(value):return false
 	var n: int=roundi((value-MOBILITY.ROAD_MIN)/MOBILITY.ROAD_SPACING)
 	if n<0 or n>=MOBILITY.ROAD_SIZE:return false
-	return absf(value-(MOBILITY.ROAD_MIN+float(n)*MOBILITY.ROAD_SPACING))<
-		GRID_TOLERANCE_M
+	return (absf(value-(MOBILITY.ROAD_MIN+float(n)*MOBILITY.ROAD_SPACING))<
+		GRID_TOLERANCE_M)
 
 static func source_grid_vertex(at: Vector3) -> bool:
 	return at.is_finite() and _grid_axis(at.x) and _grid_axis(at.z)
@@ -74,8 +74,8 @@ static func to_right_hand_lane(original: Array[Vector3]) -> Array[Vector3]:
 		# At a true 90-degree turn, the physical car goes through the
 		# intersection of its incoming and outgoing right-hand lanes.
 		# This prevents a backward hook / diagonal into opposing traffic.
-		if before!=Vector3.ZERO and after!=Vector3.ZERO and
-				before.dot(after)<-0.1:
+		if (before!=Vector3.ZERO and after!=Vector3.ZERO and
+				before.dot(after)<-0.1):
 			return unchanged # A* U-turn: don't invent a lane arc
 		var offset: Vector3=Vector3.ZERO
 		if before!=Vector3.ZERO:
