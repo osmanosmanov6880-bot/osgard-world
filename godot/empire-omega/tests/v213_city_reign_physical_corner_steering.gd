@@ -60,6 +60,11 @@ func _run() -> void:
 		"centre in asphalt is insufficient: native BoxShape half-width must fit before allowing motion")
 	check(not STEER.safe_next_step(edge,Vector3.RIGHT,8.0,0.1),
 		"road-edge failure refuses physical movement, never clipping native collision into sidewalk")
+	var slanted:=Vector3(-99.2,0.8,-152.9)
+	check(STEER.source_road_footprint_safe(slanted,Vector3.RIGHT) and
+		not STEER.source_road_footprint_safe(slanted,Vector3.BACK) and
+		not STEER.safe_next_step(slanted,Vector3.BACK,4.0,0.1),
+		"ALL FOUR real rotated 4.1 by 2.25m native car corners are tested, not just car centre")
 	check(not STEER.steer(NAN,start,turn,6.0,0.1,1.0)["valid"] and
 		not STEER.steer(0,start,turn,6.0,NAN,1.0)["valid"] and
 		not STEER.safe_next_step(start,Vector3(NAN,0,0),6.0,0.1),
