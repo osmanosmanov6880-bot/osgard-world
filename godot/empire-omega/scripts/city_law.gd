@@ -3,7 +3,7 @@ extends RefCounted
 ## uses only JSON-safe scalars/arrays; cooldowns use elapsed gameplay seconds.
 const MAX_HEAT := 3
 const MAX_FINE := 200000
-const OFFENCES := {"speeding":90,"collision":180,"reckless":140}
+const OFFENCES := {"speeding":90,"collision":180,"reckless":140,"red_light":115}
 const OFFENCE_COOLDOWN := 18.0
 const ESCAPE_SECONDS := 70.0
 
