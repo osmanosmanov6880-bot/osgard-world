@@ -436,11 +436,49 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
-                        # Verify original MARA radio immediately after opening the
-                        # real game. Later tests can exceed its legitimate TTL.
+                        # G13 actual mobile radio and panel geometry, not a
+                        # screenshot mask. The real MARA story must begin now.
                         assert state.get("radio_visible") is True and (
                             state.get("story",{}).get("latest_key")=="arrival_blackout"), (
-                            "Original 3D story radio must actually open at shift start",name)
+                            "Actual Godot story radio absent at first playable operation",name)
+                        layout=state.get("g13_mobile_hud",{})
+                        assert layout.get("schema")=="IRON_PULSE_MOBILE_HUD_REFLOW_G13" and (
+                            layout.get("source_engine_mutated") is False and
+                            layout.get("remote_analytics") is False), (
+                            "G13 must report honest source-based native panel layout",name,layout)
+                        if mobile:
+                            radio_rect=layout.get("radio_rect")
+                            actual_touch_top=layout.get("touch_first_row_y",0)
+                            head_rect=state.get("hud_rects",{}).get("header",[])
+                            assert layout.get("layout")=="single_story_card" and (
+                                layout.get("radio_visible") is True and
+                                layout.get("hud_card_visible") is False and
+                                layout.get("emergency_footer_from_real_engine") is True and
+                                radio_rect and head_rect and actual_touch_top>300), (
+                                "Real 390px must show one authentic source-story card while retaining full live vitals",
+                                name,layout)
+                            assert head_rect[1]+head_rect[3]+4<radio_rect[1] and (
+                                radio_rect[1]+radio_rect[3]+2<actual_touch_top), (
+                                "Real 390px story must clear both mission header and physical touch buttons",
+                                name,layout)
+                            footer=layout.get("emergency_footer","")
+                            assert str(int(state["heat"])) in footer and (
+                                str(int(state["oxygen"])) in footer and
+                                str(int(state["crew_health"])) in footer and
+                                str(int(state["door_charge"])) in footer), (
+                                "G13 must retain all four real engine vitals in the mobile story footer",name,footer)
+                            assert state.get("scanned") is False and state.get("switches",0)==0, (
+                                "G13 visual layout cannot fabricate source gameplay",name)
+                            page.screenshot(path=str(output/f"g13-real-story-no-overlap-{name}.png"),
+                                            animations="disabled",timeout=60000)
+                        report.setdefault("g13_mobile_story_reflow",{})[name]={
+                            "native":True,
+                            "layout":layout.get("layout"),
+                            "panel_geometry_checked":mobile,
+                            "actual_story_from_engine":True,
+                            "hardware_certified":False,
+                            "telemetry_uploaded":False
+                        }
                         g2_after_start=state.get("g2_field_protocol",{})
                         assert g2_after_start.get("selected")=="" and (
                             g2_after_start.get("available") is False), (
@@ -1128,7 +1166,7 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert narrative.get("latest_key") == "arrival_blackout", (
                             "Wrong chapter opening after real scenario selection",narrative)
                         assert narrative.get("journal_entries",0) >= 1 and type(state.get("radio_visible")) is bool, (
-                            "Original story journal lost after genuine timed radio dismissal",narrative)
+                            "Original story journal lost after legitimate short radio TTL",narrative)
                         assert state.get("priority_visible") is False, (
                             "Crew/core priority offered before real scanner",state)
                         assert "МАРА" in state.get("radio_text","") or "MARA" in state.get("radio_text",""), (
