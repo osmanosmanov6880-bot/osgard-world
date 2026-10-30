@@ -27,6 +27,8 @@ var walker_population_high: int=0
 var total_car_snapshots: int=0
 var stopped_car_snapshots: int=0
 var car_crosswalk_yield_snapshots: int=0
+var genuine_junction_yield_snapshots: int=0
+var longest_original_junction_hold_s: float=0.0
 var walker_wait_snapshots: int=0
 var walker_walking_snapshots: int=0
 var highest_original_car_stop_seconds: float=0.0
@@ -54,6 +56,8 @@ func begin() -> void:
 	total_car_snapshots=0
 	stopped_car_snapshots=0
 	car_crosswalk_yield_snapshots=0
+	genuine_junction_yield_snapshots=0
+	longest_original_junction_hold_s=0.0
 	walker_wait_snapshots=0
 	walker_walking_snapshots=0
 	highest_original_car_stop_seconds=0.0
@@ -116,6 +120,13 @@ func _sample_existing_agents(cars: Array,residents: Array,clock: float) -> void:
 		if absf(speed)<0.35:stopped_car_snapshots+=1
 		if bool(car.get("last_crosswalk_occupied")):
 			car_crosswalk_yield_snapshots+=1
+		if car is Node3D:
+			if bool(car.get("last_junction_guard_active")):
+				genuine_junction_yield_snapshots+=1
+			var hold: float=float(car.get("junction_hold_seconds"))
+			if is_finite(hold):
+				longest_original_junction_hold_s=maxf(
+					longest_original_junction_hold_s,maxf(0.0,hold))
 		highest_original_car_stop_seconds=maxf(
 			highest_original_car_stop_seconds,maxf(0.0,stopped_s))
 	for person in residents:
@@ -171,6 +182,8 @@ func report() -> Dictionary:
 		"mean_stopped_cars_per_sample":float(stopped_car_snapshots)/float(maxi(1,snapshots)),
 		"stopped_car_observations":stopped_car_snapshots,
 		"real_crosswalk_yield_observations":car_crosswalk_yield_snapshots,
+		"real_junction_box_yield_observations":genuine_junction_yield_snapshots,
+		"longest_original_junction_box_hold_s":longest_original_junction_hold_s,
 		"walker_walk_observations":walker_walking_snapshots,
 		"walker_wait_observations":walker_wait_snapshots,
 		"longest_original_car_stop_s":highest_original_car_stop_seconds,
