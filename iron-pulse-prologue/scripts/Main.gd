@@ -1712,6 +1712,17 @@ func _layout_hud() -> void:
     # compact telemetry label and genuinely frees vertical space for MARA.
     allocation_label.visible = not narrow
     threat_label.visible = not narrow
+    # Exact TWO-line mobile dashboard, avoiding Godot's extra auto-wrap rows.
+    telemetry_label.autowrap_mode = TextServer.AUTOWRAP_OFF if narrow else TextServer.AUTOWRAP_WORD_SMART
+    telemetry_label.clip_text = narrow
+    # Content margins are part of the actual PanelContainer minimum-size
+    # calculation, unlike simply writing smaller desired offset_bottom values.
+    var telemetry_style: StyleBoxFlat = side_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+    telemetry_style.content_margin_top = 5.0 if narrow else 9.0
+    telemetry_style.content_margin_bottom = 5.0 if narrow else 9.0
+    telemetry_style.content_margin_left = 10.0 if narrow else 14.0
+    telemetry_style.content_margin_right = 10.0 if narrow else 14.0
+    side_panel.add_theme_stylebox_override("panel",telemetry_style)
     # Detailed quality metrics remain available via F3; save screen space.
     quality_state_label.visible = not narrow
     adaptive_performance.compact_device = narrow
@@ -1779,6 +1790,12 @@ func _layout_hud() -> void:
         overlay.anchor_right = radio_anchor
         overlay.anchor_top = radio_anchor
         overlay.anchor_bottom = radio_anchor
+    var radio_style: StyleBoxFlat = radio_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+    radio_style.content_margin_top = 5.0 if narrow else 9.0
+    radio_style.content_margin_bottom = 5.0 if narrow else 9.0
+    radio_style.content_margin_left = 11.0 if narrow else 14.0
+    radio_style.content_margin_right = 11.0 if narrow else 14.0
+    radio_panel.add_theme_stylebox_override("panel",radio_style)
     if narrow:
         # Real touch controls begin at viewport height - 471 CSS px.
         # Radio and priority must finish ABOVE physical LAB/MAP/SHOT buttons.
@@ -1798,8 +1815,8 @@ func _layout_hud() -> void:
         radio_speaker.add_theme_font_size_override("font_size",10)
         # A full source message remains in J / LOG. The visible mobile
         # preview has a strict vertical budget rather than stealing controls.
-        radio_dialogue.max_lines_visible = 3 if short_screen else 4
-        radio_dialogue.custom_minimum_size.y = 41.0 if short_screen else 48.0
+        radio_dialogue.max_lines_visible = 2
+        radio_dialogue.custom_minimum_size.y = 28.0
         radio_dialogue.tooltip_text = radio_dialogue.text
         crew_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
         core_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
@@ -2114,7 +2131,16 @@ func _refresh_radio_ui() -> void:
     var line: Dictionary = story.latest(locale)
     if not line.is_empty():
         radio_speaker.text = str(line["speaker"]) + "   /   ACT " + str(line["act"])
-        radio_dialogue.text = str(line["text"])
+        var source_words: String = str(line["text"])
+        var width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
+        if width < 650.0:
+            # The JOURNAL retains source_words in full; this is a genuine
+            # short visual excerpt, not edited or fabricated story state.
+            var height: float = float(_browser_css_size.y) if _browser_css_size.y > 0 else get_viewport().get_visible_rect().size.y
+            var max_letters: int = 43 if height < 790.0 else 56
+            radio_dialogue.text = source_words.substr(0,max_letters) + ("… [J]" if source_words.length() > max_letters else "")
+        else:
+            radio_dialogue.text = source_words
     radio_panel.visible = started and not paused and not journal_panel.visible and not cinematic_view and radio_ttl > 0.0
     priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible and not cinematic_view
     _reflow_mobile_story_ui()
@@ -3112,13 +3138,17 @@ func _refresh_hud() -> void:
         var risk_word: String = str(risk["tier"])
         if locale == "ru":
             risk_word = "ОПАСНО" if risk_word in ["CRITICAL","FAILED"] else "ВНИМАНИЕ" if risk_word == "WATCH" else "НОРМА"
+        # All five live metrics, real allocation and color-independent risk
+        # remain visible in ONLY TWO native Label rows; the hidden desktop
+        # labels retain full details and remain available via diagnostics.
         telemetry_label.text = (
-            "HEAT %d°C  AIR %d%%  CREW %d%%\nDOOR %d%%  T %02d:%02d  RESC %d/2\nA:%s B:%s  A7/%s" if locale == "en" else
-            "ТЕПЛО %d°C  ВОЗД %d%%  ЭКИП %d%%\nШЛЮЗ %d%%  Т %02d:%02d  СПАС %d/2\nA:%s B:%s  A7/%s"
+            "HEAT:%d°C AIR:%d%% CREW:%d%% DOOR:%d%%\nT:%02d:%02d A:%s B:%s RESC:%d/2 %s" if locale == "en" else
+            "Т:%d°C ВОЗД:%d%% ЭКИП:%d%% ШЛЮЗ:%d%%\nТ:%02d:%02d A:%s B:%s СПАС:%d/2 %s"
         ) % [
             int(session.heat),int(session.oxygen),int(session.crew_health),
             int(session.door_charge),floori(session.time_left/60.0),int(session.time_left)%60,
-            session.relays_activated.size(),session.bus_a.to_upper(),session.bus_b.to_upper(),risk_word]
+            session.bus_a.to_upper().substr(0,3),session.bus_b.to_upper().substr(0,3),
+            session.relays_activated.size(),risk_word]
         # Read-only full breakdown still exists for native tooling and PC HUD.
         allocation_label.text = "A:%s B:%s %d/2" % [
             session.bus_a.to_upper(),session.bus_b.to_upper(),session.relays_activated.size()]
