@@ -55,6 +55,13 @@ jobs:
           python3 iron-pulse-prologue/ci/test_release_vault_g5.py 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g5-unit.log"
           grep -q 'Ran 5 tests' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
           grep -q '^OK$' "$RUNNER_TEMP/iron-pulse-g5-unit.log"
+      - name: G6 security schema tests (SYNTHETIC ONLY)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 iron-pulse-prologue/ci/test_device_acceptance_g6.py 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g6-unit.log"
+          grep -q 'Ran 17 tests' "$RUNNER_TEMP/iron-pulse-g6-unit.log"
+          grep -q '^OK$' "$RUNNER_TEMP/iron-pulse-g6-unit.log"
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
@@ -382,6 +389,32 @@ jobs:
             --vault "$RUNNER_TEMP/iron-pulse-g5-offline-stage"
           test ! -e "$RUNNER_TEMP/iron-pulse-g5-offline-stage/state/current.json"
           printf '%s\n' 'G5 actual release package and staged verification PASS; no activation, no deployment, PRODUCTION HOLD' > iron-pulse-prologue/build/proof/G5_STAGE_RELEASE_HOLD.txt
+      - name: G6 actual G5 archive verified; physical device evidence missing -> HARD RELEASE HOLD
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p iron-pulse-prologue/build/g6-private-evidence iron-pulse-prologue/build/g6-proof
+          test ! -f iron-pulse-prologue/build/g6-private-evidence/evidence.json
+          BUNDLE="iron-pulse-prologue/build/g5-release/IRON_PULSE_WORLD_G5_RELEASE_HOLD.zip"
+          HASH="$(sha256sum "$BUNDLE" | cut -d' ' -f1)"
+          python3 iron-pulse-prologue/ci/device_acceptance_g6.py \
+            --archive "$BUNDLE" \
+            --source-sha "${{ github.event.pull_request.head.sha || github.sha }}" \
+            --bundle-sha256 "$HASH" \
+            --evidence-dir iron-pulse-prologue/build/g6-private-evidence \
+            --output iron-pulse-prologue/build/g6-proof/G6_HARDWARE_RELEASE_HOLD.json \
+            --expect-hold
+          python3 - <<'PY'
+          import json
+          d=json.load(open('iron-pulse-prologue/build/g6-proof/G6_HARDWARE_RELEASE_HOLD.json'))
+          assert d['status']=='RELEASE_HOLD'
+          assert d['production_approved'] is False
+          assert d['commercial_release_allowed'] is False
+          assert d['physical_hardware_independently_verified'] is False
+          assert d['validated_g4_reports']==0
+          assert d['deployment_performed'] is False
+          print('G6 TRUE BUNDLE PASS / PHYSICAL DEVICE RELEASE HOLD')
+          PY
       - name: Retain build proof even if packaging fails
         if: always()
         uses: actions/upload-artifact@v4
@@ -395,5 +428,6 @@ jobs:
             iron-pulse-prologue/build/world-preview
             iron-pulse-prologue/build/world-evidence
             iron-pulse-prologue/build/g5-release
+            iron-pulse-prologue/build/g6-proof
           if-no-files-found: warn
           retention-days: 14
