@@ -20,6 +20,7 @@ const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
 const DEVICE_BENCHMARK = preload("res://scripts/horizon_device_frame_benchmark.gd")
+const R183_MOBILITY_LAB = preload("res://scripts/city_reign_mobility_evidence.gd")
 const R177_FIRST_SESSION = preload("res://scripts/city_reign_first_session_observer.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
@@ -90,6 +91,7 @@ var diagnostic_timer := 0.0
 var adaptive_graphics = ADAPTIVE_GRAPHICS.new()
 var frame_metrics = FRAME_METRICS.new()
 var device_benchmark = DEVICE_BENCHMARK.new()
+var street_life_benchmark = R183_MOBILITY_LAB.new()
 var first_session_observer = R177_FIRST_SESSION.new()
 var patrols
 var previous_vehicle_health := 100.0
@@ -392,6 +394,14 @@ func _process(delta: float) -> void:
 	first_session_observer.observe(delta,GameState.data,first_session_blocked,
 		DisplayServer.window_is_focused())
 	if device_benchmark.active:
+		# R183: attach ONLY aggregate actual original NPC motion to the
+		# existing opt-in real frame LAB, never background telemetry.
+		# All 12 original physical cars, 34 actual walkers and source signal
+		# are sampled twice/second; no IDs, paths or coordinates retained.
+		street_life_benchmark.observe(delta,ambient_cars,pedestrians,
+			float(traffic_signals.get("elapsed")) if traffic_signals!=null else NAN,
+			not first_session_blocked and not interiors.is_inside(),
+			DisplayServer.window_is_focused())
 		var draw_calls: int = maxi(0,int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
 		device_benchmark.record_frame(delta,draw_calls,DisplayServer.window_is_focused())
 		if device_benchmark.completed and hud != null:
@@ -401,6 +411,7 @@ func _process(delta: float) -> void:
 func _on_benchmark_start() -> void:
 	var size: Vector2 = get_viewport().get_visible_rect().size
 	device_benchmark.begin(adaptive_graphics.effective_quality(),size,OS.get_name())
+	street_life_benchmark.begin()
 	if hud != null:
 		hud.update_benchmark_status(0.0,false,"")
 		hud.announce(_three("ТЕСТ КАДРОВ: ПРОГРЕВ 2 С, ЗАМЕР 20 С",
@@ -432,7 +443,12 @@ func _on_benchmark_export() -> void:
 			hud.announce(_three("СНАЧАЛА ЗАВЕРШИТЕ ЗАМЕР",
 				"FINISH THE FRAME TEST FIRST","请先完成测试"))
 		return
-	var json: String = JSON.stringify(device_benchmark.report(),"  ")
+	# Same explicit EXPORT JSON user action, no new HUD button or upload.
+	# Frame metrics and mobility observations remain distinct: the native
+	# device claim is always UNATTESTED until a human checks their hardware.
+	var output_report: Dictionary=device_benchmark.report()
+	output_report["original_live_street_life"]=street_life_benchmark.report()
+	var json: String = JSON.stringify(output_report,"  ")
 	var bytes: PackedByteArray = json.to_utf8_buffer()
 	if OS.has_feature("web"):
 		JavaScriptBridge.download_buffer(bytes,"omega-real-render-frames.json","application/json")
