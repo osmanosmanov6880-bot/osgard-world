@@ -9,6 +9,9 @@ const CYCLE_SECONDS: float=24.0
 const PHASE_SECONDS: float=12.0
 const AMBER_SECONDS: float=1.5
 const STOP_LINE_M: float=8.0
+# Keep the original signal stop active for small physics overshoot at the
+# painted line; release only once genuinely inside the junction.
+const STOP_LINE_OVERRUN_M: float=1.0
 const ROAD_HALF_WIDTH_M: float=4.95
 const APPROACH_RANGE_M: float=44.0
 const MAX_SENSE_M: float=36.0
@@ -45,9 +48,9 @@ static func approach(origin: Vector3,heading: Vector3,elapsed: float) -> Diction
 			var relative:=Vector2(float(x)-origin.x,float(z)-origin.z)
 			var ahead: float=relative.dot(axis)
 			var lateral: float=absf(relative.dot(cross))
-			# Once the player or NPC has crossed the REAL stop bar, do not
-			# cause a hard freeze in the middle of the junction.
-			if ahead<STOP_LINE_M or ahead>APPROACH_RANGE_M or lateral>ROAD_HALF_WIDTH_M:
+			# Small overshoot stays on STOP. Only a car genuinely past the
+			# line + grace zone may clear the physical junction.
+			if ahead<STOP_LINE_M-STOP_LINE_OVERRUN_M or ahead>APPROACH_RANGE_M or lateral>ROAD_HALF_WIDTH_M:
 				continue
 			if ahead<nearest:
 				nearest=ahead
