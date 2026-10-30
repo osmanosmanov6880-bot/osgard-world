@@ -7,6 +7,7 @@ const ROUTINE = preload("res://scripts/citizen_routine.gd")
 const PARK_VISITORS = preload("res://scripts/city_reign_park_routine.gd")
 const TRAJECTORY = preload("res://scripts/horizon_pedestrian_yield.gd")
 const STREET_ART = preload("res://scripts/horizon_street_citizen_mesh.gd")
+const R180_CROSSWALK = preload("res://scripts/city_reign_pedestrian_right_of_way.gd")
 var citizen_id := 0
 var speed := 2.15
 var activity := ""
@@ -18,6 +19,9 @@ var next_waypoint := 0
 var schedule_timer := 0.0
 var traffic_vehicles: Array = []
 var player_car: Node3D
+var signal_controller: Node3D
+var signal_status: String = "none"
+var signal_wait_seconds: float = 0.0
 var walking_phase := 0.0
 # Actual next-route velocity. Traffic AI uses it to anticipate crossings.
 var planned_velocity: Vector3 = Vector3.ZERO
@@ -102,6 +106,20 @@ func _process(delta: float) -> void:
 	travel.y = 0.0
 	var velocity: Vector3 = travel.normalized() * speed
 	planned_velocity = velocity
+	# R180: actual walking citizens obey actual source signal WALK/WAIT,
+	# never a decorative HUD icon. Already inside the physical crossing
+	# (<8m from junction) they finish rather than freeze mid-road.
+	var right_of_way: Dictionary={}
+	if is_instance_valid(signal_controller):
+		right_of_way=R180_CROSSWALK.permission(global_position,
+			velocity,speed,float(signal_controller.get("elapsed")))
+	signal_status=str(right_of_way.get("state","none"))
+	if bool(right_of_way.get("wait",false)):
+		planned_velocity=Vector3.ZERO
+		signal_wait_seconds=minf(3600.0,signal_wait_seconds+maxf(0.0,delta))
+		if body_mesh!=null:
+			body_mesh.mesh=STREET_ART.mesh_for(citizen_id,0)
+		return
 	if _yield_to_vehicle(velocity):
 		# The real waiting pedestrian is stationary. Never advertise a
 		# fictional walking velocity to the active R47 crossing predictor.

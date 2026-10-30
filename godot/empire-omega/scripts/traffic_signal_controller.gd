@@ -7,6 +7,8 @@ const CHANGE_SECONDS = 12.0
 const SIGNAL_REACH = 9.0
 const CINEMATIC_ART = preload("res://scripts/city_reign_signal_art.gd")
 const R178_STOP_BARS = preload("res://scripts/city_reign_intersection_stopbars.gd")
+const R180_WALK_ART = preload("res://scripts/city_reign_pedestrian_signal_art.gd")
+const R180_WALK_RULE = preload("res://scripts/city_reign_pedestrian_right_of_way.gd")
 const AMBER_SECONDS: float = 1.5
 
 var elapsed := 0.0
@@ -16,6 +18,7 @@ var last_visual_state := -1
 var legacy_signal_roots: Array[Node3D] = []
 var cinematic_art: Node3D
 var stop_bars: Node3D
+var pedestrian_signs: Node3D
 var quality: String = "standard"
 
 func _ready() -> void:
@@ -40,6 +43,10 @@ func _ready() -> void:
 	add_child(cinematic_art)
 	stop_bars=R178_STOP_BARS.new()
 	add_child(stop_bars)
+	# Two original direction-specific walk/wait heads at every REAL
+	# road intersection, no separate timer or pedestrian collision geometry.
+	pedestrian_signs=R180_WALK_ART.new()
+	add_child(pedestrian_signs)
 	set_quality("standard")
 	_update_lights()
 
@@ -72,6 +79,13 @@ func _process(delta: float) -> void:
 	elapsed += delta
 	if _visual_state() != last_visual_state:
 		_update_lights()
+	elif pedestrian_signs!=null and not bool(
+			pedestrian_signs.call("matches_source",elapsed)):
+		# Vehicle GREEN is not automatically WALK: once insufficient
+		# crossing time remains the actual physical head must show WAIT.
+		var source: Node=get_node_or_null("/root/GameState")
+		var state: Dictionary=source.get("data") if source!=null else {}
+		sync_city_power(state)
 
 func _update_lights() -> void:
 	last_phase = _phase()
@@ -102,10 +116,15 @@ func set_quality(tier: String) -> void:
 		cinematic_art.call("set_quality",quality)
 	if stop_bars!=null:
 		stop_bars.call("set_quality",quality)
+	if pedestrian_signs!=null:
+		pedestrian_signs.call("set_quality",quality)
 
 func sync_city_power(state: Dictionary) -> void:
 	if stop_bars!=null:
 		stop_bars.call("sync_phase",elapsed,int(state.get("energy",100)),
+			float(state.get("day_clock",12.0)))
+	if pedestrian_signs!=null:
+		pedestrian_signs.call("sync_phase",elapsed,int(state.get("energy",100)),
 			float(state.get("day_clock",12.0)))
 
 func visual_state_is_consistent() -> bool:
@@ -116,7 +135,10 @@ func visual_state_is_consistent() -> bool:
 	var indicators: Dictionary = cinematic_art.get("lamp_state")
 	var x_go: bool = _phase()==0
 	var yellow: bool = _warning()
-	return (stop_bars!=null and bool(stop_bars.call("source_budget_ok")) and
+	return (stop_bars!=null and pedestrian_signs!=null and
+		bool(pedestrian_signs.call("batches_are_bounded")) and
+		bool(pedestrian_signs.call("matches_source",elapsed)) and
+		bool(stop_bars.call("source_budget_ok")) and
 		bool(stop_bars.call("phases_match",elapsed)) and
 		bool(indicators.get("x_red",true))==not x_go and
 		bool(indicators.get("z_red",true))==x_go and
