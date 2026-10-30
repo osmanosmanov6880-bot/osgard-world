@@ -476,6 +476,84 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             g2_after_start.get("available") is False), (
                             "New player received field resources without a real scanner",name,g2_after_start)
 
+                        # G14: real IPStoryDirector captions, not web overlays,
+                        # fake TTS or server-side transcript generation.
+                        cc_default=state.get("g14_caption_continuity",{})
+                        assert cc_default.get("schema")=="IRON_PULSE_CAPTION_CONTINUITY_G14" and (
+                            cc_default.get("mode")=="timed" and
+                            cc_default.get("authored_source_only") is True and
+                            cc_default.get("story_events_created") is False and
+                            cc_default.get("telemetry_uploaded") is False), (
+                            "G14 must start with native Godot source-only original 11s captions",name,cc_default)
+                        cc_baseline=(state.get("switches"),state.get("faults"),state.get("scanned"))
+                        page.keyboard.press("F4")
+                        deadline=time.monotonic()+18
+                        extended={}
+                        while time.monotonic()<deadline:
+                            extended=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if extended.get("g14_caption_continuity",{}).get("mode")=="extended":
+                                break
+                            page.wait_for_timeout(180)
+                        ext=extended.get("g14_caption_continuity",{})
+                        assert ext.get("mode")=="extended" and (
+                            ext.get("extended_seconds")==24 and ext.get("visible") is True and
+                            ext.get("remaining_seconds",0)>=20),(
+                            "F4 must physically extend original in-game MARA captions",name,ext)
+                        page.keyboard.press("F4")
+                        deadline=time.monotonic()+18
+                        pinned={}
+                        while time.monotonic()<deadline:
+                            pinned=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if pinned.get("g14_caption_continuity",{}).get("mode")=="pinned":
+                                break
+                            page.wait_for_timeout(180)
+                        assert pinned.get("g14_caption_continuity",{}).get("visible") is True, (
+                            "Second real F4 must pin original game dialogue without engine mutation",name)
+                        page.keyboard.press("F4")
+                        deadline=time.monotonic()+18
+                        captions_restored={}
+                        while time.monotonic()<deadline:
+                            captions_restored=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if captions_restored.get("g14_caption_continuity",{}).get("mode")=="timed":
+                                break
+                            page.wait_for_timeout(180)
+                        assert captions_restored.get("g14_caption_continuity",{}).get("mode")=="timed" and (
+                            (captions_restored.get("switches"),captions_restored.get("faults"),
+                             captions_restored.get("scanned"))==cc_baseline), (
+                            "Original timed caption mode must be reversible without player actions",name)
+                        if mobile:
+                            rect=captions_restored.get("g14_caption_continuity",{}).get("touch_rect",[])
+                            assert len(rect)==4 and rect[2]>=44 and rect[3]>=44, (
+                                "Real Godot mobile CC caption button missing or tiny",name,rect)
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            xx=bounds["x"]+(rect[0]+rect[2]/2)*bounds["width"]/captions_restored["viewport"][0]
+                            yy=bounds["y"]+(rect[1]+rect[3]/2)*bounds["height"]/captions_restored["viewport"][1]
+                            assert 0<=xx<=size["width"] and 0<=yy<=size["height"], (
+                                "Native CC caption button clipped outside 390px phone",name,rect)
+                            page.touchscreen.tap(xx,yy)
+                            deadline=time.monotonic()+18
+                            touched_cc={}
+                            while time.monotonic()<deadline:
+                                touched_cc=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if touched_cc.get("g14_caption_continuity",{}).get("mode")=="extended":
+                                    break
+                                page.wait_for_timeout(180)
+                            assert touched_cc.get("g14_caption_continuity",{}).get("mode")=="extended", (
+                                "Actual mobile Godot CC touch did not change subtitle timing",name)
+                            # Cycle back to initial mode to keep other genuine
+                            # campaign/hardware diagnostics baseline unchanged.
+                            page.keyboard.press("F4")
+                            page.keyboard.press("F4")
+                        report.setdefault("g14_real_caption_continuity",{})[name]={
+                            "source":"original IPStoryDirector and native Godot F4",
+                            "three_modes":True,
+                            "mobile_touch_exercised":mobile,
+                            "engine_actions_unchanged":True,
+                            "user_identifiers_collected":False,
+                            "hardware_certified":False
+                        }
+
                         # G4: actual exported Godot keyboard/touch lab.
                         # Read-only DOM is a mirror; only physical F8/F9/taps
                         # start/stop the true _process frame capture.
