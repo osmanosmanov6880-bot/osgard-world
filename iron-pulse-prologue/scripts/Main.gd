@@ -213,6 +213,12 @@ var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
 var wayfinder: IPWayfinding
+var tactical_atlas: IPTacticalAtlas
+var atlas_panel: PanelContainer
+var atlas_title: Label
+var atlas_summary: Label
+var atlas_disclaimer: Label
+var atlas_close_button: Button
 var campaign_echoes: IPCampaignEchoes
 var world_sectors: IPWorldSectors
 var obsidian_world: IPObsidianArchitecture
@@ -310,6 +316,7 @@ var touch_forecast_button: Button
 var touch_guide_button: Button
 var touch_navigation_button: Button
 var touch_device_lab_button: Button
+var touch_atlas_button: Button
 var device_lab_panel: PanelContainer
 var device_lab_label: Label
 var device_lab_start_button: Button
@@ -526,6 +533,12 @@ func _publish_web_state() -> void:
         "requested_campaign":bool(world_launch.get("campaign",false))
     }
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
+    state["g10_tactical_atlas"] = tactical_atlas.readout() if tactical_atlas != null else {}
+    state["g10_tactical_atlas"]["panel_visible"] = atlas_panel != null and atlas_panel.visible
+    state["g10_tactical_atlas"]["title"] = atlas_title.text if atlas_title != null else ""
+    state["g10_tactical_atlas"]["summary"] = atlas_summary.text if atlas_panel != null and atlas_panel.visible else ""
+    state["g10_tactical_atlas"]["close_rect"] = _hud_rect(atlas_close_button) if atlas_close_button != null else []
+    state["g10_tactical_atlas"]["touch_rect"] = _hud_rect(touch_atlas_button) if touch_atlas_button != null else []
     state["threat_radar"] = threat_radar.snapshot(session)
     state["threat_hud"] = threat_label.text if threat_label != null else ""
     state["operator_records"] = {
@@ -1081,8 +1094,84 @@ func _make_hud() -> void:
     guide_panel.visible = false
     _refresh_operator_guide_locale()
     _make_device_lab_overlay()
+    _make_tactical_atlas()
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
+
+func _make_tactical_atlas() -> void:
+    # G10: a real native Godot atlas, not a fake HTML panel or player GPS.
+    atlas_panel = _panel(hud_root,Rect2(-365,-247,365,247),
+        Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.025,0.039,0.994))
+    atlas_panel.name = "G10_SourceBoundTacticalAtlas"
+    atlas_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+    var stack := VBoxContainer.new()
+    stack.name = "G10_ActualMapControlStack"
+    stack.add_theme_constant_override("separation",7)
+    atlas_panel.add_child(stack)
+    atlas_title = _label(stack,"A7 / TACTICAL ATLAS",22,CYAN)
+    atlas_title.name = "G10_LocalizedTacticalTitle"
+    tactical_atlas = IPTacticalAtlas.new()
+    stack.add_child(tactical_atlas)
+    tactical_atlas.custom_minimum_size = Vector2(0,205)
+    tactical_atlas.configure(terminals,relay_terminals,field_stations)
+    atlas_summary = _label(stack,"",13,WHITE)
+    atlas_summary.name = "G10_RealCrisisAndObjectiveData"
+    atlas_disclaimer = _label(stack,"",11,DIM)
+    atlas_disclaimer.name = "G10_NoFakeNavigationOrHardwareClaim"
+    atlas_close_button = Button.new()
+    atlas_close_button.name = "G10_ReturnToRealGame"
+    atlas_close_button.custom_minimum_size = Vector2(0,52)
+    atlas_close_button.pressed.connect(_close_tactical_atlas)
+    stack.add_child(atlas_close_button)
+    atlas_panel.visible = false
+
+func _refresh_tactical_atlas() -> void:
+    if atlas_panel == null or not atlas_panel.visible or tactical_atlas == null:
+        return
+    var objective: String = wayfinder.goal_id(session.objective_id(),player.global_position)
+    tactical_atlas.capture(session,player.global_position,objective,active_sector,
+        locale,started and not session.finished())
+    atlas_title.text = "G10 / TACTICAL ATLAS  ·  A7" if locale == "en" else "G10 / ТАКТИЧЕСКАЯ СХЕМА  ·  A7"
+    atlas_summary.text = tactical_atlas.line_summary()
+    atlas_disclaimer.text = (
+        "SCHEMATIC STRAIGHT-LINE DISTANCE, NOT A WALKABLE ROUTE. NO LOCATION DATA OR TELEMETRY."
+        if locale == "en" else
+        "СХЕМА ПО ПРЯМОЙ, НЕ ПОСТРОЕНИЕ ПРОХОДА. НЕТ ГЕОЛОКАЦИИ И ОТПРАВКИ ДАННЫХ."
+    )
+    atlas_close_button.text = "RETURN TO GAME  /  F2 · ESC" if locale == "en" else "ВЕРНУТЬСЯ К ИГРЕ  /  F2 · ESC"
+
+func _close_tactical_atlas() -> void:
+    if atlas_panel == null or not atlas_panel.visible:
+        return
+    atlas_panel.visible = false
+    paused = false
+    if started and not session.finished():
+        audio_director.set_active(true)
+    if DisplayServer.get_name() != "headless":
+        _set_player_pointer_capture(started and not session.finished())
+    _publish_web_state()
+
+func _toggle_tactical_atlas() -> void:
+    if atlas_panel == null or tactical_atlas == null:
+        return
+    if atlas_panel.visible:
+        _close_tactical_atlas()
+        return
+    if not started or paused or session.finished() or cinematic_view:
+        return
+    # The atlas is a safe pause, never an autoplay or direct game mutation.
+    _close_operator_guide()
+    if forecast_panel != null:
+        forecast_panel.visible = false
+    if diagnostic_panel != null:
+        diagnostic_panel.visible = false
+    atlas_panel.visible = true
+    paused = true
+    audio_director.set_active(false)
+    if DisplayServer.get_name() != "headless":
+        _set_player_pointer_capture(false)
+    _refresh_tactical_atlas()
+    _publish_web_state()
 
 func _make_device_lab_overlay() -> void:
     # G4: real native, opt-in local hardware test overlay. A deliberate
@@ -1447,6 +1536,10 @@ func _make_touch_controls() -> void:
     touch_device_lab_button = _touch_button(touch_ui,"LAB / F8",6,-471,94)
     touch_device_lab_button.add_theme_font_size_override("font_size",14)
     touch_device_lab_button.pressed.connect(_toggle_device_lab)
+    # Compact middle-column 51px control; no overlap with LAB or SHOT.
+    touch_atlas_button = _touch_button(touch_ui,"MAP / F2",111,-471,94)
+    touch_atlas_button.add_theme_font_size_override("font_size",14)
+    touch_atlas_button.pressed.connect(_toggle_tactical_atlas)
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1557,6 +1650,15 @@ func _layout_hud() -> void:
         device_lab_panel.offset_right = lab_half
         device_lab_label.custom_minimum_size.x = lab_half*2.0-46.0
         device_lab_label.add_theme_font_size_override("font_size",11 if narrow else 13)
+    if atlas_panel != null:
+        var atlas_half: float = minf(365.0,width*0.45)
+        atlas_panel.offset_left = -atlas_half
+        atlas_panel.offset_right = atlas_half
+        tactical_atlas.custom_minimum_size.y = 164.0 if narrow else 205.0
+        tactical_atlas.custom_minimum_size.x = 0.0
+        atlas_title.add_theme_font_size_override("font_size",16 if narrow else 22)
+        atlas_summary.add_theme_font_size_override("font_size",10 if narrow else 13)
+        atlas_disclaimer.add_theme_font_size_override("font_size",9 if narrow else 11)
     if guide_panel != null:
         var help_half: float = minf(310.0,width*0.45)
         guide_panel.offset_left = -help_half
@@ -1657,6 +1759,8 @@ func _apply_cinematic_view() -> void:
         touch_guide_button.visible = not cinematic_view and touch_ui.visible
     if touch_navigation_button != null:
         touch_navigation_button.visible = not cinematic_view and touch_ui.visible
+    if touch_atlas_button != null:
+        touch_atlas_button.visible = not cinematic_view and touch_ui.visible
     if cinematic_view and guide_panel != null:
         guide_panel.visible = false
     if cinematic_view and forecast_panel != null:
@@ -2031,6 +2135,8 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    if atlas_panel != null:
+        atlas_panel.visible = false
     operator_guide.reset(session)
     _close_operator_guide()
     _clear_operator_overlay()
@@ -2056,6 +2162,8 @@ func start_run() -> void:
         _set_player_pointer_capture(true)
 
 func _restart() -> void:
+    if atlas_panel != null:
+        atlas_panel.visible = false
     _clear_operator_overlay()
     archive_last_save_ok = false
     _clear_after_action()
@@ -2109,6 +2217,9 @@ func _resume() -> void:
         _set_player_pointer_capture(true)
 
 func _pause_toggle() -> void:
+    if atlas_panel != null and atlas_panel.visible:
+        _close_tactical_atlas()
+        return
     if not started or session.finished():
         return
     paused = not paused
@@ -2144,6 +2255,7 @@ func _toggle_language() -> void:
     _refresh_after_action_locale()
     _refresh_run_archive_locale()
     _refresh_device_lab_ui()
+    _refresh_tactical_atlas()
     _refresh_radio_ui()
 
 func _apply_graphics_profile(next_mode: String) -> void:
@@ -2187,6 +2299,10 @@ func _gamepad_axis(axis_id: int) -> float:
     return reading if absf(reading) >= 0.18 else 0.0
 
 func _gamepad_button(button_index: int) -> void:
+    if atlas_panel != null and atlas_panel.visible:
+        if button_index in [JOY_BUTTON_B,JOY_BUTTON_START,JOY_BUTTON_DPAD_LEFT]:
+            _close_tactical_atlas()
+        return
     # Hardware performance/compatibility still requires real controller QA.
     # This dispatch handles Godot's mapped standard gamepad button events.
     if button_index == JOY_BUTTON_BACK:
@@ -2240,12 +2356,23 @@ func _gamepad_button(button_index: int) -> void:
             _choose_priority("core")
         JOY_BUTTON_DPAD_RIGHT:
             _cycle_director_shot()
+        JOY_BUTTON_DPAD_LEFT:
+            _toggle_tactical_atlas()
 
 func _input(event: InputEvent) -> void:
     if event is InputEventJoypadButton and event.pressed:
         _gamepad_button(event.button_index)
         return
     if event is InputEventKey and event.pressed and not event.echo:
+        if atlas_panel != null and atlas_panel.visible:
+            if event.keycode in [KEY_F2,KEY_ESCAPE]:
+                _close_tactical_atlas()
+            elif event.keycode == KEY_L:
+                _toggle_language()
+            return
+        if event.keycode == KEY_F2:
+            _toggle_tactical_atlas()
+            return
         if event.keycode == KEY_F8:
             _toggle_device_lab()
             return
@@ -2616,6 +2743,8 @@ func _announce(key: String) -> void:
             audio_director.cue("confirm")
 
 func _show_end() -> void:
+    if atlas_panel != null:
+        atlas_panel.visible = false
     _close_operator_guide()
     forecast_panel.visible = false
     forecast_report.clear()
