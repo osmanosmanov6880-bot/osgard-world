@@ -52,6 +52,7 @@ func _run() -> void:
         not m["hud_card_visible"] and m["radio_visible"] and not m["priority_visible"],
         "390x844 must display exactly one true story/telemetry primary card")
     var header: Array = game._hud_rect(game.header_panel)
+    print("G13_REAL_NATIVE_HEADER_390 ",JSON.stringify(header))
     _test(float(radio[1]) > _bottom(header)+4.0 and
         _bottom(radio) < float(m["touch_first_row_y"])-2.0 and
         m["touch_first_row_y"] == 373.0,
@@ -85,6 +86,7 @@ func _run() -> void:
     m = game._g13_mobile_layout_readout()
     radio = m["radio_rect"]
     print("G13_REAL_NATIVE_GEOMETRY_320 ",JSON.stringify(m))
+    print("G13_REAL_NATIVE_HEADER_320 ",JSON.stringify(game._hud_rect(game.header_panel)))
     _test(m["layout"] == "single_story_card" and not m["hud_card_visible"] and
         m["radio_visible"] and not m["priority_visible"],
         "320x720 gives priority to unaltered real narrative instead of overlapping telemetry")
