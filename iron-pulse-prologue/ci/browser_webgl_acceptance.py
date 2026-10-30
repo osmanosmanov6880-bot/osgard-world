@@ -464,8 +464,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             footer=layout.get("emergency_footer","")
                             assert str(int(state["heat"])) in footer and (
                                 str(int(state["oxygen"])) in footer and
-                                str(int(state["crew"])) in footer and
-                                str(int(state["door"])) in footer), (
+                                str(int(state["crew_health"])) in footer and
+                                str(int(state["door_charge"])) in footer), (
                                 "G13 must retain all four real engine vitals in the mobile story footer",name,footer)
                             assert state.get("scanned") is False and state.get("switches",0)==0, (
                                 "G13 visual layout cannot fabricate source gameplay",name)
