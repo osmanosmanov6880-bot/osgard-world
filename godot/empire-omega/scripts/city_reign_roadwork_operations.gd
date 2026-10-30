@@ -38,7 +38,7 @@ static func source_segment(incident: Dictionary) -> Dictionary:
 	if abs(ga.x-gb.x)+abs(ga.y-gb.y)!=1:return {}
 	var pa: Vector3=MOBILITY._pos(ga)
 	var pb: Vector3=MOBILITY._pos(gb)
-	if not pa.is_finite() or not pb.is_finite() or (
+	if (not pa.is_finite() or not pb.is_finite() or
 			not is_equal_approx(pa.distance_to(pb),SOURCE_EDGE_LENGTH_M)):
 		return {}
 	var direction: Vector3=(pb-pa).normalized()
@@ -93,10 +93,10 @@ static func driver_warning(at: Vector3,yaw: float,speed: float,
 
 static func catalog_integrity() -> bool:
 	var entries: Array=MOBILITY.catalog().get("incidents",[])
-	if entries.size()!=12 or MOBILITY.ROAD_SIZE!=SOURCE_GRID_N or
+	if (entries.size()!=12 or MOBILITY.ROAD_SIZE!=SOURCE_GRID_N or
 			MOBILITY.ROAD_SPACING!=SOURCE_EDGE_LENGTH_M or
 			MOBILITY.ROAD_MIN!=-208.0 or
-			not SOURCE.source_grid_valid():
+			not SOURCE.source_grid_valid()):
 		return false
 	var seen: Dictionary={}
 	for item in entries:
