@@ -562,6 +562,18 @@ func _publish_web_state() -> void:
     state["g12_control_comfort"]["pause_control_rect"] = _hud_rect(control_comfort_button) if control_comfort_button != null else []
     state["g12_control_comfort"]["touch_pause_rect"] = _hud_rect(touch_pause_button) if touch_pause_button != null else []
     state["g12_control_comfort"]["resume_rect"] = _hud_rect(resume_button) if resume_button != null else []
+    # G14 honest read-only actual camera controls, not browser game commands.
+    state["g14_look_comfort"] = look_comfort.readout()
+    state["g14_look_comfort"]["camera_yaw"] = yaw
+    state["g14_look_comfort"]["camera_pitch"] = pitch
+    state["g14_look_comfort"]["native_camera_yaw"] = player.rotation.y
+    state["g14_look_comfort"]["native_camera_pitch"] = camera.rotation.x
+    state["g14_look_comfort"]["local_save_ok"] = look_last_save_ok
+    state["g14_look_comfort"]["pause_control_rect"] = _hud_rect(look_comfort_button) if look_comfort_button != null else []
+    state["g14_look_comfort"]["touch_control_rect"] = _hud_rect(touch_look_button) if touch_look_button != null else []
+    state["g14_look_comfort"]["pause_button_visible"] = look_comfort_button != null and look_comfort_button.visible and pause_panel.visible
+    state["g14_look_comfort"]["touch_button_visible"] = touch_look_button != null and touch_look_button.visible and touch_ui.visible
+    state["g14_look_comfort"]["ui_label"] = look_comfort_button.text if look_comfort_button != null else ""
     state["g10_tactical_atlas"] = tactical_atlas.readout() if tactical_atlas != null else {}
     state["g10_tactical_atlas"]["panel_visible"] = atlas_panel != null and atlas_panel.visible
     state["g10_tactical_atlas"]["focus_backdrop_visible"] = atlas_dimmer != null and atlas_dimmer.visible
