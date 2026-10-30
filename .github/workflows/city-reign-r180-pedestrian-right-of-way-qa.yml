@@ -1,0 +1,211 @@
+name: CITY REIGN R180 - WORLD WALK SIGNALS | real citizen crossings, 16 native 3D WALK/WAIT heads, Chromium/WebGL
+
+on:
+  push:
+    branches:
+      - feat/city-reign-r180-real-pedestrian-right-of-way-20261030
+  pull_request:
+    branches:
+      - feat/city-reign-r179-source-verified-red-light-law-20261030
+
+permissions:
+  contents: read
+
+jobs:
+  original-godot-r180:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Import the exact real source without GDScript errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p r180-native-evidence
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/verify_r169_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega 2>&1 | tee r180-native-evidence/import.log
+          grep -Fq 'R42 PASS: real Godot imported with no script errors' r180-native-evidence/import.log
+      - name: Verify real 40 mission goals, original 3D/2D road fabric, save isolation and real WebGL
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in \
+            v189_city_reign_walk_right_of_way \
+            v190_city_reign_native_walk_signals \
+            v191_city_reign_real_citizen_crossing \
+            v186_city_reign_red_light_evidence \
+            v187_city_reign_original_signal_law \
+            v188_city_reign_live_traffic_ticket \
+            v183_city_reign_intersection_policy \
+            v184_city_reign_road_signal_art \
+            v185_city_reign_real_intersection_world \
+            v180_city_reign_real_first_six_timing \
+            v181_city_reign_session_resume_privacy \
+            v182_city_reign_live_session_world \
+            v177_city_reign_freight_telemetry \
+            v178_city_reign_true_cargo_visual \
+            v179_city_reign_live_cargo_economy \
+            v174_city_reign_economy_projection \
+            v175_city_reign_economic_gpu_accessibility \
+            v176_city_reign_real_economy_world \
+            v171_city_reign_business_world_geometry \
+            v172_city_reign_business_world_state \
+            v173_city_reign_business_world_integration \
+            v168_city_reign_district_geometry \
+            v169_city_reign_district_batch_power \
+            v170_city_reign_district_live_world \
+            v165_city_reign_action_readiness \
+            v166_city_reign_live_action_hud \
+            v167_city_reign_live_action_world \
+            v162_city_reign_objective_source \
+            v163_city_reign_route_integrity \
+            v164_city_reign_actual_goal_integration \
+            v159_city_reign_episode_flow \
+            v160_city_reign_episode_hud \
+            v161_city_reign_real_chapter \
+            v110_city_reign_first_mandate \
+            v121_city_reign_first_promise_street_director \
+            v156_city_reign_original_audio_provenance \
+            v157_city_reign_dynamic_acoustics \
+            v158_city_reign_cockpit_feedback \
+            v42_engine_audio \
+            v153_city_reign_solar_transport \
+            v154_city_reign_wet_optical_materials \
+            v155_city_reign_headlamp_illumination \
+            v150_city_reign_precision_sculpt \
+            v151_city_reign_precision_optics \
+            v152_city_reign_active_aero_road \
+            v103_r129_coupe_3d_glass_aero \
+            v114_city_reign_aaa_vehicle_fleet \
+            v26_horizon_sculpted_visuals \
+            v146_city_reign_rotor_thermal \
+            v147_city_reign_asphalt_normal_trails \
+            v148_city_reign_spray_aerodynamics \
+            v149_city_reign_real_road_rotor_heat \
+            v45_skid_trails \
+            v46_ground_spray \
+            v62_r39_actual_wheel_art \
+            v143_city_reign_apex_braking \
+            v144_city_reign_apex_real_road \
+            v145_city_reign_apex_cockpit_hud \
+            v21_vehicle_dynamics \
+            v27_driver_assists \
+            v67_r46_load_transfer_brake_grip \
+            v141_city_reign_cockpit_camera \
+            v142_city_reign_cockpit_render_budget \
+            v138_city_reign_traffic_following \
+            v139_city_reign_signal_auto_cancel \
+            v140_city_reign_real_road_chevron \
+            v136_city_reign_drive_navigation \
+            v137_city_reign_driver_awareness \
+            v134_city_reign_road_guidance \
+            v135_city_reign_turn_signals \
+            v133_city_reign_camera_modes \
+            v129_city_reign_paid_crossing_traffic \
+            v68_r47_predictive_crosswalk_traffic \
+            v72_r55_forty_mission_event_save; do
+            log="r180-native-evidence/$suite.log"
+            timeout --signal=TERM --kill-after=5s 120s godot --headless \
+              --path godot/empire-omega --script "res://tests/$suite.gd" 2>&1 | tee "$log"
+            # R55 deliberately writes a malformed PRIMARY save to test a
+            # correct backup recovery. Godot prints one expected JSON warning.
+            # Allow only that exact known line in that one suite, never broad
+            # error suppression for other scripts.
+            if [ "$suite" = "v72_r55_forty_mission_event_save" ]; then
+              expected_json="ERROR: Parse JSON failed. Error at line 0: Expected key"
+              count="$(grep -Fxc "$expected_json" "$log" || true)"
+              test "$count" -eq 1 || { echo "::error::Unexpected R55 corrupt-primary diagnostic count"; exit 1; }
+              grep -Fvx "$expected_json" "$log" > "$log.filtered"
+            else
+              cp "$log" "$log.filtered"
+            fi
+            if grep -nEi 'SCRIPT ERROR:|Parse Error:|[1-9][0-9]* (FAIL|failed)|ERROR:.*FAIL|^ERROR:' "$log.filtered"; then
+              exit 1
+            fi
+            grep -Eqi '[1-9][0-9]* (PASS|passed).*0 (FAIL|failed)' "$log"
+          done
+      - name: Export the real 3D Godot WebGL source locally, never publish over SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p city-reign-r180-private-webgl
+          godot --headless --path godot/empire-omega --export-release Web \
+            "$GITHUB_WORKSPACE/city-reign-r180-private-webgl/index.html"
+          node scripts/localize-godot-web-export.mjs city-reign-r180-private-webgl
+          python3 scripts/city-reign-build-release.py \
+            --directory city-reign-r180-private-webgl --source "$GITHUB_SHA"
+          (cd city-reign-r180-private-webgl && sha256sum -c SHA256SUMS.txt)
+      - name: Install real Chromium WebGL test environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Start private source HTTP server
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 \
+            --directory city-reign-r180-private-webgl >/tmp/city-reign-r180-http.log 2>&1 &
+          for n in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/city-reign-r180-http.log
+          exit 1
+      - name: Prove original camera and playable 3D city in real Chromium
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.city-reign-camera-release.config.mjs \
+              --workers=1 --retries=0
+      - name: Verify full source-SHA runtime on localhost in independent real Chromium
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          CITY_REIGN_PUBLIC_BASE_URL: http://127.0.0.1:4173/
+          CITY_REIGN_EXPECTED_SHA: ${{ github.sha }}
+          CITY_REIGN_PUBLIC_EVIDENCE_DIR: city-reign-r180-private-browser
+        run: |
+          set -euo pipefail
+          node --check scripts/city-reign-public-live-qa.mjs
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            node scripts/city-reign-public-live-qa.mjs
+          python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path('city-reign-r180-private-browser')
+          data=json.loads((p/'PUBLIC-REAL-GODOT-ACCEPTANCE.json').read_text())
+          assert data['status']=='PASS'
+          assert data['source_sha']==os.environ['CITY_REIGN_EXPECTED_SHA']
+          assert data['public_url']=='http://127.0.0.1:4173/'
+          assert len(data['screens'])==2
+          print('PASS: EXACT local source R180 renders and accepts input on real Chromium')
+          PY
+      - name: Preserve test logs and WebGL screenshots without public deployment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-r180-actual-source-evidence
+          path: |
+            r180-native-evidence/
+            city-reign-camera-report/
+            city-reign-camera-results/
+            city-reign-r180-private-browser/
+          retention-days: 14
+          if-no-files-found: warn
