@@ -34,9 +34,9 @@ static func _inside_relative(relative: Vector2,axis: Vector2) -> bool:
 static func occupied(crossing: Dictionary,heading: Vector3,
 		walker: Vector3,walking_velocity: Vector3,
 		car_speed: float) -> bool:
-	if crossing.is_empty() or not heading.is_finite() or
+	if (crossing.is_empty() or not heading.is_finite() or
 		not walker.is_finite() or not walking_velocity.is_finite() or
-		not is_finite(car_speed):
+		not is_finite(car_speed)):
 		return false
 	var center: Vector3=crossing.get("point",Vector3.ZERO)
 	if not center.is_finite():return false
