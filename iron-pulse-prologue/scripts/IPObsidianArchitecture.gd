@@ -25,6 +25,7 @@ var sector_labels: Array[Label3D] = []
 var risk_status_labels: Array[Label3D] = []
 var high_contrast_signs: bool = false
 var safety_tier: String = "stable"
+var _vision_words: IPVisionProfile = IPVisionProfile.new()
 var close_range_labels: Array[Label3D] = []
 var marker_positions: Array[Vector3] = []
 var material_library: Dictionary = {}
@@ -299,7 +300,7 @@ func _update_visual_state(elapsed: float,reduce_motion: bool) -> void:
         light.light_color = danger_tint
         light.light_energy = (0.12 if quality_mode == "eco" else 0.24) + measured_risk*0.27*breath
     # Color + words + punctuation survive HERO/ECO and reduced-motion modes.
-    var readable: String = IPVisionProfile.new().hazard_words(safety_tier,locale)
+    var readable: String = _vision_words.hazard_words(safety_tier,locale)
     for sign in risk_status_labels:
         sign.text = readable
         sign.modulate = Color(1.0,0.92,0.77) if safety_tier == "watch" else Color(1.0,0.87,0.90) if safety_tier == "critical" else Color(0.91,0.96,0.98)
