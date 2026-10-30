@@ -17,6 +17,7 @@ const DRIVER_SENSE = preload("res://scripts/city_reign_driver_awareness.gd")
 const R178_SIGNAL = preload("res://scripts/city_reign_intersection_policy.gd")
 const R179_RED_LAW = preload("res://scripts/city_reign_red_light_evidence.gd")
 const R184_SPEED_RULE = preload("res://scripts/city_reign_speed_limit_policy.gd")
+const R185_RIGHT_LANES = preload("res://scripts/city_reign_vehicle_lane_routing.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
@@ -323,7 +324,9 @@ func _new_game() -> void:
 func _road_loop(i: int) -> Array[Vector3]:
 	var px: float = float(-156 + (i % 5) * 52)
 	var pz: float = float(-156 + int(i / 5) * 52)
-	var lane: float = 2.0 if i % 2 == 0 else -2.0
+	# R185: all traffic on the SAME right-hand source lane. The old
+	# alternating +/-2 placement let six NPCs spawn on the opposing side.
+	var lane: float = R185_RIGHT_LANES.RIGHT_LANE_OFFSET_M
 	var corners: Array[Vector3] = [
 		Vector3(px+lane,0.8,pz+lane),Vector3(px+52+lane,0.8,pz+lane),
 		Vector3(px+52+lane,0.8,pz+52+lane),Vector3(px+lane,0.8,pz+52+lane)
@@ -334,7 +337,11 @@ func _road_loop(i: int) -> Array[Vector3]:
 		if segment.size() < 2: continue
 		if not loop.is_empty(): segment.remove_at(0)
 		loop.append_array(segment)
-	return loop
+	# Preserve the ORIGINAL closure-aware A* itinerary, but physically
+	# project only proven 52m source edges onto authentic +2m/-2m
+	# right-hand lanes. Source 9x9 road graph, traffic physics and fines
+	# retain all existing authority.
+	return R185_RIGHT_LANES.to_right_hand_lane(loop)
 
 func _replan_traffic() -> void:
 	for i in range(ambient_cars.size()):
