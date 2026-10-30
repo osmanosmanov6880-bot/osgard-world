@@ -1703,10 +1703,15 @@ func _layout_hud() -> void:
     brand_label.add_theme_font_size_override("font_size",20 if narrow else 27)
     objective_label.add_theme_font_size_override("font_size",15 if narrow else 17)
     guidance_label.add_theme_font_size_override("font_size",11 if narrow else 12)
-    telemetry_label.add_theme_font_size_override("font_size",12 if narrow else 14)
+    telemetry_label.add_theme_font_size_override("font_size",11 if narrow else 14)
     allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     threat_label.add_theme_font_size_override("font_size",10 if narrow else 11)
     quality_state_label.add_theme_font_size_override("font_size",10 if narrow else 11)
+    # The 390px telemetry card previously had a 159px intrinsic minimum;
+    # hiding redundant labels keeps all metrics in the ONE source-backed
+    # compact telemetry label and genuinely frees vertical space for MARA.
+    allocation_label.visible = not narrow
+    threat_label.visible = not narrow
     # Detailed quality metrics remain available via F3; save screen space.
     quality_state_label.visible = not narrow
     adaptive_performance.compact_device = narrow
@@ -3089,17 +3094,23 @@ func _refresh_hud() -> void:
     quality_state_label.text = adaptive_performance.status_line(locale,quality_mode,performance_audit.telemetry())
     var compact_ui: bool = (_browser_css_size.x > 0 and _browser_css_size.x < 650) or (
         _browser_css_size.x == 0 and get_viewport().get_visible_rect().size.x < 650)
-    if compact_ui:
-        # Strictly source-derived numbers. Compact, not a simulated summary.
-        telemetry_label.text = ("H %d°C   AIR %d%%   CREW %d%%\nDOOR %d%%   TIME %02d:%02d" if locale == "en" else
-            "Т %d°C   ВОЗД %d%%   ЭКИП %d%%\nШЛЮЗ %d%%   ВРЕМЯ %02d:%02d") % [
-                int(session.heat),int(session.oxygen),int(session.crew_health),
-                int(session.door_charge),floori(session.time_left/60.0),int(session.time_left)%60]
-        allocation_label.text = "A:%s  B:%s  %s%d/2" % [
-            session.bus_a.to_upper(),session.bus_b.to_upper(),
-            "RESCUE " if locale == "en" else "СПАС ",
-            session.relays_activated.size()]
     var risk: Dictionary = threat_radar.snapshot(session)
+    if compact_ui:
+        # One original Godot Label carries 4 concise source-derived rows.
+        # No separate layout-inflating labels or color-only danger states.
+        var risk_word: String = str(risk["tier"])
+        if locale == "ru":
+            risk_word = "ОПАСНО" if risk_word in ["CRITICAL","FAILED"] else "ВНИМАНИЕ" if risk_word == "WATCH" else "НОРМА"
+        telemetry_label.text = (
+            "HEAT %d°C  AIR %d%%\nCREW %d%%  DOOR %d%%  T %02d:%02d\nA:%s B:%s RESC:%d/2\nA7 / %s" if locale == "en" else
+            "ТЕПЛО %d°C  ВОЗД %d%%\nЭКИП %d%%  ШЛЮЗ %d%%  Т %02d:%02d\nA:%s B:%s СПАС:%d/2\nA7 / %s"
+        ) % [
+            int(session.heat),int(session.oxygen),int(session.crew_health),
+            int(session.door_charge),floori(session.time_left/60.0),int(session.time_left)%60,
+            session.bus_a.to_upper(),session.bus_b.to_upper(),session.relays_activated.size(),risk_word]
+        # Read-only full breakdown still exists for native tooling and PC HUD.
+        allocation_label.text = "A:%s B:%s %d/2" % [
+            session.bus_a.to_upper(),session.bus_b.to_upper(),session.relays_activated.size()]
     var full_risk_text: String = threat_radar.cockpit_text(risk,locale)
     threat_label.text = full_risk_text.split("\n")[0] if compact_ui else full_risk_text
     threat_label.tooltip_text = full_risk_text
