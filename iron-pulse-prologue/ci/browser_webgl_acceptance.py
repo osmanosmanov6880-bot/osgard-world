@@ -554,6 +554,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         atlas=mapped.get("g10_tactical_atlas",{})
                         assert atlas.get("schema")=="IRON_PULSE_TACTICAL_ATLAS_G10" and (
                             atlas.get("panel_visible") is True and atlas.get("active") is True
+                            and atlas.get("focus_backdrop_visible") is True
+                            and "ИГРОК" in atlas.get("legend","")
                             and atlas.get("source")=="actual_godot_engine_and_physical_scene_coordinates"
                             and atlas.get("local_only") is True
                             and atlas.get("telemetry_uploaded") is False
@@ -579,6 +581,7 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             page.wait_for_timeout(180)
                         assert after_map.get("paused") is False and (
                             after_map.get("g10_tactical_atlas",{}).get("panel_visible") is False and
+                            after_map.get("g10_tactical_atlas",{}).get("focus_backdrop_visible") is False and
                             after_map.get("scanned") is False), (
                             "F2 / ESC must return to real gameplay without progress",name,after_map)
                         if mobile:
@@ -600,7 +603,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                     break
                                 page.wait_for_timeout(180)
                             assert touch_map.get("paused") is True and (
-                                touch_map.get("g10_tactical_atlas",{}).get("panel_visible") is True), (
+                                touch_map.get("g10_tactical_atlas",{}).get("panel_visible") is True and
+                                touch_map.get("g10_tactical_atlas",{}).get("focus_backdrop_visible") is True), (
                                 "Actual mobile Godot MAP touch cannot open tactical atlas",name,touch_map)
                             close_rect=touch_map["g10_tactical_atlas"]["close_rect"]
                             assert close_rect and close_rect[2]>=44 and close_rect[3]>=44, (
@@ -618,7 +622,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                     break
                                 page.wait_for_timeout(180)
                             assert touch_map.get("paused") is False and (
-                                touch_map.get("g10_tactical_atlas",{}).get("panel_visible") is False), (
+                                touch_map.get("g10_tactical_atlas",{}).get("panel_visible") is False and
+                                touch_map.get("g10_tactical_atlas",{}).get("focus_backdrop_visible") is False), (
                                 "Native mobile close does not return control to player",name,touch_map)
                         report.setdefault("g10_real_tactical_atlas",{})[name]={
                             "source":"original Godot 3D scene + live engine state",
