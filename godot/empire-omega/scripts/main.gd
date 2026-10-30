@@ -369,6 +369,7 @@ func _spawn_citizens() -> void:
 		citizen.citizen_id = i
 		citizen.traffic_vehicles = ambient_cars
 		citizen.player_car = car
+		citizen.signal_controller = traffic_signals
 		add_child(citizen)
 		pedestrians.append(citizen)
 	for traffic in ambient_cars:
