@@ -104,6 +104,9 @@ func _run() -> void:
     _assert(game.atlas_panel.visible and game.paused and
         not game.pause_panel.visible and not game.cinematic_view,
         "F2 opens actual native overlay, safely pausing true campaign time")
+    _assert(game.atlas_dimmer != null and game.atlas_dimmer.visible and
+        game.atlas_dimmer.mouse_filter == Control.MOUSE_FILTER_STOP,
+        "Native G10 atlas focuses the player and prevents touches reaching background cockpit")
     _assert(game.atlas_title.text.contains("ТАКТИЧЕСКАЯ") and
         game.atlas_summary.text.contains("НАПРЯМУЮ"),
         "Map panel contains localized real-data summaries, not a static fake image")
@@ -120,10 +123,11 @@ func _run() -> void:
         "Paused map must stop all engine tick and time consumption")
     _key(game,KEY_L)
     _assert(game.locale == "en" and game.atlas_title.text.contains("TACTICAL") and
-        game.atlas_disclaimer.text.contains("NOT A WALKABLE ROUTE"),
+        game.atlas_disclaimer.text.contains("NOT A WALKABLE ROUTE") and
+        game.atlas_legend.text.contains("PLAYER"),
         "Language switch within opened atlas updates real-native labels safely")
     _key(game,KEY_ESCAPE)
-    _assert(not game.atlas_panel.visible and not game.paused and
+    _assert(not game.atlas_panel.visible and not game.atlas_dimmer.visible and not game.paused and
         game.session.checkpoint() == game_checkpoint,
         "ESC must return to original gameplay and preserve checkpoint")
     _key(game,KEY_F2)
@@ -149,8 +153,8 @@ func _run() -> void:
     _assert(game.paused and game.atlas_panel.visible,
         "Real native touch MAP press enters the pause-aware atlas")
     game.atlas_close_button.pressed.emit()
-    _assert(not game.paused and not game.atlas_panel.visible,
-        "Actual close-button signal restores gameplay after mobile access")
+    _assert(not game.paused and not game.atlas_panel.visible and not game.atlas_dimmer.visible,
+        "Actual close-button removes scrim and restores gameplay after mobile access")
     var before_pause: Dictionary = game.session.checkpoint()
     game._pause_toggle()
     _key(game,KEY_F2)
