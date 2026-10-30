@@ -45,7 +45,7 @@ func _run() -> void:
     var radio: Array = m["radio_rect"]
     var telemetry: Array = m["telemetry_rect"]
     _test(m["schema"] == "IRON_PULSE_MOBILE_HUD_REFLOW_G13" and
-        m["source_engine_mutated"] is bool and m["source_engine_mutated"] is false,
+        typeof(m["source_engine_mutated"]) == TYPE_BOOL and m["source_engine_mutated"] == false,
         "G13 must honestly derive scene positions and never change IPCrisisEngine")
     _test(m["layout"] == "stacked_story_below_telemetry" and
         m["hud_card_visible"] and m["radio_visible"] and not m["priority_visible"],
