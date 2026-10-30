@@ -139,9 +139,9 @@ func source_geometry_valid() -> bool:
 		return false
 	# Keep the physical road paint INSIDE actual original asphalt AND
 	# the 6.4m box measured by the real R186 collision-prevention rule.
-	if ROAD_PAINT_HALF_M+OUTLINE_PAINT_WIDTH_M*0.5>=SIGNAL.ROAD_HALF_WIDTH_M or
+	if (ROAD_PAINT_HALF_M+OUTLINE_PAINT_WIDTH_M*0.5>=SIGNAL.ROAD_HALF_WIDTH_M or
 		ROAD_PAINT_HALF_M>=BOX.SOURCE_BOX_HALF_M or
-		ROAD_PAINT_HALF_M>=SIGNAL.STOP_LINE_M:
+		ROAD_PAINT_HALF_M>=SIGNAL.STOP_LINE_M):
 		return false
 	for part in ["outline","diagonal"]:
 		var node: MultiMeshInstance3D=painted.get(part)
