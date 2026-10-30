@@ -74,8 +74,8 @@ func observe(delta: float,cars: Array,residents: Array,
 	if not unblocked:
 		ignored_blocked_frames+=1
 		return
-	if not is_finite(delta) or delta<=0.0 or delta>1.0 or
-			not is_finite(signal_clock):
+	if (not is_finite(delta) or delta<=0.0 or delta>1.0 or
+			not is_finite(signal_clock)):
 		ignored_invalid_frames+=1
 		return
 	elapsed+=delta
