@@ -354,3 +354,92 @@ a:focus-visible,button:focus-visible {
   .section-heading h2 { font-size: clamp(35px, 9vw, 44px); }
   .mission-detail { padding: 20px; }
 }
+
+
+/* G10 Tactical Atlas — readable real-game feature, no fake map screenshot. */
+.tactical-atlas-feature {
+  position: relative;
+  margin: clamp(22px, 4vw, 52px) 0;
+  padding: clamp(23px, 4.5vw, 45px);
+  background: linear-gradient(145deg, rgba(10, 23, 33, .98), rgba(8, 14, 22, .97));
+  border: 1px solid rgba(84, 161, 175, .34);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.tactical-atlas-feature::before {
+  content: "";
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  right: -110px;
+  top: -120px;
+  border: 1px solid rgba(111, 198, 210, .09);
+  border-radius: 50%;
+  box-shadow: 0 0 0 42px rgba(70, 169, 180, .017), 0 0 0 100px rgba(75, 154, 177, .015);
+  pointer-events: none;
+}
+.tactical-atlas-heading {
+  position: relative;
+  max-width: 850px;
+}
+.tactical-atlas-heading h3 {
+  color: #f4f7f6;
+  font-size: clamp(25px, 3.6vw, 48px);
+  letter-spacing: -.035em;
+  line-height: 1.08;
+  max-width: 650px;
+  margin: 16px 0;
+  text-wrap: balance;
+}
+.tactical-atlas-heading p {
+  color: #afc0c5;
+  max-width: 750px;
+  line-height: 1.7;
+  font-size: clamp(14px, 1.3vw, 17px);
+}
+.tactical-atlas-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid rgba(132, 180, 186, .22);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(118, 176, 180, .16);
+  margin: 28px 0 18px;
+}
+.tactical-atlas-facts > div {
+  min-width: 0;
+  padding: 22px 18px;
+  background: #0b1a23;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tactical-atlas-facts span {
+  color: #70c7d2;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .11em;
+}
+.tactical-atlas-facts strong {
+  font-size: clamp(13px, 1.4vw, 17px);
+  line-height: 1.45;
+  color: #e0e9e9;
+  overflow-wrap: anywhere;
+}
+.tactical-atlas-note {
+  color: #98aeb4;
+  font-size: 12px;
+  line-height: 1.55;
+  max-width: 950px;
+  margin: 0;
+}
+@media (max-width: 650px) {
+  .tactical-atlas-feature { padding: 21px 17px; border-radius: 12px; }
+  .tactical-atlas-facts { grid-template-columns: 1fr; margin-top: 23px; }
+  .tactical-atlas-facts > div { padding: 14px 16px; gap: 6px; }
+  .tactical-atlas-heading h3 { font-size: clamp(23px, 7vw, 32px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tactical-atlas-feature::before { animation: none; }
+}

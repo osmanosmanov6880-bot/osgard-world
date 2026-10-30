@@ -292,6 +292,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 220s godot --headless --path iron-pulse-prologue --script res://tests/test_g4_local_device_lab.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"
           grep -q '^IRON PULSE G4 LOCAL DEVICE LAB PASS:' "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"; then exit 1; fi
+      - name: G10 real native Godot tactical atlas — true coordinates, safe pause, touch and RU/EN
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 240s godot --headless --path iron-pulse-prologue --script res://tests/test_g10_tactical_atlas.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g10-tactical-atlas.log"
+          grep -q '^IRON PULSE G10 ACTUAL TACTICAL ATLAS PASS:' "$RUNNER_TEMP/iron-pulse-g10-tactical-atlas.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g10-tactical-atlas.log"; then exit 1; fi
       - name: V13 safe world-link contract to actual story campaign and original mission
         shell: bash
         run: |
