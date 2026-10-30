@@ -1885,7 +1885,7 @@ func _apply_vision_profile() -> void:
         {"node":brand_label,"size":20 if compact else 27},
         {"node":objective_label,"size":15 if compact else 17},
         {"node":guidance_label,"size":11 if compact else 12},
-        {"node":telemetry_label,"size":12 if compact else 14},
+        {"node":telemetry_label,"size":11 if compact else 14},
         {"node":allocation_label,"size":12 if compact else 14},
         {"node":threat_label,"size":10 if compact else 11},
         {"node":interaction_label,"size":12 if compact else 17},
