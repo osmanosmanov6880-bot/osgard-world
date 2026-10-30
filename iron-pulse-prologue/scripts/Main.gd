@@ -630,6 +630,7 @@ func _publish_web_state() -> void:
     if continue_button != null:
         state["continue_button_visible"] = continue_button.visible
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
+    state["g13_mobile_hud"] = _g13_mobile_layout_readout()
     state["hud_rects"] = {
         "header": _hud_rect(header_panel),
         "telemetry": _hud_rect(side_panel),
@@ -2101,11 +2102,49 @@ func _refresh_radio_ui() -> void:
         radio_dialogue.text = str(line["text"])
     radio_panel.visible = started and not paused and not journal_panel.visible and not cinematic_view and radio_ttl > 0.0
     priority_panel.visible = started and not paused and not session.finished() and session.core_scanned and session.priority_id == "" and not journal_panel.visible and not cinematic_view
+    _reflow_mobile_story_ui()
     crew_priority_button.text = _copy("choice_crew")
     core_priority_button.text = _copy("choice_core")
     journal_text.text = story.journal_localized(locale)
     if continue_button != null:
         continue_button.text = _copy("continue")
+
+func _reflow_mobile_story_ui() -> void:
+    if side_panel == null or radio_panel == null or priority_panel == null:
+        return
+    var width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
+    var height: float = float(_browser_css_size.y) if _browser_css_size.y > 0 else get_viewport().get_visible_rect().size.y
+    if width >= 650.0:
+        side_panel.visible = not cinematic_view
+        return
+    # Preserve the original crew/core decision; suppress only competing
+    # transient radio while a real selection is physically accessible.
+    if priority_panel.visible:
+        radio_panel.visible = false
+    var short_screen: bool = height < 790.0
+    side_panel.visible = not cinematic_view and (
+        not short_screen or not radio_panel.visible and not priority_panel.visible)
+
+func _g13_mobile_layout_readout() -> Dictionary:
+    var width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
+    var height: float = float(_browser_css_size.y) if _browser_css_size.y > 0 else get_viewport().get_visible_rect().size.y
+    return {
+        "schema":"IRON_PULSE_MOBILE_HUD_REFLOW_G13",
+        "source":"real_godot_native_panels_and_actual_crisis_engine",
+        "compact":width < 650.0,
+        "layout":_g13_story_layout,
+        "css_viewport":[roundi(width),roundi(height)],
+        "touch_first_row_y":_g13_touch_safe_top,
+        "hud_card_visible":side_panel != null and side_panel.visible,
+        "radio_visible":radio_panel != null and radio_panel.visible,
+        "priority_visible":priority_panel != null and priority_panel.visible,
+        "radio_rect":_hud_rect(radio_panel) if radio_panel != null else [],
+        "priority_rect":_hud_rect(priority_panel) if priority_panel != null else [],
+        "telemetry_rect":_hud_rect(side_panel) if side_panel != null else [],
+        "main_dialogue_source":"actual_story_director",
+        "source_engine_mutated":false,
+        "remote_analytics":false
+    }
 
 func _story_event(event_name: String) -> void:
     if story.on_game_event(event_name,session.priority_id):
