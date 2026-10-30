@@ -1794,8 +1794,13 @@ func _layout_hud() -> void:
         priority_panel.offset_right = width-12.0
         priority_panel.offset_top = slot_top
         priority_panel.offset_bottom = maxf(slot_top+76.0,minf(slot_bottom,slot_top+105.0))
-        radio_dialogue.add_theme_font_size_override("font_size",11 if short_screen else 12)
-        radio_speaker.add_theme_font_size_override("font_size",11)
+        radio_dialogue.add_theme_font_size_override("font_size",10 if short_screen else 11)
+        radio_speaker.add_theme_font_size_override("font_size",10)
+        # A full source message remains in J / LOG. The visible mobile
+        # preview has a strict vertical budget rather than stealing controls.
+        radio_dialogue.max_lines_visible = 3 if short_screen else 4
+        radio_dialogue.custom_minimum_size.y = 41.0 if short_screen else 48.0
+        radio_dialogue.tooltip_text = radio_dialogue.text
         crew_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
         core_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
         _g13_story_layout = "single_story_card" if short_screen else "stacked_story_below_telemetry"
@@ -1817,6 +1822,8 @@ func _layout_hud() -> void:
     journal_text.custom_minimum_size.x = journal_half_width*2.0-58.0
     if not narrow:
         radio_dialogue.add_theme_font_size_override("font_size",14)
+        radio_dialogue.max_lines_visible = -1
+        radio_dialogue.custom_minimum_size.y = 70.0
     _refresh_radio_ui()
     _apply_cinematic_view()
     # Cinematic view intentionally refreshes the general HUD visibility;
@@ -2163,6 +2170,10 @@ func _g13_mobile_layout_readout() -> Dictionary:
         "radio_rect":_hud_rect(radio_panel) if radio_panel != null else [],
         "priority_rect":_hud_rect(priority_panel) if priority_panel != null else [],
         "telemetry_rect":_hud_rect(side_panel) if side_panel != null else [],
+        "telemetry_minimum_y":side_panel.get_combined_minimum_size().y if side_panel != null else -1.0,
+        "radio_minimum_y":radio_panel.get_combined_minimum_size().y if radio_panel != null else -1.0,
+        "mobile_telemetry_is_single_label":not allocation_label.visible and not threat_label.visible if width < 650.0 else false,
+        "radio_preview_line_cap":radio_dialogue.max_lines_visible if radio_dialogue != null else 0,
         "main_dialogue_source":"actual_story_director",
         "emergency_footer":footer_label.text if footer_label != null else "",
         "emergency_footer_from_real_engine":width < 650.0 and height < 790.0 and started and
@@ -3102,12 +3113,12 @@ func _refresh_hud() -> void:
         if locale == "ru":
             risk_word = "ОПАСНО" if risk_word in ["CRITICAL","FAILED"] else "ВНИМАНИЕ" if risk_word == "WATCH" else "НОРМА"
         telemetry_label.text = (
-            "HEAT %d°C  AIR %d%%\nCREW %d%%  DOOR %d%%  T %02d:%02d\nA:%s B:%s RESC:%d/2\nA7 / %s" if locale == "en" else
-            "ТЕПЛО %d°C  ВОЗД %d%%\nЭКИП %d%%  ШЛЮЗ %d%%  Т %02d:%02d\nA:%s B:%s СПАС:%d/2\nA7 / %s"
+            "HEAT %d°C  AIR %d%%  CREW %d%%\nDOOR %d%%  T %02d:%02d  RESC %d/2\nA:%s B:%s  A7/%s" if locale == "en" else
+            "ТЕПЛО %d°C  ВОЗД %d%%  ЭКИП %d%%\nШЛЮЗ %d%%  Т %02d:%02d  СПАС %d/2\nA:%s B:%s  A7/%s"
         ) % [
             int(session.heat),int(session.oxygen),int(session.crew_health),
             int(session.door_charge),floori(session.time_left/60.0),int(session.time_left)%60,
-            session.bus_a.to_upper(),session.bus_b.to_upper(),session.relays_activated.size(),risk_word]
+            session.relays_activated.size(),session.bus_a.to_upper(),session.bus_b.to_upper(),risk_word]
         # Read-only full breakdown still exists for native tooling and PC HUD.
         allocation_label.text = "A:%s B:%s %d/2" % [
             session.bus_a.to_upper(),session.bus_b.to_upper(),session.relays_activated.size()]
