@@ -45,8 +45,8 @@ static func source_road_footprint_safe(point: Vector3) -> bool:
 
 static func source_aim(position: Vector3,destination: Vector3,
 		next_waypoint: Vector3) -> Vector3:
-	if not position.is_finite() or not destination.is_finite() or
-			not next_waypoint.is_finite():
+	if (not position.is_finite() or not destination.is_finite() or
+			not next_waypoint.is_finite()):
 		return destination
 	var approaching: Vector3=destination-position
 	approaching.y=0.0
