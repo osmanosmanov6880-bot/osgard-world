@@ -62,6 +62,27 @@ func _run() -> void:
 	check(car.get("last_signal_phase")=="green" and green_limit>red_limit and
 		green_speed>=stopped_speed,
 		"same genuine moving NPC resumes real traffic progress on Z green")
+	# R178: a REAL NPC already in the physical amber dilemma-zone
+	# clears the junction instead of braking as if it were a red phase.
+	var x_route: Array[Vector3]=[
+		Vector3(-166.0,0.8,-156.0),Vector3(-140.0,0.8,-156.0)]
+	car.call("set_route",x_route,12.0)
+	signals.set("elapsed",10.8)
+	signals.call("_update_lights")
+	car.global_position=Vector3(-166.0,0.8,-156.0)
+	car.set("speed",8.5)
+	car.call("_physics_process",0.1)
+	var amber_limit: float=float(car.get("last_signal_speed"))
+	var amber_speed: float=float(car.get("speed"))
+	signals.set("elapsed",12.2)
+	signals.call("_update_lights")
+	car.global_position=Vector3(-166.0,0.8,-156.0)
+	car.set("speed",8.5)
+	car.call("_physics_process",0.1)
+	var red_x_limit: float=float(car.get("last_signal_speed"))
+	check(amber_limit==12.0 and red_x_limit<amber_limit and
+		float(car.get("speed"))<=amber_speed,
+		"original physical NPC safely commits on X amber but brakes on actual X red")
 	var warning_data: Dictionary=RULE.driver_warning(Vector3(-156,1.3,-169),PI,9.0,0.0)
 	check(warning_data.get("phase")=="red" and
 		SENSE.localized(warning_data,"ru").contains("КРАСНЫЙ") and
