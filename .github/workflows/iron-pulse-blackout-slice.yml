@@ -292,6 +292,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 220s godot --headless --path iron-pulse-prologue --script res://tests/test_g4_local_device_lab.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"
           grep -q '^IRON PULSE G4 LOCAL DEVICE LAB PASS:' "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"; then exit 1; fi
+      - name: G14 source-bound real MARA caption continuity, F4 mobile CC, local privacy and engine integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 240s godot --headless --path iron-pulse-prologue --script res://tests/test_g14_caption_continuity.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g14-captions.log"
+          grep -q '^IRON PULSE G14 SOURCE CAPTIONS PASS:' "$RUNNER_TEMP/iron-pulse-g14-captions.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g14-captions.log"; then exit 1; fi
       - name: G13 native Godot 390/320px story card, telemetry, priority and real touch collision prevention
         shell: bash
         run: |
