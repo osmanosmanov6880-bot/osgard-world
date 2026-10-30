@@ -30,8 +30,14 @@ static func source_segment(incident: Dictionary) -> Dictionary:
 	var b: Array=raw_b
 	if a!=canonical["a"] or b!=canonical["b"] or a.size()!=2 or b.size()!=2:
 		return {}
+	# Godot JSON.parse_string may decode integer-looking JSON numbers
+	# as FLOAT. Accept 3.0 and 3 identically, NEVER 3.5 or INF.
 	for value in a+b:
-		if not value is int or value<0 or value>=SOURCE_GRID_N:
+		if not (value is int or value is float):return {}
+		var number: float=float(value)
+		if (not is_finite(number) or number<0.0 or
+			number>=float(SOURCE_GRID_N) or
+			not is_equal_approx(number,float(roundi(number)))):
 			return {}
 	var ga:=Vector2i(int(a[0]),int(a[1]))
 	var gb:=Vector2i(int(b[0]),int(b[1]))

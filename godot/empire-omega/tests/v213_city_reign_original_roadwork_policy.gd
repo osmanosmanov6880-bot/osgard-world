@@ -20,7 +20,10 @@ func _run() -> void:
 	var keys: Dictionary={}
 	for item in catalog:
 		var data: Dictionary=OPER.source_segment(item)
-		verify(not data.is_empty() and not keys.has(data.get("edge","")) and
+		if data.is_empty():
+			verify(false,"valid original source incident must decode, never crash/timeout")
+			continue
+		verify(not keys.has(data.get("edge","")) and
 			(data["center"] as Vector3).is_finite() and
 			is_equal_approx((data["axis"] as Vector3).length(),1.0),
 			"one actual 52m legal source A* edge, not invented road")
