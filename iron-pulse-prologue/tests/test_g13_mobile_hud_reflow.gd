@@ -48,14 +48,18 @@ func _run() -> void:
     _test(m["schema"] == "IRON_PULSE_MOBILE_HUD_REFLOW_G13" and
         typeof(m["source_engine_mutated"]) == TYPE_BOOL and m["source_engine_mutated"] == false,
         "G13 must honestly derive scene positions and never change IPCrisisEngine")
-    _test(m["layout"] == "stacked_story_below_telemetry" and
-        m["hud_card_visible"] and m["radio_visible"] and not m["priority_visible"],
-        "390x844 uses separate live telemetry and authentic MARA radio card")
-    _test(_bottom(telemetry) < float(radio[1])-2.0,
-        "Real 390px top HUD card must not overlap actual radio panel")
-    _test(_bottom(radio) < float(m["touch_first_row_y"])-1.0 and
+    _test(m["layout"] == "single_story_card" and
+        not m["hud_card_visible"] and m["radio_visible"] and not m["priority_visible"],
+        "390x844 must display exactly one true story/telemetry primary card")
+    var header: Array = game._hud_rect(game.header_panel)
+    _test(float(radio[1]) > _bottom(header)+4.0 and
+        _bottom(radio) < float(m["touch_first_row_y"])-2.0 and
         m["touch_first_row_y"] == 373.0,
-        "Actual MARA radio must finish above LAB / MAP / SHOT touch buttons")
+        "390px story card must clear actual header and LAB/MAP touch zones")
+    _test(m["emergency_footer_from_real_engine"] and
+        m["emergency_footer"].contains(str(int(game.session.crew_health))) and
+        m["emergency_footer"].contains(str(int(game.session.door_charge))),
+        "Live footer must expose source crew, door, air, heat and timer")
     _test(game.telemetry_label.text.contains("ЭКИП") and
         game.telemetry_label.text.contains("ШЛЮЗ") and
         game.telemetry_label.text.contains(str(int(game.session.oxygen))),
@@ -65,6 +69,15 @@ func _run() -> void:
         not game.threat_label.text.contains("\n"),
         "Mobile risk stays word-based, not cramped multi-line or color-only")
 
+    # When the source event timer expires, native full telemetry returns.
+    game.radio_ttl = 0.0
+    game._refresh_radio_ui()
+    var after_story: Dictionary = game._g13_mobile_layout_readout()
+    _test(after_story["hud_card_visible"] and not after_story["radio_visible"] and
+        not after_story["emergency_footer_from_real_engine"],
+        "390px must restore real numerical card after original MARA radio expires")
+    game.radio_ttl = 11.0
+    game._refresh_radio_ui()
     game._browser_css_size = Vector2i(320,720)
     game._layout_hud()
     game._refresh_hud()
