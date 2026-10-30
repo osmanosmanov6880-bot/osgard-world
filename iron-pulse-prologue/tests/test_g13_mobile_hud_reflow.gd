@@ -52,7 +52,7 @@ func _run() -> void:
         m["hud_card_visible"] and m["radio_visible"] and not m["priority_visible"] and
         not m["emergency_footer_from_real_engine"],
         "390x844 uses separate live telemetry and authentic MARA radio card")
-    _test(m["mobile_telemetry_is_single_label"] and m["radio_preview_line_cap"] == 4 and
+    _test(m["mobile_telemetry_is_single_label"] and m["radio_preview_line_cap"] == 2 and
         float(m["telemetry_minimum_y"]) <= 112.0,
         "Actual 390px source metrics must physically fit a compact panel, not inflate to old 159px")
     _test(_bottom(telemetry) < float(radio[1])-2.0,
@@ -79,9 +79,12 @@ func _run() -> void:
     _test(m["layout"] == "single_story_card" and not m["hud_card_visible"] and
         m["radio_visible"] and not m["priority_visible"],
         "320x720 gives priority to unaltered real narrative instead of overlapping telemetry")
-    _test(m["radio_preview_line_cap"] == 3 and
+    _test(m["radio_preview_line_cap"] == 2 and
         float(m["radio_minimum_y"]) <= 115.0,
         "Actual 320px MARA line cap remains accessible with full words in private J journal")
+    _test(game.radio_dialogue.text.contains("[J]") and
+        game.radio_dialogue.tooltip_text.length() > game.radio_dialogue.text.length(),
+        "Short mobile radio preview must preserve full exact authored line via native journal and tooltip")
     _test(float(radio[1]) >= 116.0 and
         _bottom(radio) < float(m["touch_first_row_y"]) - 1.0 and
         m["touch_first_row_y"] == 249.0,
