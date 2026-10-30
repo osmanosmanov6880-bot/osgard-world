@@ -136,11 +136,11 @@ func source_budget_ok() -> bool:
 			return false
 	for item in draws.values():
 		var node: MultiMeshInstance3D=item
-		if node.get_child_count()!=0 or node.multimesh==null or
-			node.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+		if (node.get_child_count()!=0 or node.multimesh==null or
+			node.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF):
 			return false
 	return find_children("*","CollisionShape3D",true,false).is_empty()
 
 func phases_match(elapsed: float) -> bool:
-	return synced_states.get("x","") == POLICY.state_at(elapsed,Vector3.RIGHT) and
-		synced_states.get("z","") == POLICY.state_at(elapsed,Vector3.BACK)
+	return (synced_states.get("x","") == POLICY.state_at(elapsed,Vector3.RIGHT) and
+		synced_states.get("z","") == POLICY.state_at(elapsed,Vector3.BACK))
