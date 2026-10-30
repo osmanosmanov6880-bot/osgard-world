@@ -1779,8 +1779,10 @@ func _layout_hud() -> void:
         # Radio and priority must finish ABOVE physical LAB/MAP/SHOT buttons.
         _g13_touch_safe_top = height-471.0
         var short_screen: bool = height < 790.0
-        var slot_top: float = 120.0 if short_screen else 248.0
-        var slot_bottom: float = _g13_touch_safe_top-10.0
+        # The actual 159px telemetry card and 115px story cannot coexist
+        # vertically above the real LAB/MAP controls. One primary card wins.
+        var slot_top: float = 120.0 if short_screen else 138.0
+        var slot_bottom: float = minf(_g13_touch_safe_top-10.0,slot_top+140.0)
         radio_panel.offset_left = 12.0
         radio_panel.offset_right = width-12.0
         radio_panel.offset_top = slot_top
@@ -1805,7 +1807,7 @@ func _layout_hud() -> void:
         radio_panel.add_theme_stylebox_override("panel",radio_style)
         crew_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
         core_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
-        _g13_story_layout = "single_story_card" if short_screen else "stacked_story_below_telemetry"
+        _g13_story_layout = "single_story_card"
     else:
         _g13_touch_safe_top = 0.0
         _g13_story_layout = "desktop"
@@ -2154,19 +2156,20 @@ func _reflow_mobile_story_ui() -> void:
     # transient radio while a real selection is physically accessible.
     if priority_panel.visible:
         radio_panel.visible = false
-    var short_screen: bool = height < 790.0
     var story_visible: bool = radio_panel.visible or priority_panel.visible
-    side_panel.visible = not cinematic_view and (not short_screen or not story_visible)
-    # On short phones, keep CRITICAL LIVE DATA accessible while a story card
-    # temporarily replaces the larger telemetry card. Do not hide risk,
-    # change engine state, or lose the original journal transmission.
-    if short_screen and story_visible and started and not cinematic_view:
+    # Entire mobile design is a SINGLE CARD: scenario dialogue, actionable
+    # crew/core choice or detailed numeric telemetry. Never stack two cards.
+    side_panel.visible = not cinematic_view and not story_visible
+    # No critical source data is lost while a story card replaces telemetry.
+    # Every real IPCrisisEngine vital remains in the always-visible lower strip.
+    if story_visible and started and not cinematic_view:
         var danger: bool = session.heat >= 85.0 or session.oxygen <= 24.0
         var severity: String = ("! DANGER " if locale == "en" else "! ОПАСНО ") if danger else ""
         footer_label.text = severity + (
-            "HEAT %d°C  AIR %d%%  %02d:%02d" if locale == "en" else
-            "ТЕПЛО %d°C  ВОЗД %d%%  %02d:%02d") % [
+            "H%d° O%d%% C%d%% D%d%% %02d:%02d" if locale == "en" else
+            "Т%d° В%d%% Э%d%% Ш%d%% %02d:%02d") % [
                 int(session.heat),int(session.oxygen),
+                int(session.crew_health),int(session.door_charge),
                 floori(session.time_left/60.0),int(session.time_left)%60]
     else:
         footer_label.text = _copy("footer")
@@ -2189,7 +2192,7 @@ func _g13_mobile_layout_readout() -> Dictionary:
         "telemetry_rect":_hud_rect(side_panel) if side_panel != null else [],
         "main_dialogue_source":"actual_story_director",
         "emergency_footer":footer_label.text if footer_label != null else "",
-        "emergency_footer_from_real_engine":width < 650.0 and height < 790.0 and started and
+        "emergency_footer_from_real_engine":width < 650.0 and started and
             (radio_panel != null and radio_panel.visible or priority_panel != null and priority_panel.visible),
         "source_engine_mutated":false,
         "remote_analytics":false
