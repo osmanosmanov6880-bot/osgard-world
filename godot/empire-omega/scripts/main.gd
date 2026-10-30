@@ -14,6 +14,7 @@ const CITY_REIGN_GUIDANCE = preload("res://scripts/city_reign_road_guidance.gd")
 const CITY_REIGN_ROUTE_CHEVRON = preload("res://scripts/city_reign_route_chevron.gd")
 const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
 const DRIVER_SENSE = preload("res://scripts/city_reign_driver_awareness.gd")
+const R178_SIGNAL = preload("res://scripts/city_reign_intersection_policy.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
@@ -134,6 +135,7 @@ func _ready() -> void:
 	city_reign_opening_director.call("sync_state",GameState.data,GameState.locale)
 	traffic_signals = SIGNALS_SCENE.new()
 	add_child(traffic_signals)
+	traffic_signals.call("sync_city_power",GameState.data)
 	roadworks = ROADWORKS_SCENE.new()
 	add_child(roadworks)
 	interiors = INTERIOR_SCENE.new()
@@ -616,6 +618,15 @@ func _physics_process(delta: float) -> void:
 			drive_nav_status = DRIVE_NAV.snapshot(hud.map.route,car.global_position) if route_allowed and hud.map != null else {}
 			drive_warning_status = DRIVER_SENSE.scan(car.global_position,car.rotation.y,
 				maxf(0.0,car.speed),ambient_cars,pedestrians)
+			# R178 original 4-Hz sensor uses existing signal source clock and
+			# NEVER outranks a more urgent physical car or walker collision.
+			var actual_signal: Dictionary=R178_SIGNAL.driver_warning(
+				car.global_position,car.rotation.y,maxf(0.0,car.speed),
+				float(traffic_signals.get("elapsed")))
+			if not actual_signal.is_empty() and (drive_warning_status.is_empty() or (
+					str(drive_warning_status.get("urgency",""))!="urgent" and
+					float(actual_signal["seconds"])<float(drive_warning_status.get("seconds",99.0)))):
+				drive_warning_status=actual_signal
 	if hud.map != null:
 		if patrols != null: hud.map.police_world = patrols.visible_positions()
 		var case_site: String = GameState.CITY_CASES.site(GameState.data)
@@ -1139,6 +1150,8 @@ func _on_strategy_changed(enabled: bool) -> void:
 	car.driving = not enabled and driving
 
 func _on_game_changed(reason: String) -> void:
+	# Grid-funded real road reflectors follow original save changes only.
+	if traffic_signals!=null: traffic_signals.call("sync_city_power",GameState.data)
 	_sync_trial_marker()
 	if reason == "load" or reason == "migrated" or reason == "reset":
 		first_session_observer.begin(GameState.data,reason)
