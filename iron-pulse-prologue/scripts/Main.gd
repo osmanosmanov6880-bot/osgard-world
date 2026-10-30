@@ -328,6 +328,8 @@ var touch_device_lab_button: Button
 var touch_atlas_button: Button
 var touch_vision_button: Button
 var touch_pause_button: Button
+var _g13_story_layout: String = "desktop"
+var _g13_touch_safe_top: float = 0.0
 var device_lab_panel: PanelContainer
 var device_lab_label: Label
 var device_lab_start_button: Button
@@ -1659,9 +1661,11 @@ func _layout_hud() -> void:
     if hud_root == null:
         return
     var width: float = get_viewport().get_visible_rect().size.x
+    var height: float = get_viewport().get_visible_rect().size.y
     # Browser CSS pixels are the authority for touch targets and typography.
     if _browser_css_size.x > 0:
         width = float(_browser_css_size.x)
+        height = float(_browser_css_size.y)
     var narrow: bool = width < 650.0
     touch_ui.visible = (width < 850.0 or DisplayServer.is_touchscreen_available()) and (not paused or pause_panel == null or not pause_panel.visible)
     vitals_panel.visible = width >= 1000.0
@@ -1687,7 +1691,7 @@ func _layout_hud() -> void:
     side_panel.offset_left = 17.0 if not narrow else 12.0
     side_panel.offset_right = minf(366.0,width-16.0)
     side_panel.offset_top = 154.0 if not narrow else 130.0
-    side_panel.offset_bottom = 295.0 if not narrow else 274.0
+    side_panel.offset_bottom = 295.0 if not narrow else 240.0
     prompt_panel.offset_left = 17.0 if not narrow else 12.0
     prompt_panel.offset_right = minf(545.0,width-16.0)
     prompt_panel.offset_top = -128.0
@@ -1702,6 +1706,8 @@ func _layout_hud() -> void:
     allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     threat_label.add_theme_font_size_override("font_size",10 if narrow else 11)
     quality_state_label.add_theme_font_size_override("font_size",10 if narrow else 11)
+    # Detailed quality metrics remain available via F3; save screen space.
+    quality_state_label.visible = not narrow
     adaptive_performance.compact_device = narrow
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
@@ -1768,15 +1774,29 @@ func _layout_hud() -> void:
         overlay.anchor_top = radio_anchor
         overlay.anchor_bottom = radio_anchor
     if narrow:
+        # Real touch controls begin at viewport height - 471 CSS px.
+        # Radio and priority must finish ABOVE physical LAB/MAP/SHOT buttons.
+        _g13_touch_safe_top = height-471.0
+        var short_screen: bool = height < 790.0
+        var slot_top: float = 120.0 if short_screen else 248.0
+        var slot_bottom: float = _g13_touch_safe_top-10.0
         radio_panel.offset_left = 12.0
         radio_panel.offset_right = width-12.0
-        radio_panel.offset_top = 295.0
-        radio_panel.offset_bottom = 390.0
+        radio_panel.offset_top = slot_top
+        radio_panel.offset_bottom = maxf(slot_top+92.0,slot_bottom)
         priority_panel.offset_left = 12.0
         priority_panel.offset_right = width-12.0
-        priority_panel.offset_top = 401.0
-        priority_panel.offset_bottom = 464.0
+        priority_panel.offset_top = slot_top
+        priority_panel.offset_bottom = maxf(slot_top+76.0,minf(slot_bottom,slot_top+105.0))
+        radio_dialogue.add_theme_font_size_override("font_size",11 if short_screen else 12)
+        radio_speaker.add_theme_font_size_override("font_size",11)
+        crew_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
+        core_priority_button.add_theme_font_size_override("font_size",11 if short_screen else 13)
+        _g13_story_layout = "single_story_card" if short_screen else "stacked_story_below_telemetry"
     else:
+        _g13_touch_safe_top = 0.0
+        _g13_story_layout = "desktop"
+
         radio_panel.offset_left = -420.0
         radio_panel.offset_right = -18.0
         radio_panel.offset_top = -207.0
@@ -1789,7 +1809,8 @@ func _layout_hud() -> void:
     journal_panel.offset_left = -journal_half_width
     journal_panel.offset_right = journal_half_width
     journal_text.custom_minimum_size.x = journal_half_width*2.0-58.0
-    radio_dialogue.add_theme_font_size_override("font_size",12 if narrow else 14)
+    if not narrow:
+        radio_dialogue.add_theme_font_size_override("font_size",14)
     _refresh_radio_ui()
     _apply_cinematic_view()
     _apply_vision_profile()
