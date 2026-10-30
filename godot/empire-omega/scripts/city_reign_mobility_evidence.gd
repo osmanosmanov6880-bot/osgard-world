@@ -28,6 +28,11 @@ var total_car_snapshots: int=0
 var stopped_car_snapshots: int=0
 var car_crosswalk_yield_snapshots: int=0
 var genuine_junction_yield_snapshots: int=0
+# R188 physically observed steering in existing 20s local opt-in LAB.
+# No NPC positions, trip histories, steering traces or new network use.
+var physical_corner_steer_snapshots: int=0
+var lateral_guard_snapshots: int=0
+var highest_native_wheel_steer_degrees: float=0.0
 var longest_original_junction_hold_s: float=0.0
 var walker_wait_snapshots: int=0
 var walker_walking_snapshots: int=0
@@ -57,6 +62,9 @@ func begin() -> void:
 	stopped_car_snapshots=0
 	car_crosswalk_yield_snapshots=0
 	genuine_junction_yield_snapshots=0
+	physical_corner_steer_snapshots=0
+	lateral_guard_snapshots=0
+	highest_native_wheel_steer_degrees=0.0
 	longest_original_junction_hold_s=0.0
 	walker_wait_snapshots=0
 	walker_walking_snapshots=0
@@ -127,6 +135,21 @@ func _sample_existing_agents(cars: Array,residents: Array,clock: float) -> void:
 			if is_finite(hold):
 				longest_original_junction_hold_s=maxf(
 					longest_original_junction_hold_s,maxf(0.0,hold))
+		# Original ambient traffic is a native CharacterBody3D. Older
+		# R183–R186 pure fixture Node3Ds have no steering fields and are
+		# intentionally excluded rather than fabricated as live physics.
+		if car is CharacterBody3D:
+			var physical_steer: float=float(car.get("last_steer_command_rad"))
+			if not is_finite(physical_steer):
+				invalid_entities+=1
+			else:
+				if absf(physical_steer)>0.03:
+					physical_corner_steer_snapshots+=1
+				highest_native_wheel_steer_degrees=maxf(
+					highest_native_wheel_steer_degrees,
+					rad_to_deg(absf(physical_steer)))
+			if bool(car.get("last_steer_fallback")):
+				lateral_guard_snapshots+=1
 		highest_original_car_stop_seconds=maxf(
 			highest_original_car_stop_seconds,maxf(0.0,stopped_s))
 	for person in residents:
@@ -183,6 +206,9 @@ func report() -> Dictionary:
 		"stopped_car_observations":stopped_car_snapshots,
 		"real_crosswalk_yield_observations":car_crosswalk_yield_snapshots,
 		"real_junction_box_yield_observations":genuine_junction_yield_snapshots,
+		"physical_front_wheel_steering_observations":physical_corner_steer_snapshots,
+		"real_asphalt_safety_rejections":lateral_guard_snapshots,
+		"maximum_observed_front_wheel_angle_deg":highest_native_wheel_steer_degrees,
 		"longest_original_junction_box_hold_s":longest_original_junction_hold_s,
 		"walker_walk_observations":walker_walking_snapshots,
 		"walker_wait_observations":walker_wait_snapshots,
