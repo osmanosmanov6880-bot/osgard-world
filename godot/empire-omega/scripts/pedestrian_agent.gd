@@ -8,6 +8,7 @@ const PARK_VISITORS = preload("res://scripts/city_reign_park_routine.gd")
 const TRAJECTORY = preload("res://scripts/horizon_pedestrian_yield.gd")
 const STREET_ART = preload("res://scripts/horizon_street_citizen_mesh.gd")
 const R180_CROSSWALK = preload("res://scripts/city_reign_pedestrian_right_of_way.gd")
+const R181_SIDEWALKS = preload("res://scripts/city_reign_sidewalk_routing.gd")
 var citizen_id := 0
 var speed := 2.15
 var activity := ""
@@ -54,7 +55,11 @@ func _refresh_schedule() -> void:
 		return
 	activity = str(plan["activity"])
 	last_destination = target
-	route = ROUTER.find_route(global_position,target,simulation.data)
+	# R181: original closure-aware A* still picks every original grid edge.
+	# Only actual resident FOOT PATH is projected onto the existing +/-6m
+	# source sidewalk lips; no new building collisions or road shortcuts.
+	var source_roads: Array[Vector3]=ROUTER.find_route(global_position,target,simulation.data)
+	route = R181_SIDEWALKS.to_sidewalk_route(source_roads,citizen_id)
 	next_waypoint = 1 if route.size() > 1 else 0
 
 func _yield_to_vehicle(walking_velocity: Vector3 = Vector3.ZERO) -> bool:

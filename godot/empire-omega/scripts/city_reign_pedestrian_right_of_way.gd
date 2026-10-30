@@ -8,7 +8,10 @@ const GATE_OUTER_M: float=14.0
 const GATE_INNER_M: float=SIGNAL.STOP_LINE_M
 const CROSSING_WIDTH_M: float=SIGNAL.ROAD_HALF_WIDTH_M*2.0+1.4
 const CROSSING_BUFFER_S: float=0.65
-const LANE_WIDTH_M: float=5.0
+# The ORIGINAL WorldBuilder draws 1.8m sidewalks at +/-6m from road
+# centers. Signal gates now include the real sidewalk center but reject
+# unrelated parallel streets 8m or farther outside the junction.
+const LANE_WIDTH_M: float=7.15
 const MAX_WALKER_MPS: float=3.6
 const MIN_WALKER_MPS: float=0.3
 const MAX_CANDIDATES: int=16
