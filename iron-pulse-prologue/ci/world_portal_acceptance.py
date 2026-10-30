@@ -85,6 +85,11 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                     "?scenario=blackout&lang=ru"
                 ), "Original RU GRID launch link not real"
                 assert page.evaluate("document.documentElement.scrollWidth") <= 1368
+                assert page.locator("#comfort-feature-title").count() == 1 and (
+                    page.locator(".comfort-preset-grid > div").count() == 3), (
+                    "G12 true source control presets section missing in RU portal")
+                assert "УПРАВЛЕНИЯ" in page.locator(".control-comfort-feature").inner_text().upper(), (
+                    "G12 motor-accessible keyboard mapping copy missing")
                 assert page.locator("#vision-feature-title").count()==1 and (
                     page.locator(".vision-feature-options > div").count()==3), (
                     "G11 real Godot readability feature/3 modes missing from source portal")
@@ -98,6 +103,11 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                                 animations="disabled",timeout=60000)
                 page.locator("#language").click()
                 assert page.evaluate("document.documentElement.lang") == "en"
+                assert "GAME SHOULD ADAPT" in page.locator("#comfort-feature-title").inner_text().upper(), (
+                    "G12 real Godot keyboard comfort controls not localized to EN")
+                assert "F7" in page.locator(".comfort-feature-head").inner_text() and (
+                    "physical" in page.locator(".comfort-feature-note").inner_text().lower()), (
+                    "G12 controls and honest physical-device limitation not explained")
                 assert "RISK SHOULD NEVER BE COLOR ALONE" in page.locator("#vision-feature-title").inner_text(), (
                     "G11 real scene hazard readability is not translated into English")
                 assert "F6" in page.locator(".vision-feature-header").inner_text() and (
@@ -154,6 +164,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 mwidth = m.evaluate("document.documentElement.scrollWidth")
                 assert mwidth <= 392, f"Mobile world-class portal overflows 390px: {mwidth}"
                 assert m.locator("a[data-play]").first.is_visible(), "Mobile play CTA missing"
+                assert m.locator("#comfort-feature-title").is_visible(), (
+                    "Actual Godot G12 keyboard presets explanation hidden on compact phone")
                 assert m.locator("#vision-feature-title").is_visible(), (
                     "Real Godot G11 high-contrast/large-text feature must be visible on phone")
                 assert m.locator("#atlas-feature-title").is_visible(), (
@@ -169,6 +181,12 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 ), "Mobile campaign route not connected to real playable build"
                 m.screenshot(path=str(output/"world-mobile-en.png"),full_page=True,
                              animations="disabled",timeout=60000)
+                result["g12_portal_control_comfort"] = {
+                    "actual_source_modes": 3,
+                    "ru_en": True,
+                    "mobile_390_and_320": True,
+                    "physical_controller_certification_claimed": False
+                }
                 result["g11_world_accessibility"] = {
                     "actual_godot_controls": True,
                     "ru_en": True,
@@ -192,6 +210,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 assert narrow_width <= 322, (
                     f"Narrow 320px portal overflows horizontally: {narrow_width}"
                 )
+                assert m.locator("#comfort-feature-title").is_visible(), (
+                    "Actual Godot G12 keyboard presets explanation hidden on compact phone")
                 assert m.locator("#vision-feature-title").is_visible(), (
                     "Real Godot G11 high-contrast/large-text feature must be visible on phone")
                 assert m.locator("#atlas-feature-title").is_visible(), (

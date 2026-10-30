@@ -232,6 +232,8 @@ var muted_audio: bool = false
 var quality_mode: String = "hero"
 var vision: IPVisionProfile = IPVisionProfile.new()
 var vision_last_save_ok: bool = false
+var control_comfort: IPControlComfort = IPControlComfort.new()
+var control_comfort_last_save_ok: bool = false
 var _vision_panel_baselines: Dictionary = {}
 var walking_phase: float = 0.0
 var _terminal_active_material: StandardMaterial3D
@@ -302,6 +304,7 @@ var pause_title: Label
 var resume_button: Button
 var auto_quality_button: Button
 var vision_button: Button
+var control_comfort_button: Button
 var end_panel: PanelContainer
 var end_title: Label
 var end_stats: Label
@@ -324,6 +327,7 @@ var touch_navigation_button: Button
 var touch_device_lab_button: Button
 var touch_atlas_button: Button
 var touch_vision_button: Button
+var touch_pause_button: Button
 var device_lab_panel: PanelContainer
 var device_lab_label: Label
 var device_lab_start_button: Button
@@ -375,6 +379,7 @@ func _ready() -> void:
     if DisplayServer.get_name() != "headless":
         run_archive.load_archive()
         vision.load_from()
+        control_comfort.load_from()
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -545,6 +550,11 @@ func _publish_web_state() -> void:
     state["g11_visual_readability"]["local_save_ok"] = vision_last_save_ok
     state["g11_visual_readability"]["button_rect"] = _hud_rect(vision_button) if vision_button != null else []
     state["g11_visual_readability"]["touch_rect"] = _hud_rect(touch_vision_button) if touch_vision_button != null else []
+    state["g12_control_comfort"] = control_comfort.readout()
+    state["g12_control_comfort"]["local_save_ok"] = control_comfort_last_save_ok
+    state["g12_control_comfort"]["pause_control_rect"] = _hud_rect(control_comfort_button) if control_comfort_button != null else []
+    state["g12_control_comfort"]["touch_pause_rect"] = _hud_rect(touch_pause_button) if touch_pause_button != null else []
+    state["g12_control_comfort"]["resume_rect"] = _hud_rect(resume_button) if resume_button != null else []
     state["g10_tactical_atlas"] = tactical_atlas.readout() if tactical_atlas != null else {}
     state["g10_tactical_atlas"]["panel_visible"] = atlas_panel != null and atlas_panel.visible
     state["g10_tactical_atlas"]["focus_backdrop_visible"] = atlas_dimmer != null and atlas_dimmer.visible
@@ -1429,6 +1439,12 @@ func _make_overlays() -> void:
     vision_button.add_theme_font_size_override("font_size",13)
     vision_button.pressed.connect(_cycle_vision_profile)
     pause_box.add_child(vision_button)
+    control_comfort_button = Button.new()
+    control_comfort_button.name = "G12_ActualKeyboardAccessibilityPresets"
+    control_comfort_button.custom_minimum_size = Vector2(0,52)
+    control_comfort_button.add_theme_font_size_override("font_size",12)
+    control_comfort_button.pressed.connect(_cycle_control_comfort)
+    pause_box.add_child(control_comfort_button)
     pause_panel.visible = false
     end_panel = _panel(hud_root,Rect2(-300,-220,300,220),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
     end_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1581,6 +1597,11 @@ func _make_touch_controls() -> void:
     touch_vision_button = _touch_button(touch_ui,"VIEW / F6",111,-414,94)
     touch_vision_button.add_theme_font_size_override("font_size",14)
     touch_vision_button.pressed.connect(_cycle_vision_profile)
+    # Mobile always keeps its original touch movement; PAUSE opens the same
+    # proper menu that keyboard Esc and standard gamepad START use.
+    touch_pause_button = _touch_button(touch_ui,"PAUSE",111,-357,94)
+    touch_pause_button.add_theme_font_size_override("font_size",14)
+    touch_pause_button.pressed.connect(_pause_toggle)
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1642,7 +1663,7 @@ func _layout_hud() -> void:
     if _browser_css_size.x > 0:
         width = float(_browser_css_size.x)
     var narrow: bool = width < 650.0
-    touch_ui.visible = width < 850.0 or DisplayServer.is_touchscreen_available()
+    touch_ui.visible = (width < 850.0 or DisplayServer.is_touchscreen_available()) and (not paused or pause_panel == null or not pause_panel.visible)
     vitals_panel.visible = width >= 1000.0
     subtitle_label.visible = not narrow
     if narrow and quality_mode == "hero" and art_stage != null:
@@ -1806,6 +1827,8 @@ func _apply_cinematic_view() -> void:
         touch_atlas_button.visible = not cinematic_view and touch_ui.visible
     if touch_vision_button != null:
         touch_vision_button.visible = not cinematic_view and touch_ui.visible
+    if touch_pause_button != null:
+        touch_pause_button.visible = not cinematic_view and touch_ui.visible
     if cinematic_view and guide_panel != null:
         guide_panel.visible = false
     if cinematic_view and forecast_panel != null:
@@ -1869,6 +1892,21 @@ func _apply_vision_profile() -> void:
     if obsidian_world != null:
         obsidian_world.set_accessibility(high)
     _refresh_vision_label()
+    _refresh_control_comfort_label()
+
+func _refresh_control_comfort_label() -> void:
+    if control_comfort_button != null:
+        control_comfort_button.text = "F7  /  " + control_comfort.label(locale)
+
+func _cycle_control_comfort() -> void:
+    # The player selects how their own physical keyboard maps to movement.
+    # Never inject an action into IPCrisisEngine or move a CharacterBody3D.
+    control_comfort.cycle()
+    control_comfort_last_save_ok = false
+    if DisplayServer.get_name() != "headless":
+        control_comfort_last_save_ok = control_comfort.save_to()
+    _refresh_control_comfort_label()
+    _publish_web_state()
 
 func _cycle_vision_profile() -> void:
     # A deliberate user action; saved to a separate settings file, not to
@@ -2250,6 +2288,7 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    control_comfort.on_stop()
     if atlas_panel != null:
         atlas_panel.visible = false
     if atlas_dimmer != null:
@@ -2279,6 +2318,7 @@ func start_run() -> void:
         _set_player_pointer_capture(true)
 
 func _restart() -> void:
+    control_comfort.on_stop()
     if atlas_panel != null:
         atlas_panel.visible = false
     if atlas_dimmer != null:
@@ -2331,6 +2371,7 @@ func _resume() -> void:
     _clear_operator_overlay()
     paused = false
     pause_panel.visible = false
+    _layout_hud()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
         _set_player_pointer_capture(true)
@@ -2342,11 +2383,14 @@ func _pause_toggle() -> void:
     if not started or session.finished():
         return
     paused = not paused
+    if paused:
+        control_comfort.on_stop()
     if paused and guide_panel != null:
         guide_panel.visible = false
     if paused and forecast_panel != null:
         forecast_panel.visible = false
     pause_panel.visible = paused
+    _layout_hud()
     audio_director.set_active(not paused)
     if DisplayServer.get_name() != "headless":
         _set_player_pointer_capture(not paused)
@@ -2361,6 +2405,7 @@ func _toggle_language() -> void:
     resume_button.text = _copy("resume")
     _refresh_auto_quality_ui()
     _refresh_vision_label()
+    _refresh_control_comfort_label()
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
     campaign_echoes.sync(campaign,locale)
@@ -2454,6 +2499,9 @@ func _gamepad_button(button_index: int) -> void:
         if button_index == JOY_BUTTON_Y and paused:
             _cycle_vision_profile()
             return
+        if button_index == JOY_BUTTON_X and paused:
+            _cycle_control_comfort()
+            return
         if button_index == JOY_BUTTON_X and not started:
             _toggle_run_archive()
         return
@@ -2489,6 +2537,13 @@ func _input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:
         if event.keycode == KEY_F6 and (atlas_panel == null or not atlas_panel.visible):
             _cycle_vision_profile()
+            return
+        if event.keycode == KEY_F7 and (atlas_panel == null or not atlas_panel.visible):
+            _cycle_control_comfort()
+            return
+        if event.keycode == KEY_SHIFT and control_comfort.handle_shift_pressed(
+                started and not paused and not session.finished()):
+            _publish_web_state()
             return
         if atlas_panel != null and atlas_panel.visible:
             if event.keycode in [KEY_F2,KEY_ESCAPE]:
@@ -2624,13 +2679,19 @@ func _look(motion: Vector2) -> void:
 func _physics_process(delta: float) -> void:
     if not started or paused or session.finished():
         return
-    var horizontal: float = float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A))
-    var vertical: float = float(Input.is_key_pressed(KEY_S)) - float(Input.is_key_pressed(KEY_W))
-    horizontal += float(touch_moves["right"]) - float(touch_moves["left"]) + _gamepad_axis(JOY_AXIS_LEFT_X)
-    vertical += float(touch_moves["back"]) - float(touch_moves["forward"]) + _gamepad_axis(JOY_AXIS_LEFT_Y)
-    var stick := Vector2(horizontal,vertical).limit_length(1.0)
+    var keyboard_wasd := Vector2(
+        float(Input.is_key_pressed(KEY_D))-float(Input.is_key_pressed(KEY_A)),
+        float(Input.is_key_pressed(KEY_S))-float(Input.is_key_pressed(KEY_W)))
+    var keyboard_arrows := Vector2(
+        float(Input.is_key_pressed(KEY_RIGHT))-float(Input.is_key_pressed(KEY_LEFT)),
+        float(Input.is_key_pressed(KEY_DOWN))-float(Input.is_key_pressed(KEY_UP)))
+    var touch_axis := Vector2(
+        float(touch_moves["right"])-float(touch_moves["left"]),
+        float(touch_moves["back"])-float(touch_moves["forward"]))
+    var pad_axis := Vector2(_gamepad_axis(JOY_AXIS_LEFT_X),_gamepad_axis(JOY_AXIS_LEFT_Y))
+    var stick: Vector2 = control_comfort.axes(keyboard_wasd,keyboard_arrows,touch_axis,pad_axis)
     var world_direction: Vector3 = player.global_basis * Vector3(stick.x,0,stick.y)
-    var speed: float = 7.1 if Input.is_key_pressed(KEY_SHIFT) else 4.9
+    var speed: float = 7.1 if control_comfort.sprinting(Input.is_key_pressed(KEY_SHIFT)) else 4.9
     var accelerate: float = 15.0 if stick.length() > 0.05 else 20.0
     player.velocity.x = move_toward(player.velocity.x,world_direction.x*speed,accelerate*delta)
     player.velocity.z = move_toward(player.velocity.z,world_direction.z*speed,accelerate*delta)
@@ -2683,11 +2744,11 @@ func _process(delta: float) -> void:
             _look(pad_look*delta*690.0)
         var moving: bool = Vector2(player.velocity.x,player.velocity.z).length() > 0.65
         if moving and not reduced_motion:
-            walking_phase += delta * (10.8 if Input.is_key_pressed(KEY_SHIFT) else 7.3)
+            walking_phase += delta * (10.8 if control_comfort.sprinting(Input.is_key_pressed(KEY_SHIFT)) else 7.3)
         var bob: float = sin(walking_phase)*0.021 if moving and not reduced_motion else 0.0
         camera.position.y = lerpf(camera.position.y,0.62 + bob,minf(delta*9.0,1.0))
         var fov_target: float = 77.0
-        if Input.is_key_pressed(KEY_SHIFT) and moving and not reduced_motion:
+        if control_comfort.sprinting(Input.is_key_pressed(KEY_SHIFT)) and moving and not reduced_motion:
             fov_target = 81.5
         camera.fov = lerpf(camera.fov,fov_target,minf(delta*4.0,1.0))
     art_stage.update_danger(session.heat,session.oxygen,runtime_seconds,reduced_motion)
@@ -2869,6 +2930,7 @@ func _announce(key: String) -> void:
             audio_director.cue("confirm")
 
 func _show_end() -> void:
+    control_comfort.on_stop()
     if atlas_panel != null:
         atlas_panel.visible = false
     if atlas_dimmer != null:

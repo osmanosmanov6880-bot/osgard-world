@@ -725,6 +725,139 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "telemetry_uploaded":False
                         }
 
+                        # G12 physically exercise genuine F7, ArrowUp, Shift
+                        # and mobile PAUSE/RESUME on the real running Godot canvas.
+                        # State mirror is read-only; no fake character commands.
+                        before_ctrl=json.loads(marker.get_attribute("data-state",timeout=10000))
+                        controls=before_ctrl.get("g12_control_comfort",{})
+                        assert controls.get("schema")=="IRON_PULSE_CONTROL_COMFORT_G12" and (
+                            controls.get("mode")=="wasd_hold" and
+                            controls.get("telemetry_uploaded") is False and
+                            controls.get("automated_player_actions") is False), (
+                            "Actual original keyboard preset and privacy boundaries missing",name,controls)
+                        ctrl_actions=(before_ctrl.get("switches"),before_ctrl.get("faults"),
+                                      before_ctrl.get("scanned"),before_ctrl.get("scenario"))
+                        page.keyboard.press("F7")
+                        deadline=time.monotonic()+18
+                        arrows={}
+                        while time.monotonic()<deadline:
+                            arrows=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if arrows.get("g12_control_comfort",{}).get("mode")=="arrows_hold":
+                                break
+                            page.wait_for_timeout(180)
+                        assert arrows.get("g12_control_comfort",{}).get("keyboard")=="ARROWS", (
+                            "F7 did not select actual physical arrow keyboard mapping",name)
+                        pos_before=arrows["player_position"]
+                        if not mobile:
+                            page.keyboard.down("ArrowUp")
+                            page.wait_for_timeout(700)
+                            page.keyboard.up("ArrowUp")
+                            deadline=time.monotonic()+18
+                            moved={}
+                            while time.monotonic()<deadline:
+                                moved=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                p1=moved.get("player_position",pos_before)
+                                if (abs(p1[0]-pos_before[0])+abs(p1[2]-pos_before[2]))>0.08:
+                                    break
+                                page.wait_for_timeout(180)
+                            pos_after=moved["player_position"]
+                            assert (abs(pos_after[0]-pos_before[0])+abs(pos_after[2]-pos_before[2]))>0.08, (
+                                "Real Godot arrow keys failed to move the source CharacterBody3D",name,
+                                pos_before,pos_after)
+                        page.keyboard.press("F7")
+                        deadline=time.monotonic()+18
+                        toggle={}
+                        while time.monotonic()<deadline:
+                            toggle=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if toggle.get("g12_control_comfort",{}).get("mode")=="arrows_toggle":
+                                break
+                            page.wait_for_timeout(180)
+                        assert toggle.get("g12_control_comfort",{}).get("shift_behavior")=="TOGGLE", (
+                            "F7 does not enable motor-accessible hold-free sprint",name)
+                        page.keyboard.press("Shift")
+                        deadline=time.monotonic()+18
+                        while time.monotonic()<deadline:
+                            toggle=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if toggle.get("g12_control_comfort",{}).get("sprint_latched") is True:
+                                break
+                            page.wait_for_timeout(180)
+                        assert toggle.get("g12_control_comfort",{}).get("sprint_latched") is True, (
+                            "Actual SHIFT event did not latch running in source G12 profile",name)
+                        page.keyboard.press("Shift")
+                        deadline=time.monotonic()+18
+                        while time.monotonic()<deadline:
+                            toggle=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if toggle.get("g12_control_comfort",{}).get("sprint_latched") is False:
+                                break
+                            page.wait_for_timeout(180)
+                        assert toggle.get("g12_control_comfort",{}).get("sprint_latched") is False, (
+                            "Second SHIFT event failed to release motor-accessible sprint",name)
+                        page.keyboard.press("F7")
+                        deadline=time.monotonic()+18
+                        restored={}
+                        while time.monotonic()<deadline:
+                            restored=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if restored.get("g12_control_comfort",{}).get("mode")=="wasd_hold":
+                                break
+                            page.wait_for_timeout(180)
+                        assert restored.get("g12_control_comfort",{}).get("mode")=="wasd_hold" and (
+                            restored.get("g12_control_comfort",{}).get("sprint_latched") is False), (
+                            "Original WASD/SHIFT control mode must always be reversible",name)
+                        assert (restored.get("switches"),restored.get("faults"),
+                                restored.get("scanned"),restored.get("scenario"))==ctrl_actions, (
+                            "Keyboard profile controls must never automate a crisis-engine action",name)
+                        if mobile:
+                            rect=restored.get("touch_button_rects",{}).get("PAUSE")
+                            assert rect and rect[2]>=44 and rect[3]>=44, (
+                                "G12 native mobile PAUSE button is missing or too small",name,rect)
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            px=bounds["x"]+(rect[0]+rect[2]/2)*bounds["width"]/restored["viewport"][0]
+                            py=bounds["y"]+(rect[1]+rect[3]/2)*bounds["height"]/restored["viewport"][1]
+                            assert 0<=px<=size["width"] and 0<=py<=size["height"], (
+                                "Actual G12 mobile PAUSE clipped",name,rect)
+                            page.touchscreen.tap(px,py)
+                            deadline=time.monotonic()+18
+                            paused_ctrl={}
+                            while time.monotonic()<deadline:
+                                paused_ctrl=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if paused_ctrl.get("paused") is True and (
+                                        paused_ctrl.get("touch_controls_visible") is False):
+                                    break
+                                page.wait_for_timeout(180)
+                            assert paused_ctrl.get("paused") is True and (
+                                paused_ctrl.get("touch_controls_visible") is False), (
+                                "Real mobile PAUSE did not reveal unobstructed native pause menu",name)
+                            resume_rect=paused_ctrl["g12_control_comfort"]["resume_rect"]
+                            assert resume_rect and resume_rect[2]>=44 and resume_rect[3]>=44, (
+                                "Real mobile RESUME button inaccessible",name,resume_rect)
+                            bounds=canvas.bounding_box()
+                            page.touchscreen.tap(
+                                bounds["x"]+(resume_rect[0]+resume_rect[2]/2)*bounds["width"]/paused_ctrl["viewport"][0],
+                                bounds["y"]+(resume_rect[1]+resume_rect[3]/2)*bounds["height"]/paused_ctrl["viewport"][1]
+                            )
+                            deadline=time.monotonic()+18
+                            resumed_ctrl={}
+                            while time.monotonic()<deadline:
+                                resumed_ctrl=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if resumed_ctrl.get("paused") is False and (
+                                        resumed_ctrl.get("touch_controls_visible") is True):
+                                    break
+                                page.wait_for_timeout(180)
+                            assert resumed_ctrl.get("paused") is False and (
+                                resumed_ctrl.get("touch_controls_visible") is True), (
+                                "Real mobile RESUME failed to restore movement controls",name)
+                        report.setdefault("g12_actual_keyboard_comfort",{})[name]={
+                            "source":"real Godot input and CharacterBody3D",
+                            "modes":["wasd_hold","arrows_hold","arrows_toggle"],
+                            "actual_arrow_movement_tested":not mobile,
+                            "motor_accessible_shift_toggle_tested":True,
+                            "mobile_pause_resumed":mobile,
+                            "source_actions_unchanged":True,
+                            "hardware_certified":False,
+                            "telemetry_uploaded":False
+                        }
+
                         # G1: prove that the real Godot operator guide opens
                         # through the actual keyboard and mobile touch inputs.
                         # No JavaScript method injects an objective or victory.
