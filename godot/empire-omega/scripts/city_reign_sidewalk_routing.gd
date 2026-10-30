@@ -14,8 +14,8 @@ static func _grid_aligned(value: float) -> bool:
 	if not is_finite(value):return false
 	var index: int=roundi((value-MOBILITY.ROAD_MIN)/MOBILITY.ROAD_SPACING)
 	if index<0 or index>=MOBILITY.ROAD_SIZE:return false
-	return absf(value-(MOBILITY.ROAD_MIN+float(index)*MOBILITY.ROAD_SPACING))<
-		GRID_TOLERANCE_M
+	return (absf(value-(MOBILITY.ROAD_MIN+float(index)*MOBILITY.ROAD_SPACING))<
+		GRID_TOLERANCE_M)
 
 static func is_original_road_point(at: Vector3) -> bool:
 	return at.is_finite() and _grid_aligned(at.x) and _grid_aligned(at.z)
@@ -29,11 +29,11 @@ static func edge_sidewalk_offset(a: Vector3,b: Vector3,
 	var side: float=1.0 if posmod(citizen_id,2)==0 else -1.0
 	# Only genuine adjacent 52m A* grid EDGES can be shifted. The
 	# source solver omitted closed streets, so we never synthesize one.
-	if absf(absf(dx)-MOBILITY.ROAD_SPACING)<GRID_TOLERANCE_M and
-			absf(dz)<GRID_TOLERANCE_M:
+	if (absf(absf(dx)-MOBILITY.ROAD_SPACING)<GRID_TOLERANCE_M and
+			absf(dz)<GRID_TOLERANCE_M):
 		return Vector3(0.0,0.0,side*PAVEMENT_OFFSET_M)
-	if absf(absf(dz)-MOBILITY.ROAD_SPACING)<GRID_TOLERANCE_M and
-			absf(dx)<GRID_TOLERANCE_M:
+	if (absf(absf(dz)-MOBILITY.ROAD_SPACING)<GRID_TOLERANCE_M and
+			absf(dx)<GRID_TOLERANCE_M):
 		return Vector3(side*PAVEMENT_OFFSET_M,0.0,0.0)
 	return Vector3.ZERO
 
@@ -63,8 +63,8 @@ static func to_sidewalk_route(source: Array[Vector3],
 			_append_unique(result,to)
 			prior_offset=Vector3.ZERO
 			continue
-		if prior_offset!=Vector3.ZERO and
-				prior_offset.distance_squared_to(shift)>0.001:
+		if (prior_offset!=Vector3.ZERO and
+				prior_offset.distance_squared_to(shift)>0.001):
 			# At a true 90-degree street corner, join the two EXISTING
 			# sidewalk lips at their original 6m x 6m corner. Never cut
 			# through building blocks or across a closed A* edge.
