@@ -63,6 +63,15 @@ static func to_right_hand_lane(original: Array[Vector3]) -> Array[Vector3]:
 			raw.append(p)
 	if raw.size()<2 or raw.size()>MAX_SOURCE_NODES:
 		return unchanged
+	# Never partially project a route containing an impossible original
+	# 104m jump between two actual A* grid vertices. Either every
+	# physical graph edge is a true adjacent 52m source edge, or the
+	# WHOLE source path is kept unchanged. This prevents half-valid
+	# right-lane excursions and accidental wall clipping.
+	for i in range(raw.size()-1):
+		if (source_grid_vertex(raw[i]) and source_grid_vertex(raw[i+1]) and
+			source_edge_right(raw[i],raw[i+1])==Vector3.ZERO):
+			return unchanged
 	var result: Array[Vector3]=[]
 	for i in range(raw.size()):
 		var before: Vector3=Vector3.ZERO
