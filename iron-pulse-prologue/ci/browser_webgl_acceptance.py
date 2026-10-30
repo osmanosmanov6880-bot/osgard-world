@@ -372,6 +372,18 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             close=opened.get("close_rect")
                             assert close and close[2]>=44 and close[3]>=44,(
                                 "Private history has no accessible mobile close control",close)
+                            modal=opened.get("panel_rect",[])
+                            assert modal and opened.get("touch_suspended_during_modal") is True and (
+                                ledger_open.get("touch_controls_visible") is False), (
+                                "V17 mobile archive must suspend touch gameplay controls",name,opened)
+                            assert (0<=modal[0] and 0<=modal[1] and
+                                modal[0]+modal[2]<=size["width"]+2 and
+                                modal[1]+modal[3]<=size["height"]+2 and
+                                0<=close[0] and 0<=close[1] and
+                                close[0]+close[2]<=size["width"]+2 and
+                                close[1]+close[3]<=size["height"]+2), (
+                                "Actual original archive and CLOSE must be inside real mobile viewport",
+                                name,modal,close,size)
                             bounds=canvas.bounding_box()
                             page.touchscreen.tap(
                                 bounds["x"]+(close[0]+close[2]/2)*bounds["width"]/ledger_open["viewport"][0],
