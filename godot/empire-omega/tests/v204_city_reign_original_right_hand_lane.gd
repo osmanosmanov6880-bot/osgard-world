@@ -37,7 +37,7 @@ func _run() -> void:
 		curved[1]==east+Vector3(-2,0,2) and
 		LANE.on_original_asphalt(curved[1]),
 		"real +X then +Z intersection meets at asphalt interior 2m x 2m, not a backwards hook")
-	var left_turn: Array[Vector3]=[a,east,Vector3(-104,0.8,-208)]
+	var left_turn: Array[Vector3]=[a,east,Vector3(-104,0.8,-52)]
 	check(LANE.to_right_hand_lane(left_turn)==left_turn,
 		"invalid 52m A* jump is never falsely projected onto a physical lane")
 	var uturn: Array[Vector3]=[a,east,a]
