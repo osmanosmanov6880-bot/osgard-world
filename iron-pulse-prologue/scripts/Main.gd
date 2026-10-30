@@ -575,6 +575,9 @@ func _publish_web_state() -> void:
         "open_intro_rect":_hud_rect(archive_intro_button) if archive_intro_button != null else [],
         "open_end_rect":_hud_rect(archive_end_button) if archive_end_button != null else [],
         "close_rect":_hud_rect(archive_close_button) if archive_close_button != null else [],
+        "panel_rect":_hud_rect(archive_panel) if archive_panel != null else [],
+        "scroll_height":archive_label.get_parent().size.y if archive_label != null and archive_label.get_parent() is ScrollContainer else 0.0,
+        "touch_suspended_during_modal":archive_panel != null and archive_panel.visible and touch_ui != null and not touch_ui.visible,
         "summary_title":archive_title.text if archive_title != null else ""
     }
     state["black_box"] = {
@@ -1668,7 +1671,11 @@ func _layout_hud() -> void:
         width = float(_browser_css_size.x)
         height = float(_browser_css_size.y)
     var narrow: bool = width < 650.0
-    touch_ui.visible = (width < 850.0 or DisplayServer.is_touchscreen_available()) and (not paused or pause_panel == null or not pause_panel.visible)
+    # Modal archive/real pause must disable physical gameplay touch hitboxes.
+    # Otherwise invisible overlapping controls can steal the archive CLOSE tap.
+    touch_ui.visible = (width < 850.0 or DisplayServer.is_touchscreen_available()) and (
+        not paused or pause_panel == null or not pause_panel.visible) and (
+        archive_panel == null or not archive_panel.visible)
     vitals_panel.visible = width >= 1000.0
     subtitle_label.visible = not narrow
     if narrow and quality_mode == "hero" and art_stage != null:
@@ -1773,6 +1780,11 @@ func _layout_hud() -> void:
         archive_label.custom_minimum_size.x = archive_half*2.0-48.0
         archive_label.add_theme_font_size_override("font_size",11 if narrow else 12)
         archive_title.add_theme_font_size_override("font_size",18 if narrow else 24)
+        # Real mobile closure was obstructed/too far below the phone viewport.
+        # History stays fully accessible by scrolling; only the viewport shrinks.
+        var archive_scroller: ScrollContainer = archive_label.get_parent() as ScrollContainer
+        if archive_scroller != null:
+            archive_scroller.custom_minimum_size.y = (175.0 if height < 790.0 else 200.0) if narrow else 392.0
     if debrief_panel != null:
         var review_half: float = minf(315.0,width*0.45)
         debrief_panel.offset_left = -review_half
@@ -2090,6 +2102,7 @@ func _toggle_run_archive() -> void:
     if archive_panel == null or (started and not paused and not session.finished()):
         return
     archive_panel.visible = not archive_panel.visible
+    _layout_hud()
     archive_erase_armed = false
     archive_erase_failed = false
     if archive_panel.visible:
