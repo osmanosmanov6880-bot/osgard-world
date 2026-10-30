@@ -32,9 +32,23 @@ func _run() -> void:
 	var lights: Node3D=game.get("traffic_signals") as Node3D
 	check(people.size()==34 and cars.size()==12 and lights!=null,
 		"actual original city retains all 34 real citizens, 12 existing physical vehicles")
-	var lips: Array=world.city_root.find_children("Sidewalk*","Node3D",true,false)
-	check(lips.size()>=36,
-		"36 real existing mesh sidewalk strips remain visible in original native WorldBuilder")
+	# Repeated original WorldBuilder holder names may be auto-unique
+	# Node names, so inspect the REAL physical 454m x 1.8m BoxMesh
+	# geometries rather than trusting a cosmetic 'Sidewalk*' label.
+	var native_lips: int=0
+	for holder in world.city_root.get_children():
+		if not holder is Node3D or holder.get_child_count()!=1:
+			continue
+		var mesh_node: MeshInstance3D=holder.get_child(0) as MeshInstance3D
+		if mesh_node==null or not mesh_node.mesh is BoxMesh:
+			continue
+		var actual: BoxMesh=mesh_node.mesh as BoxMesh
+		var geometry: Vector3=actual.size
+		if (is_equal_approx(geometry.x,454.0) and is_equal_approx(geometry.z,1.8)) or (
+			is_equal_approx(geometry.z,454.0) and is_equal_approx(geometry.x,1.8)):
+			native_lips+=1
+	check(native_lips==36,
+		"36 REAL WorldBuilder BoxMesh pavements exist at original x/z +6/-6m")
 	var route_count: int=0
 	for citizen in people:
 		for pos in citizen.route:
