@@ -648,8 +648,8 @@ func _publish_web_state() -> void:
         state["continue_button_visible"] = continue_button.visible
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
     state["g13_mobile_hud"] = _g13_mobile_layout_readout()
-    state["g14_look_comfort"] = look_comfort.readout()
-    state["g14_look_comfort"]["local_save_ok"] = look_last_save_ok
+    # Backward-compatible readout aliases; never overwrite the yaw/pitch
+    # evidence collected above with a new empty dictionary.
     state["g14_look_comfort"]["pause_button_rect"] = _hud_rect(look_comfort_button) if look_comfort_button != null else []
     state["g14_look_comfort"]["touch_button_rect"] = _hud_rect(touch_look_button) if touch_look_button != null else []
     state["hud_rects"] = {
