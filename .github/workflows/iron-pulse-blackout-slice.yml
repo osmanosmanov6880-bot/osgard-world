@@ -292,6 +292,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 220s godot --headless --path iron-pulse-prologue --script res://tests/test_g4_local_device_lab.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"
           grep -q '^IRON PULSE G4 LOCAL DEVICE LAB PASS:' "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g4-local-device-lab.log"; then exit 1; fi
+      - name: G12 real Godot arrow-key locomotion, switch sprint, accessibility controls and mobile pause
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 240s godot --headless --path iron-pulse-prologue --script res://tests/test_g12_control_comfort.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-g12-control-comfort.log"
+          grep -q '^IRON PULSE G12 ACTUAL INPUT COMFORT PASS:' "$RUNNER_TEMP/iron-pulse-g12-control-comfort.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-g12-control-comfort.log"; then exit 1; fi
       - name: G11 real 3D hazard language, contrast/large text, local privacy and game checkpoint QA
         shell: bash
         run: |
