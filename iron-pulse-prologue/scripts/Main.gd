@@ -1926,6 +1926,13 @@ func _apply_vision_profile() -> void:
             border.bg_color = Color(0.004,0.014,0.023,0.994)
             border.border_color = Color(0.65,0.88,0.93,0.92)
             border.set_border_width_all(2)
+        if compact and node == side_panel:
+            # G13: margins are part of the native minimum panel height.
+            # This must remain true in BOTH G11 contrast and large-text modes.
+            border.content_margin_top = 5
+            border.content_margin_bottom = 5
+            border.content_margin_left = 10
+            border.content_margin_right = 10
         node.add_theme_stylebox_override("panel",border)
     if high:
         objective_label.add_theme_color_override("font_color",Color(0.98,0.99,1.0))
