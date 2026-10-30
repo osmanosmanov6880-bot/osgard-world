@@ -1,36 +1,36 @@
 # IRON PULSE WORLD — G7 → G9 INTERNATIONAL RELEASE TRAIN
 
-**Base:** G6 exact-source engineering CI SUCCESS, commit \`ebecfb6ce090b9837b43b542c38fd28a062caa89\`, [Actions #41020249762](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41020249762).
-**Scope:** only \`iron-pulse-prologue\` and its existing GitHub Actions workflow. We do NOT claim production deployment, live traffic, verified iOS hardware, authenticated humans, commercial rights, signed Windows executables or external AAA art/audio approval.
+**Base:** G6 exact-source engineering CI SUCCESS, commit `ebecfb6ce090b9837b43b542c38fd28a062caa89`, [Actions #41020249762](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41020249762).
+**Scope:** only `iron-pulse-prologue` and its existing GitHub Actions workflow. We do NOT claim production deployment, live traffic, verified iOS hardware, authenticated humans, commercial rights, signed Windows executables or external AAA art/audio approval.
 
 ## Launch principles — unconditional
 
 1. **Keep master and live systems untouched** during the remaining readiness work. Each candidate is exact-source and reproducible. G5 vault staging does not activate production.
 2. The SHA-256 of a package confirms integrity only against an independently trusted digest. SHA-256 of an operator-supplied JSON record is NOT a hardware certificate, proof of consent or signature.
-3. G6–G9 CLI tools require a verified existing Godot Windows/WebGL Release Vault archive. They can output only **RELEASE_HOLD** or a request for **independent human review**. They never return \`production_approved=true\`, grant a launch GO, sign Windows binaries, deploy websites or change DNS/CDN.
+3. G6–G9 CLI tools require a verified existing Godot Windows/WebGL Release Vault archive. They can output only **RELEASE_HOLD** or a request for **independent human review**. They never return `production_approved=true`, grant a launch GO, sign Windows binaries, deploy websites or change DNS/CDN.
 4. No participant identity, name, email, phone, IP, hardware UUID or exact address belongs in public QA evidence. Use only anonymous participant codes in the local private evidence directory. If consent is withdrawn, promptly remove their data and rerun review.
 5. All CI test fixtures are synthetic; they cannot be used as evidence of human/device/commercial testing. CI deliberately verifies real binaries with *missing* physical / human evidence and requires a HOLD.
 
 ## B1 — G6 physical readiness (existing validated engineering base)
 
-Sources: \`ci/device_acceptance_g6.py\`, \`docs/G6_PHYSICAL_DEVICE_ACCEPTANCE_2026.md\`.
+Sources: `ci/device_acceptance_g6.py`, `docs/G6_PHYSICAL_DEVICE_ACCEPTANCE_2026.md`.
 Must actually test integrated/discrete Windows, midrange/entry Android Chrome, and real iPhone Safari. Run GRID, HEAT, AIR twice each per device class, plus 30 active minutes soak broken into <=10 minute G4 reports. Check controls, input, sound, checkpoints, app resume and heat. The G6 p95 goals (16.7 ms HERO discrete, 33.3 ms ECO) are **provisional main-loop targets**, not achieved GPU measurements. Independent owner needs to witness, retest and document known unsupported devices.
 
 **Exit criterion:** the reviewer independently confirms the real devices and approves acceptance *outside* the CLI, with a signed/human-traceable decision kept privately. CI alone is insufficient.
 
 ## B2 — G7 actual player study & campaign quality
 
-Code: \`ci/human_playtest_g7.py\`, \`ci/test_human_playtest_g7.py\`.
+Code: `ci/human_playtest_g7.py`, `ci/test_human_playtest_g7.py`.
 
 - Recruit at least **20 independently consenting real players who finish all three acts**. Report all failed and withdrawn sessions too, not just successes. Completion rate target >=80% over included sessions, and >=5 RU + >=5 EN participants, with representation across Windows/Android/iOS as available.
-- Separate participant codes \`P-xxxxxxxxxxxx\` only, not identities. Each code has exactly one GRID, HEAT, AIR report: completion, time, retries, controls/clarity/engagement/accessibility ratings (1–5) and an anonymized feedback code. Consent and withdrawal flags are required, but are not remotely authenticated.
+- Separate participant codes `P-xxxxxxxxxxxx` only, not identities. Each code has exactly one GRID, HEAT, AIR report: completion, time, retries, controls/clarity/engagement/accessibility ratings (1–5) and an anonymized feedback code. Consent and withdrawal flags are required, but are not remotely authenticated.
 - Every P0/P1 bug must be fixed, verified and covered by a regression test. P2/P3 issues require explicit triage. Preserve adverse feedback, including device failures and failed campaign completions.
 - Run human follow-up interviews only with informed consent; avoid recording voice/video or collecting contact details in code artifacts without separate consent and secure storage.
 - Independent visual/audio quality review is distinct from code correctness. Assessment categories: lighting & navigation, physical controller/phone comfort, readability, coherent three-act narrative, original artwork, soundtrack/mix, localization, accessibility, crashes/thermal performance.
 
 Private operator procedure:
 
-\`\`\`bash
+```bash
 cd iron-pulse-prologue
 python3 ci/human_playtest_g7.py --init \
   --archive /trusted/IRON_PULSE_WORLD_G5_RELEASE_HOLD.zip \
@@ -44,17 +44,17 @@ python3 ci/human_playtest_g7.py \
   --bundle-sha256 <TRUSTED_FULL_64_HEX_ARCHIVE> \
   --evidence-dir /private/iron-pulse/g7 \
   --output /private/iron-pulse/g7-review.json
-\`\`\`
+```
 
-An internally consistent packet gives only \`READY_FOR_INDEPENDENT_REVIEW\`, **not** 20 authenticated humans.
+An internally consistent packet gives only `READY_FOR_INDEPENDENT_REVIEW`, **not** 20 authenticated humans.
 
 **Exit criterion:** witnessed 20-player three-act study, severity-reviewed bugs, agreed design/audio improvements, external reviewer signoff.
 
 ## B3 — G8 global legal/security/distribution and release-control review
 
-Code: \`ci/world_launch_gate_g8.py\`, \`ci/test_world_launch_gate_g8.py\`.
+Code: `ci/world_launch_gate_g8.py`, `ci/test_world_launch_gate_g8.py`.
 
-The gate independently invokes G6/G7/G9 validations against the *same actual source-bound release archive*. The local \`g8/checklist.json\` has 27 explicit checkboxes in five groups:
+The gate independently invokes G6/G7/G9 validations against the *same actual source-bound release archive*. The local `g8/checklist.json` has 28 explicit checkboxes in five groups:
 
 - **Rights and legal:** all authored assets, third-party licenses, audio/voice, marks, notices, age ratings and jurisdiction-specific consumer/refund terms.
 - **Security and privacy:** RU/EN privacy notices, minimum telemetry, file retention, dependency review, vulnerability triage, unambiguous download provenance.
@@ -62,7 +62,7 @@ The gate independently invokes G6/G7/G9 validations against the *same actual sou
 - **Distribution and recovery:** Windows code signing, pinned external SHA and receipt, TLS/HTTP headers, real-host staging, real-host rollback, backup restore, customer support.
 - **Governance:** independent legal, security, hardware and playtest auditors, authorized named release owner held privately.
 
-\`\`\`bash
+```bash
 python3 ci/world_launch_gate_g8.py --init \
   --archive /trusted/IRON_PULSE_WORLD_G5_RELEASE_HOLD.zip \
   --source-sha <TRUSTED_SOURCE_SHA> \
@@ -74,19 +74,19 @@ python3 ci/world_launch_gate_g8.py \
   --bundle-sha256 <TRUSTED_ARCHIVE_SHA> \
   --evidence-root /private/iron-pulse \
   --ops-head <EXTERNALLY_TRUSTED_G9_LEDGER_HEAD_SHA>
-\`\`\`
+```
 
-The best result is \`READY_FOR_INDEPENDENT_LAUNCH_AUDIT\`. It is not a production GO, even with every flag true. Require a separate authenticated responsible-human authorization outside CI before any production changes.
+The best result is `READY_FOR_INDEPENDENT_LAUNCH_AUDIT`. It is not a production GO, even with every flag true. Require a separate authenticated responsible-human authorization outside CI before any production changes.
 
 **Release protocol once independently authorized (NOT performed):** frozen source -> signed binaries and verified web artifact -> staging on real distribution infrastructure -> independent smoke test -> limited canary -> monitor agreed objective signals -> hold/rollback on breach -> widened distribution after explicit approval. Do not promise instant rollback for DNS caches, app downloads or offline clients; test actual behavior. Rehearse restore from backed-up state and rollback of service-worker caches. Do not collect telemetry without policy/consent.
 
 ## B4 — G9 support, incident management, resilience and postlaunch
 
-Code: \`ci/operations_g9.py\`, \`ci/test_operations_g9.py\`.
+Code: `ci/operations_g9.py`, `ci/test_operations_g9.py`.
 
-Implement a **local offline rehearsal ledger**, not a fictitious production operations center. Events follow exactly \`OPEN -> TRIAGE -> MITIGATE -> RECOVER -> CLOSE\`. Each JSONL event has fixed non-identifying codes, exact source/build SHAs, sequence number, previous event digest and SHA-256. The writer uses an exclusive lock, compare-and-swap expected last hash, flush and atomic file replacement. To demonstrate integrity against ledger rewrite, pin the latest head **independently** of the ledger under a trusted operator process. An internal chain without a trusted head is not tamper-proof.
+Implement a **local offline rehearsal ledger**, not a fictitious production operations center. Events follow exactly `OPEN -> TRIAGE -> MITIGATE -> RECOVER -> CLOSE`. Each JSONL event has fixed non-identifying codes, exact source/build SHAs, sequence number, previous event digest and SHA-256. The writer uses an exclusive lock, compare-and-swap expected last hash, flush and atomic file replacement. To demonstrate integrity against ledger rewrite, pin the latest head **independently** of the ledger under a trusted operator process. An internal chain without a trusted head is not tamper-proof.
 
-\`\`\`bash
+```bash
 python3 ci/operations_g9.py --init \
   --archive /trusted/IRON_PULSE_WORLD_G5_RELEASE_HOLD.zip \
   --source-sha <TRUSTED_SOURCE_SHA> \
@@ -103,7 +103,7 @@ python3 ci/operations_g9.py --append OPEN \
   --ops-dir /private/iron-pulse/g9
 # Repeat TRIAGE, MITIGATE, RECOVER, CLOSE with the newly returned head each time.
 # Complete the ten private ops.json checkboxes only after performing each step.
-\`\`\`
+```
 
 G9 also requires support intake, incident severity/triage rules, an independently agreed backup on-call, localized RU/EN incident communication templates, safe data retention, rollback/restore drills and scheduled review at 30/60/90 days. No actual SLO or uptime is claimed without production measurements.
 
