@@ -443,3 +443,91 @@ a:focus-visible,button:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .tactical-atlas-feature::before { animation: none; }
 }
+
+
+/* G11 / REAL GODOT VISUAL READABILITY — ACCESSIBLE INFORMATION HIERARCHY */
+.vision-readability-feature {
+  margin: clamp(28px, 5vw, 60px) 0;
+  padding: clamp(24px, 4vw, 48px);
+  background: #09151d;
+  border: 2px solid rgba(176, 213, 221, .44);
+  border-radius: 14px;
+  color: #f4f8fa;
+  position: relative;
+}
+.vision-readability-feature:before {
+  content: "A7 / READABILITY";
+  display: block;
+  position: absolute;
+  right: clamp(18px, 4vw, 44px);
+  top: clamp(20px, 3vw, 30px);
+  color: #8daeb8;
+  font-size: 10px;
+  letter-spacing: .15em;
+  pointer-events: none;
+}
+.vision-feature-header { max-width: 850px; }
+.vision-feature-header h3 {
+  max-width: 770px;
+  margin: 18px 0;
+  font-size: clamp(25px, 4vw, 53px);
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+.vision-feature-header p {
+  max-width: 760px;
+  color: #c4d4d9;
+  font-size: clamp(14px, 1.35vw, 17px);
+  line-height: 1.65;
+}
+.vision-feature-options {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  border: 1px solid rgba(190, 224, 230, .31);
+  border-radius: 11px;
+  margin: 30px 0 20px;
+  gap: 1px;
+  overflow: hidden;
+  background: rgba(179,218,226,.26);
+}
+.vision-feature-options > div {
+  background: #0d212b;
+  padding: 24px 20px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.vision-feature-options span {
+  color: #a8d9e2;
+  font-weight: 700;
+  letter-spacing: .1em;
+  font-size: 11px;
+}
+.vision-feature-options strong {
+  color: #f0f6f6;
+  font-size: clamp(13px, 1.45vw, 17px);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.vision-feature-note {
+  color: #b9cbd1;
+  font-size: 13px;
+  line-height: 1.65;
+  max-width: 880px;
+}
+@media(max-width:650px) {
+  .vision-readability-feature {padding: 22px 17px;}
+  .vision-readability-feature:before {display:none;}
+  .vision-feature-header h3 {font-size: clamp(24px, 7.2vw, 34px);}
+  .vision-feature-options {grid-template-columns: 1fr;margin-top: 20px;}
+  .vision-feature-options>div {padding: 16px; gap: 6px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .vision-readability-feature, .vision-readability-feature * {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+  }
+}
