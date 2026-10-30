@@ -25,9 +25,10 @@ static func source_gate_valid(sight: Dictionary,heading: Vector3) -> bool:
 	var center: Variant=sight.get("point",null)
 	var free: float=float(sight.get("stop_distance",NAN))
 	var distance: float=float(sight.get("distance_to_center",NAN))
-	if not center is Vector3 or not (center as Vector3).is_finite():
+	if not center is Vector3:
 		return false
 	var point: Vector3=center
+	if not point.is_finite():return false
 	if not SOURCE.JUNCTIONS.has(point.x) or not SOURCE.JUNCTIONS.has(point.z):
 		return false
 	if not is_finite(free) or not is_finite(distance):
