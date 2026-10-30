@@ -27,6 +27,7 @@ const R183_MOBILITY_LAB = preload("res://scripts/city_reign_mobility_evidence.gd
 const R177_FIRST_SESSION = preload("res://scripts/city_reign_first_session_observer.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
+const R189_LIVE_NPC_HEADLAMPS = preload("res://scripts/city_reign_pooled_traffic_headlights.gd")
 const ROUTER = preload("res://scripts/street_router.gd")
 const INTERIOR_SCENE = preload("res://scripts/interior_manager.gd")
 const LANDMARKS_SCENE = preload("res://scripts/project_landmarks.gd")
@@ -89,6 +90,7 @@ var last_route_goal := Vector3.ZERO
 var last_route_source: String = "none"
 var pedestrians: Array = []
 var ambient_cars: Array = []
+var pooled_traffic_headlamps: Node3D
 var lod_timer := 0.0
 var diagnostic_timer := 0.0
 var adaptive_graphics = ADAPTIVE_GRAPHICS.new()
@@ -173,6 +175,12 @@ func _ready() -> void:
 	add_child(ground_spray)
 	_spawn_traffic()
 	_spawn_citizens()
+	# R189: only SIX native SpotLight3D are pooled for THREE of the
+	# nearest original 12 real physics cars at night. The existing
+	# player's TWO R33 headlights remain unchanged; no fake glowing art.
+	pooled_traffic_headlamps=R189_LIVE_NPC_HEADLAMPS.new()
+	add_child(pooled_traffic_headlamps)
+	pooled_traffic_headlamps.call("set_sources",ambient_cars)
 	road_guidance = CITY_REIGN_GUIDANCE.new()
 	add_child(road_guidance)
 	route_chevron = CITY_REIGN_ROUTE_CHEVRON.new()
@@ -537,6 +545,13 @@ func _physics_process(delta: float) -> void:
 	var desired_fov: float = COCKPIT_VIEW.fov(phone_view) if cockpit_enabled else SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
 	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,SAFE_CAMERA.time_alpha(2.2,delta))
 	var protagonist: Vector3 = car.global_position if driving else player.global_position
+	# Original real 3D camera is the ONLY light-culling focus. The
+	# native six-lamp pool follows authentic R188 rotated 12 NPC cars,
+	# keeps true municipal night/weather, and disables itself on LOW.
+	if pooled_traffic_headlamps != null:
+		pooled_traffic_headlamps.call("sync_real_city",camera.global_position,
+			float(GameState.data.get("day_clock",12.0)),
+			adaptive_graphics.effective_quality(),current_weather_kind,delta)
 	if city_reign_opening_director != null:
 		city_reign_opening_director.call("set_view",protagonist,
 			interiors.is_inside(),hud.is_strategy_open())
