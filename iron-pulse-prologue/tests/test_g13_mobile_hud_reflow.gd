@@ -34,6 +34,36 @@ func _run() -> void:
     root.add_child(game)
     await process_frame
     await process_frame
+    # G13 real-geometry regression: original V17 source archive MUST remain
+    # fully closable from a mobile touch viewport, before any gameplay begins.
+    for dims in [Vector2i(390,844),Vector2i(320,720)]:
+        game._browser_css_size = dims
+        game._layout_hud()
+        game._toggle_run_archive()
+        await process_frame
+        var modal_rect: Rect2 = game.archive_panel.get_global_rect()
+        var close_rect: Rect2 = game.archive_close_button.get_global_rect()
+        var real_viewport: Rect2 = game.get_viewport().get_visible_rect()
+        # In headless a simulated CSS width changes the UI variant but NOT
+        # the real 1280px native anchor coordinate system. Full CSS bounds
+        # are enforced separately on the actual 390px Chromium canvas.
+        print("G13_NATIVE_ARCHIVE_GEOMETRY ",dims," real:",real_viewport,
+            " panel:",modal_rect," close:",close_rect)
+        _test(game.archive_panel.visible and not game.touch_ui.visible,
+            "Real operator archive suspends gameplay touch hitboxes during the modal")
+        _test(real_viewport.encloses(modal_rect),
+            "Native archive modal must fit the real headless Godot anchor viewport")
+        _test(real_viewport.encloses(close_rect) and modal_rect.encloses(close_rect) and
+            close_rect.size.y >= 44.0,
+            "True archive close button must fit native modal and be operable")
+        _test(game.archive_label.get_parent().size.y >= 130.0,
+            "History remains scrollable on compact real screens")
+        game._toggle_run_archive()
+        await process_frame
+        _test(not game.archive_panel.visible and game.touch_ui.visible,
+            "Closing the original records screen restores real physical gameplay touch controls")
+    game._browser_css_size = Vector2i(390,844)
+    game._layout_hud()
     game.start_run()
     var engine_actions: Dictionary = game.session.checkpoint()
 
