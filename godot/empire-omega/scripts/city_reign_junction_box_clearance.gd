@@ -93,9 +93,9 @@ static func classify(sight: Dictionary,heading: Vector3,speed: float,
 		return "incoming_cross_traffic"
 	return ""
 
-static func safe_stop_cap(sight: Dictionary,cruise: float,wetness: float) -> float:
-	if not source_gate_valid(sight,Vector3.RIGHT) and
-			not source_gate_valid(sight,Vector3.BACK):
+static func safe_stop_cap(sight: Dictionary,heading: Vector3,
+		cruise: float,wetness: float) -> float:
+	if not source_gate_valid(sight,heading):
 		return 0.0
 	if not is_finite(cruise) or not is_finite(wetness):return 0.0
 	# Exactly the original R178/R182 source painted stop bar, same
@@ -135,8 +135,7 @@ static func scan(car: Node3D,neighbors: Array,heading: Vector3,
 	if primary=="":return {}
 	return {
 		"reason":primary,
-		"limit_mps":SAFETY.safe_speed(
-			float(sight["stop_distance"])+SAFETY.MIN_GAP,cruise,wetness),
+		"limit_mps":safe_stop_cap(sight,heading,cruise,wetness),
 		"stop_distance_m":float(sight["stop_distance"]),
 		"source":"original_r178_stop_bar",
 		"observed_existing_peers":peer_count
