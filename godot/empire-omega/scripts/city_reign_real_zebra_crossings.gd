@@ -23,9 +23,9 @@ var sync_changes: int=0
 
 static func stripe_transform(x: float,z: float,axis: String,
 		sign: int,stripe: int) -> Transform3D:
-	if not ROAD.JUNCTIONS.has(x) or not ROAD.JUNCTIONS.has(z) or
+	if (not ROAD.JUNCTIONS.has(x) or not ROAD.JUNCTIONS.has(z) or
 		not ["x","z"].has(axis) or abs(sign)!=1 or
-		stripe<0 or stripe>=STRIPES_PER_APPROACH:
+		stripe<0 or stripe>=STRIPES_PER_APPROACH):
 		return Transform3D.IDENTITY
 	var offset: float=(float(stripe)-2.5)*STRIPE_SPACING_M
 	var along: float=float(sign)*SOURCE_ROAD_OFFSET_M+offset
@@ -96,20 +96,21 @@ func set_quality(tier: String) -> void:
 	# like source R178 original stopbars; remove only premium emission.
 	for draw in paint_instances.values():
 		(draw as MultiMeshInstance3D).visible=true
+	var remembered_hour: float=current_hour
 	current_hour=-1.0
-	sync_world(current_power,12.0 if current_hour<0 else current_hour)
+	sync_world(current_power,remembered_hour)
 
 func source_geometry_valid() -> bool:
-	if not ROAD.source_grid_valid() or get_child_count()!=GPU_BATCHES or
-			paint_instances.size()!=GPU_BATCHES or paint_finishes.size()!=GPU_BATCHES:
+	if (not ROAD.source_grid_valid() or get_child_count()!=GPU_BATCHES or
+			paint_instances.size()!=GPU_BATCHES or paint_finishes.size()!=GPU_BATCHES):
 		return false
 	if SOURCE_ROAD_OFFSET_M+STRIPE_SPACING_M*2.5>=SOURCE_STOP_OFFSET_M:
 		return false
 	for axis in ["x","z"]:
 		var instance: MultiMeshInstance3D=paint_instances.get(axis)
-		if instance==null or instance.multimesh==null or
+		if (instance==null or instance.multimesh==null or
 			instance.multimesh.instance_count!=STRIPES_PER_AXIS or
 			not instance.visible or instance.get_child_count()!=0 or
-			instance.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			instance.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF):
 			return false
 	return find_children("*","CollisionShape3D",true,false).is_empty()
