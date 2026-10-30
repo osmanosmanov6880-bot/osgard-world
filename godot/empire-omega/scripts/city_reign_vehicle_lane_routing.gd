@@ -91,6 +91,22 @@ static func to_right_hand_lane(original: Array[Vector3]) -> Array[Vector3]:
 		result.append(lane)
 	if result.size()!=raw.size() or result.size()>MAX_RETURN_NODES:
 		return unchanged
+	# The original car loop begins at an authored +2m lane position,
+	# followed by a source A* centre-node 2m BEHIND the car. Do not
+	# make a newly spawned car drive backwards before continuing east.
+	# Skip ONLY that redundant initial centre-node, NEVER a true 52m
+	# graph edge, and only if the car is already in the correct lane.
+	if (result.size()>=3 and not source_grid_vertex(raw[0]) and
+			source_grid_vertex(raw[1]) and source_grid_vertex(raw[2])):
+		var initial: Vector3=result[1]-result[0]
+		var onward: Vector3=result[2]-result[0]
+		initial.y=0.0
+		onward.y=0.0
+		if (initial.length_squared()<=16.0 and
+				onward.length_squared()>16.0 and
+				initial.dot(onward)<-0.01 and
+				on_right_lane(result[0],onward)):
+			result.remove_at(1)
 	return result
 
 static func lateral_lane_error(at: Vector3,heading: Vector3) -> float:
