@@ -71,12 +71,12 @@ func _run() -> void:
 	physical.call("_physics_process",0.1)
 	var front_yaw: float=physical.front_steer_wheels[0].rotation.y
 	var body_heading:=Vector3(-sin(physical.rotation.y),0,-cos(physical.rotation.y))
-	check(front_yaw>0.01 and
+	check(front_yaw< -0.01 and
 		is_equal_approx(front_yaw,physical.front_steer_wheels[1].rotation.y) and
 		absf(front_yaw)<0.46,
 		"real original front wheels steer together physically into source turn; rear wheels remain straight")
-	check(physical.rotation.y>angle_before and
-		physical.rotation.y-angle_before<0.20 and
+	check(physical.rotation.y<angle_before and
+		absf(physical.rotation.y-angle_before)<0.20 and
 		physical.velocity.normalized().dot(body_heading)>0.999,
 		"real native car anticipates true 90 degree junction and MOVES where it faces")
 	check(physical.global_position.distance_to(corner_before)>0.05 and
