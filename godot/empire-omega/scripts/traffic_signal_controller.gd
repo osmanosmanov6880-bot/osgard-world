@@ -10,6 +10,7 @@ const R178_STOP_BARS = preload("res://scripts/city_reign_intersection_stopbars.g
 const R180_WALK_ART = preload("res://scripts/city_reign_pedestrian_signal_art.gd")
 const R180_WALK_RULE = preload("res://scripts/city_reign_pedestrian_right_of_way.gd")
 const R182_ZEBRA_ART = preload("res://scripts/city_reign_real_zebra_crossings.gd")
+const R184_TRUE_SIGN_ART = preload("res://scripts/city_reign_true_speed_signs.gd")
 const AMBER_SECONDS: float = 1.5
 
 var elapsed := 0.0
@@ -21,6 +22,7 @@ var cinematic_art: Node3D
 var stop_bars: Node3D
 var pedestrian_signs: Node3D
 var real_zebra_crossings: Node3D
+var true_speed_signs: Node3D
 var quality: String = "standard"
 
 func _ready() -> void:
@@ -53,6 +55,10 @@ func _ready() -> void:
 	# 16 intersections, two shared GPU batches, no new traffic clock.
 	real_zebra_crossings=R182_ZEBRA_ART.new()
 	add_child(real_zebra_crossings)
+	# The existing R90 legal threshold appears as 64 actual readable
+	# original 3D streetside traffic signs; no new law or road geometry.
+	true_speed_signs=R184_TRUE_SIGN_ART.new()
+	add_child(true_speed_signs)
 	set_quality("standard")
 	_update_lights()
 
@@ -126,6 +132,8 @@ func set_quality(tier: String) -> void:
 		pedestrian_signs.call("set_quality",quality)
 	if real_zebra_crossings!=null:
 		real_zebra_crossings.call("set_quality",quality)
+	if true_speed_signs!=null:
+		true_speed_signs.call("set_quality",quality)
 
 func sync_city_power(state: Dictionary) -> void:
 	if stop_bars!=null:
@@ -137,6 +145,9 @@ func sync_city_power(state: Dictionary) -> void:
 	if real_zebra_crossings!=null:
 		real_zebra_crossings.call("sync_world",int(state.get("energy",100)),
 			float(state.get("day_clock",12.0)))
+	if true_speed_signs!=null:
+		true_speed_signs.call("sync_power",int(state.get("energy",100)),
+			float(state.get("day_clock",12.0)))
 
 func visual_state_is_consistent() -> bool:
 	if cinematic_art==null or lights.size()!=16 or legacy_signal_roots.size()!=16:
@@ -147,7 +158,8 @@ func visual_state_is_consistent() -> bool:
 	var x_go: bool = _phase()==0
 	var yellow: bool = _warning()
 	return (stop_bars!=null and pedestrian_signs!=null and
-		real_zebra_crossings!=null and
+		real_zebra_crossings!=null and true_speed_signs!=null and
+		bool(true_speed_signs.call("source_integrity")) and
 		bool(real_zebra_crossings.call("source_geometry_valid")) and
 		bool(pedestrian_signs.call("batches_are_bounded")) and
 		bool(pedestrian_signs.call("matches_source",elapsed)) and

@@ -16,6 +16,7 @@ const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
 const DRIVER_SENSE = preload("res://scripts/city_reign_driver_awareness.gd")
 const R178_SIGNAL = preload("res://scripts/city_reign_intersection_policy.gd")
 const R179_RED_LAW = preload("res://scripts/city_reign_red_light_evidence.gd")
+const R184_SPEED_RULE = preload("res://scripts/city_reign_speed_limit_policy.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
@@ -650,6 +651,11 @@ func _physics_process(delta: float) -> void:
 					str(drive_warning_status.get("urgency",""))!="urgent" and
 					float(actual_signal["seconds"])<float(drive_warning_status.get("seconds",99.0)))):
 				drive_warning_status=actual_signal
+			# R184: warn only when there is NO physical vehicle, walker or
+			# stop-light threat. The exact same 90km/h law now has a native
+			# roadside sign, a short existing HUD warning and real fines.
+			if drive_warning_status.is_empty():
+				drive_warning_status=R184_SPEED_RULE.player_warning(car.speed)
 	if hud.map != null:
 		if patrols != null: hud.map.police_world = patrols.visible_positions()
 		var case_site: String = GameState.CITY_CASES.site(GameState.data)
@@ -672,11 +678,11 @@ func _physics_process(delta: float) -> void:
 		if car.health<previous_vehicle_health-3.0:
 			if GameState.register_traffic_offence("collision"):
 				hud.announce(_three("Опасное ДТП · объявлен розыск","Serious collision · wanted","严重碰撞 · 已通缉"))
-		if absf(car.speed)>25.0:
-			speeding_seconds += delta
-		else:
-			speeding_seconds = maxf(0.0,speeding_seconds-delta*2.0)
-		if speeding_seconds>=4.0:
+		# R184: one authoritative original 90km/h limit / 4s law
+		# shared by the real 64 physical roadside signs and driver HUD.
+		speeding_seconds=R184_SPEED_RULE.timer_step(speeding_seconds,
+			car.speed,delta)
+		if R184_SPEED_RULE.citation_ready(speeding_seconds):
 			if GameState.register_traffic_offence("speeding"):
 				hud.announce(_three("Превышение скорости · объявлен розыск","Speeding · wanted","超速 · 已通缉"))
 			speeding_seconds = 0.0
