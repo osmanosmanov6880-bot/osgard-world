@@ -436,6 +436,11 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
+                        # Source story radio is visible immediately; its real
+                        # 12-second TTL must not be defeated by slow browser QA.
+                        assert state.get("radio_visible") is True and (
+                            state.get("story",{}).get("latest_key")=="arrival_blackout"), (
+                            "Original MARA radio absent at true shift opening",name)
                         g2_after_start=state.get("g2_field_protocol",{})
                         assert g2_after_start.get("selected")=="" and (
                             g2_after_start.get("available") is False), (
@@ -989,8 +994,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         narrative = state.get("story",{})
                         assert narrative.get("latest_key") == "arrival_blackout", (
                             "Wrong chapter opening after real scenario selection",narrative)
-                        assert narrative.get("journal_entries",0) >= 1 and state.get("radio_visible") is True, (
-                            "Story radio not truly visible after starting game",narrative,state)
+                        assert narrative.get("journal_entries",0) >= 1 and type(state.get("radio_visible")) is bool, (
+                            "Original localized story journal lost after normal timed radio dismissal",narrative)
                         assert state.get("priority_visible") is False, (
                             "Crew/core priority offered before real scanner",state)
                         assert "МАРА" in state.get("radio_text","") or "MARA" in state.get("radio_text",""), (
