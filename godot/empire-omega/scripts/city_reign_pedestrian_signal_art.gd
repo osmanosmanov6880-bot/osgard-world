@@ -92,25 +92,30 @@ func _batch(id: String,mesh: Mesh,positions: Array[Transform3D],
 func _ready() -> void:
 	name="R180_PhysicalPedestrianWalkWaitNetwork"
 	var housing: Array[Transform3D]=[]
-	var directions: Dictionary={
-		"x_walk":[],"x_wait":[],"z_walk":[],"z_wait":[]}
+	var x_walk: Array[Transform3D]=[]
+	var x_wait: Array[Transform3D]=[]
+	var z_walk: Array[Transform3D]=[]
+	var z_wait: Array[Transform3D]=[]
 	for x in JUNCTIONS:
 		for z in JUNCTIONS:
 			for axis in ["x","z"]:
 				var position: Transform3D=pose(float(x),float(z),axis,"body")
 				housing.append(position)
-				(directions[axis+"_walk"] as Array).append(
-					pose(float(x),float(z),axis,"walk"))
-				(directions[axis+"_wait"] as Array).append(
-					pose(float(x),float(z),axis,"wait"))
+				if axis=="x":
+					x_walk.append(pose(float(x),float(z),axis,"walk"))
+					x_wait.append(pose(float(x),float(z),axis,"wait"))
+				else:
+					z_walk.append(pose(float(x),float(z),axis,"walk"))
+					z_wait.append(pose(float(x),float(z),axis,"wait"))
 	var case_mesh:=BoxMesh.new()
 	case_mesh.size=Vector3(0.52,1.22,0.25)
 	_batch("housing",case_mesh,housing,Color("18262f"))
-	for axis in ["x","z"]:
-		_batch(axis+"_walk",symbol_mesh(true),directions[axis+"_walk"],
-			Color("17a46e"))
-		_batch(axis+"_wait",symbol_mesh(false),directions[axis+"_wait"],
-			Color("d16d5b"))
+	var walk_mesh: ArrayMesh=symbol_mesh(true)
+	var wait_mesh: ArrayMesh=symbol_mesh(false)
+	_batch("x_walk",walk_mesh,x_walk,Color("17a46e"))
+	_batch("x_wait",wait_mesh,x_wait,Color("d16d5b"))
+	_batch("z_walk",walk_mesh,z_walk,Color("17a46e"))
+	_batch("z_wait",wait_mesh,z_wait,Color("d16d5b"))
 	set_quality(quality)
 	sync_phase(0.0,100,12.0)
 
@@ -121,8 +126,8 @@ func sync_phase(elapsed: float,power: int,hour: float) -> void:
 		"z":RULE.face_state(elapsed,"z")}
 	var level: int=clampi(power,0,100)
 	var clock: float=fposmod(hour,24.0)
-	if states==current and level==sampled_power and
-			is_equal_approx(clock,sampled_hour):
+	if (states==current and level==sampled_power and
+			is_equal_approx(clock,sampled_hour)):
 		return
 	states=current
 	sampled_elapsed=elapsed
@@ -156,8 +161,8 @@ func set_quality(tier: String) -> void:
 	sync_phase(sampled_elapsed,sampled_power,sampled_hour)
 
 func batches_are_bounded() -> bool:
-	if not RULE.consistent_with_original_grid() or drawings.size()!=MAX_BATCHES or
-			get_child_count()!=MAX_BATCHES:
+	if (not RULE.consistent_with_original_grid() or drawings.size()!=MAX_BATCHES or
+			get_child_count()!=MAX_BATCHES):
 		return false
 	if (drawings["housing"] as MultiMeshInstance3D).multimesh.instance_count!=32:
 		return false
@@ -167,8 +172,8 @@ func batches_are_bounded() -> bool:
 				return false
 	for item in drawings.values():
 		var node: MultiMeshInstance3D=item
-		if node.get_child_count()>0 or
-				node.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+		if (node.get_child_count()>0 or
+				node.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF):
 			return false
 	return find_children("*","CollisionShape3D",true,false).is_empty()
 
