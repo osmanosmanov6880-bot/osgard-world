@@ -222,9 +222,9 @@ func closest_hazard(point: Vector3,radius: float=9.0) -> String:
 func source_integrity(state: Dictionary) -> bool:
 	if not SOURCE.catalog_integrity():return false
 	var expected: Array[Dictionary]=SOURCE.active_sites(state)
-	if expected.size()!=markers.size() or
+	if (expected.size()!=markers.size() or
 			markers.size()!=batches.size() or
-			markers.size()!=materials.size():
+			markers.size()!=materials.size()):
 		return false
 	for source in expected:
 		var id: String=str(source["id"])
@@ -243,8 +243,8 @@ func source_integrity(state: Dictionary) -> bool:
 			return false
 		var collision: CollisionShape3D=body.get_node_or_null(
 			"OriginalPhysicalRoadClosure")
-		if collision==null or not collision.shape is BoxShape3D or
-				collision.disabled:
+		if (collision==null or not collision.shape is BoxShape3D or
+				collision.disabled):
 			return false
 		var physics: BoxShape3D=collision.shape
 		if not physics.size.is_equal_approx(Vector3(
