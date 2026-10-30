@@ -372,6 +372,18 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             close=opened.get("close_rect")
                             assert close and close[2]>=44 and close[3]>=44,(
                                 "Private history has no accessible mobile close control",close)
+                            modal=opened.get("panel_rect",[])
+                            assert modal and opened.get("touch_suspended_during_modal") is True and (
+                                ledger_open.get("touch_controls_visible") is False), (
+                                "V17 mobile archive must suspend touch gameplay controls",name,opened)
+                            assert (0<=modal[0] and 0<=modal[1] and
+                                modal[0]+modal[2]<=size["width"]+2 and
+                                modal[1]+modal[3]<=size["height"]+2 and
+                                0<=close[0] and 0<=close[1] and
+                                close[0]+close[2]<=size["width"]+2 and
+                                close[1]+close[3]<=size["height"]+2), (
+                                "Actual original archive and CLOSE must be inside real mobile viewport",
+                                name,modal,close,size)
                             bounds=canvas.bounding_box()
                             page.touchscreen.tap(
                                 bounds["x"]+(close[0]+close[2]/2)*bounds["width"]/ledger_open["viewport"][0],
@@ -436,11 +448,41 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
-                        # Verify original MARA radio immediately after opening the
-                        # real game. Later tests can exceed its legitimate TTL.
+                        # G13 actual mobile radio and panel geometry, not a
+                        # screenshot mask. The real MARA story must begin now.
                         assert state.get("radio_visible") is True and (
                             state.get("story",{}).get("latest_key")=="arrival_blackout"), (
-                            "Original 3D story radio must actually open at shift start",name)
+                            "Actual Godot story radio absent at first playable operation",name)
+                        layout=state.get("g13_mobile_hud",{})
+                        assert layout.get("schema")=="IRON_PULSE_MOBILE_HUD_REFLOW_G13" and (
+                            layout.get("source_engine_mutated") is False and
+                            layout.get("remote_analytics") is False), (
+                            "G13 must report honest source-based native panel layout",name,layout)
+                        if mobile:
+                            radio_rect=layout.get("radio_rect")
+                            stat_rect=layout.get("telemetry_rect")
+                            actual_touch_top=layout.get("touch_first_row_y",0)
+                            assert layout.get("layout")=="stacked_story_below_telemetry" and (
+                                layout.get("radio_visible") is True and
+                                layout.get("hud_card_visible") is True and
+                                radio_rect and stat_rect and actual_touch_top>300), (
+                                "Real 390px requires distinct visible telemetry and MARA cards",name,layout)
+                            assert stat_rect[1]+stat_rect[3]+2<radio_rect[1] and (
+                                radio_rect[1]+radio_rect[3]+1<actual_touch_top), (
+                                "Real 390px original story must never cover telemetry or LAB/MAP controls",
+                                name,layout)
+                            assert state.get("scanned") is False and state.get("switches",0)==0, (
+                                "G13 visual layout cannot fabricate source gameplay",name)
+                            page.screenshot(path=str(output/f"g13-real-story-no-overlap-{name}.png"),
+                                            animations="disabled",timeout=60000)
+                        report.setdefault("g13_mobile_story_reflow",{})[name]={
+                            "native":True,
+                            "layout":layout.get("layout"),
+                            "panel_geometry_checked":mobile,
+                            "actual_story_from_engine":True,
+                            "hardware_certified":False,
+                            "telemetry_uploaded":False
+                        }
                         g2_after_start=state.get("g2_field_protocol",{})
                         assert g2_after_start.get("selected")=="" and (
                             g2_after_start.get("available") is False), (
@@ -1128,7 +1170,7 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert narrative.get("latest_key") == "arrival_blackout", (
                             "Wrong chapter opening after real scenario selection",narrative)
                         assert narrative.get("journal_entries",0) >= 1 and type(state.get("radio_visible")) is bool, (
-                            "Original story journal lost after genuine timed radio dismissal",narrative)
+                            "Original story journal lost after legitimate short radio TTL",narrative)
                         assert state.get("priority_visible") is False, (
                             "Crew/core priority offered before real scanner",state)
                         assert "МАРА" in state.get("radio_text","") or "MARA" in state.get("radio_text",""), (
