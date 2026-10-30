@@ -24,8 +24,8 @@ static func required_green_seconds(ahead: float,walk_speed: float) -> float:
 static func permission(at: Vector3,route_velocity: Vector3,
 		walk_speed: float,signal_elapsed: float) -> Dictionary:
 	# Bad source state fails CLOSED rather than inventing a WALK right.
-	if not at.is_finite() or not route_velocity.is_finite() or
-			not is_finite(walk_speed) or not is_finite(signal_elapsed):
+	if (not at.is_finite() or not route_velocity.is_finite() or
+			not is_finite(walk_speed) or not is_finite(signal_elapsed)):
 		return {"wait":true,"state":"unknown","point":Vector3.ZERO}
 	if walk_speed<=0.0: return {"wait":true,"state":"stopped","point":Vector3.ZERO}
 	var axis:=Vector2(route_velocity.x,route_velocity.z)
