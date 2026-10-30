@@ -9,6 +9,7 @@ const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
 const FOLLOW = preload("res://scripts/city_reign_traffic_following.gd")
 const R178_SIGNAL = preload("res://scripts/city_reign_intersection_policy.gd")
 const R182_CROSSING = preload("res://scripts/city_reign_crosswalk_occupancy.gd")
+const R186_BOX = preload("res://scripts/city_reign_junction_box_clearance.gd")
 const CAR_LENGTH := 4.1
 const DETECTION_RANGE := 27.0
 const ROAD_HEIGHT := 0.8
@@ -34,6 +35,12 @@ var last_crosswalk_occupied: bool = false
 var last_crosswalk_clearance: float = R182_CROSSING.INF_CLEARANCE_M
 var crosswalk_activations: int = 0
 var crosswalk_yield_seconds: float = 0.0
+# Source-only live R186 safe-box measurements, not player surveillance
+# or a new save field. Original physical 12 cars / R178 clock only.
+var last_junction_guard_active: bool = false
+var last_junction_guard_reason: String = ""
+var junction_yield_activations: int = 0
+var junction_hold_seconds: float = 0.0
 var _last_braking := true
 var indicator_lamps: Dictionary = {}
 var _indicator_lit: Dictionary = {"left":true,"right":true}
@@ -226,6 +233,8 @@ func _obstacle_distance(direction: Vector3) -> float:
 func _physics_process(delta: float) -> void:
 	_flash_patrol(delta)
 	if points.size() < 2:
+		last_junction_guard_active = false
+		last_junction_guard_reason = ""
 		indicator_mode = "off"
 		_sync_indicator_lamps()
 		velocity = Vector3.ZERO
@@ -253,6 +262,17 @@ func _physics_process(delta: float) -> void:
 	if (signal_controller!=null and not source_stop.is_empty() and
 			last_signal_speed<cruising_speed-0.001):
 		signal_distance=float(source_stop["stop_distance"])+SAFETY.MIN_GAP
+	# R186 authentic box clearance: source R178 stop bar, R185 real
+	# right-hand exit, actual 12 moving/stopped native neighbors.
+	# NEVER enters a physically full junction just because it is green.
+	# Cars already inside the junction retain priority and can clear.
+	var was_guarded: bool=last_junction_guard_active
+	var box_guard: Dictionary=R186_BOX.scan(self,neighbors,heading,
+		speed,cruising_speed,wetness,source_stop)
+	last_junction_guard_active=not box_guard.is_empty()
+	last_junction_guard_reason=str(box_guard.get("reason",""))
+	if last_junction_guard_active and not was_guarded:
+		junction_yield_activations+=1
 	var corner_index: int = (target_index+1)%points.size()
 	var after_corner: Vector3 = points[corner_index]-destination
 	after_corner.y = 0.0
@@ -263,6 +283,10 @@ func _physics_process(delta: float) -> void:
 	_sync_indicator_lamps()
 	var bend_limit: float = SAFETY.corner_speed(heading,after_corner,displacement.length(),cruising_speed)
 	var goal: float = minf(bend_limit,SAFETY.desired_speed(cruising_speed,obstacle,signal_distance,wetness))
+	# A real cross-vehicle cannot create right of way or exceed the
+	# old obstacle, R178 signal, corner and wet-braking constraints.
+	if last_junction_guard_active:
+		goal=minf(goal,float(box_guard["limit_mps"]))
 	# R163: a physical neighboring convoy can only REDUCE the legacy
 	# raycast/signal/pedestrian target, never grant passage or extra speed.
 	last_follow_speed = FOLLOW.scan(self,neighbors,heading,speed,cruising_speed,wetness)
@@ -292,6 +316,9 @@ func _physics_process(delta: float) -> void:
 	if last_crosswalk_occupied and speed<2.0 and is_finite(delta):
 		crosswalk_yield_seconds=minf(86400.0,
 			crosswalk_yield_seconds+clampf(delta,0.0,0.1))
+	if last_junction_guard_active and speed<2.0 and is_finite(delta):
+		junction_hold_seconds=minf(86400.0,
+			junction_hold_seconds+clampf(delta,0.0,0.1))
 	rotation.y = lerp_angle(rotation.y,atan2(-heading.x,-heading.z),clampf(delta*4.8,0.0,1.0))
 	var before: Vector3 = global_position
 	velocity = Vector3(heading.x*speed,0.0,heading.z*speed)

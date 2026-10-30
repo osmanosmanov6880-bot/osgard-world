@@ -18,6 +18,7 @@ const R178_SIGNAL = preload("res://scripts/city_reign_intersection_policy.gd")
 const R179_RED_LAW = preload("res://scripts/city_reign_red_light_evidence.gd")
 const R184_SPEED_RULE = preload("res://scripts/city_reign_speed_limit_policy.gd")
 const R185_RIGHT_LANES = preload("res://scripts/city_reign_vehicle_lane_routing.gd")
+const R186_BOX = preload("res://scripts/city_reign_junction_box_clearance.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
@@ -661,6 +662,22 @@ func _physics_process(delta: float) -> void:
 			# R184: warn only when there is NO physical vehicle, walker or
 			# stop-light threat. The exact same 90km/h law now has a native
 			# roadside sign, a short existing HUD warning and real fines.
+			if drive_warning_status.is_empty():
+				# Read-only warning sourced from REAL NPCs and the original
+				# physical signal box. Never overrides player controls.
+				var heading: Vector3=Vector3(-sin(car.rotation.y),
+					0.0,-cos(car.rotation.y))
+				var road_box: Dictionary=R178_SIGNAL.approach(
+					car.global_position,heading,
+					float(traffic_signals.get("elapsed")))
+				var blocked_box: Dictionary=R186_BOX.scan(car,ambient_cars,
+					heading,maxf(0.0,car.speed),18.0,
+					float(GameState.current_weather()["road_grip"]),road_box)
+				if not blocked_box.is_empty():
+					drive_warning_status={"kind":"junction_blocked",
+						"urgency":"caution",
+						"distance_m":blocked_box["stop_distance_m"],
+						"reason":blocked_box["reason"]}
 			if drive_warning_status.is_empty():
 				drive_warning_status=R184_SPEED_RULE.player_warning(car.speed)
 	if hud.map != null:
