@@ -1642,7 +1642,9 @@ func _layout_hud() -> void:
     if _browser_css_size.x > 0:
         width = float(_browser_css_size.x)
     var narrow: bool = width < 650.0
-    touch_ui.visible = width < 850.0 or DisplayServer.is_touchscreen_available()
+    # Touch gameplay buttons must never sit above the true pause-menu actions.
+    # Other diagnostic modal overlays keep their own existing input semantics.
+    touch_ui.visible = (width < 850.0 or DisplayServer.is_touchscreen_available()) and (not paused or pause_panel == null or not pause_panel.visible)
     vitals_panel.visible = width >= 1000.0
     subtitle_label.visible = not narrow
     if narrow and quality_mode == "hero" and art_stage != null:
@@ -2331,6 +2333,7 @@ func _resume() -> void:
     _clear_operator_overlay()
     paused = false
     pause_panel.visible = false
+    _layout_hud()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
         _set_player_pointer_capture(true)
@@ -2347,6 +2350,7 @@ func _pause_toggle() -> void:
     if paused and forecast_panel != null:
         forecast_panel.visible = false
     pause_panel.visible = paused
+    _layout_hud()
     audio_director.set_active(not paused)
     if DisplayServer.get_name() != "headless":
         _set_player_pointer_capture(not paused)
