@@ -234,6 +234,8 @@ var vision: IPVisionProfile = IPVisionProfile.new()
 var vision_last_save_ok: bool = false
 var control_comfort: IPControlComfort = IPControlComfort.new()
 var control_comfort_last_save_ok: bool = false
+var look_comfort: IPLookComfort = IPLookComfort.new()
+var look_last_save_ok: bool = false
 var _vision_panel_baselines: Dictionary = {}
 var walking_phase: float = 0.0
 var _terminal_active_material: StandardMaterial3D
@@ -305,6 +307,7 @@ var resume_button: Button
 var auto_quality_button: Button
 var vision_button: Button
 var control_comfort_button: Button
+var look_comfort_button: Button
 var end_panel: PanelContainer
 var end_title: Label
 var end_stats: Label
@@ -328,6 +331,7 @@ var touch_device_lab_button: Button
 var touch_atlas_button: Button
 var touch_vision_button: Button
 var touch_pause_button: Button
+var touch_look_button: Button
 var _g13_story_layout: String = "desktop"
 var _g13_touch_safe_top: float = 0.0
 var device_lab_panel: PanelContainer
@@ -382,6 +386,7 @@ func _ready() -> void:
         run_archive.load_archive()
         vision.load_from()
         control_comfort.load_from()
+        look_comfort.load_from()
     _make_environment()
     _make_complex()
     world_sectors = IPWorldSectors.new()
@@ -631,6 +636,10 @@ func _publish_web_state() -> void:
         state["continue_button_visible"] = continue_button.visible
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
     state["g13_mobile_hud"] = _g13_mobile_layout_readout()
+    state["g14_look_comfort"] = look_comfort.readout()
+    state["g14_look_comfort"]["local_save_ok"] = look_last_save_ok
+    state["g14_look_comfort"]["pause_button_rect"] = _hud_rect(look_comfort_button) if look_comfort_button != null else []
+    state["g14_look_comfort"]["touch_button_rect"] = _hud_rect(touch_look_button) if touch_look_button != null else []
     state["hud_rects"] = {
         "header": _hud_rect(header_panel),
         "telemetry": _hud_rect(side_panel),
@@ -1419,7 +1428,7 @@ func _make_overlays() -> void:
     start_box.add_child(archive_intro_button)
     continue_button.visible = DisplayServer.get_name() != "headless" and not checkpoint_store.load_checkpoint(checkpoint_path).is_empty()
     _update_scenario_picker()
-    pause_panel = _panel(hud_root,Rect2(-240,-187,240,187),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
+    pause_panel = _panel(hud_root,Rect2(-240,-225,240,225),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var pause_box := VBoxContainer.new()
     pause_box.add_theme_constant_override("separation",12)
@@ -1448,6 +1457,12 @@ func _make_overlays() -> void:
     control_comfort_button.add_theme_font_size_override("font_size",12)
     control_comfort_button.pressed.connect(_cycle_control_comfort)
     pause_box.add_child(control_comfort_button)
+    look_comfort_button = Button.new()
+    look_comfort_button.name = "G14_TrueCameraMotionAndInvertAccess"
+    look_comfort_button.custom_minimum_size = Vector2(0,52)
+    look_comfort_button.add_theme_font_size_override("font_size",12)
+    look_comfort_button.pressed.connect(_cycle_look_comfort)
+    pause_box.add_child(look_comfort_button)
     pause_panel.visible = false
     end_panel = _panel(hud_root,Rect2(-300,-220,300,220),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.99))
     end_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1605,6 +1620,11 @@ func _make_touch_controls() -> void:
     touch_pause_button = _touch_button(touch_ui,"PAUSE",111,-357,94)
     touch_pause_button.add_theme_font_size_override("font_size",14)
     touch_pause_button.pressed.connect(_pause_toggle)
+    # The free centre-column slot is y=-299 with a six-pixel gap after
+    # PAUSE (-357) and beside existing PLAN/FAST, never on top of those.
+    touch_look_button = _touch_button(touch_ui,"ОБЗОР / F10",111,-299,94)
+    touch_look_button.add_theme_font_size_override("font_size",12)
+    touch_look_button.pressed.connect(_cycle_look_comfort)
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1883,6 +1903,8 @@ func _apply_cinematic_view() -> void:
         touch_vision_button.visible = not cinematic_view and touch_ui.visible
     if touch_pause_button != null:
         touch_pause_button.visible = not cinematic_view and touch_ui.visible
+    if touch_look_button != null:
+        touch_look_button.visible = not cinematic_view and touch_ui.visible
     if cinematic_view and guide_panel != null:
         guide_panel.visible = false
     if cinematic_view and forecast_panel != null:
@@ -1947,6 +1969,23 @@ func _apply_vision_profile() -> void:
         obsidian_world.set_accessibility(high)
     _refresh_vision_label()
     _refresh_control_comfort_label()
+    _refresh_look_comfort_label()
+
+func _refresh_look_comfort_label() -> void:
+    if look_comfort_button != null:
+        look_comfort_button.text = "F10  /  " + look_comfort.caption(locale)
+    if touch_look_button != null:
+        touch_look_button.text = look_comfort.touch_caption(locale)
+
+func _cycle_look_comfort() -> void:
+    # User action, not camera autopilot. The player's next real mouse/touch/
+    # stick event is interpreted with the new accessibility preference.
+    look_comfort.next_mode()
+    look_last_save_ok = false
+    if DisplayServer.get_name() != "headless":
+        look_last_save_ok = look_comfort.save_to()
+    _refresh_look_comfort_label()
+    _publish_web_state()
 
 func _refresh_control_comfort_label() -> void:
     if control_comfort_button != null:
@@ -2529,6 +2568,7 @@ func _toggle_language() -> void:
     _refresh_auto_quality_ui()
     _refresh_vision_label()
     _refresh_control_comfort_label()
+    _refresh_look_comfort_label()
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     footer_label.text = _copy("footer")
     campaign_echoes.sync(campaign,locale)
@@ -2664,6 +2704,9 @@ func _input(event: InputEvent) -> void:
         if event.keycode == KEY_F7 and (atlas_panel == null or not atlas_panel.visible):
             _cycle_control_comfort()
             return
+        if event.keycode == KEY_F10 and (atlas_panel == null or not atlas_panel.visible):
+            _cycle_look_comfort()
+            return
         if event.keycode == KEY_SHIFT and control_comfort.handle_shift_pressed(
                 started and not paused and not session.finished()):
             _publish_web_state()
@@ -2794,8 +2837,12 @@ func _input(event: InputEvent) -> void:
             _set_player_pointer_capture(true)
 
 func _look(motion: Vector2) -> void:
-    yaw -= motion.x * 0.0021
-    pitch = clampf(pitch-motion.y*0.0021,-1.27,1.27)
+    # Actual mouse, screen drag and right-stick share this same existing
+    # Godot camera path. G14 can only interpret the player's physical input;
+    # it never moves the camera on its own or changes IPCrisisEngine state.
+    var angles: Vector2 = look_comfort.angular_delta(motion)
+    yaw += angles.x
+    pitch = clampf(pitch+angles.y,-1.27,1.27)
     player.rotation.y = yaw
     camera.rotation.x = pitch
 
