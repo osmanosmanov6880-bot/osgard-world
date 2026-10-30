@@ -131,16 +131,52 @@ def run(website:Path,evidence:Path,source:str):
                         # controlled by real user input, never directly assigned
                         # through read-only browser JS diagnostic DOM.
                         if not is_mobile:
-                            before=gentle["g14_look_comfort"]["camera_yaw"]
                             bound=canvas.bounding_box()
                             assert bound is not None
-                            page.mouse.move(bound["x"]+bound["width"]*.50,
-                                            bound["y"]+bound["height"]*.46)
-                            page.mouse.move(bound["x"]+bound["width"]*.72,
-                                            bound["y"]+bound["height"]*.57,steps=6)
-                            moved=wait_state(page,marker,lambda s:
-                                abs(s.get("g14_look_comfort",{}).get("camera_yaw",before)-before)>0.006,
-                                17,subject="actual Chromium mouse movement rotated native Camera3D")
+                            centre_x=bound["x"]+bound["width"]*.51
+                            centre_y=bound["y"]+bound["height"]*.56
+                            # Pointer lock requires genuine browser user activation.
+                            # Enter may start Godot without granting Chromium mouse
+                            # capture; a real canvas click requests that permission.
+                            page.mouse.click(centre_x,centre_y)
+                            deadline=time.monotonic()+13
+                            captured={}
+                            while time.monotonic()<deadline:
+                                captured=json.loads(marker.get_attribute("data-state",timeout=12000))
+                                if captured.get("mouse_captured") is True:
+                                    break
+                                page.mouse.click(centre_x,centre_y)
+                                page.wait_for_timeout(350)
+                            print("G14_REAL_DESKTOP_POINTER_CAPTURE",
+                                  captured.get("mouse_captured"),flush=True)
+                            assert captured.get("mouse_captured") is True, (
+                                "The true Godot mouse input must capture after physical canvas activation",
+                                captured.get("mouse_captured"))
+                            before=captured["g14_look_comfort"]["camera_yaw"]
+                            moved=captured
+                            for attempt in range(5):
+                                page.mouse.move(centre_x+12,centre_y+6,steps=4)
+                                page.mouse.move(centre_x+120,centre_y+64,steps=10)
+                                page.wait_for_timeout(350)
+                                moved=json.loads(marker.get_attribute("data-state",timeout=12000))
+                                if abs(moved.get("g14_look_comfort",{}).get("camera_yaw",before)-before)>.006:
+                                    break
+                                # These are real physical browser mouse events,
+                                # not commands sent to the Godot engine.
+                                page.mouse.down()
+                                page.mouse.move(centre_x+140,centre_y+90,steps=7)
+                                page.mouse.up()
+                                page.wait_for_timeout(250)
+                                moved=json.loads(marker.get_attribute("data-state",timeout=12000))
+                                if abs(moved.get("g14_look_comfort",{}).get("camera_yaw",before)-before)>.006:
+                                    break
+                            delta=abs(moved.get("g14_look_comfort",{}).get("camera_yaw",before)-before)
+                            print("G14_REAL_MOUSE_ROTATION_DELTA",delta,
+                                  "capture",moved.get("mouse_captured"),flush=True)
+                            assert delta>.006, (
+                                "Actual Chromium physical mouse movement failed to rotate the real Godot Camera3D",
+                                "capture",moved.get("mouse_captured"),"delta",delta,
+                                "look",moved.get("g14_look_comfort",{}))
                             assert abs(moved["g14_look_comfort"]["camera_yaw"]-
                                        moved["g14_look_comfort"]["native_camera_yaw"])<.0005
                         if is_mobile:
