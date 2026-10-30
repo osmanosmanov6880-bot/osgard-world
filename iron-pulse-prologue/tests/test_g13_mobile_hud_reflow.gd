@@ -42,6 +42,7 @@ func _run() -> void:
     game._refresh_hud()
     await process_frame
     var m: Dictionary = game._g13_mobile_layout_readout()
+    print("G13_REAL_NATIVE_GEOMETRY_390 ",JSON.stringify(m))
     var radio: Array = m["radio_rect"]
     var telemetry: Array = m["telemetry_rect"]
     _test(m["schema"] == "IRON_PULSE_MOBILE_HUD_REFLOW_G13" and
@@ -70,6 +71,7 @@ func _run() -> void:
     await process_frame
     m = game._g13_mobile_layout_readout()
     radio = m["radio_rect"]
+    print("G13_REAL_NATIVE_GEOMETRY_320 ",JSON.stringify(m))
     _test(m["layout"] == "single_story_card" and not m["hud_card_visible"] and
         m["radio_visible"] and not m["priority_visible"],
         "320x720 gives priority to unaltered real narrative instead of overlapping telemetry")
