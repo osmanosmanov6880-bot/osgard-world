@@ -168,5 +168,15 @@ func _run() -> void:
         after_mobile["priority"] == game_before["priority"] and
         after_mobile["relays_activated"] == game_before["relays_activated"],
         "Readability never performs player actions; genuine gameplay time may advance after resume")
+    # Regression from exact-source Chromium: mobile gameplay controls used
+    # to intercept real pause-menu graphics buttons, including V18 AUTO.
+    game._browser_css_size = Vector2i(390,844)
+    game._layout_hud()
+    game._pause_toggle()
+    _assert(game.paused and game.pause_panel.visible and not game.touch_ui.visible,
+        "True pause must hide overlaid mobile gameplay controls")
+    game._resume()
+    _assert(not game.paused and not game.pause_panel.visible and game.touch_ui.visible,
+        "Actual RESUME restores native mobile movement buttons")
     game.queue_free()
     _finish()
