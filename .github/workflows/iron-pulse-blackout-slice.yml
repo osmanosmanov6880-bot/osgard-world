@@ -369,6 +369,18 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/iron-pulse-playwright"
           "$RUNNER_TEMP/iron-pulse-playwright/bin/pip" install --disable-pip-version-check --no-cache-dir playwright==1.56.0 Pillow==11.3.0
           "$RUNNER_TEMP/iron-pulse-playwright/bin/python" -m playwright install --with-deps chromium
+      - name: G13 independent real 320x720 Godot WebGL story, physical touch, compact emergency footer and radio TTL restoration
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/iron-pulse-playwright/bin/python" iron-pulse-prologue/ci/mobile_hud_320_acceptance_g13.py \
+            --export iron-pulse-prologue/build/web \
+            --evidence iron-pulse-prologue/build/g13-mobile-evidence \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
+            2>&1 | tee "$RUNNER_TEMP/iron-pulse-g13-mobile-browser.log"
+          grep -q '"status": "PASS"' iron-pulse-prologue/build/g13-mobile-evidence/g13-mobile-320-evidence.json
+          grep -q '"source_story_ttl_pass": true' iron-pulse-prologue/build/g13-mobile-evidence/g13-mobile-320-evidence.json
+          grep -q '"original_game_actions_preserved": true' iron-pulse-prologue/build/g13-mobile-evidence/g13-mobile-320-evidence.json
       - name: Exercise real WebGL player controls at desktop and touch-emulated resolutions
         shell: bash
         run: |
@@ -504,6 +516,7 @@ jobs:
             iron-pulse-prologue/build/windows
             iron-pulse-prologue/build/proof
             iron-pulse-prologue/build/browser-evidence
+            iron-pulse-prologue/build/g13-mobile-evidence
             iron-pulse-prologue/build/world-preview
             iron-pulse-prologue/build/world-evidence
             iron-pulse-prologue/build/g5-release
