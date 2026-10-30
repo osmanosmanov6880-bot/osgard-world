@@ -9,6 +9,7 @@ const CINEMATIC_ART = preload("res://scripts/city_reign_signal_art.gd")
 const R178_STOP_BARS = preload("res://scripts/city_reign_intersection_stopbars.gd")
 const R180_WALK_ART = preload("res://scripts/city_reign_pedestrian_signal_art.gd")
 const R180_WALK_RULE = preload("res://scripts/city_reign_pedestrian_right_of_way.gd")
+const R182_ZEBRA_ART = preload("res://scripts/city_reign_real_zebra_crossings.gd")
 const AMBER_SECONDS: float = 1.5
 
 var elapsed := 0.0
@@ -19,6 +20,7 @@ var legacy_signal_roots: Array[Node3D] = []
 var cinematic_art: Node3D
 var stop_bars: Node3D
 var pedestrian_signs: Node3D
+var real_zebra_crossings: Node3D
 var quality: String = "standard"
 
 func _ready() -> void:
@@ -47,6 +49,10 @@ func _ready() -> void:
 	# road intersection, no separate timer or pedestrian collision geometry.
 	pedestrian_signs=R180_WALK_ART.new()
 	add_child(pedestrian_signs)
+	# R182: 384 native real road zebra strips from the exact same
+	# 16 intersections, two shared GPU batches, no new traffic clock.
+	real_zebra_crossings=R182_ZEBRA_ART.new()
+	add_child(real_zebra_crossings)
 	set_quality("standard")
 	_update_lights()
 
@@ -118,6 +124,8 @@ func set_quality(tier: String) -> void:
 		stop_bars.call("set_quality",quality)
 	if pedestrian_signs!=null:
 		pedestrian_signs.call("set_quality",quality)
+	if real_zebra_crossings!=null:
+		real_zebra_crossings.call("set_quality",quality)
 
 func sync_city_power(state: Dictionary) -> void:
 	if stop_bars!=null:
@@ -125,6 +133,9 @@ func sync_city_power(state: Dictionary) -> void:
 			float(state.get("day_clock",12.0)))
 	if pedestrian_signs!=null:
 		pedestrian_signs.call("sync_phase",elapsed,int(state.get("energy",100)),
+			float(state.get("day_clock",12.0)))
+	if real_zebra_crossings!=null:
+		real_zebra_crossings.call("sync_world",int(state.get("energy",100)),
 			float(state.get("day_clock",12.0)))
 
 func visual_state_is_consistent() -> bool:
@@ -136,6 +147,8 @@ func visual_state_is_consistent() -> bool:
 	var x_go: bool = _phase()==0
 	var yellow: bool = _warning()
 	return (stop_bars!=null and pedestrian_signs!=null and
+		real_zebra_crossings!=null and
+		bool(real_zebra_crossings.call("source_geometry_valid")) and
 		bool(pedestrian_signs.call("batches_are_bounded")) and
 		bool(pedestrian_signs.call("matches_source",elapsed)) and
 		bool(stop_bars.call("source_budget_ok")) and

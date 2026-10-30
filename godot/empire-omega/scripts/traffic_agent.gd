@@ -8,6 +8,7 @@ const SEDAN_SURFACE = preload("res://scripts/horizon_traffic_sedan_surface.gd")
 const SIGNAL_LOGIC = preload("res://scripts/city_reign_turn_signals.gd")
 const FOLLOW = preload("res://scripts/city_reign_traffic_following.gd")
 const R178_SIGNAL = preload("res://scripts/city_reign_intersection_policy.gd")
+const R182_CROSSING = preload("res://scripts/city_reign_crosswalk_occupancy.gd")
 const CAR_LENGTH := 4.1
 const DETECTION_RANGE := 27.0
 const ROAD_HEIGHT := 0.8
@@ -27,6 +28,12 @@ var neighbors: Array = []
 var last_follow_speed: float = 18.0
 var last_signal_speed: float = 18.0
 var last_signal_phase: String = "none"
+# R182 actual physical crosswalk occupancy diagnostics; gameplay only,
+# non-persistent, never sent to a server or fabricated from a HUD state.
+var last_crosswalk_occupied: bool = false
+var last_crosswalk_clearance: float = R182_CROSSING.INF_CLEARANCE_M
+var crosswalk_activations: int = 0
+var crosswalk_yield_seconds: float = 0.0
 var _last_braking := true
 var indicator_lamps: Dictionary = {}
 var _indicator_lit: Dictionary = {"left":true,"right":true}
@@ -185,6 +192,13 @@ func _obstacle_distance(direction: Vector3) -> float:
 	query.exclude = [get_rid()]
 	var hit: Dictionary = space.intersect_ray(query)
 	var nearest: float = 1000000.0
+	# This samples the real R178 16-junction stop bar ONCE per vehicle
+	# physics step, using the SAME original source clock as 34 residents.
+	# No separate raycasts, AI objects, saved data or forced teleport.
+	var crossing_gate: Dictionary=R182_CROSSING.gate(global_position,
+		direction,float(signal_controller.get("elapsed"))) if signal_controller!=null else {}
+	last_crosswalk_occupied=false
+	last_crosswalk_clearance=R182_CROSSING.INF_CLEARANCE_M
 	if not hit.is_empty():
 		# Body ray is centre-to-centre; reserve half a vehicle length as space.
 		nearest = maxf(0.0,from.distance_to(hit["position"])-CAR_LENGTH*0.5)
@@ -199,6 +213,14 @@ func _obstacle_distance(direction: Vector3) -> float:
 		var predicted: float = R47_CROSSING.clearance(global_position,direction,speed,
 			person.global_position,walker_velocity,minf(nearest,look))
 		nearest = minf(nearest,predicted)
+		if R182_CROSSING.occupied(crossing_gate,direction,
+				person.global_position,walker_velocity,speed):
+			# Real 3D citizen physically occupies / will enter the
+			# ORIGINAL car lane at this very junction. Yield BEFORE the
+			# source stop bar; no phantom stop for a sidewalk parallel walk.
+			last_crosswalk_occupied=true
+			last_crosswalk_clearance=R182_CROSSING.stop_clearance(crossing_gate)
+			nearest=minf(nearest,last_crosswalk_clearance)
 	return nearest
 
 func _physics_process(delta: float) -> void:
@@ -215,7 +237,10 @@ func _physics_process(delta: float) -> void:
 		target_index = (target_index+1)%points.size()
 		return
 	var heading: Vector3 = displacement.normalized()
+	var prior_occupancy: bool=last_crosswalk_occupied
 	var obstacle: float = _obstacle_distance(heading)
+	if last_crosswalk_occupied and not prior_occupancy:
+		crosswalk_activations+=1
 	var signal_distance: float = 1000000.0
 	var signal_elapsed: float=float(signal_controller.get("elapsed")) if signal_controller!=null else 0.0
 	var source_stop: Dictionary=R178_SIGNAL.approach(global_position,heading,signal_elapsed) if signal_controller!=null else {}
@@ -264,6 +289,9 @@ func _physics_process(delta: float) -> void:
 		stopped_seconds += delta
 	else:
 		stopped_seconds = 0.0
+	if last_crosswalk_occupied and speed<2.0 and is_finite(delta):
+		crosswalk_yield_seconds=minf(86400.0,
+			crosswalk_yield_seconds+clampf(delta,0.0,0.1))
 	rotation.y = lerp_angle(rotation.y,atan2(-heading.x,-heading.z),clampf(delta*4.8,0.0,1.0))
 	var before: Vector3 = global_position
 	velocity = Vector3(heading.x*speed,0.0,heading.z*speed)
