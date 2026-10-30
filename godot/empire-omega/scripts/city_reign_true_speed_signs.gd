@@ -23,8 +23,8 @@ var material_syncs: int=0
 
 static func true_sign_pose(x: float,z: float,axis: String,
 		travel_sign: int) -> Transform3D:
-	if not ROADS.JUNCTIONS.has(x) or not ROADS.JUNCTIONS.has(z) or
-			not ["x","z"].has(axis) or abs(travel_sign)!=1:
+	if (not ROADS.JUNCTIONS.has(x) or not ROADS.JUNCTIONS.has(z) or
+			not ["x","z"].has(axis) or abs(travel_sign)!=1):
 		return Transform3D.IDENTITY
 	var at: Vector3
 	var yaw: float
@@ -182,18 +182,18 @@ func sync_power(power: int,hour: float) -> void:
 		mat.emission_energy_multiplier=0.10*float(normalized)/100.0
 
 func source_integrity() -> bool:
-	if not RULE.source_rule_valid() or not ROADS.source_grid_valid() or
-			art.size()!=BATCH_COUNT or get_child_count()!=BATCH_COUNT:
+	if (not RULE.source_rule_valid() or not ROADS.source_grid_valid() or
+			art.size()!=BATCH_COUNT or get_child_count()!=BATCH_COUNT):
 		return false
 	if FACE_RADIUS_M<=0.5 or DISTANCE_BEFORE_JUNCTION_M>=ROADS.APPROACH_RANGE_M:
 		return false
 	for part in ["pole","face","ring","digits"]:
 		var node: MultiMeshInstance3D=art.get(part)
-		if node==null or node.multimesh==null or
+		if (node==null or node.multimesh==null or
 				node.multimesh.instance_count!=SIGN_COUNT or
 				not node.visible or
 				node.get_child_count()!=0 or
-				node.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+				node.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF):
 			return false
 	if (art["digits"] as MultiMeshInstance3D).multimesh.mesh is not ArrayMesh:
 		return false
