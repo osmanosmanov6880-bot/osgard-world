@@ -2132,6 +2132,7 @@ func _refresh_radio_ui() -> void:
     if not line.is_empty():
         radio_speaker.text = str(line["speaker"]) + "   /   ACT " + str(line["act"])
         var source_words: String = str(line["text"])
+        radio_dialogue.tooltip_text = source_words
         var width: float = float(_browser_css_size.x) if _browser_css_size.x > 0 else get_viewport().get_visible_rect().size.x
         if width < 650.0:
             # The JOURNAL retains source_words in full; this is a genuine
