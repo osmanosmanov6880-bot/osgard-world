@@ -215,8 +215,10 @@ var containment_fx: IPContainmentFX
 var wayfinder: IPWayfinding
 var tactical_atlas: IPTacticalAtlas
 var atlas_panel: PanelContainer
+var atlas_dimmer: ColorRect
 var atlas_title: Label
 var atlas_summary: Label
+var atlas_legend: Label
 var atlas_disclaimer: Label
 var atlas_close_button: Button
 var campaign_echoes: IPCampaignEchoes
@@ -535,6 +537,8 @@ func _publish_web_state() -> void:
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
     state["g10_tactical_atlas"] = tactical_atlas.readout() if tactical_atlas != null else {}
     state["g10_tactical_atlas"]["panel_visible"] = atlas_panel != null and atlas_panel.visible
+    state["g10_tactical_atlas"]["focus_backdrop_visible"] = atlas_dimmer != null and atlas_dimmer.visible
+    state["g10_tactical_atlas"]["legend"] = atlas_legend.text if atlas_panel != null and atlas_panel.visible else ""
     state["g10_tactical_atlas"]["title"] = atlas_title.text if atlas_title != null else ""
     state["g10_tactical_atlas"]["summary"] = atlas_summary.text if atlas_panel != null and atlas_panel.visible else ""
     state["g10_tactical_atlas"]["close_rect"] = _hud_rect(atlas_close_button) if atlas_close_button != null else []
@@ -1099,7 +1103,15 @@ func _make_hud() -> void:
     _layout_hud()
 
 func _make_tactical_atlas() -> void:
-    # G10: a real native Godot atlas, not a fake HTML panel or player GPS.
+    # G10: real Godot overlay, not fake HTML. Dim the actual game + HUD
+    # rather than putting a noisy interface over existing cockpit cards.
+    atlas_dimmer = ColorRect.new()
+    atlas_dimmer.name = "G10_FocusBackdropBlocksUnderlyingTouch"
+    atlas_dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+    atlas_dimmer.color = Color(0.003,0.012,0.021,0.94)
+    atlas_dimmer.mouse_filter = Control.MOUSE_FILTER_STOP
+    atlas_dimmer.visible = false
+    hud_root.add_child(atlas_dimmer)
     atlas_panel = _panel(hud_root,Rect2(-365,-247,365,247),
         Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.025,0.039,0.994))
     atlas_panel.name = "G10_SourceBoundTacticalAtlas"
@@ -1114,6 +1126,8 @@ func _make_tactical_atlas() -> void:
     stack.add_child(tactical_atlas)
     tactical_atlas.custom_minimum_size = Vector2(0,205)
     tactical_atlas.configure(terminals,relay_terminals,field_stations)
+    atlas_legend = _label(stack,"",11,CYAN)
+    atlas_legend.name = "G10_ActualPhysicalMarkerLegend"
     atlas_summary = _label(stack,"",13,WHITE)
     atlas_summary.name = "G10_RealCrisisAndObjectiveData"
     atlas_disclaimer = _label(stack,"",11,DIM)
@@ -1132,6 +1146,10 @@ func _refresh_tactical_atlas() -> void:
     tactical_atlas.capture(session,player.global_position,objective,active_sector,
         locale,started and not session.finished())
     atlas_title.text = "G10 / TACTICAL ATLAS  ·  A7" if locale == "en" else "G10 / ТАКТИЧЕСКАЯ СХЕМА  ·  A7"
+    atlas_legend.text = (
+        "● PLAYER   ● TARGET   · RELAY   · FIELD" if locale == "en" else
+        "● ИГРОК   ● ЦЕЛЬ   · РЕЛЕ   · СТАНЦИЯ"
+    )
     atlas_summary.text = tactical_atlas.line_summary()
     atlas_disclaimer.text = (
         "SCHEMATIC STRAIGHT-LINE DISTANCE, NOT A WALKABLE ROUTE. NO LOCATION DATA OR TELEMETRY."
@@ -1144,6 +1162,8 @@ func _close_tactical_atlas() -> void:
     if atlas_panel == null or not atlas_panel.visible:
         return
     atlas_panel.visible = false
+    if atlas_dimmer != null:
+        atlas_dimmer.visible = false
     paused = false
     if started and not session.finished():
         audio_director.set_active(true)
@@ -1165,6 +1185,7 @@ func _toggle_tactical_atlas() -> void:
         forecast_panel.visible = false
     if diagnostic_panel != null:
         diagnostic_panel.visible = false
+    atlas_dimmer.visible = true
     atlas_panel.visible = true
     paused = true
     audio_director.set_active(false)
@@ -1654,11 +1675,12 @@ func _layout_hud() -> void:
         var atlas_half: float = minf(365.0,width*0.45)
         atlas_panel.offset_left = -atlas_half
         atlas_panel.offset_right = atlas_half
-        tactical_atlas.custom_minimum_size.y = 164.0 if narrow else 205.0
+        tactical_atlas.custom_minimum_size.y = 154.0 if narrow else 198.0
         tactical_atlas.custom_minimum_size.x = 0.0
         atlas_title.add_theme_font_size_override("font_size",16 if narrow else 22)
-        atlas_summary.add_theme_font_size_override("font_size",10 if narrow else 13)
-        atlas_disclaimer.add_theme_font_size_override("font_size",9 if narrow else 11)
+        atlas_legend.add_theme_font_size_override("font_size",10 if narrow else 11)
+        atlas_summary.add_theme_font_size_override("font_size",11 if narrow else 13)
+        atlas_disclaimer.add_theme_font_size_override("font_size",10 if narrow else 11)
     if guide_panel != null:
         var help_half: float = minf(310.0,width*0.45)
         guide_panel.offset_left = -help_half
@@ -2137,6 +2159,8 @@ func _fast_interact() -> void:
 func start_run() -> void:
     if atlas_panel != null:
         atlas_panel.visible = false
+    if atlas_dimmer != null:
+        atlas_dimmer.visible = false
     operator_guide.reset(session)
     _close_operator_guide()
     _clear_operator_overlay()
@@ -2164,6 +2188,8 @@ func start_run() -> void:
 func _restart() -> void:
     if atlas_panel != null:
         atlas_panel.visible = false
+    if atlas_dimmer != null:
+        atlas_dimmer.visible = false
     _clear_operator_overlay()
     archive_last_save_ok = false
     _clear_after_action()
@@ -2745,6 +2771,8 @@ func _announce(key: String) -> void:
 func _show_end() -> void:
     if atlas_panel != null:
         atlas_panel.visible = false
+    if atlas_dimmer != null:
+        atlas_dimmer.visible = false
     _close_operator_guide()
     forecast_panel.visible = false
     forecast_report.clear()
