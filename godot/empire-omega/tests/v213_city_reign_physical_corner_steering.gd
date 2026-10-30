@@ -16,7 +16,7 @@ func _run() -> void:
 	check(STEER.source_integrity() and LANE.source_integrity(),
 		"true original 9x9 road, 52m source legs, 2m right lane and actual 2.25m physics car")
 	check(is_equal_approx(STEER.yaw_of(Vector3.RIGHT),-PI/2.0) and
-		is_equal_approx(STEER.yaw_of(Vector3.BACK),PI),
+		is_equal_approx(absf(STEER.yaw_of(Vector3.BACK)),PI),
 		"native -Z forward Godot chassis consistently faces actual X and Z 3D route direction")
 	var start:=Vector3(-110,0.8,-154)
 	var turn:=Vector3(-106,0.8,-154)
