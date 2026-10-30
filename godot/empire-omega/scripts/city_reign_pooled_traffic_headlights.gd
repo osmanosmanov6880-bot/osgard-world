@@ -84,8 +84,8 @@ func _choose_nearest(focus: Vector3,tier: String) -> void:
 		for index in range(mini(ORIGINAL_CARS,candidates.size())):
 			if used.has(index):continue
 			var body: Node3D=candidates[index] as Node3D
-			if not is_instance_valid(body) or not body.visible or
-					not body.global_position.is_finite():
+			if (not is_instance_valid(body) or not body.visible or
+					not body.global_position.is_finite()):
 				continue
 			var squared: float=focus.distance_squared_to(body.global_position)
 			if squared<closest:
