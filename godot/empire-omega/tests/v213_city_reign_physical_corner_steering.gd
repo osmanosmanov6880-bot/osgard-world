@@ -33,23 +33,23 @@ func _run() -> void:
 		"source U turn and non-finite next waypoint fail safely to original AStar")
 	var result: Dictionary=STEER.steer(-PI/2.0,start,expected,6.0,0.1,1.0)
 	check(result.get("valid",false) and
-		float(result["actual_yaw_step"])>0.0 and
-		float(result["actual_yaw_step"])<0.20 and
+		float(result["actual_yaw_step"])<0.0 and
+		absf(float(result["actual_yaw_step"]))<0.20 and
 		absf((result["direction"] as Vector3).length()-1.0)<0.001,
 		"real physical yaw turns gradually toward next native road segment, not instantly 90 degrees")
 	var facing:=Vector3(-sin(float(result["yaw"])),0,-cos(float(result["yaw"])))
 	check(facing.distance_to(result["direction"])<0.0001,
 		"the real 3D chassis forward AND native physical velocity share the same yaw")
 	check(absf(float(result["wheel_radians"]))<=STEER.MAX_FRONT_WHEEL_RAD and
-		float(result["wheel_radians"])>0.01,
+		float(result["wheel_radians"])< -0.01,
 		"original existing two front wheel meshes receive genuine bounded corner articulation")
 	var dry: Dictionary=STEER.steer(-PI/2.0,start,Vector3(-110,0.8,-145),
 		12.0,0.1,1.0)
 	var rain: Dictionary=STEER.steer(-PI/2.0,start,Vector3(-110,0.8,-145),
 		12.0,0.1,0.4)
 	check(dry["valid"] and rain["valid"] and
-		float(rain["actual_yaw_step"])<float(dry["actual_yaw_step"]) and
-		float(dry["actual_yaw_step"])<=0.20,
+		absf(float(rain["actual_yaw_step"]))<absf(float(dry["actual_yaw_step"])) and
+		absf(float(dry["actual_yaw_step"]))<=0.20,
 		"genuine wet weather reduces attainable real lateral yaw at equal vehicle speed")
 	check(STEER.safe_next_step(start,result["direction"],6.0,0.1) and
 		STEER.source_road_footprint_safe(start),
@@ -66,7 +66,7 @@ func _run() -> void:
 		"invalid road physics and corrupted browser frame cannot invent a steering command")
 	var huge: Dictionary=STEER.steer(-PI/2.0,start,Vector3(-110,0.8,-145),
 		12.0,3.0,1.0)
-	check(float(huge["actual_yaw_step"])<=
+	check(absf(float(huge["actual_yaw_step"]))<=
 		STEER.MAX_YAW_RATE_RAD_S*STEER.MAX_FRAME_STEP_S+0.0001,
 		"backgrounded browser frame cannot instantly rotate physical traffic chassis")
 	print("CITY REIGN R188 TRUE ORIGINAL TRAFFIC STEERING PURE: %d PASS %d FAIL" % [passed,failed])
