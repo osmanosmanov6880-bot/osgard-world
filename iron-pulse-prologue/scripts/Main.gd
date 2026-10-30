@@ -554,6 +554,7 @@ func _publish_web_state() -> void:
     state["g12_control_comfort"]["local_save_ok"] = control_comfort_last_save_ok
     state["g12_control_comfort"]["pause_control_rect"] = _hud_rect(control_comfort_button) if control_comfort_button != null else []
     state["g12_control_comfort"]["touch_pause_rect"] = _hud_rect(touch_pause_button) if touch_pause_button != null else []
+    state["g12_control_comfort"]["resume_rect"] = _hud_rect(resume_button) if resume_button != null else []
     state["g10_tactical_atlas"] = tactical_atlas.readout() if tactical_atlas != null else {}
     state["g10_tactical_atlas"]["panel_visible"] = atlas_panel != null and atlas_panel.visible
     state["g10_tactical_atlas"]["focus_backdrop_visible"] = atlas_dimmer != null and atlas_dimmer.visible
