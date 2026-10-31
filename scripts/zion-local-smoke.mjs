@@ -26,7 +26,15 @@ assert.ok(hub.includes('root.querySelector(s)'), 'Catalog selectors must respect
 assert.ok(hub.includes('osgard:play-collection:v1'), 'Both catalogs must share the collection')
 assert.ok(hub.includes('Array.isArray(v)'), 'Malformed optional storage must not block catalog initialization')
 for (const id of ['empire-omega','nebula-3d','r136-precision']) assert.ok(games.some(g => g.id === id), 'Missing OSGARD game: ' + id)
-assert.ok(hub.includes('"numberOfItems":22'), 'Games sitemap ItemList must match all 22 cards')
+const gamesListMatch = hub.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)
+assert.ok(gamesListMatch, 'Games page must expose its ItemList schema')
+const gamesList = JSON.parse(gamesListMatch[1])
+assert.equal(gamesList.numberOfItems, 24, 'Games ItemList must include all 24 published worlds')
+assert.equal(gamesList.itemListElement.length, gamesList.numberOfItems, 'Games ItemList count must match its entries')
+assert.equal(new Set(gamesList.itemListElement.map(item => item.url)).size, gamesList.numberOfItems, 'Every published world must have a unique URL')
+for (const title of ['IRON PULSE WORLD', 'SABLEFAULT WORLD 3.2']) {
+  assert.ok(gamesList.itemListElement.some(item => item.name === title), 'Games ItemList must include ' + title)
+}
 assert.equal(games.find(g => g.id === 'null-shift').launchable, true)
 assert.equal(games.find(g => g.id === 'null-shift').alternate.href, '/games/null-shift/')
 assert.equal(games.find(g => g.id === 'inherit').mode, 'solo')
