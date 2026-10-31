@@ -8,12 +8,14 @@ const read = path => {
 
 const intelligenceHome = read('src/IntelligenceHome.tsx')
 const intelligenceCss = read('src/intelligenceCommand.css')
+const cinemaFeature = read('src/OSACinemaFeature.tsx')
 const page = read('public/development/osa-intelligence/index.html')
 const og = read('public/development/osa-intelligence/og.svg')
 assert.ok(intelligenceHome.includes("cinemaJump: 'Трейлер и первая глава · бесплатно'") && intelligenceHome.includes("cinemaJump: 'Trailer and first chapter · free'"), 'OSA Intelligence must surface the free film entry in both locales.')
-assert.ok(intelligenceHome.includes('id="cinema"') && intelligenceHome.includes("cinemaFree: 'Трейлер и глава I доступны бесплатно'") && intelligenceHome.includes("cinemaFree: 'Trailer and chapter I are free'"), 'OSA Cinema feature must clearly disclose free access in both locales.')
-assert.ok(intelligenceHome.includes('?lang=en#watch') && intelligenceHome.includes('?lang=ru#watch') && intelligenceHome.includes('intelligence-cinema-feature'), 'OSA film entry must open the matching localized chapter page.')
-assert.ok(intelligenceCss.includes('.intelligence-cinema-button:focus-visible') && intelligenceCss.includes('.intelligence-cinema-jump:focus-visible'), 'OSA Cinema links must retain visible keyboard focus states.')
+assert.ok(intelligenceHome.includes('id="cinema"') && intelligenceHome.includes("import('./OSACinemaFeature')") && intelligenceHome.includes('intelligence-cinema-placeholder'), 'OSA Cinema must be anchored in-page and loaded only near view.')
+assert.ok(cinemaFeature.includes("free: 'Трейлер и глава I доступны бесплатно'") && cinemaFeature.includes("free: 'Trailer and chapter I are free'"), 'OSA Cinema feature must clearly disclose free access in both locales.')
+assert.ok(cinemaFeature.includes('?lang=en#watch') && cinemaFeature.includes('?lang=ru#watch') && cinemaFeature.includes('intelligence-cinema-feature'), 'OSA film entry must open the matching localized chapter page.')
+assert.ok(intelligenceCss.includes('.intelligence-cinema-button:focus-visible') && intelligenceCss.includes('.intelligence-cinema-jump:focus-visible') && intelligenceCss.includes('.intelligence-cinema-placeholder>a:focus-visible'), 'OSA Cinema links must retain visible keyboard focus states.')
 
 const mediaLibrary = read('public/osa-library/index.html')
 const mediaManifest = JSON.parse(read('public/osa-library/media-manifest.json'))
