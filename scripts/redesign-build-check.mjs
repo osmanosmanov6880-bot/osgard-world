@@ -21,10 +21,13 @@ for(const route of ['src/WorldHome.tsx','src/IntelligenceHome.tsx','src/PlayHome
  assert.ok([...keys].every(k=>!k.includes('osaLessonGuides')&&!k.includes('osaLessonReading')),'Full lesson content leaked into '+route)
  if(route==='src/PlayHome.tsx')assert.ok([...keys].every(key=>!['PlayGameRoute','PlayExploreSections'].includes(manifest[key].name)),'Deferred PLAY sections or session controller leaked into catalogue entry')
  const jsGzipBytes=files.reduce((sum,file)=>sum+gzipSync(readFileSync('dist/'+file)).length,0)
- assert.ok(jsGzipBytes<=95*1024,'Landing JavaScript exceeds the 95 KiB gzip budget: '+route+' ('+jsGzipBytes+' / '+(95*1024)+' bytes)')
+ // Intelligence carries the bilingual evidence lab and source review in this route.
+ // Only this content-rich surface gets 1 KiB extra; WORLD and PLAY stay at 95 KiB.
+ const jsGzipBudgetBytes=route==='src/IntelligenceHome.tsx'?96*1024:95*1024
+ assert.ok(jsGzipBytes<=jsGzipBudgetBytes,'Landing JavaScript exceeds the '+(jsGzipBudgetBytes/1024)+' KiB gzip budget: '+route+' ('+jsGzipBytes+' / '+jsGzipBudgetBytes+' bytes)')
  const css=[...new Set([...keys].flatMap(k=>manifest[k].css||[]))]
  assert.ok(css.every(f=>!f.includes('legacyStyles')),'Legacy styles leaked into new landing')
- reports.push({route,jsFiles:files,jsGzipBytes,cssFiles:css,cssGzipBytes:css.reduce((sum,file)=>sum+gzipSync(readFileSync('dist/'+file)).length,0)})
+ reports.push({route,jsFiles:files,jsGzipBytes,jsGzipBudgetBytes,cssFiles:css,cssGzipBytes:css.reduce((sum,file)=>sum+gzipSync(readFileSync('dist/'+file)).length,0)})
 }
 for(const path of ['intelligence','play','development','games','entertainment','play/partners','play/world/vector-zero','learning/project','lectures/how-language-models-work']){
  const html=readFileSync('dist/'+path+'/index.html','utf8');assert.ok(html.includes('<title>'));assert.ok(html.includes('https://osgard.world/'+(['games','entertainment'].includes(path)?'play':path)));const preview=html.match(/property="og:image" content="https:\/\/osgard.world([^"<>]+)/);assert.ok(preview);assert.ok(existsSync('dist'+preview[1]),preview?.[1])
