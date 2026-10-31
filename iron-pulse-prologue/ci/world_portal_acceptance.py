@@ -85,6 +85,11 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                     "?scenario=blackout&lang=ru"
                 ), "Original RU GRID launch link not real"
                 assert page.evaluate("document.documentElement.scrollWidth") <= 1368
+                assert page.locator("#g14-look-title").count() == 1 and (
+                    page.locator(".g14-look-presets > div").count() == 3), (
+                    "G14 real Godot camera profile content must exist on RU portal")
+                assert "УПРАВЛЯЙ ВЗГЛЯДОМ" in page.locator("#g14-look-title").inner_text(), (
+                    "G14 RU native real input accessibility headline missing")
                 assert page.locator("#g13-mobile-feature-title").count() == 1 and (
                     page.locator(".g13-mobile-triad > div").count() == 3), (
                     "G13 actual 320/390px scene reflow feature missing from RU international site")
@@ -108,6 +113,11 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                                 animations="disabled",timeout=60000)
                 page.locator("#language").click()
                 assert page.evaluate("document.documentElement.lang") == "en"
+                assert "YOU CONTROL THE CAMERA" in page.locator("#g14-look-title").inner_text(), (
+                    "G14 source-backed control accessibility lacks English translation")
+                assert "F10" in page.locator(".g14-look-head").inner_text() and (
+                    "physical" in page.locator(".g14-look-limits").inner_text().lower()), (
+                    "G14 honest physical-device QA requirement or actual F10 key hidden")
                 assert "STORY, INSTRUMENTS" in page.locator("#g13-mobile-feature-title").inner_text(), (
                     "G13 real mobile Godot HUD feature missing in English")
                 assert "physical" in page.locator(".g13-mobile-limitation").inner_text().lower(), (
@@ -173,6 +183,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 mwidth = m.evaluate("document.documentElement.scrollWidth")
                 assert mwidth <= 392, f"Mobile world-class portal overflows 390px: {mwidth}"
                 assert m.locator("a[data-play]").first.is_visible(), "Mobile play CTA missing"
+                assert m.locator("#g14-look-title").is_visible(), (
+                    "G14 genuine camera control section hidden on 320 or 390 phone")
                 assert m.locator("#g13-mobile-feature-title").is_visible(), (
                     "G13 real source-backed HUD explanation missing at 320/390px")
                 assert m.locator("#comfort-feature-title").is_visible(), (
@@ -192,6 +204,12 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 ), "Mobile campaign route not connected to real playable build"
                 m.screenshot(path=str(output/"world-mobile-en.png"),full_page=True,
                              animations="disabled",timeout=60000)
+                result["g14_real_camera_accessibility"] = {
+                    "ru_en": True,
+                    "responsive_320_390": True,
+                    "source_native_presets": 3,
+                    "physical_device_certified": False
+                }
                 result["g13_real_mobile_hud"] = {
                     "real_source": True,
                     "bilingual": True,
@@ -227,6 +245,8 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                 assert narrow_width <= 322, (
                     f"Narrow 320px portal overflows horizontally: {narrow_width}"
                 )
+                assert m.locator("#g14-look-title").is_visible(), (
+                    "G14 genuine camera control section hidden on 320 or 390 phone")
                 assert m.locator("#g13-mobile-feature-title").is_visible(), (
                     "G13 real source-backed HUD explanation missing at 320/390px")
                 assert m.locator("#comfort-feature-title").is_visible(), (
