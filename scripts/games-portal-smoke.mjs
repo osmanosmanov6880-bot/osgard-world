@@ -15,8 +15,9 @@ for(const id of zionWorlds){
   assert.ok(html.includes(`/queue/ZION-${id}/index.html`), 'ZION destination missing: '+id)
 }
 for(const title of ['Базальтовая колыбель','Тихий архив','Стеклянный сад','Последний приливный механизм','Бархатная частота','Бледное уравнение','Север сна','Бронзовый час','Зеркальная погода','Синий интервал','Теневой протокол']) assert.ok(html.includes(title),'Russian ZION card title missing: '+title)
-assert.ok(html.includes('13 игр OSGARD')&&html.includes('11 миров ZION-9'),'Hub must explain the 22-project split')
-assert.ok(html.includes('<b>01—24</b>')&&html.includes('24 игровых проекта'),'Catalog range and Russian total must match 22 projects')
+assert.ok(html.includes('13 игр OSGARD')&&html.includes('11 миров ZION-9'),'Hub must explain the 24-world split')
+assert.ok(html.includes('<b>01—24</b>')&&html.includes('24 игровых проекта'),'Catalog range and Russian total must match 24 worlds')
+assert.equal((html.match(/data-game="/g)||[]).length,24,'The rendered games hub must contain all 24 playable world cards')
 assert.ok(html.includes("Intl.PluralRules('ru')"),'Filtered count must use Russian plural forms')
 assert.ok(html.includes('data-game="nebula-3d"')&&html.includes('href="/games/remix/arena-v2/nebula-3d/"'),'Nebula card must link to Godot build')
 assert.ok(html.includes('data-game="r136-precision"')&&html.includes('href="/games/r136-precision/"'),'R136 card must be discoverable')
