@@ -22,6 +22,7 @@ const copy = {
     cinemaFree: 'Трейлер и глава I доступны бесплатно',
     cinemaPrepared: 'Главы II–III · подписной выпуск готовится',
     cinemaCta: 'Перейти к главам фильма',
+    cinemaJump: 'Трейлер и первая глава · бесплатно',
     cinemaAlt: 'Кинематографичный кадр: исследователь в глубине старинной библиотеки',
     route: 'МОЙ УЧЕБНЫЙ МАРШРУТ', lessons: 'УРОКОВ',
     progressLabel: 'Пройденные уроки OSA',
@@ -107,6 +108,7 @@ const copy = {
     cinemaFree: 'Trailer and chapter I are free',
     cinemaPrepared: 'Chapters II–III · subscription release in preparation',
     cinemaCta: 'Explore the film chapters',
+    cinemaJump: 'Trailer and first chapter · free',
     cinemaAlt: 'Cinematic still of a researcher inside a monumental library',
     route: 'MY LEARNING PATH', lessons: 'LESSONS',
     progressLabel: 'OSA lessons completed',
@@ -219,6 +221,11 @@ export default function IntelligenceHome() {
           <a className="brand-button primary" href="#proof-card">{t.check} <span aria-hidden="true">↘</span></a>
           <a className="brand-button intelligence-command-secondary" href="/learning/program">{t.program} <span aria-hidden="true">↗</span></a>
         </div>
+        <a className="intelligence-cinema-jump" href="#cinema">
+          <span>OSA <i aria-hidden="true">◉</i> CINEMA</span>
+          <strong>{t.cinemaJump}</strong>
+          <b aria-hidden="true">↓</b>
+        </a>
         <div className="intelligence-command-progress">
           <div className="intelligence-progress-heading"><span>{t.route}</span><strong>{completed} / {total} {t.lessons}</strong></div>
           <div className="intelligence-progress-rail" role="progressbar" aria-label={t.progressLabel} aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed}>
