@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { Globe2 } from 'lucide-react'
 import { getOSALearningProgress, isOSALearningProgressPersistent, subscribeOSALearningProgress } from './osaProgress'
 import { getOSANextLesson } from './osaLearningTracks'
@@ -18,12 +18,8 @@ const copy = {
     check: 'Проверить утверждения', program: 'Программа обучения',
     cinemaLabel: 'OSA CINEMA / НАУЧНО-ДОКУМЕНТАЛЬНЫЙ ФИЛЬМ',
     cinemaTitle: 'За пределами модели',
-    cinemaDescription: 'Понять ИИ. Проверить ответ. Оставить решение человеку. Интерактивная история о том, как сохранять ясность, когда ответ звучит убедительно.',
-    cinemaFree: 'Трейлер и глава I доступны бесплатно',
-    cinemaPrepared: 'Главы II–III · подписной выпуск готовится',
     cinemaCta: 'Смотреть фильм и открыть главы',
     cinemaJump: 'Трейлер и первая глава · бесплатно',
-    cinemaAlt: 'Кинематографичный кадр: исследователь в глубине старинной библиотеки',
     route: 'МОЙ УЧЕБНЫЙ МАРШРУТ', lessons: 'УРОКОВ',
     progressLabel: 'Пройденные уроки OSA',
     saved: 'Отметки сохраняются в этом браузере.',
@@ -104,12 +100,8 @@ const copy = {
     check: 'Review the claims', program: 'Learning programme',
     cinemaLabel: 'OSA CINEMA / SCIENTIFIC DOCUMENTARY',
     cinemaTitle: 'Beyond the Model',
-    cinemaDescription: 'Understand AI. Check its answer. Keep the decision human. An interactive story about staying clear-minded when an answer sounds convincing.',
-    cinemaFree: 'Trailer and chapter I are free',
-    cinemaPrepared: 'Chapters II–III · subscription release in preparation',
     cinemaCta: 'Watch the film and explore chapters',
     cinemaJump: 'Trailer and first chapter · free',
-    cinemaAlt: 'Cinematic still of a researcher inside a monumental library',
     route: 'MY LEARNING PATH', lessons: 'LESSONS',
     progressLabel: 'OSA lessons completed',
     saved: 'Progress is saved in this browser.',
@@ -192,10 +184,34 @@ export default function IntelligenceHome() {
   const [marked, setMarked] = useState<number[]>([])
   const [progress, setProgress] = useState(getOSALearningProgress)
   const [persistent, setPersistent] = useState(isOSALearningProgressPersistent)
+  const cinemaFeatureRef = useRef<HTMLDivElement>(null)
+  const [CinemaFeature, setCinemaFeature] = useState<ComponentType<{ locale: Locale }> | null>(null)
   useEffect(() => subscribeOSALearningProgress(() => {
     setProgress(getOSALearningProgress())
     setPersistent(isOSALearningProgressPersistent())
   }), [])
+  useEffect(() => {
+    const target = cinemaFeatureRef.current
+    if (!target) return
+    let active = true
+    const load = () => {
+      void import('./OSACinemaFeature')
+        .then(({ default: Feature }) => { if (active) setCinemaFeature(() => Feature) })
+        .catch(() => { /* Keep the localized film link visible if the optional feature fails to load. */ })
+    }
+    if (!('IntersectionObserver' in window)) {
+      load()
+      return () => { active = false }
+    }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        observer.disconnect()
+        load()
+      }
+    }, { rootMargin: '280px 0px' })
+    observer.observe(target)
+    return () => { active = false; observer.disconnect() }
+  }, [])
   const next = getOSANextLesson(progress.lessonCompletions)
   const completed = progress.lessonCompletions.length
   const total = OSA_LESSON_SLUGS.length
@@ -271,37 +287,15 @@ export default function IntelligenceHome() {
       </nav>
     </section>
 
-    <section className="intelligence-cinema-feature" id="cinema" aria-labelledby="intelligence-cinema-title">
-      <div className="intelligence-cinema-poster">
-        <img
-          src="https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/library.webp"
-          alt={t.cinemaAlt}
-          loading="lazy"
-          decoding="async"
-          width="1200"
-          height="800"
-        />
-        <span className="intelligence-cinema-poster-mark" aria-hidden="true">OSA <i>◉</i> CINEMA</span>
-        <span className="intelligence-cinema-poster-index" aria-hidden="true">01—03</span>
-      </div>
-      <div className="intelligence-cinema-copy">
-        <p className="brand-eyebrow">{t.cinemaLabel}</p>
-        <h2 id="intelligence-cinema-title">{t.cinemaTitle}</h2>
-        <p className="intelligence-cinema-description">{t.cinemaDescription}</p>
-        <div className="intelligence-cinema-status" aria-label={locale === 'ru' ? 'Доступность фильма' : 'Film availability'}>
-          <span><i aria-hidden="true" />{t.cinemaFree}</span>
-          <span>{t.cinemaPrepared}</span>
-        </div>
-        <a
-          className="intelligence-cinema-button"
-          href={locale === 'en'
-            ? 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=en#watch'
-            : 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=ru#watch'}
-          target="_blank"
-          rel="noopener noreferrer"
-        >{t.cinemaCta}<span aria-hidden="true">↗</span></a>
-      </div>
-    </section>
+    <div className="intelligence-cinema-shell" id="cinema" ref={cinemaFeatureRef}>
+      {CinemaFeature
+        ? <CinemaFeature locale={locale} />
+        : <div className="intelligence-cinema-placeholder">
+            <span>OSA <i aria-hidden="true">◉</i> CINEMA</span>
+            <strong>{t.cinemaTitle}</strong>
+            <small>{t.cinemaJump}</small>
+          </div>}
+    </div>
 
     <div id="intelligence-content">
       <section id="method" className="brand-section" aria-labelledby="intelligence-method-title">
