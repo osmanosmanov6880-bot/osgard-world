@@ -106,6 +106,8 @@ on:
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/null-shift-premium-smoke.mjs"
       - "scripts/games-portal-smoke.mjs"
+      - "scripts/games-aaa-wave02-smoke.mjs"
+      - "scripts/games-aaa-wave03-session.test.mjs"
       - "scripts/zion-local-smoke.mjs"
       - "scripts/redesign-*.mjs"
       - "scripts/core-*.py"
