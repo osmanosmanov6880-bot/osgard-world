@@ -42,12 +42,7 @@ const copy = {
       ['02 / ПРОВЕРКА', 'Разбор', 'Источники и границы'],
       ['03 / РЕЗУЛЬТАТ', 'Прогресс', 'Мой учебный маршрут'],
     ],
-    methodLabel: '01 / МЕТОД', methodA: 'Три действия.', methodB: 'Одно осознанное решение.',
-    method: [
-      ['Понять', 'Как устроена модель, что она умеет и где её ограничения.'],
-      ['Проверить', 'Что подтверждает утверждение и где находится первоисточник.'],
-      ['Решить', 'Что можно применить, что уточнить и где нужен человек.'],
-    ],
+    methodMini: 'Понять · проверить · решить',
     demoLabel: '02 / ПОПРОБУЙТЕ СЕЙЧАС', demoA: 'Уверенность —', demoB: 'ещё не источник.',
     demoLead: 'Проверьте спорные утверждения. Выбор можно изменить.',
     steps: ['Выберите утверждения.', 'Откройте источники и границы.', 'Решите, чему можно доверять.'],
@@ -124,12 +119,7 @@ const copy = {
       ['02 / VERIFY', 'Review', 'Sources and limits'],
       ['03 / PROGRESS', 'Progress', 'My learning path'],
     ],
-    methodLabel: '01 / METHOD', methodA: 'Three actions.', methodB: 'One considered decision.',
-    method: [
-      ['Understand', 'How a model works, what it can do, and where its limits are.'],
-      ['Verify', 'What supports a claim and where to find the original source.'],
-      ['Decide', 'What to apply, what to clarify, and when a person is needed.'],
-    ],
+    methodMini: 'Understand · verify · decide',
     demoLabel: '02 / TRY IT NOW', demoA: 'Confidence', demoB: 'is not a source.',
     demoLead: 'Check questionable claims. You can revise your selections.',
     steps: ['Select the claims.', 'Open the sources and limitations.', 'Decide what you can trust.'],
@@ -186,10 +176,34 @@ export default function IntelligenceHome() {
   const [persistent, setPersistent] = useState(isOSALearningProgressPersistent)
   const cinemaFeatureRef = useRef<HTMLDivElement>(null)
   const [CinemaFeature, setCinemaFeature] = useState<ComponentType<{ locale: Locale }> | null>(null)
+  const methodSectionRef = useRef<HTMLDivElement>(null)
+  const [MethodSection, setMethodSection] = useState<ComponentType<{ locale: Locale }> | null>(null)
   useEffect(() => subscribeOSALearningProgress(() => {
     setProgress(getOSALearningProgress())
     setPersistent(isOSALearningProgressPersistent())
   }), [])
+  useEffect(() => {
+    const target = methodSectionRef.current
+    if (!target) return
+    let active = true
+    const load = () => {
+      void import('./OSAMethodSection')
+        .then(({ default: Section }) => { if (active) setMethodSection(() => Section) })
+        .catch(() => { /* The method headline remains useful if its detail module is unavailable. */ })
+    }
+    if (!('IntersectionObserver' in window)) {
+      load()
+      return () => { active = false }
+    }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        observer.disconnect()
+        load()
+      }
+    }, { rootMargin: '280px 0px' })
+    observer.observe(target)
+    return () => { active = false; observer.disconnect() }
+  }, [])
   useEffect(() => {
     const target = cinemaFeatureRef.current
     if (!target) return
@@ -302,12 +316,14 @@ export default function IntelligenceHome() {
     </div>
 
     <div id="intelligence-content">
-      <section id="method" className="brand-section" aria-labelledby="intelligence-method-title">
-        <div className="brand-section-heading"><p className="brand-eyebrow">{t.methodLabel}</p><h2 id="intelligence-method-title">{t.methodA}<br /><em>{t.methodB}</em></h2></div>
-        <div className="intelligence-method">
-          {t.method.map(([title, text], index) => <div key={title}><span>0{index + 1}</span><h3>{title}</h3><p>{text}</p></div>)}
-        </div>
-      </section>
+      <div id="method" className="intelligence-method-shell" ref={methodSectionRef}>
+        {MethodSection
+          ? <MethodSection locale={locale} />
+          : <section className="brand-section intelligence-method-fallback" aria-label={locale === 'ru' ? 'Метод OSA' : 'OSA method'}>
+              <p className="brand-eyebrow">{locale === 'ru' ? '01 / МЕТОД' : '01 / METHOD'}</p>
+              <h2>{t.methodMini}</h2>
+            </section>}
+      </div>
 
       <section id="demo" className="brand-section intelligence-demo" aria-labelledby="intelligence-demo-title">
         <div>
