@@ -16,7 +16,13 @@ const copy = {
     titleA: 'Понимать ИИ.', titleB: 'Проверять ответы.', titleC: 'Решать осознанно.',
     lead: 'Проверяйте сложные ответы и принимайте свои решения. Начните без регистрации.',
     check: 'Проверить утверждения', program: 'Программа обучения',
-    filmEntry: 'OSA Cinema: интерактивные сцены и статусы производства',
+    cinemaLabel: 'OSA CINEMA / НАУЧНО-ДОКУМЕНТАЛЬНЫЙ ФИЛЬМ',
+    cinemaTitle: 'За пределами модели',
+    cinemaDescription: 'Понять ИИ. Проверить ответ. Оставить решение человеку. Интерактивная история о том, как сохранять ясность, когда ответ звучит убедительно.',
+    cinemaFree: 'Трейлер и глава I доступны бесплатно',
+    cinemaPrepared: 'Главы II–III · подписной выпуск готовится',
+    cinemaCta: 'Перейти к главам фильма',
+    cinemaAlt: 'Кинематографичный кадр: исследователь в глубине старинной библиотеки',
     route: 'МОЙ УЧЕБНЫЙ МАРШРУТ', lessons: 'УРОКОВ',
     progressLabel: 'Пройденные уроки OSA',
     saved: 'Отметки сохраняются в этом браузере.',
@@ -95,7 +101,13 @@ const copy = {
     titleA: 'Understand AI.', titleB: 'Check its answers.', titleC: 'Decide with care.',
     lead: 'Check complex answers and decide for yourself. Start without signing up.',
     check: 'Review the claims', program: 'Learning programme',
-    filmEntry: 'OSA Cinema: interactive story and production updates',
+    cinemaLabel: 'OSA CINEMA / SCIENTIFIC DOCUMENTARY',
+    cinemaTitle: 'Beyond the Model',
+    cinemaDescription: 'Understand AI. Check its answer. Keep the decision human. An interactive story about staying clear-minded when an answer sounds convincing.',
+    cinemaFree: 'Trailer and chapter I are free',
+    cinemaPrepared: 'Chapters II–III · subscription release in preparation',
+    cinemaCta: 'Explore the film chapters',
+    cinemaAlt: 'Cinematic still of a researcher inside a monumental library',
     route: 'MY LEARNING PATH', lessons: 'LESSONS',
     progressLabel: 'OSA lessons completed',
     saved: 'Progress is saved in this browser.',
@@ -207,16 +219,6 @@ export default function IntelligenceHome() {
           <a className="brand-button primary" href="#proof-card">{t.check} <span aria-hidden="true">↘</span></a>
           <a className="brand-button intelligence-command-secondary" href="/learning/program">{t.program} <span aria-hidden="true">↗</span></a>
         </div>
-        <p className="intelligence-cinema-cta">
-          <span>OSA CINEMA / FREE RELEASE</span>
-          <a
-            href={locale === 'en'
-              ? 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=en#watch'
-              : 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=ru#watch'}
-            target="_blank"
-            rel="noopener noreferrer"
-          >{t.filmEntry} <span aria-hidden="true">↗</span></a>
-        </p>
         <div className="intelligence-command-progress">
           <div className="intelligence-progress-heading"><span>{t.route}</span><strong>{completed} / {total} {t.lessons}</strong></div>
           <div className="intelligence-progress-rail" role="progressbar" aria-label={t.progressLabel} aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed}>
@@ -260,6 +262,38 @@ export default function IntelligenceHome() {
           <span>{eyebrow}</span><strong>{title}</strong><small>{label}</small>
         </a>)}
       </nav>
+    </section>
+
+    <section className="intelligence-cinema-feature" id="cinema" aria-labelledby="intelligence-cinema-title">
+      <div className="intelligence-cinema-poster">
+        <img
+          src="https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/library.webp"
+          alt={t.cinemaAlt}
+          loading="lazy"
+          decoding="async"
+          width="1200"
+          height="800"
+        />
+        <span className="intelligence-cinema-poster-mark" aria-hidden="true">OSA <i>◉</i> CINEMA</span>
+        <span className="intelligence-cinema-poster-index" aria-hidden="true">01—03</span>
+      </div>
+      <div className="intelligence-cinema-copy">
+        <p className="brand-eyebrow">{t.cinemaLabel}</p>
+        <h2 id="intelligence-cinema-title">{t.cinemaTitle}</h2>
+        <p className="intelligence-cinema-description">{t.cinemaDescription}</p>
+        <div className="intelligence-cinema-status" aria-label={locale === 'ru' ? 'Доступность фильма' : 'Film availability'}>
+          <span><i aria-hidden="true" />{t.cinemaFree}</span>
+          <span>{t.cinemaPrepared}</span>
+        </div>
+        <a
+          className="intelligence-cinema-button"
+          href={locale === 'en'
+            ? 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=en#watch'
+            : 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=ru#watch'}
+          target="_blank"
+          rel="noopener noreferrer"
+        >{t.cinemaCta}<span aria-hidden="true">↗</span></a>
+      </div>
     </section>
 
     <div id="intelligence-content">
