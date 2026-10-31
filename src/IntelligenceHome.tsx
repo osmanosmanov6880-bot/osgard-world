@@ -294,6 +294,10 @@ export default function IntelligenceHome() {
             <span>OSA <i aria-hidden="true">◉</i> CINEMA</span>
             <strong>{t.cinemaTitle}</strong>
             <small>{t.cinemaJump}</small>
+            <a href={locale === 'en'
+              ? 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=en#watch'
+              : 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=ru#watch'}
+              target="_blank" rel="noopener noreferrer">{t.cinemaCta} ↗</a>
           </div>}
     </div>
 
