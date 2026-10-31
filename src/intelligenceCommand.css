@@ -451,3 +451,9 @@ html[data-motion=off] .intelligence-cinema-button{transition:none}
   padding:12px 15px;background:#dc3048;color:white;border:1px solid #e1475c;
   border-radius:4px;font-size:12px;font-weight:700;text-decoration:none}
 .intelligence-cinema-placeholder>a:focus-visible{outline:2px solid #88e9e5;outline-offset:4px}
+
+.theme-intelligence .intelligence-method-shell{scroll-margin-top:32px}
+.theme-intelligence .intelligence-command .intelligence-method-fallback h2{
+  margin:10px 0 0;color:#f3f0e8;font:600 clamp(28px,3.5vw,45px)/1.08 'Space Grotesk',Inter,Arial,sans-serif;
+  letter-spacing:-.045em
+}
