@@ -13,7 +13,7 @@ assert.equal(data.games.filter(game=>game.coverKind==='concept-art').length,22)
 assert.equal(new Set(data.games.map(game=>game.cover)).size,22)
 assert.equal(new Set(data.games.map(game=>game.icon)).size,22)
 const blocks=[...html.matchAll(/<article\b[^>]*data-game="([^"]+)"[^>]*>[\s\S]*?<\/article>/g)]
-assert.equal(blocks.length,22,'Expected exactly 22 catalog article cards')
+assert.equal(blocks.length,24,'Expected all 24 published world cards, including the two featured releases')
 const hashes=[]
 for(const game of data.games){
   const card=blocks.find(match=>match[1]===game.id)?.[0]
@@ -45,4 +45,4 @@ assert.ok(styles.includes('.game-cover-image')&&styles.includes('.world-emblem')
 assert.ok(styles.includes('@media(max-width:760px)')&&styles.includes('prefers-reduced-motion'),'Responsive/motion accessibility missing')
 assert.ok(dashboard.includes("game.coverSmall")&&dashboard.includes("game.icon")&&dashboard.includes("game-visual"),'Tracker gallery should show the same 22 creative assets')
 assert.ok(dashboardHtml.includes('.game .game-visual'),'Tracker gallery styles missing')
-console.log('PASS OSGARD PLAY WAVE 02: 22 unique vector emblems, 22 published candidate covers, responsive lazy-load image sources, visible concept-art labels and roadmap gallery.')
+console.log('PASS OSGARD PLAY WAVE 02: 22 unique vector emblems, 22 roadmap candidate covers and 24 published cards, responsive lazy-load image sources, visible concept-art labels and roadmap gallery.')
