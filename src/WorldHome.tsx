@@ -116,51 +116,37 @@ export default function WorldHome({ development = false }: { development?: boole
         </div>
       </section>
     </> : <>
-    <section className="omega-hero omega-portals-hero" aria-labelledby="world-title">
-      <div className="omega-portals-atmosphere" aria-hidden="true">
-        <div className="omega-portals-architecture" />
-        <div className="omega-portals-floor" />
-      </div>
+    <section className="omega-hero omega-portals-hero" data-locale={locale} aria-labelledby="world-title">
       <div className="omega-copy omega-portals-copy">
-        <div className="world-locale-row">
-          <p className="brand-eyebrow omega-portals-eyebrow">OSGARD WORLD <span>/ {locale === 'ru' ? 'ЦИФРОВАЯ ЭКОСИСТЕМА' : 'DIGITAL ECOSYSTEM'}</span></p>
-          <button type="button" className="world-language-toggle" onClick={changeLocale}
-            aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}>
-            <Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}
-          </button>
-        </div>
+        <p className="brand-eyebrow omega-portals-eyebrow">OSGARD WORLD <span>/ {locale === 'ru' ? 'ЦИФРОВАЯ ЭКОСИСТЕМА' : 'DIGITAL ECOSYSTEM'}</span></p>
         <h1 id="world-title">
-          {locale === 'ru' ? <>СОЗДАЁМ<br /><span>ЦИФРОВЫЕ</span><br />МИРЫ</> : <>WE CREATE<br /><span>DIGITAL</span><br />WORLDS</>}
-          <span className="omega-portals-period">.</span>
+          {locale === 'ru' ? <>СОЗДАЁМ<br /><span>ЦИФРОВЫЕ</span><br />МИРЫ<span className="omega-portals-period">.</span></> : <>WE CREATE<br /><span>DIGITAL</span><br />WORLDS<span className="omega-portals-period">.</span></>}
         </h1>
-        <p className="brand-lead">
-          {locale === 'ru' ? 'Обучение. Продукты. Интерактивные миры.' : 'Learning. Products. Interactive worlds.'}
-        </p>
-        <div className="brand-actions omega-portals-actions">
-          <a className="brand-button primary" href="#products">{tx("Исследовать экосистему")} <span aria-hidden="true">↗</span></a>
-          <a className="brand-button omega-portals-secondary" href="/play">{tx("Перейти в Play")} <span aria-hidden="true">↗</span></a>
-        </div>
+        <p className="brand-lead">{locale === 'ru' ? 'Обучение. Продукты. Интерактивные миры.' : 'Learning. Products. Interactive worlds.'}</p>
+        <a className="brand-button primary omega-portals-live-cta" href="#products">{tx("Исследовать экосистему")} <span aria-hidden="true">↗</span></a>
       </div>
-      <nav className="omega-portal-stage" aria-label={locale === 'ru' ? 'Входы в экосистему OSGARD' : 'Enter the OSGARD ecosystem'}>
-        <a href="/intelligence" className="omega-portal omega-portal--osa">
-          <span className="omega-portal-frame" aria-hidden="true"><span /></span>
-          <span className="omega-portal-symbol" aria-hidden="true">◇</span>
-          <span className="omega-portal-name"><span>OSA</span><strong>Intelligence</strong></span>
-          <span className="omega-portal-enter">{locale === 'ru' ? 'Перейти' : 'Enter'} <span aria-hidden="true">↗</span></span>
-        </a>
-        <a href="/play" className="omega-portal omega-portal--play">
-          <span className="omega-portal-frame" aria-hidden="true"><span /></span>
-          <span className="omega-portal-symbol" aria-hidden="true">✦</span>
-          <span className="omega-portal-name"><span>OSGARD</span><strong>Play</strong></span>
-          <span className="omega-portal-enter">{locale === 'ru' ? 'Перейти' : 'Enter'} <span aria-hidden="true">↗</span></span>
-        </a>
-        <a href="/development" className="omega-portal omega-portal--development">
-          <span className="omega-portal-frame" aria-hidden="true"><span /></span>
-          <span className="omega-portal-symbol" aria-hidden="true">⌘</span>
-          <span className="omega-portal-name"><span>OSGARD</span><strong>Development</strong></span>
-          <span className="omega-portal-enter">{locale === 'ru' ? 'Перейти' : 'Enter'} <span aria-hidden="true">↗</span></span>
-        </a>
-      </nav>
+      <div className="omega-portals-visual">
+        <picture className="omega-portals-reference">
+          <source media="(max-width: 760px)" srcSet="/brand/osgard-portal-mobile.webp" />
+          <img src="/brand/osgard-portal-desktop.webp" alt="" aria-hidden="true" width="1672" height="869" fetchPriority="high" decoding="async" />
+        </picture>
+        <nav className="omega-portal-stage" aria-label={locale === 'ru' ? 'Входы в экосистему OSGARD' : 'Enter the OSGARD ecosystem'}>
+          <a href="/intelligence" className="omega-portal omega-portal--osa" aria-label={locale === 'ru' ? 'OSA Intelligence — перейти' : 'Enter OSA Intelligence'}>
+            <span className="omega-portal-label" aria-hidden="true">{locale === 'en' ? 'Enter' : ''}</span>
+          </a>
+          <a href="/play" className="omega-portal omega-portal--play" aria-label={locale === 'ru' ? 'OSGARD Play — перейти' : 'Enter OSGARD Play'}>
+            <span className="omega-portal-label" aria-hidden="true">{locale === 'en' ? 'Enter' : ''}</span>
+          </a>
+          <a href="/development" className="omega-portal omega-portal--development" aria-label={locale === 'ru' ? 'OSGARD Development — перейти' : 'Enter OSGARD Development'}>
+            <span className="omega-portal-label" aria-hidden="true">{locale === 'en' ? 'Enter' : ''}</span>
+          </a>
+        </nav>
+      </div>
+      <a className="omega-portals-primary-hotspot" href="#products" aria-label={tx("Исследовать экосистему")}><span className="omega-portals-sr-only">{tx("Исследовать экосистему")}</span></a>
+      <button type="button" className="world-language-toggle omega-portals-language" onClick={changeLocale}
+        aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}>
+        <Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}
+      </button>
     </section>
     <section id="products" className="brand-section omega-products" aria-labelledby="world-products-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">{tx("01 / НАПРАВЛЕНИЯ OSGARD")}</p><h2 id="world-products-title">{locale === 'ru' ? <>ТРИ МИРА. <span>ОДНА ВСЕЛЕННАЯ.</span></> : <>THREE WORLDS. <span>ONE ECOSYSTEM.</span></>}</h2><p>{tx("Выберите направление и изучите его реальные возможности и ограничения.")}</p></div>
