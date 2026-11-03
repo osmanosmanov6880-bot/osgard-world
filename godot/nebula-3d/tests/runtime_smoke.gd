@@ -168,12 +168,15 @@ func _run() -> void:
     world.ship.set_cruise_assist(true)
     var manual_key := InputEventKey.new()
     manual_key.physical_keycode = KEY_W
+    manual_key.keycode = KEY_W
     manual_key.pressed = true
-    Input.parse_input_event(manual_key.duplicate())
-    world.ship._pilot_axes()
+    Input.parse_input_event(manual_key)
+    await physics_frame
     manual_key.pressed = false
     Input.parse_input_event(manual_key.duplicate())
-    if not check(not world.ship.cruise_assist,
+    await process_frame
+    if not check(not world.ship.cruise_assist and
+        world.ship.last_pilot_throttle > 0.05,
         "Manual thrust must disengage autopilot"):return
     world.ship.velocity = Vector3.ZERO
     world.ship.global_position = pad_position
