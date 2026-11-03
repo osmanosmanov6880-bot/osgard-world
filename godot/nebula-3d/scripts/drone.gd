@@ -11,6 +11,9 @@ var activation_distance: float = 340.0
 var elapsed: float = 0.0
 var body: MeshInstance3D
 var laser_cooldown: float = 0.6
+var crashing: bool = false
+var crash_velocity: Vector3 = Vector3.ZERO
+var crash_time: float = 0.0
 
 func _metal(tint: Color, energy: float = 0.0) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -53,6 +56,15 @@ func _ready() -> void:
     _part(Vector3(0.25,0.22,0.88),Vector3(0,0.32,-0.62),neon)
 
 func _process(delta: float) -> void:
+    if crashing:
+        crash_time += delta
+        crash_velocity += Vector3.DOWN * 18.0 * delta
+        global_position += crash_velocity * delta
+        rotate_object_local(Vector3.FORWARD, 2.4 * delta)
+        rotate_object_local(Vector3.RIGHT, 1.1 * delta)
+        if global_position.y <= 2.0 or crash_time >= 8.0:
+            queue_free()
+        return
     elapsed += delta
     laser_cooldown = maxf(0.0,laser_cooldown-delta)
     if not is_instance_valid(target):
@@ -72,7 +84,11 @@ func _process(delta: float) -> void:
         position += Vector3(cos(elapsed * 0.3),sin(elapsed) * 0.22,sin(elapsed * 0.3)) * delta
 
 func hit(damage: float) -> void:
+    if crashing:
+        return
     health -= damage
     if health <= 0.0:
+        crashing = true
+        hostile = false
+        crash_velocity = -global_basis.z * speed * 0.7 + Vector3.DOWN * 3.0
         destroyed.emit(self)
-        queue_free()
