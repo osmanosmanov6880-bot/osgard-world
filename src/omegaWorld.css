@@ -472,7 +472,7 @@ html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:n
 .world-command .omega-portal-label {
   position: absolute;
   left: 27%;
-  bottom: 8%;
+  bottom: 10%;
   display: grid;
   width: 48%;
   min-height: 42px;
@@ -486,9 +486,9 @@ html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:n
   opacity: 0;
   pointer-events: none;
 }
-.world-command .omega-portal--play .omega-portal-label { left: 27%; width: 48%; }
-.world-command .omega-portal--development .omega-portal-label { left: 23%; width: 54%; }
-.world-command .omega-portals-hero[data-locale="en"] .omega-portal-label { opacity: 1; }
+.world-command .omega-portal--osa .omega-portal-label { left: 27%; width: 48%; bottom: 10%; opacity: 1; }
+.world-command .omega-portal--play .omega-portal-label { left: 29%; width: 43%; bottom: 9%; opacity: 1; }
+.world-command .omega-portal--development .omega-portal-label { left: 27%; width: 42%; bottom: 10%; opacity: 1; }
 .world-command .omega-portals-language {
   position: absolute;
   z-index: 5;
@@ -564,7 +564,10 @@ html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:n
   .world-command .omega-portal--osa { left: 0; top: 0; width: 35%; height: 100%; }
   .world-command .omega-portal--play { left: 35%; top: 0; width: 31%; height: 100%; }
   .world-command .omega-portal--development { left: 66%; top: 0; width: 34%; height: 100%; }
-  .world-command .omega-portal-label { bottom: 22%; min-height: 44px; }
+  .world-command .omega-portal-label { bottom: 25%; min-height: 44px; opacity: 1; }
+  .world-command .omega-portal--osa .omega-portal-label { left: 23%; width: 45%; }
+  .world-command .omega-portal--play .omega-portal-label { left: 26.5%; width: 43%; }
+  .world-command .omega-portal--development .omega-portal-label { left: 15%; width: 39%; }
 }
 @media (max-width: 420px) {
   .world-command .omega-portals-copy { padding: 24px 17px 18px; }
