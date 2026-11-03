@@ -132,7 +132,7 @@ export default function WorldHome({ development = false }: { development?: boole
         </picture>
         <nav className="omega-portal-stage" aria-label={locale === 'ru' ? 'Входы в экосистему OSGARD' : 'Enter the OSGARD ecosystem'}>
           <a href="/intelligence" className="omega-portal omega-portal--osa" aria-label={locale === 'ru' ? 'OSA Intelligence — перейти' : 'Enter OSA Intelligence'}>
-            <span className="omega-portal-label" aria-hidden="true">{locale === 'en' ? 'Enter' : ''}</span>
+            
           </a>
           <a href="/play" className="omega-portal omega-portal--play" aria-label={locale === 'ru' ? 'OSGARD Play — перейти' : 'Enter OSGARD Play'}>
             <span className="omega-portal-label" aria-hidden="true">{locale === 'en' ? 'Enter' : ''}</span>
