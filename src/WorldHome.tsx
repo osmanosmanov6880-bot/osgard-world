@@ -135,10 +135,10 @@ export default function WorldHome({ development = false }: { development?: boole
             
           </a>
           <a href="/play" className="omega-portal omega-portal--play" aria-label={locale === 'ru' ? 'OSGARD Play — перейти' : 'Enter OSGARD Play'}>
-            <span className="omega-portal-label" aria-hidden="true">{locale === 'en' ? 'Enter' : ''}</span>
+            
           </a>
           <a href="/development" className="omega-portal omega-portal--development" aria-label={locale === 'ru' ? 'OSGARD Development — перейти' : 'Enter OSGARD Development'}>
-            <span className="omega-portal-label" aria-hidden="true">{locale === 'en' ? 'Enter' : ''}</span>
+            
           </a>
         </nav>
       </div>
