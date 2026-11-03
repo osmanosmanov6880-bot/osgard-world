@@ -157,6 +157,14 @@ func _run() -> void:
     if not check(not world.ship.cruise_assist and
         world.r23_launch_button_events == 2,
         "R23 launch button cannot disengage autopilot"):return
+    world.ship.set_cruise_assist(true)
+    physical_key.pressed = true
+    Input.parse_input_event(physical_key)
+    world.ship._pilot_axes()
+    physical_key.pressed = false
+    Input.parse_input_event(physical_key)
+    if not check(not world.ship.cruise_assist,
+        "Manual thrust must disengage autopilot"):return
     world.ship.velocity = Vector3.ZERO
     world.ship.global_position = pad_position
     touch_r21.force_mobile_for_tests(true)
