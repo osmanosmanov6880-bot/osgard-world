@@ -62,7 +62,18 @@ func _process(delta: float) -> void:
     if crashing:
         crash_time += delta
         crash_velocity += Vector3.DOWN * 18.0 * delta
-        global_position += crash_velocity * delta
+        var previous: Vector3 = global_position
+        var next_position: Vector3 = previous + crash_velocity * delta
+        # Raycast the actual crash path so wrecks strike city structures and
+        # flightways instead of vanishing at an arbitrary screen-space height.
+        var query := PhysicsRayQueryParameters3D.create(previous, next_position, 1)
+        query.exclude = [get_rid()] if self is CollisionObject3D else []
+        var impact: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+        if not impact.is_empty():
+            global_position = impact["position"]
+            _crash_flash()
+            return
+        global_position = next_position
         rotate_object_local(Vector3.FORWARD, 2.4 * delta)
         rotate_object_local(Vector3.RIGHT, 1.1 * delta)
         if global_position.y <= 2.0:
