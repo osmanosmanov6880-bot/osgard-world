@@ -182,7 +182,7 @@ func _pilot_axes() -> Vector4:
             right.y = 0.0
             var signed_error: float = atan2(direction.dot(right.normalized()),
                 direction.dot(forward.normalized()))
-            yaw = clampf(signed_error * 2.0, -1.0, 1.0)
+            yaw = clampf(-signed_error * 2.0, -1.0, 1.0)
             navigation_steer_frames += 1
         if horizontal.length_squared() < 22500.0 and absf(to_goal.y) > 9.0:
             altitude = clampf(to_goal.y * 0.035, -1.0, 1.0)
