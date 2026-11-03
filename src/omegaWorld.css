@@ -578,3 +578,13 @@ html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:n
   .world-command .omega-portal { transition: none; }
 }
 html[data-motion="off"] .world-command .omega-portal { transition: none; }
+
+
+/* Keep the approved artwork intact: its portal labels and CTA are already part of the image. */
+.world-command .omega-portals-visual { width:100%; height:100%; }
+.world-command .omega-portals-reference img { object-fit:contain; }
+.world-command .omega-portal-label { display:none !important; }
+@media (max-width:760px) {
+  .world-command .omega-portals-visual { height:auto; }
+  .world-command .omega-portals-reference img { object-fit:contain; }
+}
