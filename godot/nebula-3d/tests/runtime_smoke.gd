@@ -957,6 +957,23 @@ func _run() -> void:
     for beam in world.r16_beams:
         if not check(not beam.visible,
             "R16 laser pool did not recycle expired effects"):return
+    # A defeated enemy stays visible and falls before its impact flash.
+    var falling_drone = load("res://scripts/drone.gd").new()
+    world.add_child(falling_drone)
+    falling_drone.global_position = Vector3(0, 30, 0)
+    falling_drone.hit(100.0)
+    if not check(falling_drone.crashing and not falling_drone.hostile and
+        not falling_drone.is_queued_for_deletion(),
+        "Defeated drone must remain visible and leave combat"):return
+    var fall_start_y: float = falling_drone.global_position.y
+    falling_drone._process(0.5)
+    if not check(falling_drone.global_position.y < fall_start_y,
+        "Defeated drone did not fall"):return
+    falling_drone.global_position.y = 2.1
+    falling_drone._process(0.5)
+    if not check(falling_drone.crash_impacted,
+        "Falling drone did not show impact feedback"):return
+    falling_drone.queue_free()
     var target_r16 = load("res://scripts/drone.gd").new()
     target_r16.name = "R16_MissileFlightTarget"
     target_r16.hostile = true
