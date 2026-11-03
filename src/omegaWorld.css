@@ -588,3 +588,9 @@ html[data-motion="off"] .world-command .omega-portal { transition: none; }
   .world-command .omega-portals-visual { height:auto; }
   .world-command .omega-portals-reference img { object-fit:contain; }
 }
+
+
+/* The hero deliberately breaks out of the centered content column; do not clip it here. */
+.world-command { overflow-x: visible !important; }
+.world-command .omega-portals-hero { width:100vw !important; max-width:100vw !important; margin-left:calc(50% - 50vw) !important; margin-right:calc(50% - 50vw) !important; }
+.world-command .omega-portals-reference img { object-fit:contain !important; }
