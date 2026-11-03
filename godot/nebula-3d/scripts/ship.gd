@@ -182,7 +182,7 @@ func _pilot_axes() -> Vector4:
             right.y = 0.0
             var signed_error: float = atan2(direction.dot(right.normalized()),
                 direction.dot(forward.normalized()))
-            yaw = clampf(-signed_error * 2.0, -1.0, 1.0)
+            yaw = clampf(signed_error * 2.0, -1.0, 1.0)
             navigation_steer_frames += 1
         if horizontal.length_squared() < 22500.0 and absf(to_goal.y) > 9.0:
             altitude = clampf(to_goal.y * 0.035, -1.0, 1.0)
@@ -225,6 +225,11 @@ func _physics_process(delta: float) -> void:
     velocity += forward * throttle * forward_acceleration * delta
     velocity += Vector3.UP * climb * SIDE_THRUST * delta
     velocity *= exp(-LINEAR_DAMP * delta)
+    # Bleed lateral slide so a yaw correction does not leave the interceptor
+    # drifting sideways across the city after the pilot releases the controls.
+    var lateral_axis: Vector3 = global_basis.x.normalized()
+    var lateral_velocity: Vector3 = lateral_axis * velocity.dot(lateral_axis)
+    velocity -= lateral_velocity * (1.0 - exp(-2.2 * delta))
     velocity = velocity.limit_length(AFTERBURNER_SPEED if afterburner else NORMAL_SPEED)
     thruster_power = absf(throttle) * (1.0 if afterburner else 0.55)
     boost = clampf(boost + (-23.0 if afterburner else 16.0) * delta, 0.0, 100.0)
