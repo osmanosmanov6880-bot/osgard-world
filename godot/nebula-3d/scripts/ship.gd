@@ -158,6 +158,10 @@ func _pilot_axes() -> Vector4:
             throttle = touch_throttle
         if absf(touch_vertical) > absf(altitude):
             altitude = touch_vertical
+    # Any deliberate steering or thrust immediately returns control to the pilot.
+    # The START FLIGHT assist must never keep steering against manual input.
+    if cruise_assist and (absf(yaw) > 0.05 or absf(pitch) > 0.05 or absf(throttle) > 0.05 or absf(altitude) > 0.05):
+        cruise_assist = false
     # An actual pilot-controlled cruise assist button ensures the player can
     # move with a mouse even if browser focus/keyboard capture is unavailable.
     if throttle < -0.05:
@@ -221,6 +225,11 @@ func _physics_process(delta: float) -> void:
     velocity += forward * throttle * forward_acceleration * delta
     velocity += Vector3.UP * climb * SIDE_THRUST * delta
     velocity *= exp(-LINEAR_DAMP * delta)
+    # Bleed lateral slide so a yaw correction does not leave the interceptor
+    # drifting sideways across the city after the pilot releases the controls.
+    var lateral_axis: Vector3 = global_basis.x.normalized()
+    var lateral_velocity: Vector3 = lateral_axis * velocity.dot(lateral_axis)
+    velocity -= lateral_velocity * (1.0 - exp(-2.2 * delta))
     velocity = velocity.limit_length(AFTERBURNER_SPEED if afterburner else NORMAL_SPEED)
     thruster_power = absf(throttle) * (1.0 if afterburner else 0.55)
     boost = clampf(boost + (-23.0 if afterburner else 16.0) * delta, 0.0, 100.0)

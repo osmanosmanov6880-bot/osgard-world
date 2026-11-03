@@ -32,16 +32,16 @@ const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
 const SECTOR_POSITIONS = [Vector3(0,0,0),Vector3(610,0,-330),Vector3(1070,0,330),Vector3(-500,0,670),Vector3(480,0,940),Vector3(1250,0,-730)]
 const MISSIONS = [
-    {"title":"ПЕРВЫЙ ПОЛЁТ","hint":"Доберись до светящегося навигационного маяка","position":Vector3(210,18,-270),"type":"reach","reward":350},
-    {"title":"НЕОНОВЫЙ КВАРТАЛ","hint":"Посети новый сектор и найди торговый маршрут","position":Vector3(610,20,-330),"type":"reach","reward":450},
-    {"title":"СИГНАЛ ПЕРЕХВАТА","hint":"Очисти сектор от трёх пиратских дронов","position":Vector3(1070,19,330),"type":"combat","reward":900},
-    {"title":"ВОЗВРАЩЕНИЕ В ПОРТ","hint":"Доставь разведданные обратно в Аврору","position":Vector3(0,16,0),"type":"reach","reward":600},
-    {"title":"РАЗЛОМ","hint":"Открой нестабильный навигационный портал","position":Vector3(480,23,940),"type":"reach","reward":1300},
-    {"title":"НЕКСУС","hint":"Отрази элитную эскадрилью Корпорации Хелиос","position":Vector3(1250,26,-730),"type":"combat","reward":2100},
-    {"title":"ПРОТОКОЛ ХЕЛИОС","hint":"Найди зашифрованный терминал в Неоновом квартале","position":Vector3(690,21,-400),"type":"reach","reward":1700},
-    {"title":"ПОХИЩЕННЫЙ КОНВОЙ","hint":"Уничтожь охрану и освободи транспортные суда","position":Vector3(-500,20,670),"type":"combat","reward":2400},
-    {"title":"СЕРДЦЕ РАЗЛОМА","hint":"Доставь стабилизатор в ядро аномалии","position":Vector3(520,24,1010),"type":"reach","reward":2600},
-    {"title":"ПОСЛЕДНИЙ СИГНАЛ","hint":"Разгроми командную группу Хелиос у Нексуса","position":Vector3(1290,28,-780),"type":"combat","reward":4300}
+    {"title":"ПЕРВЫЙ ПОЛЁТ","hint":"Ты пилот-наёмник. Достигни золотого маяка Авроры: город просит защиты. W — газ, кнопка — автопилот.","position":Vector3(210,18,-270),"type":"reach","reward":350},
+    {"title":"НЕОНОВЫЙ КВАРТАЛ","hint":"Проложи безопасный маршрут эвакуации через Неоновый квартал; держи маяк в поле зрения.","position":Vector3(610,20,-330),"type":"reach","reward":450},
+    {"title":"СИГНАЛ ПЕРЕХВАТА","hint":"Аврора под огнём: наведи прицел и уничтожь 3 дрона Хелиос. Осталось видно в HUD.","position":Vector3(1070,19,330),"type":"combat","reward":900},
+    {"title":"ВОЗВРАЩЕНИЕ В ПОРТ","hint":"Вернись в порт Аврора с данными обломков: знак Хелиос связывает нападение с корпорацией.","position":Vector3(0,16,0),"type":"reach","reward":600},
+    {"title":"РАЗЛОМ","hint":"Исследуй Разлом и найди источник сигнала, который вывел дроны на город.","position":Vector3(480,23,940),"type":"reach","reward":1300},
+    {"title":"НЕКСУС","hint":"Перехвати эскадрилью Хелиос: уничтожь 5 истребителей и добудь ключ к заказчику.","position":Vector3(1250,26,-730),"type":"combat","reward":2100},
+    {"title":"ПРОТОКОЛ ХЕЛИОС","hint":"Найди терминал Хелиос. Его журнал раскроет, кто оплатил нападение на Аврору.","position":Vector3(690,21,-400),"type":"reach","reward":1700},
+    {"title":"ПОХИЩЕННЫЙ КОНВОЙ","hint":"Освободи конвой эвакуации: уничтожь охрану Хелиос, пока корабли не вышли из строя.","position":Vector3(-500,20,670),"type":"combat","reward":2400},
+    {"title":"СЕРДЦЕ РАЗЛОМА","hint":"Доставь стабилизатор в Разлом: без него атака повторится и город не удержать.","position":Vector3(520,24,1010),"type":"reach","reward":2600},
+    {"title":"ПОСЛЕДНИЙ СИГНАЛ","hint":"Останови командование Хелиос у Нексуса и предъяви доказательства заговора.","position":Vector3(1290,28,-780),"type":"combat","reward":4300}
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -733,7 +733,7 @@ func _r23_toggle_cruise() -> void:
         ship.set_navigation_target(MISSIONS[mission_index]["position"])
     r23_launch_button_events += 1
     if ship.cruise_assist:
-        _show_notice("ПОЛЁТ НАЧАТ · ТЯГА ВКЛЮЧЕНА · S ДЛЯ ТОРМОЖЕНИЯ")
+        _show_notice("АВТОПИЛОТ К ЦЕЛИ · ЛЮБОЕ УПРАВЛЕНИЕ ОТКЛЮЧАЕТ")
     else:
         _show_notice("АВТОТЯГА ОТКЛЮЧЕНА · W ДЛЯ ПОЛЁТА")
 
@@ -1199,7 +1199,7 @@ func _update_hud() -> void:
     var resource_line: String = "КРЕДИТЫ  %d     XP  %d     ЩИТ  %d%%     КОРПУС  %d%%" % [
         credits, xp, roundi(ship.shield), roundi(ship.hull)]
     if is_instance_valid(r23_cruise_button):
-        r23_cruise_button.text = "■  ЗАВЕРШИТЬ ПОЛЁТ" if ship.cruise_assist else "▶  НАЧАТЬ ПОЛЁТ"
+        r23_cruise_button.text = "■  ВЫКЛ. АВТОПИЛОТ" if ship.cruise_assist else "▶  АВТОПИЛОТ К ЦЕЛИ"
     if mission_index >= MISSIONS.size():
         hud_mission.text = "НЕБУЛА  /  СВОБОДНЫЙ ПОЛЁТ"
         hud_objective.text = "МИССИИ ВЫПОЛНЕНЫ"
@@ -1208,7 +1208,7 @@ func _update_hud() -> void:
         var m: Dictionary = MISSIONS[mission_index]
         var d: int = roundi(ship.global_position.distance_to(m["position"]))
         hud_mission.text = "%02d  ·  %s" % [mission_index + 1, m["title"]]
-        hud_objective.text = "◇  ЦЕЛЬ МИССИИ  /  %d М" % d
+        hud_objective.text = ("◇  ВРАГОВ ОСТАЛОСЬ  /  %d" % mission_enemies) if m["type"] == "combat" and mission_started else ("◇  ЦЕЛЬ МИССИИ  /  %d М" % d)
         hud_status.text = "%s  ·  %d м\n%s" % [m["hint"], d, resource_line]
 
 func _fit_hud() -> void:

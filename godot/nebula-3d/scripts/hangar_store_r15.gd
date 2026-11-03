@@ -145,7 +145,7 @@ func _add_premium_tab() -> void:
         # website are locked unless the backend verifies a live merchant.
         row.add_child(_button("ОТКРЫТЬ МАГАЗИН",
             func() -> void: premium_purchase_requested.emit(sku), true))
-    list.add_child(_make_label("Реальная касса отключена до проверки MAGA live. После покупки сервер выдаёт подтверждённые предметы.", 13))
+    list.add_child(_make_label("Реальные покупки пока отключены. Кредиты за миссии доступны без оплаты; цена и выдача премиум-предметов проверяются сервером Stripe.", 13))
 
 func open(credit_balance: int, inventory: Dictionary, selected: String) -> void:
     credits = credit_balance

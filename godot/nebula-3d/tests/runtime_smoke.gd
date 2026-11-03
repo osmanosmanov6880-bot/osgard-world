@@ -125,6 +125,7 @@ func _run() -> void:
         await physics_frame
     physical_key.pressed = false
     Input.parse_input_event(physical_key)
+    await process_frame # Let Godot consume the release before enabling cruise.
     var keyboard_meters: float = world.ship.global_position.distance_to(keyboard_start)
     if not check(keyboard_meters > 2.0 and
         world.ship.keyboard_samples >= 29 and
@@ -132,6 +133,13 @@ func _run() -> void:
         "R23 real physical W key never moves ship: Cyrillic keyboard still blocked"):return
     world.ship.velocity = Vector3.ZERO
     world.ship.global_position = pad_position
+    # Earlier touch checks intentionally yaw the craft. Reset heading so this
+    # isolated R24 assertion always starts with an off-axis beacon.
+    world.ship.rotation = Vector3.ZERO
+    world.ship.yaw_rate = 0.0
+    world.ship.pitch_rate = 0.0
+    world.ship.clear_touch_controls()
+    world.ship.touch_enabled = false
     # Test the actual clickable fallback signal, no fake throttle assignment.
     if not check(world.r23_cruise_button is Button and
         world.r23_cruise_button.text.begins_with("▶"),
@@ -148,7 +156,7 @@ func _run() -> void:
         await physics_frame
     var cruise_meters: float = world.ship.global_position.distance_to(before_cruise)
     if not check(world.ship.navigation_steer_frames > 0 and
-        absf(world.ship.last_pilot_yaw) > 0.01,
+        world.ship.last_pilot_yaw > 0.01,
         "R24 launch button must actively steer ship toward off-axis beacon"):return
     if not check(cruise_meters > 2.0 and
         world.ship.cruise_distance > 2.0,
@@ -157,6 +165,19 @@ func _run() -> void:
     if not check(not world.ship.cruise_assist and
         world.r23_launch_button_events == 2,
         "R23 launch button cannot disengage autopilot"):return
+    world.ship.set_cruise_assist(true)
+    var manual_key := InputEventKey.new()
+    manual_key.physical_keycode = KEY_W
+    manual_key.keycode = KEY_W
+    manual_key.pressed = true
+    Input.parse_input_event(manual_key)
+    await physics_frame
+    manual_key.pressed = false
+    Input.parse_input_event(manual_key.duplicate())
+    await process_frame
+    if not check(not world.ship.cruise_assist and
+        world.ship.last_pilot_throttle > 0.05,
+        "Manual thrust must disengage autopilot"):return
     world.ship.velocity = Vector3.ZERO
     world.ship.global_position = pad_position
     touch_r21.force_mobile_for_tests(true)
@@ -957,6 +978,23 @@ func _run() -> void:
     for beam in world.r16_beams:
         if not check(not beam.visible,
             "R16 laser pool did not recycle expired effects"):return
+    # A defeated enemy stays visible and falls before its impact flash.
+    var falling_drone = load("res://scripts/drone.gd").new()
+    world.add_child(falling_drone)
+    falling_drone.global_position = Vector3(0, 30, 0)
+    falling_drone.hit(100.0)
+    if not check(falling_drone.crashing and not falling_drone.hostile and
+        not falling_drone.is_queued_for_deletion(),
+        "Defeated drone must remain visible and leave combat"):return
+    var fall_start_y: float = falling_drone.global_position.y
+    falling_drone._process(0.5)
+    if not check(falling_drone.global_position.y < fall_start_y,
+        "Defeated drone did not fall"):return
+    falling_drone.global_position.y = 2.1
+    falling_drone._process(0.5)
+    if not check(falling_drone.crash_impacted,
+        "Falling drone did not show impact feedback"):return
+    falling_drone.queue_free()
     var target_r16 = load("res://scripts/drone.gd").new()
     target_r16.name = "R16_MissileFlightTarget"
     target_r16.hostile = true

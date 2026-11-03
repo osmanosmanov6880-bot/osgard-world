@@ -11,6 +11,10 @@ var activation_distance: float = 340.0
 var elapsed: float = 0.0
 var body: MeshInstance3D
 var laser_cooldown: float = 0.6
+var crashing: bool = false
+var crash_velocity: Vector3 = Vector3.ZERO
+var crash_time: float = 0.0
+var crash_impacted: bool = false
 
 func _metal(tint: Color, energy: float = 0.0) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -53,6 +57,29 @@ func _ready() -> void:
     _part(Vector3(0.25,0.22,0.88),Vector3(0,0.32,-0.62),neon)
 
 func _process(delta: float) -> void:
+    if crash_impacted:
+        return
+    if crashing:
+        crash_time += delta
+        crash_velocity += Vector3.DOWN * 18.0 * delta
+        var previous: Vector3 = global_position
+        var next_position: Vector3 = previous + crash_velocity * delta
+        # Raycast the actual crash path so wrecks strike city structures and
+        # flightways instead of vanishing at an arbitrary screen-space height.
+        var query := PhysicsRayQueryParameters3D.create(previous, next_position, 1)
+        var impact: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+        if not impact.is_empty():
+            global_position = impact["position"]
+            _crash_flash()
+            return
+        global_position = next_position
+        rotate_object_local(Vector3.FORWARD, 2.4 * delta)
+        rotate_object_local(Vector3.RIGHT, 1.1 * delta)
+        if global_position.y <= 2.0:
+            _crash_flash()
+        elif crash_time >= 8.0:
+            queue_free()
+        return
     elapsed += delta
     laser_cooldown = maxf(0.0,laser_cooldown-delta)
     if not is_instance_valid(target):
@@ -71,8 +98,27 @@ func _process(delta: float) -> void:
     else:
         position += Vector3(cos(elapsed * 0.3),sin(elapsed) * 0.22,sin(elapsed * 0.3)) * delta
 
+func _crash_flash() -> void:
+    crash_impacted = true
+    for child in get_children():
+        child.queue_free()
+    var flash := MeshInstance3D.new()
+    var sphere := SphereMesh.new()
+    sphere.radius = 1.0
+    sphere.height = 2.0
+    flash.mesh = sphere
+    flash.material_override = _metal(Color(1.0, 0.37, 0.06), 3.0)
+    add_child(flash)
+    var tween := create_tween()
+    tween.tween_property(flash, "scale", Vector3.ONE * 7.0, 0.45)
+    tween.tween_callback(queue_free)
+
 func hit(damage: float) -> void:
+    if crashing:
+        return
     health -= damage
     if health <= 0.0:
+        crashing = true
+        hostile = false
+        crash_velocity = -global_basis.z * speed * 0.7 + Vector3.DOWN * 3.0
         destroyed.emit(self)
-        queue_free()
