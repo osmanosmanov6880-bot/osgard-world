@@ -14,6 +14,7 @@ var laser_cooldown: float = 0.6
 var crashing: bool = false
 var crash_velocity: Vector3 = Vector3.ZERO
 var crash_time: float = 0.0
+var crash_impacted: bool = false
 
 func _metal(tint: Color, energy: float = 0.0) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -56,13 +57,17 @@ func _ready() -> void:
     _part(Vector3(0.25,0.22,0.88),Vector3(0,0.32,-0.62),neon)
 
 func _process(delta: float) -> void:
+    if crash_impacted:
+        return
     if crashing:
         crash_time += delta
         crash_velocity += Vector3.DOWN * 18.0 * delta
         global_position += crash_velocity * delta
         rotate_object_local(Vector3.FORWARD, 2.4 * delta)
         rotate_object_local(Vector3.RIGHT, 1.1 * delta)
-        if global_position.y <= 2.0 or crash_time >= 8.0:
+        if global_position.y <= 2.0:
+            _crash_flash()
+        elif crash_time >= 8.0:
             queue_free()
         return
     elapsed += delta
@@ -82,6 +87,21 @@ func _process(delta: float) -> void:
             target.call("take_damage",12.0 * delta)
     else:
         position += Vector3(cos(elapsed * 0.3),sin(elapsed) * 0.22,sin(elapsed * 0.3)) * delta
+
+func _crash_flash() -> void:
+    crash_impacted = true
+    for child in get_children():
+        child.queue_free()
+    var flash := MeshInstance3D.new()
+    var sphere := SphereMesh.new()
+    sphere.radius = 1.0
+    sphere.height = 2.0
+    flash.mesh = sphere
+    flash.material_override = _metal(Color(1.0, 0.37, 0.06), 3.0)
+    add_child(flash)
+    var tween := create_tween()
+    tween.tween_property(flash, "scale", Vector3.ONE * 7.0, 0.45)
+    tween.tween_callback(queue_free)
 
 func hit(damage: float) -> void:
     if crashing:
