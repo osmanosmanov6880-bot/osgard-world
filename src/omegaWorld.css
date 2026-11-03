@@ -674,3 +674,7 @@ html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:n
   .world-command .omega-portal { transition: none; }
 }
 html[data-motion="off"] .world-command .omega-portal { transition: none; }
+
+@media (min-width: 1101px) {
+  .world-command .omega-portal-stage { inset: 0 0 0 48%; }
+}
