@@ -152,6 +152,10 @@ func _run() -> void:
     for frame in 28:
         await physics_frame
     var cruise_meters: float = world.ship.global_position.distance_to(before_cruise)
+    print("R24_DIAG cruise=%s navframes=%d yaw=%.4f touch=%s axes=%s rotation=%s" % [
+        world.ship.cruise_assist, world.ship.navigation_steer_frames,
+        world.ship.last_pilot_yaw, world.ship.touch_enabled,
+        str(world.ship._pilot_axes()), str(world.ship.rotation)])
     if not check(world.ship.navigation_steer_frames > 0 and
         world.ship.last_pilot_yaw > 0.01,
         "R24 launch button must actively steer ship toward off-axis beacon"):return
