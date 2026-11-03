@@ -67,7 +67,6 @@ func _process(delta: float) -> void:
         # Raycast the actual crash path so wrecks strike city structures and
         # flightways instead of vanishing at an arbitrary screen-space height.
         var query := PhysicsRayQueryParameters3D.create(previous, next_position, 1)
-        query.exclude = [get_rid()] if self is CollisionObject3D else []
         var impact: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
         if not impact.is_empty():
             global_position = impact["position"]
