@@ -132,6 +132,11 @@ func _run() -> void:
         "R23 real physical W key never moves ship: Cyrillic keyboard still blocked"):return
     world.ship.velocity = Vector3.ZERO
     world.ship.global_position = pad_position
+    # Earlier touch checks intentionally yaw the craft. Reset heading so this
+    # isolated R24 assertion always starts with an off-axis beacon.
+    world.ship.rotation = Vector3.ZERO
+    world.ship.yaw_rate = 0.0
+    world.ship.pitch_rate = 0.0
     # Test the actual clickable fallback signal, no fake throttle assignment.
     if not check(world.r23_cruise_button is Button and
         world.r23_cruise_button.text.begins_with("▶"),
