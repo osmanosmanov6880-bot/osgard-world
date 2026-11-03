@@ -125,6 +125,7 @@ func _run() -> void:
         await physics_frame
     physical_key.pressed = false
     Input.parse_input_event(physical_key)
+    await process_frame # Let Godot consume the release before enabling cruise.
     var keyboard_meters: float = world.ship.global_position.distance_to(keyboard_start)
     if not check(keyboard_meters > 2.0 and
         world.ship.keyboard_samples >= 29 and
@@ -137,6 +138,8 @@ func _run() -> void:
     world.ship.rotation = Vector3.ZERO
     world.ship.yaw_rate = 0.0
     world.ship.pitch_rate = 0.0
+    world.ship.clear_touch_controls()
+    world.ship.touch_enabled = false
     # Test the actual clickable fallback signal, no fake throttle assignment.
     if not check(world.r23_cruise_button is Button and
         world.r23_cruise_button.text.begins_with("▶"),
