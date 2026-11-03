@@ -155,12 +155,6 @@ func _run() -> void:
     for frame in 28:
         await physics_frame
     var cruise_meters: float = world.ship.global_position.distance_to(before_cruise)
-    print("R24_DIAG cruise=%s navframes=%d yaw=%.4f touch=%s steer=%s throttle=%.2f climb=%.2f locked=%s rotation=%s" % [
-        world.ship.cruise_assist, world.ship.navigation_steer_frames,
-        world.ship.last_pilot_yaw, world.ship.touch_enabled,
-        str(world.ship.touch_steering), world.ship.touch_throttle,
-        world.ship.touch_vertical, world.ship.controls_locked,
-        str(world.ship.rotation)])
     if not check(world.ship.navigation_steer_frames > 0 and
         world.ship.last_pilot_yaw > 0.01,
         "R24 launch button must actively steer ship toward off-axis beacon"):return
@@ -172,11 +166,13 @@ func _run() -> void:
         world.r23_launch_button_events == 2,
         "R23 launch button cannot disengage autopilot"):return
     world.ship.set_cruise_assist(true)
-    physical_key.pressed = true
-    Input.parse_input_event(physical_key)
+    var manual_key := InputEventKey.new()
+    manual_key.physical_keycode = KEY_W
+    manual_key.pressed = true
+    Input.parse_input_event(manual_key.duplicate())
     world.ship._pilot_axes()
-    physical_key.pressed = false
-    Input.parse_input_event(physical_key)
+    manual_key.pressed = false
+    Input.parse_input_event(manual_key.duplicate())
     if not check(not world.ship.cruise_assist,
         "Manual thrust must disengage autopilot"):return
     world.ship.velocity = Vector3.ZERO
