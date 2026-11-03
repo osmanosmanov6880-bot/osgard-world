@@ -158,6 +158,10 @@ func _pilot_axes() -> Vector4:
             throttle = touch_throttle
         if absf(touch_vertical) > absf(altitude):
             altitude = touch_vertical
+    # Any deliberate steering or thrust immediately returns control to the pilot.
+    # The START FLIGHT assist must never keep steering against manual input.
+    if cruise_assist and (absf(yaw) > 0.05 or absf(pitch) > 0.05 or absf(throttle) > 0.05 or absf(altitude) > 0.05):
+        cruise_assist = false
     # An actual pilot-controlled cruise assist button ensures the player can
     # move with a mouse even if browser focus/keyboard capture is unavailable.
     if throttle < -0.05:
