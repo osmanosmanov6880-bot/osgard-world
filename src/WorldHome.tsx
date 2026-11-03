@@ -1,50 +1,14 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Globe2 } from 'lucide-react'
 import './omegaWorld.css'
 import './developmentSignature.css'
 import { cases } from './featuredCases'
 import { BrandMark } from './BrandMark'
 import { recordBrandEvent } from './brandTelemetry'
-import { MOTION_CHANGE_EVENT } from './osgardRouting'
-import type { GlobeChapter, GlobeMode, GlobeView, GlobeQuality } from './OmegaGlobe'
 
-const OmegaGlobe = lazy(() => import('./OmegaGlobe'))
 type Locale = 'ru' | 'en'
 const readWorldLocale = (): Locale => { try { return localStorage.getItem('osa:locale') === 'en' ? 'en' : 'ru' } catch { return 'ru' } }
 
-const readOmegaMode = (): GlobeMode => {
-  try {
-    const value = localStorage.getItem('osgard:omega-world-mode')
-    return value === 'cinema' || value === 'world' || value === 'hybrid' ? value : 'hybrid'
-  } catch { return 'hybrid' }
-}
-const preferStillWorld = () => {
-  if (typeof window === 'undefined') return false
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return true
-  if (document.documentElement.dataset.motion === 'off') return true
-  try { if (localStorage.getItem('osgard:motion') === 'off') return true } catch { /* Browsers can restrict storage. */ }
-  return Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData)
-}
-
-const omegaChapters = (locale: Locale) => locale === 'ru' ? ['Планета', 'Связи', 'Миры'] as const : ['Earth', 'Connections', 'Worlds'] as const
-const omegaHelpRu: Record<GlobeMode, string> = {
-  cinema: 'Камера сама показывает Землю с разных ракурсов. Выберите главу или перейдите к продуктам.',
-  world: 'Вращайте планету мышью или горизонтальным свайпом. Масштаб — колёсиком или кнопками. Остальные разделы доступны сразу.',
-  hybrid: 'Живой 3D-глобус работает на фоне, а все разделы и кнопки остаются на переднем плане.',
-}
-const omegaHelpEn: Record<GlobeMode, string> = {
-  cinema: 'The camera presents Earth from several angles. Choose a chapter or explore the products below.',
-  world: 'Rotate Earth with a mouse or horizontal swipe. Zoom with the wheel or controls. Other sections remain available.',
-  hybrid: 'The live 3D globe runs in the background while content and controls stay in the foreground.',
-}
-
-
-const directions = [
-  ['01', 'OSA Intelligence', 'Для тех, кто хочет понимать ИИ, проверять ответы и принимать обоснованные решения.', '/intelligence', 'Обучение и мышление'],
-  ['02', 'Development', 'Для команд, которым нужен цифровой продукт: от структуры и интерфейса до разработки и проверки.', '/development', 'Создание продуктов'],
-  ['03', 'OSGARD PLAY', 'Для игроков, исследующих интерактивные миры, стратегии и короткие эксперименты.', '/play', 'Игры и взаимодействие'],
-]
 const process = [
   ['Стратегия', 'Уточняем аудиторию, задачу и критерии результата.'],
   ['Структура', 'Собираем маршруты и главное действие каждого экрана.'],
@@ -70,48 +34,6 @@ export default function WorldHome({ development = false }: { development?: boole
     setLocale(next)
     try { localStorage.setItem('osa:locale', next) } catch { /* Language choice is optional. */ }
     window.dispatchEvent(new Event('osgard:locale-change'))
-  }
-  const [omegaMode, setOmegaMode] = useState<GlobeMode>(readOmegaMode)
-  const [omegaChapter, setOmegaChapter] = useState<GlobeChapter>(0)
-  const [omegaQuality, setOmegaQuality] = useState<GlobeQuality>('auto')
-  const [omegaView, setOmegaView] = useState<GlobeView>({ yaw: 0, pitch: -0.14, distance: 5.7 })
-  // Reduced-motion and Save-Data visitors should never fetch the 3D chunk.
-  // The existing NASA satellite globe remains a usable photographic fallback.
-  const [stillWorld, setStillWorld] = useState(preferStillWorld)
-  useEffect(() => {
-    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    const connection = (navigator as Navigator & { connection?: EventTarget & { saveData?: boolean } }).connection
-    const sync = () => setStillWorld(preferStillWorld())
-    media?.addEventListener?.('change', sync)
-    connection?.addEventListener?.('change', sync)
-    window.addEventListener(MOTION_CHANGE_EVENT, sync)
-    window.addEventListener('storage', sync)
-    sync()
-    return () => {
-      media?.removeEventListener?.('change', sync)
-      connection?.removeEventListener?.('change', sync)
-      window.removeEventListener(MOTION_CHANGE_EVENT, sync)
-      window.removeEventListener('storage', sync)
-    }
-  }, [])
-  useEffect(() => {
-    try { localStorage.setItem('osgard:omega-world-mode', omegaMode) } catch { /* The mode still works for this visit. */ }
-  }, [omegaMode])
-  const moveWorld = (action: 'left' | 'right' | 'closer' | 'farther' | 'reset') => {
-    setOmegaView(view => action === 'reset'
-      ? { yaw: 0, pitch: -0.14, distance: 5.7 }
-      : action === 'left' ? { ...view, yaw: view.yaw - 0.38 }
-      : action === 'right' ? { ...view, yaw: view.yaw + 0.38 }
-      : action === 'closer' ? { ...view, distance: Math.max(3.1, view.distance - 0.42) }
-      : { ...view, distance: Math.min(8, view.distance + 0.42) })
-  }
-  const onWorldKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
-    if (omegaMode !== 'world' || event.target !== event.currentTarget) return
-    const action = event.key === 'ArrowLeft' ? 'left'
-      : event.key === 'ArrowRight' ? 'right'
-      : event.key === '+' || event.key === '=' ? 'closer'
-      : event.key === '-' ? 'farther' : event.key === 'Home' ? 'reset' : null
-    if (action) { event.preventDefault(); moveWorld(action) }
   }
   const [brief, setBrief] = useState('')
   const [contact, setContact] = useState('')
@@ -194,84 +116,51 @@ export default function WorldHome({ development = false }: { development?: boole
         </div>
       </section>
     </> : <>
-    <section className={'omega-hero omega-command omega-experience-' + omegaMode}
-      data-omega-mode={omegaMode} data-omega-yaw={omegaView.yaw.toFixed(2)}
-      data-omega-distance={omegaView.distance.toFixed(2)}
-      aria-labelledby="world-title"
-      tabIndex={omegaMode === 'world' ? 0 : undefined} onKeyDown={onWorldKeyDown}>
-      <div className="omega-sky" aria-hidden="true">
-        <div className="omega-stars" />
-        <div className="omega-command-nebula" />
-        {!stillWorld && <Suspense fallback={null}><OmegaGlobe key={omegaQuality} quality={omegaQuality} mode={omegaMode}
-          chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense>}
-        <div className="omega-globe" />
-        <div className="omega-orbit omega-orbit-one" />
-        <div className="omega-orbit omega-orbit-two" />
-        <div className="omega-command-terminator" />
+    <section className="omega-hero omega-portals-hero" aria-labelledby="world-title">
+      <div className="omega-portals-atmosphere" aria-hidden="true">
+        <div className="omega-portals-architecture" />
+        <div className="omega-portals-floor" />
       </div>
-      <div className="omega-copy">
-        <div className="world-locale-row"><p className="brand-eyebrow omega-command-eyebrow">OSGARD WORLD <span>/ {tx("ЦИФРОВАЯ ВСЕЛЕННАЯ")}</span></p><button type="button" className="world-language-toggle" onClick={changeLocale} aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}><Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}</button></div>
-        <h1 id="world-title">{locale === 'ru' ? <>ТЕХНОЛОГИИ,<br/><span>КОТОРЫЕ</span><br/>СОЕДИНЯЮТ<br/>МИРЫ</> : <>TECHNOLOGY<br/><span>THAT</span><br/>CONNECTS<br/>WORLDS</>}<span className="omega-period">.</span></h1>
-        <p className="brand-lead">{tx("ИИ, цифровые продукты и интерактивные миры OSGARD.")}</p>
-        <div className="brand-actions omega-command-actions">
-          <a className="brand-button primary" href="#products">{tx("Исследовать экосистему")} <span aria-hidden="true">↗</span></a>
-          <a className="brand-button omega-command-secondary" href="/play">{tx("Перейти в Play")} <span aria-hidden="true">↗</span></a>
+      <div className="omega-copy omega-portals-copy">
+        <div className="world-locale-row">
+          <p className="brand-eyebrow omega-portals-eyebrow">OSGARD WORLD <span>/ {locale === 'ru' ? 'ЦИФРОВАЯ ЭКОСИСТЕМА' : 'DIGITAL ECOSYSTEM'}</span></p>
+          <button type="button" className="world-language-toggle" onClick={changeLocale}
+            aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}>
+            <Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}
+          </button>
         </div>
-        <p className="omega-command-promise">{tx("ПОНИМАТЬ ИИ")} <span>•</span> {tx("ИГРАТЬ")} <span>•</span> {tx("СОЗДАВАТЬ")}</p>
+        <h1 id="world-title">
+          {locale === 'ru' ? <>СОЗДАЁМ<br /><span>ЦИФРОВЫЕ</span><br />МИРЫ</> : <>WE CREATE<br /><span>DIGITAL</span><br />WORLDS</>}
+          <span className="omega-portals-period">.</span>
+        </h1>
+        <p className="brand-lead">
+          {locale === 'ru' ? 'Обучение. Продукты. Интерактивные миры.' : 'Learning. Products. Interactive worlds.'}
+        </p>
+        <div className="brand-actions omega-portals-actions">
+          <a className="brand-button primary" href="#products">{tx("Исследовать экосистему")} <span aria-hidden="true">↗</span></a>
+          <a className="brand-button omega-portals-secondary" href="/play">{tx("Перейти в Play")} <span aria-hidden="true">↗</span></a>
+        </div>
       </div>
-      <p className="omega-command-planet-caption">BLUE MARBLE / {tx("ЗЕМЛЯ")} <span>NASA · {tx("СПУТНИКОВАЯ ТЕКСТУРА")}</span></p>
-      <nav className="omega-gate" aria-label={tx("Три направления экосистемы")}>
-        <p className="brand-eyebrow">{tx("ВЫБЕРИ СВОЙ ПУТЬ")} <span>01—03 / OSGARD</span></p>
-        <a href="/intelligence">
-          <span className="omega-glyph" aria-hidden="true">◇</span>
-          <span><small>01 / {tx("ЗНАНИЯ")}</small><strong>OSA Intelligence</strong><em>{tx("Понимай ИИ, проверяй ответы и учись.")}</em></span>
-          <b aria-hidden="true">↗</b>
+      <nav className="omega-portal-stage" aria-label={locale === 'ru' ? 'Входы в экосистему OSGARD' : 'Enter the OSGARD ecosystem'}>
+        <a href="/intelligence" className="omega-portal omega-portal--osa">
+          <span className="omega-portal-frame" aria-hidden="true"><span /></span>
+          <span className="omega-portal-symbol" aria-hidden="true">◇</span>
+          <span className="omega-portal-name"><span>OSA</span><strong>Intelligence</strong></span>
+          <span className="omega-portal-enter">{locale === 'ru' ? 'Перейти' : 'Enter'} <span aria-hidden="true">↗</span></span>
         </a>
-        <a href="/play">
-          <span className="omega-glyph" aria-hidden="true">✦</span>
-          <span><small>02 / {tx("ИГРОВЫЕ МИРЫ")}</small><strong>OSGARD Play</strong><em>{tx("Выбирай мир, открывай игру, исследуй.")}</em></span>
-          <b aria-hidden="true">↗</b>
+        <a href="/play" className="omega-portal omega-portal--play">
+          <span className="omega-portal-frame" aria-hidden="true"><span /></span>
+          <span className="omega-portal-symbol" aria-hidden="true">✦</span>
+          <span className="omega-portal-name"><span>OSGARD</span><strong>Play</strong></span>
+          <span className="omega-portal-enter">{locale === 'ru' ? 'Перейти' : 'Enter'} <span aria-hidden="true">↗</span></span>
         </a>
-        <a href="/development">
-          <span className="omega-glyph" aria-hidden="true">⌘</span>
-          <span><small>03 / {tx("ПРОЕКТЫ")}</small><strong>Development</strong><em>{tx("Смотри реальные проекты и их возможности.")}</em></span>
-          <b aria-hidden="true">↗</b>
+        <a href="/development" className="omega-portal omega-portal--development">
+          <span className="omega-portal-frame" aria-hidden="true"><span /></span>
+          <span className="omega-portal-symbol" aria-hidden="true">⌘</span>
+          <span className="omega-portal-name"><span>OSGARD</span><strong>Development</strong></span>
+          <span className="omega-portal-enter">{locale === 'ru' ? 'Перейти' : 'Enter'} <span aria-hidden="true">↗</span></span>
         </a>
       </nav>
-      <details className="omega-experience-panel" aria-label={tx("Настройки 3D-глобуса")}>
-        <summary><span className="omega-settings-mark" aria-hidden="true">◈</span> {tx("Настройки планеты")} <span className="omega-settings-chevron" aria-hidden="true">⌄</span></summary>
-        <div className="omega-experience-content">
-          <div className="omega-experience-title"><span>{tx("ГЛОБУС / РЕЖИМ ПРОСМОТРА")}</span><span className="omega-experience-live"><span aria-hidden="true" /> {tx("СЦЕНА")}</span></div>
-          <div className="omega-mode-tabs" role="group" aria-label={tx("Выберите режим 3D-сцены")}>
-            <button type="button" aria-pressed={omegaMode === 'cinema'} onClick={() => setOmegaMode('cinema')}>{tx("Кино")}</button>
-            <button type="button" aria-pressed={omegaMode === 'world'} onClick={() => setOmegaMode('world')}>{tx("3D-мир")}</button>
-            <button type="button" aria-pressed={omegaMode === 'hybrid'} onClick={() => setOmegaMode('hybrid')}>{tx("Гибрид")}</button>
-          </div>
-          <p className="omega-mode-description" aria-live="polite">{(locale === 'ru' ? omegaHelpRu : omegaHelpEn)[omegaMode]}</p>
-          {stillWorld && <p className="omega-mode-description" role="status">{tx("Экономный режим: фото Земли вместо 3D. Разрешите движение и трафик для 3D.")}</p>}
-          <div className="omega-quality-switch">
-            <label htmlFor="omega-quality">{tx("Детализация 3D")}</label>
-            <select id="omega-quality" value={omegaQuality} disabled={stillWorld} onChange={event => setOmegaQuality(event.target.value as GlobeQuality)}
-              aria-label={tx("Качество 3D-глобуса")}>
-              <option value="auto">{tx("Авто · оптимально")}</option>
-              <option value="eco">{tx("Экономно · быстрый режим")}</option>
-              <option value="ultra">{tx("Ультра · до 4K текстур")}</option>
-            </select>
-          </div>
-          {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label={tx("Кинематографические главы")}>
-            {omegaChapters(locale).map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
-              onClick={() => setOmegaChapter(index as GlobeChapter)}>{String(index + 1).padStart(2, '0')} / {name}</button>)}
-          </div>}
-          {omegaMode === 'world' && <div className="omega-world-navigation" role="group" aria-label={tx("Управление вращением и масштабом глобуса")}>
-            <button type="button" onClick={() => moveWorld('left')} aria-label={tx("Повернуть Землю влево")}>←</button>
-            <button type="button" onClick={() => moveWorld('right')} aria-label={tx("Повернуть Землю вправо")}>→</button>
-            <button type="button" onClick={() => moveWorld('closer')} aria-label={tx("Приблизить глобус")}>+</button>
-            <button type="button" onClick={() => moveWorld('farther')} aria-label={tx("Отдалить глобус")}>−</button>
-            <button type="button" onClick={() => moveWorld('reset')} className="omega-reset-view">{tx("Сбросить")}</button>
-          </div>}
-          <p className="omega-imagery-credit">{tx("Земля:")} <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA Blue Marble ↗</a> · {tx("ночные огни 2016 · облака процедурные. Это визуализация, не прямой эфир.")}</p>
-        </div>
-      </details>
     </section>
     <section id="products" className="brand-section omega-products" aria-labelledby="world-products-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">{tx("01 / НАПРАВЛЕНИЯ OSGARD")}</p><h2 id="world-products-title">{locale === 'ru' ? <>ТРИ МИРА. <span>ОДНА ВСЕЛЕННАЯ.</span></> : <>THREE WORLDS. <span>ONE ECOSYSTEM.</span></>}</h2><p>{tx("Выберите направление и изучите его реальные возможности и ограничения.")}</p></div>

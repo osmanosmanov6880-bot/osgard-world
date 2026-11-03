@@ -339,3 +339,338 @@ html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:n
 .world-language-toggle:focus-visible{outline:2px solid #ff6577;outline-offset:4px}
 @media(max-width:680px){.world-locale-row{gap:10px}.world-language-toggle{flex:none;min-height:36px}}
 @media(prefers-reduced-motion:reduce){.world-language-toggle{transition:none}}
+
+
+/* OSGARD WORLD — architectural portal homepage. */
+.world-command .omega-portals-hero {
+  display: block;
+  position: relative;
+  min-height: min(860px, calc(100svh - 150px));
+  padding: clamp(64px, 7vw, 100px) 0 76px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #020b17;
+}
+.world-command .omega-portals-atmosphere {
+  position: absolute;
+  z-index: 0;
+  inset: 0 -5vw;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 69% 56%, #0e466337 0%, transparent 43%),
+    linear-gradient(112deg, #030b17 4%, #07182a 54%, #030914 100%);
+}
+.world-command .omega-portals-architecture {
+  position: absolute;
+  inset: 0;
+  opacity: .58;
+  background:
+    linear-gradient(90deg, transparent 0 9%, #b1d4e40d 9.1% 9.3%, transparent 9.4% 23%, #7ca9c20b 23.1% 23.3%, transparent 23.4% 100%),
+    linear-gradient(90deg, transparent 0 72%, #b5d6e20d 72.1% 72.3%, transparent 72.4% 88%, #7ca9c20b 88.1% 88.3%, transparent 88.4% 100%),
+    linear-gradient(180deg, #0a1b2c 0%, transparent 20% 76%, #070d17 100%);
+}
+.world-command .omega-portals-floor {
+  position: absolute;
+  inset: auto -5% -1px;
+  height: 31%;
+  opacity: .8;
+  background:
+    linear-gradient(180deg, transparent 0%, #0b1523 56%, #03070d 100%),
+    repeating-linear-gradient(180deg, transparent 0 31px, #a9c8dc19 32px, transparent 34px);
+  clip-path: polygon(0 20%, 100% 0, 100% 100%, 0 100%);
+}
+.world-command .omega-portals-floor::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 5%, #f4d8bd26 27%, transparent 37%, #37d8eb1c 60%, transparent 76%, #ff455326 91%, transparent);
+  filter: blur(18px);
+}
+.world-command .omega-portals-copy {
+  position: relative;
+  z-index: 5;
+  max-width: min(540px, 44%);
+  margin: 12px 0 0;
+  text-shadow: 0 3px 30px #010611c9;
+}
+.world-command .omega-portals-copy::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -24px -65px -34px -28px;
+  background: linear-gradient(90deg, #020b17 0 67%, #020b17e6 78%, transparent 100%);
+  pointer-events: none;
+}
+.world-command .omega-portals-eyebrow {
+  margin: 0;
+  color: #5feaf2;
+  font-size: 10px;
+  letter-spacing: .19em;
+}
+.world-command .omega-portals-eyebrow span { color: #a9bfce; }
+.world-command .omega-portals-copy h1 {
+  margin-top: 32px;
+  color: #f5f7fa;
+  font: 650 clamp(48px, 6.15vw, 88px)/.94 'Space Grotesk', Inter, Arial, sans-serif;
+  letter-spacing: -.065em;
+  text-wrap: balance;
+}
+.world-command .omega-portals-copy h1 > span:first-of-type { color: #f04452; }
+.world-command .omega-portals-copy h1 .omega-portals-period { color: #f04452; }
+.world-command .omega-portals-copy .brand-lead {
+  max-width: 440px;
+  margin: 24px 0 28px;
+  color: #d1dce6;
+  font-size: clamp(15px, 1.35vw, 18px);
+  line-height: 1.65;
+}
+.world-command .omega-portals-actions { margin: 0; gap: 12px; }
+.world-command .omega-portals-actions .brand-button {
+  min-height: 54px;
+  padding: 14px 20px;
+  border-radius: 5px;
+  font-size: 14px;
+}
+.world-command .omega-portals-actions .brand-button.primary {
+  border-color: #e83249;
+  background: #e83249;
+  color: #fff;
+  box-shadow: 0 10px 35px #e8324930;
+}
+.world-command .omega-portals-actions .brand-button.primary:hover { background: #fb4057; }
+.world-command .omega-portals-secondary {
+  color: #f2f7fb;
+  border-color: #547188;
+  background: #071523c9;
+}
+.world-command .omega-portal-stage {
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 0 29%;
+  display: grid;
+  grid-template-columns: 1.08fr .98fr .88fr;
+  align-items: end;
+  gap: clamp(10px, 1.25vw, 20px);
+  padding: 76px 0 46px;
+  perspective: 1150px;
+  pointer-events: none;
+}
+.world-command .omega-portal {
+  --portal: #56edf0;
+  --portal-wash: #42eaf022;
+  --portal-rim: #85fbff;
+  position: relative;
+  display: flex;
+  min-width: 0;
+  height: clamp(385px, 58vh, 580px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(42px, 5vw, 72px) 10px 18px;
+  overflow: hidden;
+  color: #f5f8fa;
+  background: linear-gradient(180deg, #061521f0 0%, #061421ad 54%, #07132169 100%);
+  clip-path: polygon(18% 0, 100% 0, 100% 100%, 0 100%, 0 18%);
+  text-align: center;
+  text-shadow: 0 2px 14px #000c;
+  transform: translateZ(0);
+  transition: transform .35s ease, filter .35s ease;
+  pointer-events: auto;
+  isolation: isolate;
+}
+.world-command .omega-portal--osa {
+  --portal: #48e7df;
+  --portal-wash: #48e7df2b;
+  --portal-rim: #8dfff7;
+  height: clamp(465px, 68vh, 650px);
+  margin-left: -7%;
+}
+.world-command .omega-portal--play {
+  --portal: #44b8ff;
+  --portal-wash: #238cf12b;
+  --portal-rim: #83d6ff;
+  height: clamp(420px, 60vh, 570px);
+}
+.world-command .omega-portal--development {
+  --portal: #ef4357;
+  --portal-wash: #ef435726;
+  --portal-rim: #ff7b86;
+  height: clamp(355px, 51vh, 490px);
+}
+.world-command .omega-portal:hover {
+  color: #fff;
+  filter: brightness(1.16) drop-shadow(0 0 18px var(--portal-wash));
+  transform: translateY(-7px);
+}
+.world-command .omega-portal-frame {
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 8%;
+  filter: drop-shadow(0 0 15px var(--portal-wash));
+  background:
+    linear-gradient(180deg, var(--portal) 0 9px, transparent 10px) top / 100% 100% no-repeat,
+    linear-gradient(90deg, var(--portal) 0 14px, transparent 15px) left / 100% 100% no-repeat,
+    linear-gradient(270deg, var(--portal) 0 5px, transparent 6px) right / 100% 100% no-repeat,
+    linear-gradient(180deg, transparent 0 97%, var(--portal) 97.3% 98%, transparent 98.3%) bottom / 100% 100% no-repeat;
+  clip-path: polygon(18% 0, 100% 0, 100% 100%, 0 100%, 0 18%);
+  pointer-events: none;
+}
+.world-command .omega-portal-frame > span {
+  position: absolute;
+  inset: 15px 12px 10px;
+  border-top: 1px solid var(--portal-rim);
+  border-left: 1px solid color-mix(in srgb, var(--portal) 62%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--portal) 42%, transparent);
+  clip-path: polygon(19% 0, 100% 0, 100% 100%, 0 100%, 0 19%);
+  background:
+    linear-gradient(180deg, var(--portal-wash), transparent 75%),
+    repeating-linear-gradient(90deg, transparent 0 22%, #d7faff0a 22.2% 22.5%, transparent 22.8% 46%);
+}
+.world-command .omega-portal-symbol,
+.world-command .omega-portal-name,
+.world-command .omega-portal-enter {
+  position: relative;
+  z-index: 1;
+}
+.world-command .omega-portal::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: auto -10% 4%;
+  height: 22px;
+  background: var(--portal);
+  opacity: .38;
+  filter: blur(24px);
+  pointer-events: none;
+}
+.world-command .omega-portal-symbol {
+  color: var(--portal-rim);
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1;
+  margin: 4px 0 22px;
+  text-shadow: 0 0 24px var(--portal);
+}
+.world-command .omega-portal-name { display: grid; gap: 4px; max-width: 100%; }
+.world-command .omega-portal-name > span {
+  font: 600 10px/1.5 'JetBrains Mono', monospace;
+  letter-spacing: .18em;
+  color: #b7cbd8;
+}
+.world-command .omega-portal-name strong {
+  font: 650 clamp(17px, 1.6vw, 24px)/1.08 'Space Grotesk', Inter, sans-serif;
+  letter-spacing: -.04em;
+  overflow-wrap: anywhere;
+}
+.world-command .omega-portal-enter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  width: min(100%, 175px);
+  min-height: 43px;
+  margin-top: auto;
+  padding: 8px 15px;
+  border: 1px solid var(--portal);
+  border-radius: 7px;
+  background: #030d19ed;
+  color: #f6f9fb;
+  font-size: 12px;
+  font-weight: 650;
+  box-shadow: 0 0 24px var(--portal-wash);
+}
+.world-command .omega-portals-hero :is(a,button):focus-visible {
+  outline: 3px solid #f04452;
+  outline-offset: 5px;
+}
+.world-command .omega-portals-hero .world-language-toggle:focus-visible {
+  outline-color: #f04452;
+}
+@media(max-width: 1100px) {
+  .world-command .omega-portals-copy { max-width: min(450px, 42%); }
+  .world-command .omega-portal-stage { left: 25%; gap: 9px; }
+  .world-command .omega-portal { padding-inline: 7px; }
+  .world-command .omega-portal-name strong { font-size: clamp(16px, 1.8vw, 20px); }
+}
+@media(max-width: 760px) {
+  .world-command .omega-portals-hero {
+    min-height: auto;
+    padding: 44px 0 30px;
+  }
+  .world-command .omega-portals-copy { max-width: 100%; margin: 0; }
+  .world-command .omega-portals-copy h1 {
+    max-width: 670px;
+    margin-top: 24px;
+    font-size: clamp(43px, 9.4vw, 68px);
+    line-height: .98;
+  }
+  .world-command .omega-portals-copy .brand-lead { margin: 20px 0 23px; font-size: 15px; }
+  .world-command .omega-portal-stage {
+    position: relative;
+    inset: auto;
+    height: min(53vw, 405px);
+    min-height: 310px;
+    margin: 34px 0 0;
+    padding: 0;
+    gap: 8px;
+    perspective: 800px;
+  }
+  .world-command .omega-portal,
+  .world-command .omega-portal--osa,
+  .world-command .omega-portal--play,
+  .world-command .omega-portal--development {
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 40px 5px 14px;
+  }
+  .world-command .omega-portal-frame { bottom: 6%; }
+  .world-command .omega-portal-frame > span { inset: 10px 7px 7px; }
+  .world-command .omega-portal-symbol { margin: 0 0 14px; font-size: 26px; }
+  .world-command .omega-portal-name strong { font-size: clamp(13px, 3.6vw, 18px); }
+  .world-command .omega-portal-name > span { font-size: 8px; }
+  .world-command .omega-portal-enter { width: min(100%, 125px); gap: 5px; padding: 7px; font-size: 10px; }
+}
+@media(max-width: 520px) {
+  .world-command .omega-portals-hero { padding-top: 36px; }
+  .world-command .omega-portals-copy h1 { font-size: clamp(40px, 12.2vw, 54px); }
+  .world-command .omega-portals-actions { display: grid; grid-template-columns: 1fr; gap: 9px; }
+  .world-command .omega-portals-actions .brand-button { width: 100%; min-height: 48px; }
+  .world-command .omega-portal-stage {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+    margin-top: 26px;
+    gap: 9px;
+  }
+  .world-command .omega-portal,
+  .world-command .omega-portal--osa,
+  .world-command .omega-portal--play,
+  .world-command .omega-portal--development {
+    display: grid;
+    height: 92px;
+    min-height: 92px;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    justify-items: start;
+    padding: 12px 16px;
+    clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%, 0 14%);
+    text-align: left;
+  }
+  .world-command .omega-portal-frame { inset: 0; }
+  .world-command .omega-portal-frame > span { inset: 9px; }
+  .world-command .omega-portal-symbol { margin: 0; font-size: 25px; }
+  .world-command .omega-portal-name { gap: 2px; }
+  .world-command .omega-portal-name > span { font-size: 8px; }
+  .world-command .omega-portal-name strong { font-size: 17px; }
+  .world-command .omega-portal-enter {
+    width: auto;
+    min-height: 39px;
+    margin: 0;
+    padding: 7px 10px;
+  }
+}
+@media(prefers-reduced-motion: reduce) {
+  .world-command .omega-portal { transition: none; }
+}
+html[data-motion="off"] .world-command .omega-portal { transition: none; }
