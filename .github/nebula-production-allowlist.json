@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R42",
-  "release_status": "R42_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R43",
+  "release_status": "R43_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "213ec7ed214cc27f865f9e0408ec7a30ca80a165",
+    "index.html": "e2e9eda43de697d2229616fdea49d864c112f7b4",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "8ed3d65816f87139ed2a742097d764c0a4973686"
+    "index.pck": "99dc9c81b71734c3531ad08a9fb00b99cea1a9a0"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,9 +15,9 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-04",
-    "verification_workflow_run_id": 41845777254,
-    "native_source_commit_sha": "c7b63eb041eea9e36d84a6d69af6406666e4e0d0",
-    "web_export_commit_sha": "449eb944fcbcadbb0622ef402157fad16fb9149e"
+    "verification_workflow_run_id": 41851169153,
+    "native_source_commit_sha": "55efdad0e8661ad9ea9c6f0ba3bb4d02c85d0baf",
+    "web_export_commit_sha": "f87747b31f3f4fe9ad7cf030a5449d22015f3425"
   },
-  "notes": "R42 owner-directed exact-byte release after PR #720 Godot native/browser/mobile CI #41844286188 success and master export #41845777254 success. Three free captains and actual ship/earned mission perks; physical-device QA not performed. R40 strict approval unchanged. R43 ship-destruction candidate remains excluded."
+  "notes": "R43 direct owner-directed promotion of CI-tested Godot 4.7.2 source and verified master Web export. Actual Chromium and emulated mobile touch gates passed in PR #723 run #41849503005; native master export #41851169153 succeeded. Exact four Git blob SHA-1 identities. Real Android/iPhone QA NOT PERFORMED; hosted WebGL visual readback is advisory. R40 signed hardware-attestation path unchanged. Prior R42 remains rollback target."
 }
