@@ -59,9 +59,12 @@ func _run() -> void:
     var scout_parts: int = r44_view.distinct_hull_r45.visual_parts.size()
     r44_view.set_ship_type("ship_interceptor")
     var interceptor_parts: int = r44_view.distinct_hull_r45.visual_parts.size()
-    if not check(interceptor_parts != scout_parts and
-        r44_view.distinct_hull_r45.get_node_or_null(
-            "R45_InterceptorTwinThruster_-1.0") != null,
+    var actual_twin_engines: int = 0
+    for engine_part in r44_view.distinct_hull_r45.visual_parts:
+        if is_instance_valid(engine_part) and str(engine_part.name).begins_with(
+            "R45_InterceptorTwinThruster_") and engine_part.mesh is CylinderMesh:
+            actual_twin_engines += 1
+    if not check(interceptor_parts != scout_parts and actual_twin_engines == 2,
         "R45 interceptor must have physical twin engines and distinct geometry"):return
     r44_view.set_ship_type("ship_guardian")
     var guardian_parts: int = r44_view.distinct_hull_r45.visual_parts.size()
