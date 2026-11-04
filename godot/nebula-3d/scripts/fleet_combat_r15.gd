@@ -1,5 +1,17 @@
 extends Node3D
 const GuidedMissileR16Script = preload("res://scripts/guided_missile_r16.gd")
+## R46: one source of truth for actual flight turn rate and damage capacities.
+## Numbers here are also displayed by the garage comparison UI.
+const SHIP_PROFILES = {
+    "ship_scout": {"turn_speed": 1.9, "hull": 100.0, "shield": 100.0},
+    "ship_interceptor": {"turn_speed": 2.4, "hull": 100.0, "shield": 100.0},
+    "ship_guardian": {"turn_speed": 1.5, "hull": 160.0, "shield": 140.0},
+}
+
+static func hull_profile(id: String) -> Dictionary:
+    var key: String = id if SHIP_PROFILES.has(id) else "ship_scout"
+    return (SHIP_PROFILES[key] as Dictionary).duplicate(true)
+
 ## R15 player-owned fleet gameplay. Credit purchases only; premium purchases
 ## are never fulfilled from browser state. Allies assist in real combat.
 signal missile_hit(target: Node3D)
@@ -74,7 +86,7 @@ func set_loadout(ship_id: String, weapon_id: String, rockets: int,
 
 func _apply_ship_stats() -> void:
     if not is_instance_valid(player_ship):return
-    player_ship.turn_speed = 2.4 if active_ship == "ship_interceptor" else 1.5 if active_ship == "ship_guardian" else 1.9
+    player_ship.turn_speed = float(hull_profile(active_ship)["turn_speed"])
     # Keep visible in-flight geometry synchronized with real owned/equipped hull.
     if player_ship.has_method("set_hull_variant"):
         player_ship.set_hull_variant(active_ship)
@@ -136,7 +148,7 @@ func weapon_damage() -> float:
     return 10.5 if active_weapon == "weapon_plasma" else 7.2 if active_weapon == "weapon_pulse" else 4.0
 
 func ship_hull_cap() -> float:
-    return 160.0 if active_ship == "ship_guardian" else 100.0
+    return float(hull_profile(active_ship)["hull"])
 
 func ship_shield_cap() -> float:
-    return 140.0 if active_ship == "ship_guardian" else 100.0
+    return float(hull_profile(active_ship)["shield"])
