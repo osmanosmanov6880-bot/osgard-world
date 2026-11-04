@@ -52,7 +52,7 @@ export async function inspectProductionArtifact(policy,dir=GAME_DIR){
       a.owner_directed_release===true&&a.release_risk_accepted===true&&
       a.physical_device_qa==='NOT_PERFORMED'&&
       a.authorization_source==='repository owner instruction'&&
-      /^\\d{4}-\\d{2}-\\d{2}$/.test(a.authorized_date||''),
+      /^\d{4}-\d{2}-\d{2}$/.test(a.authorized_date||''),
       'R39 owner override must explicitly record authorization and disclose missing physical-device QA');
   }else{
     const a=policy.approval;
