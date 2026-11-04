@@ -27,6 +27,23 @@ func _run() -> void:
     await process_frame
     if not check(is_instance_valid(world.ship), "PlayerShip missing"):return
     if not check(world.ship is CharacterBody3D, "Ship is not a physics body"):return
+    if not check(world.garage_open_r39 and world.ship.controls_locked and
+        is_instance_valid(world.garage_hub_r39) and
+        world.garage_hub_r39.launch_button.text == "▶  ВЫЛЕТЕТЬ",
+        "R39 campaign must open in a locked garage hub with an explicit sortie button"):return
+    if not check(world.garage_hub_r39.captain_label.text == "КАПИТАН · УРОВЕНЬ 1" and
+        world.garage_hub_r39.resource_label.text.contains("950 CR"),
+        "R39 captain level and campaign credits are not shown from live progression"):return
+    world._r39_open_shop()
+    if not check(world.store_r15.visible and not world.garage_hub_r39.visible and
+        world.ship.controls_locked,
+        "R39 shop must replace the garage while keeping flight locked"):return
+    world.store_r15.close()
+    if not check(world.garage_hub_r39.visible and world.ship.controls_locked,
+        "R39 shop close must return to the locked garage"):return
+    world._r39_launch_sortie()
+    if not check(not world.garage_open_r39 and not world.ship.controls_locked,
+        "R39 sortie action did not unlock flight"):return
     # R21 approved Aurora: the ship starts in a physically clear corridor,
     # does respond to throttle, and the chase camera cannot remain behind
     # opaque collision geometry.

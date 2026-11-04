@@ -118,8 +118,8 @@ try {
   }
   report.checks.push({label:'actual DOM CSS safe-area probe and reachable GAS',
     safe_area: insets, telemetry: stabilized});
-  if (ready.locked || ready.cruise) {
-    throw new Error('Mobile test began with controls locked or cruise auto-enabled');
+  if (!ready.locked || ready.cruise) {
+    throw new Error('Mobile test must begin in the locked garage, not in flight');
   }
   const rect = await page.evaluate(() => {
     const c = document.querySelector('#canvas');
@@ -146,6 +146,13 @@ try {
   cdp = await context.newCDPSession(page);
   const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent',
     {type, touchPoints});
+  const garageLaunch = point(ready.garage_sortie_x, ready.garage_sortie_y, 7);
+  await send('touchStart', [garageLaunch]);
+  await send('touchEnd', []);
+  const sortie = await expectTelemetry('mobile garage sortie touch unlocks flight',
+    s => s?.locked === false && s.cruise === false, 25000);
+  report.checks.push({label:'mobile sortie launched from garage', telemetry:sortie});
+  await page.waitForTimeout(300); // Let the mobile bridge observe all fingers released.
   try {
     await send('touchStart', [thrust]);
     const dom = await diagnoseBrowserInput();

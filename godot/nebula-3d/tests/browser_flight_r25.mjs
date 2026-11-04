@@ -45,7 +45,16 @@ try {
   // Creation of the HTML canvas is NOT evidence that Godot has started.
   await waitFor(()=>window.__nebulaPilotTelemetry?.ready === true,90000);
   const t0=await checkpoint('real Godot runtime initialized',s=>s?.version==='R25' && s.samples>=1 && Number.isFinite(s.flight_distance));
-  if(t0.locked) throw new Error('Player controls are locked at startup');
+  if(!t0.locked) throw new Error('The R39 command hub did not lock the craft at startup');
+  // Startup is the garage. Launch through the real in-game button before flight input.
+  const garageBounds=await page.evaluate(() => { const r=document.querySelector('#canvas')?.getBoundingClientRect(); return r ? {x:r.x,y:r.y,width:r.width,height:r.height}:null; });
+  if(!garageBounds) throw new Error('Game canvas bounds missing at garage startup');
+  await page.mouse.click(
+    garageBounds.x+t0.garage_sortie_x*garageBounds.width/t0.garage_view_w,
+    garageBounds.y+t0.garage_sortie_y*garageBounds.height/t0.garage_view_h);
+  await waitForTelemetry(s=>s && s.locked===false,18000);
+  const launched=await checkpoint('garage sortie button unlocks real flight',s=>s?.locked===false);
+
   // Software Chromium freezes locator.focus() even after the real Godot
   // runtime emits world positions. Do not block keyboard QA on compositor
   // focus: R26 registers global physical-code listeners before Godot loads.
