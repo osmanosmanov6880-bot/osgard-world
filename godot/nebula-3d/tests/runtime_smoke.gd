@@ -129,6 +129,8 @@ func _run() -> void:
         var scan_result: String = ""
         for sample in 10:
             scan_result = objectives_r48.step(0.25, scan_goal)
+            if scan_result == "success":
+                break
         if not check(objectives_r48.stage == point_index + 1 and
             not objectives_r48.marker_nodes[point_index].visible and
             (scan_result == "success") == (point_index == 2),
@@ -151,6 +153,8 @@ func _run() -> void:
     var evac_result: String = ""
     for sample in 10:
         evac_result = objectives_r48.step(0.25, shelter)
+        if evac_result == "success":
+            break
     if not check(evac_result == "success" and objectives_r48.stage == 2,
         "R48 rescue cannot finish without a real second hold at shelter"):return
     objectives_r48.configure("escort", Vector3(-500, 24, 670))
