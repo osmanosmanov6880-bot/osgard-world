@@ -198,6 +198,13 @@ func _r25_emit_browser_flight_state() -> void:
         state["garage_sortie_y"] = sortie_rect.position.y + sortie_rect.size.y * 0.5
         state["garage_view_w"] = canvas_size.x
         state["garage_view_h"] = canvas_size.y
+        # R44: browser QA observes real viewport presence, not a static mockup.
+        state["r44_preview_present"] = (
+            is_instance_valid(garage_hub_r39.ship_preview_r44) and
+            is_instance_valid(garage_hub_r39.ship_preview_r44.preview_viewport) and
+            is_instance_valid(garage_hub_r39.ship_preview_r44.real_airframe))
+        state["r44_preview_width"] = garage_hub_r39.preview_frame_r44.size.x
+        state["r44_preview_height"] = garage_hub_r39.preview_frame_r44.size.y
     if r31_mobile_qa_enabled and is_instance_valid(r21_touch):
         # The browser test must touch the actual on-screen button, not set
         # ship velocity or inject an engine-side fake input.
