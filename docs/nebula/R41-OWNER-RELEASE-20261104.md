@@ -1,6 +1,6 @@
 # NEBULA R41 — owner-directed release evidence
 
-**Date:** 2026-11-04. **Release status:** CANDIDATE until deployment workflow ends successfully. **Physical Android/iPhone testing:** NOT PERFORMED; **not** a hardware QA certification.
+**Date:** 2026-11-04. **Release status:** DEPLOYED; isolated SSH workflow #41843608456 succeeded and independent public HTTPS byte check #41844615135 succeeded. **Physical Android/iPhone testing:** NOT PERFORMED; **not** a hardware QA certification.
 
 ## Why this release is allowed, and what is not claimed
 
@@ -40,3 +40,18 @@ These are **Git blob hashes**, not ordinary SHA-1 digests of raw bytes. The rele
 - General OSGARD frontend validation on the source PR had failures in its unrelated Navigator/unified-shell test; this isolated game release does not certify those systems.
 - Existing saves use `user://nebula_3d_save.json` v1 with additive R41 debrief data; premium entitlements are verified outside the game save.
 - First-play experience can still be improved in R42+, especially interactive captains, full 3D hangar, visual polish and mobile hardware QA.
+
+## Confirmed post-release result (2026-11-04)
+
+- Policy/approval PR: https://github.com/osmanosmanov6880-bot/osgard-world/pull/721
+- Production run: https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41843608456
+  - `NEBULA_PRODUCTION_ASSET_GUARD=PASS R41`;
+  - SSH copy/activate successful;
+  - `REMIX_STORAGE_PREFLIGHT: available_kb=1870024 needed_kb=156808`;
+  - mandatory game routes and internal Nginx verification passed; rollback staging cleaned.
+- Independent public asset test: https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41844615135
+  - downloaded `index.html`, `index.js`, `index.wasm` and `index.pck` from `https://osgard.world/games/remix/arena-v2/nebula-3d/`;
+  - all four Git blob hashes matched the published R41 allowlist.
+- The test runner that directly accesses the public site used GitHub-hosted network access; the assistant's local sandbox could not resolve the public domain.
+- This confirms byte identity, **not physical-phone FPS, GPU visual acceptance, or full end-to-end human gameplay**.
+- Standalone R25 on master also logged successful real flight telemetry but later exited 124 on Playwright teardown; standalone R11 hosted SwiftShader pixel capture remained inconclusive. Both are disclosed separately from the successful native PR browser QA.
