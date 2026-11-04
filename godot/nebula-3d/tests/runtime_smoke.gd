@@ -144,6 +144,8 @@ func _run() -> void:
     if not check(not owned_escort.disabled,
         "R47 legitimate inventory must unlock its formation control"):return
     owned_escort.pressed.emit()
+    if not check(not world.fleet_r15.combat_active,
+        "R47 garage must inhibit ally weapons even after lawful squad selection"):return
     if not check(world.wingmen_r15.size() == 1 and
         world.wingmen_r15[0] == "wingman_escort" and
         world.fleet_r15.helper_ids.size() == 1 and
@@ -212,6 +214,7 @@ func _run() -> void:
         "R41 authored story and objective are missing from garage"):return
     world._r39_launch_sortie()
     if not check(world.r47_launch_camera_time > 1.0 and
+        world.fleet_r15.combat_active and
         not world.garage_open_r39 and not world.ship.controls_locked,
         "R47 camera reveal must start with real unlocked immediate Godot flight"):return
     if not check(not world.garage_open_r39 and not world.ship.controls_locked,
