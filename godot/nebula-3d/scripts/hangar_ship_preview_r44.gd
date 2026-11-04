@@ -4,6 +4,7 @@ extends SubViewportContainer
 ## Isolated camera/world: inspecting never moves or unlocks the flight ship.
 const NXHeroScene = preload("res://assets/models/nx08_interceptor_r8.gltf")
 const HullVariantsR45Script = preload("res://scripts/hull_variants_r45.gd")
+const FormationBaysR47Script = preload("res://scripts/formation_bays_r47.gd")
 
 const VALID_HULLS = [
     "ship_scout", "ship_interceptor", "ship_guardian"
@@ -13,6 +14,7 @@ var preview_viewport: SubViewport
 var ship_pivot: Node3D
 var real_airframe: Node3D
 var distinct_hull_r45: Node3D
+var formation_bays_r47: Node3D
 var inspection_camera: Camera3D
 var selected_hull: String = "ship_scout"
 var orbit_angle: float = -0.48
@@ -107,6 +109,9 @@ func _make_real_viewport() -> void:
         _part(world_root, "R44_DockGridColumn_%02d" % (col + 4),
             stripe, Vector3(float(col) * 1.75, -1.91, 0.0), deck_metal)
 
+    formation_bays_r47 = FormationBaysR47Script.new()
+    world_root.add_child(formation_bays_r47)
+
     ship_pivot = Node3D.new()
     ship_pivot.name = "R44_OrbitingInspectionPlatform"
     world_root.add_child(ship_pivot)
@@ -172,6 +177,10 @@ func set_ship_type(id: String) -> void:
     selected_hull = id if VALID_HULLS.has(id) else "ship_scout"
     if is_instance_valid(distinct_hull_r45):
         distinct_hull_r45.set_hull(selected_hull)
+
+func set_wingmen_r47(ids: Array) -> void:
+    if is_instance_valid(formation_bays_r47):
+        formation_bays_r47.set_formation(ids)
 
 func rotate_step(direction: int) -> void:
     orbit_angle = wrapf(orbit_angle + float(clampi(direction, -1, 1)) * 0.40,

@@ -112,6 +112,63 @@ func _run() -> void:
         world.garage_open_r39 and world.ship.controls_locked,
         "R46 compare toggle must not spend money or start a sortie"):return
     print("NEBULA_R46_TRUE_FLEET_COMPARISON_SUCCESS")
+    # R47: two real 3D craft bays, empty until an owned crew is assigned.
+    var bays_r47 = r44_view.formation_bays_r47
+    if not check(is_instance_valid(bays_r47) and
+        bays_r47.craft_nodes.size() == 2 and
+        bays_r47.assigned_ids.is_empty() and
+        not bays_r47.craft_nodes[0].visible and
+        not bays_r47.craft_nodes[1].visible and
+        bays_r47.get_node_or_null("R47_FormationBay_0/R47_RealLandingPad")
+        is MeshInstance3D and
+        bays_r47.get_node_or_null(
+            "R47_FormationBay_1/R47_RealWingmanCraft_1/R47_ActualCombatWing")
+        is MeshInstance3D,
+        "R47 must create real 3D unoccupied bays in the isolated hangar"):return
+    var r47_money_before: int = world.credits
+    var locked_ace: Button = world.garage_hub_r39.wingman_choice_buttons_r47[
+        "wingman_ace"]
+    if not check(locked_ace.disabled, "R47 must visually lock unowned ACE"):return
+    locked_ace.pressed.emit() # A programmatic signal must not bypass authorization.
+    world._r47_toggle_owned_wingman("not_real_crew")
+    if not check(world.wingmen_r15.is_empty() and
+        world.fleet_r15.helper_ids.is_empty() and
+        world.credits == r47_money_before and world.garage_open_r39,
+        "R47 unowned wingmen cannot join via forged UI signals"):return
+    # Temporary test ownership represents a previously completed honest
+    # credit purchase. It is REMOVED and the old v1 save is restored below.
+    world.owned_r15["wingman_escort"] = true
+    world._r39_refresh_garage()
+    var owned_escort: Button = world.garage_hub_r39.wingman_choice_buttons_r47[
+        "wingman_escort"]
+    if not check(not owned_escort.disabled,
+        "R47 legitimate inventory must unlock its formation control"):return
+    owned_escort.pressed.emit()
+    if not check(not world.fleet_r15.combat_active,
+        "R47 garage must inhibit ally weapons even after lawful squad selection"):return
+    if not check(world.wingmen_r15.size() == 1 and
+        world.wingmen_r15[0] == "wingman_escort" and
+        world.fleet_r15.helper_ids.size() == 1 and
+        world.fleet_r15.helper_ids[0] == "wingman_escort" and
+        bays_r47.assigned_ids.size() == 1 and
+        bays_r47.craft_nodes[0].visible and
+        not bays_r47.craft_nodes[1].visible and
+        world.credits == r47_money_before and
+        world.ship.controls_locked,
+        "R47 owned escort must synchronize UI, 3D bay and real flight ally"):return
+    owned_escort.pressed.emit()
+    if not check(world.wingmen_r15.is_empty() and
+        world.fleet_r15.helper_ids.is_empty() and
+        bays_r47.assigned_ids.is_empty() and
+        not bays_r47.craft_nodes[0].visible and
+        world.credits == r47_money_before and
+        world.ship.controls_locked,
+        "R47 removing wingman must update 3D and live combat without credits"):return
+    world.owned_r15.erase("wingman_escort")
+    world._r15_apply_loadout()
+    world._r39_refresh_garage()
+    world._save_progress()
+    print("NEBULA_R47_ACTUAL_FORMATION_SUCCESS")
     var original_orbit: float = r44_view.orbit_angle
     world.garage_hub_r39.turn_right_r44.pressed.emit()
     if not check(r44_view.orbit_angle > original_orbit + 0.30 and
@@ -156,6 +213,10 @@ func _run() -> void:
         world.garage_hub_r39.objective_label.text.contains("Долететь"),
         "R41 authored story and objective are missing from garage"):return
     world._r39_launch_sortie()
+    if not check(world.r47_launch_camera_time > 1.0 and
+        world.fleet_r15.combat_active and
+        not world.garage_open_r39 and not world.ship.controls_locked,
+        "R47 camera reveal must start with real unlocked immediate Godot flight"):return
     if not check(not world.garage_open_r39 and not world.ship.controls_locked,
         "R39 sortie action did not unlock flight"):return
     if not check(is_equal_approx(world.ship.thrust_multiplier, 1.08) and

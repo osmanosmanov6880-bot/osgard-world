@@ -24,6 +24,8 @@ var player_ship: Node3D
 var targets: Array[Node3D] = []
 var cooldown: float = 0.0
 var ally_timer: float = 0.0
+## R47: the garage is a no-combat zone even when owned allies are equipped.
+var combat_active: bool = false
 var missile_damage: float = 14.0
 var cosmetic_skin: String = ""
 var helper_ids: Array[String] = []
@@ -102,6 +104,9 @@ func _process(delta: float) -> void:
         var target_pos: Vector3 = player_ship.global_position + player_ship.global_basis.x * (side * 8.0) + player_ship.global_basis.z * 5.0 + Vector3.UP * (1.0 + sin(ally_timer * 2.0 + float(i)))
         ally.global_position = ally.global_position.lerp(target_pos, minf(1.0, delta * 3.2))
         ally.global_basis = player_ship.global_basis
+    if not combat_active:
+        ally_timer = 0.0
+        return
     if ally_timer >= 1.15 and not helpers.is_empty():
         ally_timer = 0.0
         var opponent: Node3D = _nearest_hostile(160.0)

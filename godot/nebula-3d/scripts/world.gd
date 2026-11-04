@@ -137,6 +137,7 @@ var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
 var r21_mobile_enabled: bool = false
 var r21_launch_protection: float = 9.0
+var r47_launch_camera_time: float = 0.0
 var r23_cruise_button: Button
 var r23_launch_button_events: int = 0
 ## R22: real playable golden-hour skyline, not an image/background plate.
@@ -1002,8 +1003,13 @@ func _process(delta: float) -> void:
             obstruction["position"] - target) * 0.82
     chase_camera.look_at(ship.global_position - basis.z * 14.0 +
         Vector3.UP * 1.2, Vector3.UP)
+    # R47: a short real chase-camera field-of-view sweep on launch.
+    # Unlike a blocking cutscene, this never delays physics or touch input.
+    var reveal: float = 9.0 * clampf(r47_launch_camera_time / 1.05, 0.0, 1.0)
     chase_camera.fov = lerpf(chase_camera.fov,
-        65.0 + minf(6.0, speed * 0.060), 1.0 - exp(-1.8 * delta))
+        65.0 + minf(6.0, speed * 0.060) + reveal,
+        1.0 - exp((-7.0 if reveal > 0.0 else -1.8) * delta))
+    r47_launch_camera_time = maxf(0.0, r47_launch_camera_time - delta)
     # A destroyed player should get an explicit failed sortie, never a hidden
     # teleport and lost 220 CR while the mission keeps running.
     if not garage_open_r39 and ship.hull <= 0.0 and mission_index < MISSIONS.size():
@@ -1646,6 +1652,8 @@ func _r15_premium_synced(receipts: Dictionary) -> void:
         if not owned_r15.has(wingman) and int(premium_r15.get(wingman,0)) <= 0:
             wingmen_r15.remove_at(i)
     _r15_apply_loadout()
+    if garage_open_r39:
+        _r39_refresh_garage()
     _show_notice("ПРЕМИУМ-АНГАР · ПРАВА ПРОВЕРЕНЫ СЕРВЕРОМ")
 
 func _r15_paid_missile_authorized() -> void:
@@ -1729,7 +1737,11 @@ func _r39_create_garage_hub() -> void:
     garage_hub_r39.shop_requested.connect(_r39_open_shop)
     garage_hub_r39.captain_selected.connect(_r42_select_captain)
     garage_hub_r39.ship_selected_r45.connect(_r45_select_owned_ship)
+    garage_hub_r39.wingman_toggled_r47.connect(_r47_toggle_owned_wingman)
     garage_open_r39 = true
+    r47_launch_camera_time = 0.0
+    if is_instance_valid(fleet_r15):
+        fleet_r15.combat_active = false
     ship.controls_locked = true
     ship.velocity = Vector3.ZERO
     ship.set_cruise_assist(false)
@@ -1773,6 +1785,12 @@ func _r39_refresh_garage() -> void:
             "wingmen": mini(2, wingmen_r15.size()),
             "engine_rank": ship.engine_rank,
         },
+        "owned_wingmen": {
+            "wingman_escort": owned_r15.has("wingman_escort") or
+                int(premium_r15.get("wingman_escort", 0)) > 0,
+            "wingman_ace": owned_r15.has("wingman_ace") or
+                int(premium_r15.get("wingman_ace", 0)) > 0,
+        },
         "owned_ships": {
             "ship_scout": true,
             "ship_interceptor": owned_r15.has("ship_interceptor") or
@@ -1781,6 +1799,26 @@ func _r39_refresh_garage() -> void:
                 int(premium_r15.get("ship_guardian", 0)) > 0,
         },
     })
+
+func _r47_toggle_owned_wingman(id: String) -> void:
+    if not garage_open_r39 or not is_instance_valid(garage_hub_r39) or (
+            not garage_hub_r39.visible) or not id in [
+            "wingman_escort", "wingman_ace"]:
+        return
+    if not owned_r15.has(id) and int(premium_r15.get(id, 0)) <= 0:
+        _show_notice("ВЕДОМЫЙ НЕ ПРИОБРЕТЁН · ОТКРОЙ МАГАЗИН")
+        return
+    if wingmen_r15.has(id):
+        wingmen_r15.erase(id)
+    else:
+        if wingmen_r15.size() >= 2:
+            _show_notice("В СТРОЮ МАКСИМУМ ДВА ВЕДОМЫХ")
+            return
+        wingmen_r15.append(id)
+    _r15_apply_loadout()
+    _save_progress()
+    _r39_refresh_garage()
+    _show_notice("ЭСКАДРИЛЬЯ · %d ИЗ 2 ГОТОВЫ" % wingmen_r15.size())
 
 func _r45_select_owned_ship(id: String) -> void:
     if not garage_open_r39 or not id in [
@@ -1810,6 +1848,8 @@ func _r39_launch_sortie() -> void:
     if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
         return
     garage_open_r39 = false
+    if is_instance_valid(fleet_r15):
+        fleet_r15.combat_active = true
     garage_hub_r39.queue_free()
     garage_hub_r39 = null
     var captain: Dictionary = CaptainRosterR42Script.info(selected_captain_r42)
@@ -1817,6 +1857,7 @@ func _r39_launch_sortie() -> void:
     ship.thrust_multiplier = float(captain.get("thrust_multiplier", 1.0))
     ship.controls_locked = false
     ship.velocity = Vector3.ZERO
+    r47_launch_camera_time = 1.05
     # A repaired pilot must not be shot down on the very first frame of a
     # retry. Restart the same short launch immunity every actual sortie.
     # This does not turn off collisions or reward failed attempts.
