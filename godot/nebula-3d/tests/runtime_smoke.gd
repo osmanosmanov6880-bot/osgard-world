@@ -50,6 +50,38 @@ func _run() -> void:
         "R44 must render a real imported in-game MeshInstance3D, not a flat art placeholder"):return
     if not check(r44_view.preview_viewport.get_world_3d() != world.get_world_3d(),
         "R44 preview world must be separate from live city collision and pilot physics"):return
+    # R45: independent physically distinct geometry in actual dock and flight.
+    if not check(is_instance_valid(r44_view.distinct_hull_r45) and
+        is_instance_valid(world.ship.hull_kit_r45) and
+        r44_view.distinct_hull_r45.selected_hull == "ship_scout" and
+        world.ship.hull_kit_r45.selected_hull == "ship_scout",
+        "R45 real 3D hull kits missing from dock or playable craft"):return
+    var scout_parts: int = r44_view.distinct_hull_r45.visual_parts.size()
+    r44_view.set_ship_type("ship_interceptor")
+    var interceptor_parts: int = r44_view.distinct_hull_r45.visual_parts.size()
+    if not check(interceptor_parts != scout_parts and
+        r44_view.distinct_hull_r45.get_node_or_null(
+            "R45_InterceptorTwinThruster_-1.0") != null,
+        "R45 interceptor must have physical twin engines and distinct geometry"):return
+    r44_view.set_ship_type("ship_guardian")
+    var guardian_parts: int = r44_view.distinct_hull_r45.visual_parts.size()
+    if not check(guardian_parts > interceptor_parts and
+        r44_view.distinct_hull_r45.get_node_or_null(
+            "R45_GuardianDorsalBridge") != null,
+        "R45 heavy guardian must have more substantial physical armored mesh"):return
+    r44_view.set_ship_type("ship_scout")
+    var starting_wallet: int = world.credits
+    world.garage_hub_r39.ship_choice_buttons_r45["ship_interceptor"].pressed.emit()
+    if not check(world.equipped_r15 == "ship_scout" and
+        world.credits == starting_wallet and
+        world.garage_hub_r39.ship_choice_buttons_r45["ship_interceptor"].disabled,
+        "R45 disabled or unowned ship cannot be equipped for free"):return
+    world.garage_hub_r39.ship_choice_buttons_r45["ship_scout"].pressed.emit()
+    if not check(world.garage_open_r39 and world.ship.controls_locked and
+        world.ship.hull_kit_r45.selected_hull == "ship_scout",
+        "R45 garage selection must never bypass launch lock"):return
+    print("NEBULA_R45_DISTINCT_HULLS_SUCCESS scout=%d interceptor=%d guardian=%d" %
+        [scout_parts, interceptor_parts, guardian_parts])
     var original_orbit: float = r44_view.orbit_angle
     world.garage_hub_r39.turn_right_r44.pressed.emit()
     if not check(r44_view.orbit_angle > original_orbit + 0.30 and
@@ -1010,6 +1042,9 @@ func _run() -> void:
     world.ship.global_position = Vector3(0,19,78)
     world.credits = 10000
     world._r15_buy_credit("ship_interceptor")
+    if not check(world.ship.hull_kit_r45.selected_hull == "ship_interceptor" and
+        world.ship.hull_kit_r45.visual_parts.size() == interceptor_parts,
+        "R45 purchased interceptor must transform actual playable ship geometry"):return
     if not check(world.equipped_r15 == "ship_interceptor" and
         world.fleet_r15.active_ship == "ship_interceptor" and world.ship.turn_speed > 2.3,
         "R15 credit-funded ship has no effect on player flight"):return
