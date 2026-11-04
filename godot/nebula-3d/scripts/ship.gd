@@ -16,6 +16,9 @@ const FLIGHT_MIN_HEIGHT: float = 4.5
 const FLIGHT_MAX_HEIGHT: float = 280.0
 
 var shield: float = 100.0
+## R42 captain perks: assigned by the world only when a sortie begins.
+var damage_multiplier: float = 1.0
+var thrust_multiplier: float = 1.0
 var hull: float = 100.0
 var boost: float = 100.0
 var engine_rank: int = 0
@@ -219,7 +222,7 @@ func _physics_process(delta: float) -> void:
     rotation.x = clampf(rotation.x, -0.56, 0.56)
     rotation.z = 0.0
     var forward: Vector3 = -global_transform.basis.z
-    var strength: float = (FORWARD_ACCEL + float(engine_rank) * 8.0)
+    var strength: float = (FORWARD_ACCEL + float(engine_rank) * 8.0) * clampf(thrust_multiplier, 0.8, 1.2)
     var acceleration: float = strength * (1.8 if afterburner else 1.0)
     var forward_acceleration: float = acceleration if throttle >= 0.0 else REVERSE_ACCEL
     velocity += forward * throttle * forward_acceleration * delta
@@ -287,7 +290,7 @@ func _physics_process(delta: float) -> void:
             jet.scale.y = 0.75 + thruster_power * 0.70                 + 0.10 * sin(glow_time * 16.0) + (0.7 if afterburner else 0.0)
 
 func take_damage(amount: float) -> void:
-    var remaining: float = maxf(0.0, amount)
+    var remaining: float = maxf(0.0, amount) * clampf(damage_multiplier, 0.75, 1.0)
     if shield > 0.0:
         var absorbed: float = minf(shield, remaining)
         shield -= absorbed
