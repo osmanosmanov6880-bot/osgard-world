@@ -594,3 +594,6 @@ html[data-motion="off"] .world-command .omega-portal { transition: none; }
 .world-command { overflow-x: visible !important; }
 .world-command .omega-portals-hero { width:100vw !important; max-width:100vw !important; margin-left:calc(50% - 50vw) !important; margin-right:calc(50% - 50vw) !important; }
 .world-command .omega-portals-reference img { object-fit:contain !important; }
+
+/* Clip only at the document viewport so the full-bleed hero stays visible without a horizontal scrollbar. */
+html[data-product="world"] { overflow-x:clip !important; }
