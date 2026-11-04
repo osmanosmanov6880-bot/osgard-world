@@ -12,7 +12,11 @@ var mission_detail: Label
 var captain_label: Label
 var ship_label: Label
 var progression_label: Label
+var captain_badge_label: Label
+var xp_meter: ProgressBar
 var roster_label: Label
+var mission_class_label: Label
+var mission_reward_label: Label
 var resource_label: Label
 var status_label: Label
 var panel: PanelContainer
@@ -128,14 +132,39 @@ func _build() -> void:
     captain_card.name = "R39_CaptainCard"
     captain_card.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.059, 0.086, 0.96)))
     column.add_child(captain_card)
+    var captain_row := HBoxContainer.new()
+    captain_row.add_theme_constant_override("separation", 14)
+    captain_card.add_child(captain_row)
+    var rank_plate := PanelContainer.new()
+    rank_plate.custom_minimum_size = Vector2(62, 66)
+    rank_plate.add_theme_stylebox_override("panel", _panel_style(Color(0.075, 0.11, 0.13, 1.0), GOLD))
+    captain_row.add_child(rank_plate)
+    var rank_stack := VBoxContainer.new()
+    rank_stack.alignment = BoxContainer.ALIGNMENT_CENTER
+    rank_plate.add_child(rank_stack)
+    _label(rank_stack, "УР.", 10, MUTED)
+    captain_badge_label = _label(rank_stack, "01", 25, GOLD)
     var captain_stack := VBoxContainer.new()
+    captain_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     captain_stack.add_theme_constant_override("separation", 5)
-    captain_card.add_child(captain_stack)
+    captain_row.add_child(captain_stack)
     _label(captain_stack, "КОМАНДИР ЭСКАДРИЛЬИ", 11, MUTED)
-    captain_label = _label(captain_stack, "КАПИТАН · УРОВЕНЬ 1", 17, GOLD)
+    captain_label = _label(captain_stack, "КАПИТАН", 17, Color(0.95, 0.97, 0.98))
     progression_label = _label(captain_stack, "0 / 500 XP до следующего уровня", 12, MUTED)
+    xp_meter = ProgressBar.new()
+    xp_meter.name = "R40_CaptainExperience"
+    xp_meter.custom_minimum_size = Vector2(0, 9)
+    xp_meter.max_value = 500
+    xp_meter.value = 0
+    xp_meter.show_percentage = false
+    xp_meter.add_theme_stylebox_override("background", _panel_style(Color(0.012,0.025,0.038,1.0), Color(0.08,0.16,0.20,1.0)))
+    var xp_fill := StyleBoxFlat.new()
+    xp_fill.bg_color = CYAN
+    xp_fill.set_corner_radius_all(5)
+    xp_meter.add_theme_stylebox_override("fill", xp_fill)
+    captain_stack.add_child(xp_meter)
 
-    roster_label = _label(column, "ЭКИПАЖ  ·  Ведомые", 13, Color(0.86,0.92,0.95))
+    roster_label = _label(column, "ВЕДОМЫЕ  ·  резерв", 13, Color(0.86,0.92,0.95))
 
     var mission_card := PanelContainer.new()
     mission_card.name = "R39_MissionCard"
@@ -144,11 +173,18 @@ func _build() -> void:
     var mission_stack := VBoxContainer.new()
     mission_stack.add_theme_constant_override("separation", 5)
     mission_card.add_child(mission_stack)
-    _label(mission_stack, "СЛЕДУЮЩИЙ ВЫЛЕТ", 11, GOLD)
+    _label(mission_stack, "КОНТРАКТ  /  СЛЕДУЮЩИЙ ВЫЛЕТ", 11, GOLD)
     mission_label = _label(mission_stack, "01  ·  ПЕРВЫЙ ПОЛЁТ", 17, Color(0.97,0.96,0.91))
-    mission_detail = _label(mission_stack, "Достигни навигационного маяка и защити Аврору.", 12, MUTED)
+    mission_detail = _label(mission_stack, "Аврора просит помощи.", 13, Color(0.84,0.90,0.93))
+    var mission_meta := HBoxContainer.new()
+    mission_meta.add_theme_constant_override("separation", 10)
+    mission_stack.add_child(mission_meta)
+    mission_class_label = _label(mission_meta, "НАВИГАЦИЯ", 11, MUTED)
+    mission_class_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    mission_reward_label = _label(mission_meta, "350 CR", 12, GOLD)
+    mission_reward_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
-    status_label = _label(column, "Задача простая: следуй за маркером. Бой начнётся позже по сюжету.", 11, MUTED)
+    status_label = _label(column, "Вылет откроет двери ангара и запустит маршрут. Управление можно перехватить в любой момент.", 11, MUTED)
 
     var footer := HBoxContainer.new()
     footer.add_theme_constant_override("separation", 10)
@@ -188,8 +224,10 @@ func refresh(data: Dictionary) -> void:
     var level := 1 + int(floor(float(xp) / 500.0))
     var xp_next := xp % 500
     resource_label.text = "%s CR    •    %s XP" % [_format_number(credits), _format_number(xp)]
+    captain_badge_label.text = "%02d" % level
     captain_label.text = "КАПИТАН · УРОВЕНЬ %d" % level
-    progression_label.text = "%d / 500 XP до следующего уровня" % xp_next
+    progression_label.text = "%s / 500 XP до следующего уровня" % _format_number(xp_next)
+    xp_meter.value = xp_next
     var ship_id := str(data.get("ship", "ship_scout"))
     var ship_names := {
         "ship_scout": "NX-08  /  РАЗВЕДЧИК",
@@ -199,28 +237,32 @@ func refresh(data: Dictionary) -> void:
     ship_label.text = str(ship_names.get(ship_id, "NX-08  /  РАЗВЕДЧИК"))
     var allies: Array = data.get("wingmen", [])
     if allies.is_empty():
-        roster_label.text = "ЭКИПАЖ  ·  Капитан %d ур.  |  Ведомые: резерв" % level
+        roster_label.text = "ВЕДОМЫЕ  ·  свободны 2 места"
     else:
         var names := PackedStringArray()
-        for ally in allies:
-            names.append("ACE" if str(ally) == "wingman_ace" else "ESCORT")
-        roster_label.text = "ЭКИПАЖ  ·  Капитан %d ур.  |  " % level + "  +  ".join(names)
+        for index in allies.size():
+            var ally: Variant = allies[index]
+            var callsign := "ACE" if str(ally) == "wingman_ace" else "ESCORT"
+            names.append("%02d  %s" % [index + 1, callsign])
+        roster_label.text = "ВЕДОМЫЕ  ·  " + "     /     ".join(names)
     var mission_index := int(data.get("mission_index", 0))
     var missions: Array = data.get("missions", [])
     if mission_index >= missions.size():
         mission_label.text = "СВОБОДНЫЙ ПОЛЁТ"
-        mission_detail.text = "Кампания завершена. Исследуй шесть районов."
-        launch_button.text = "▶  СВОБОДНЫЙ ПОЛЁТ"
-        status_label.text = "Сюжет пройден — теперь город открыт для исследования."
+        mission_detail.text = "Кампания завершена. Город открыт: выбери маршрут и исследуй шесть районов."
+        mission_class_label.text = "СВОБОДНЫЙ РЕЖИМ"
+        mission_reward_label.text = "БЕЗ КОНТРАКТА"
+        launch_button.text = "▶  ВЫЛЕТЕТЬ"
+        status_label.text = "Открой двери и отправляйся исследовать мир в своём темпе."
     else:
         var mission: Dictionary = missions[mission_index]
         mission_label.text = "%02d  ·  %s" % [mission_index + 1, str(mission.get("title", "ЗАДАНИЕ"))]
         var type := str(mission.get("type", "reach"))
-        mission_detail.text = "Цель: %s  ·  награда %s CR" % [
-            "перехватить эскадрилью" if type == "combat" else "достигнуть маяка",
-            _format_number(int(mission.get("reward", 0)))]
+        mission_detail.text = str(mission.get("hint", "Выполни контракт и помоги Авроре."))
+        mission_class_label.text = "ПЕРЕХВАТ" if type == "combat" else "НАВИГАЦИЯ"
+        mission_reward_label.text = "+%s CR" % _format_number(int(mission.get("reward", 0)))
         launch_button.text = "▶  ВЫЛЕТЕТЬ"
-        status_label.text = "Цель отмечена на HUD. Автопилот доведёт до неё; управление можно перехватить в любой момент."
+        status_label.text = "Автопилот ведёт к цели. Любой ручной ввод сразу возвращает управление пилоту."
 
 func _format_number(value: int) -> String:
     var raw := str(maxi(value, 0))
@@ -243,11 +285,11 @@ func _layout_hub() -> void:
     header_panel.offset_top = 14.0
     header_panel.offset_bottom = 74.0
     panel.offset_left = margin
-    panel.offset_top = 88.0 if short_view else 96.0
-    panel.offset_right = minf(430.0, view.x - margin)
+    panel.offset_top = maxf(94.0, view.y * 0.33) if view.x < 650.0 and view.y >= 560.0 else (88.0 if short_view else 96.0)
+    panel.offset_right = view.x - margin if view.x < 650.0 else minf(430.0, view.x - margin)
     panel.offset_bottom = view.y - 14.0
-    description_label.visible = not short_view
-    status_label.visible = not short_view
+    description_label.visible = not short_view and view.y > 700.0
+    status_label.visible = not short_view and view.y > 600.0
     launch_button.position = Vector2(panel.offset_left + 16.0,
         minf(view.y - 62.0, panel.offset_bottom - 64.0))
     launch_button.size = Vector2(maxf(170.0, panel.offset_right - panel.offset_left - 32.0), 48.0)
