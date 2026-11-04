@@ -58,7 +58,7 @@ var credits: int = 950
 var xp: int = 0
 var mission_enemies: int = 0
 var mission_started: bool = false
-var mission_objectives_r48: Node3D
+var mission_objectives_r48
 var r48_escort_enemies_spawned: bool = false
 var r48_last_goal: Vector3 = Vector3.ZERO
 var shot_flash: float = 0.0
