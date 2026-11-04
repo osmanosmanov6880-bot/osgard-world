@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R43",
-  "release_status": "R43_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R44",
+  "release_status": "R44_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "e2e9eda43de697d2229616fdea49d864c112f7b4",
+    "index.html": "014a832779b265ac184fa691d803f28d594d5fdb",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "99dc9c81b71734c3531ad08a9fb00b99cea1a9a0"
+    "index.pck": "dd107191b25b38b508640749123cbaf309536d9a"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,9 +15,9 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-04",
-    "verification_workflow_run_id": 41851169153,
-    "native_source_commit_sha": "55efdad0e8661ad9ea9c6f0ba3bb4d02c85d0baf",
-    "web_export_commit_sha": "f87747b31f3f4fe9ad7cf030a5449d22015f3425"
+    "verification_workflow_run_id": 41858815024,
+    "native_source_commit_sha": "8141e2673ad22bf1de18bd2ecae26eabf71f83fb",
+    "web_export_commit_sha": "f271ef0249fd0fe1d61871e05d17315b54f1d13f"
   },
-  "notes": "R43 direct owner-directed promotion of CI-tested Godot 4.7.2 source and verified master Web export. Actual Chromium and emulated mobile touch gates passed in PR #723 run #41849503005; native master export #41851169153 succeeded. Exact four Git blob SHA-1 identities. Real Android/iPhone QA NOT PERFORMED; hosted WebGL visual readback is advisory. R40 signed hardware-attestation path unchanged. Prior R42 remains rollback target."
+  "notes": "R44 owner-directed exact-asset production promotion of real 3D NX hangar, independent orbit viewport and adaptive Russian mission hub. Source PR #728 obligatory native, browser and emulated mobile QA passed in #41856828041; master Web export #41858815024 succeeded. Physical Android/iPhone QA and independent GPU visual acceptance NOT PERFORMED. R40 human hardware approval unchanged. R43 must remain rollback candidate."
 }
