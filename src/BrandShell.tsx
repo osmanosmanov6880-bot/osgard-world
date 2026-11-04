@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import { BrandLockup } from './BrandMark'
 import { brandAreaForPath, brandBreadcrumbs, globalNavigationState } from './brandNavigation'
@@ -10,7 +10,6 @@ import './brandFonts.css'
 import './brandSystem.css'
 import './omegaSystems.css'
 
-const OsgardQuickNav = lazy(() => import('./OsgardQuickNav'))
 const OsgardFooter = lazy(() => import('./OsgardFooter'))
 
 const readMotion = () => { try { return localStorage.getItem('osgard:motion') !== 'off' } catch { return true } }
@@ -22,8 +21,6 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
   const [motion, setMotion] = useState(readMotion)
   const [osaLocale, setOSALocale] = useState(readOSALocale)
   const [reduced, setReduced] = useState(false)
-  const [quickOpen, setQuickOpen] = useState(false)
-  const quickTrigger = useRef<HTMLButtonElement>(null)
   const currentLocation = useSyncExternalStore(subscribeBrowserNavigation, getBrowserSnapshot, getServerSnapshot)
   const currentUrl = new URL(currentLocation.href, 'https://osgard.world')
   const hash = currentUrl.hash
@@ -73,23 +70,6 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     }
   }, [])
 
-  const closeQuickNav = () => {
-    setQuickOpen(false)
-    requestAnimationFrame(() => quickTrigger.current?.focus({ preventScroll: true }))
-  }
-  useEffect(() => {
-    const shortcut = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.altKey || event.shiftKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
-      if (document.querySelector('.osgard-cinematic, [data-osgard-pending]')) return
-      event.preventDefault()
-      if (quickOpen) closeQuickNav()
-      else setQuickOpen(true)
-    }
-    window.addEventListener('keydown', shortcut)
-    return () => window.removeEventListener('keydown', shortcut)
-  }, [quickOpen])
-  useEffect(() => { setQuickOpen(false) }, [path])
-
   const localState = (href: string): 'page' | 'location' | undefined => {
     const target = new URL(href, 'https://osgard.world')
     if ((target.pathname.replace(/\/+$/, '') || '/') !== path) return undefined
@@ -114,21 +94,18 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       <nav aria-label={englishChrome ? 'OSGARD products' : 'Продукты OSGARD'} className="brand-global-nav">
         {globalLinks.map(([name, href]) => <a key={href} href={href} aria-current={globalNavigationState(path, product, href)}>{name}</a>)}
       </nav>
-      <button type="button" ref={quickTrigger} className="brand-quick-trigger" aria-haspopup="dialog" aria-expanded={quickOpen}
-        aria-keyshortcuts="Control+K Meta+K" aria-label={englishChrome ? 'Quick access to OSGARD sections' : 'Быстрый переход по разделам OSGARD'} onClick={() => quickOpen ? closeQuickNav() : setQuickOpen(true)}>
-        <span aria-hidden="true" className="brand-quick-symbol">⌕</span><span className="brand-quick-label">{englishChrome ? 'Sections' : 'Разделы'}</span><kbd>⌘K</kbd>
-      </button>
-      <button type="button" className="brand-motion" aria-pressed={reduced || !motion} disabled={reduced}
-        aria-label={englishChrome ? 'Reduce motion' : 'Меньше движения'} title={englishChrome ? (reduced ? 'Reduced motion is enabled in device settings' : 'Turn off nonessential animation') : (reduced ? 'Уменьшение движения включено в настройках устройства' : 'Отключить необязательную анимацию')} onClick={toggleMotion}>
-        <span className="brand-motion-state" aria-hidden="true">{reduced || !motion ? '◌' : '◉'}</span> {englishChrome ? 'Reduce motion' : 'Меньше движения'}
-        <span className="brand-motion-value">{reduced ? (englishChrome ? 'System' : 'Система') : motion ? (englishChrome ? 'Off' : 'Выкл.') : (englishChrome ? 'On' : 'Вкл.')}</span>
-      </button>
+
     </header>
     <div className="brand-local-bar">
       <span>{product === 'world' ? (englishChrome ? (development ? 'OSGARD DEVELOPMENT / Digital studio' : 'OSGARD WORLD / Digital studio') : (development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия')) : product === 'intelligence' ? (osaLocale === 'en' ? 'OSA / Understand. Verify. Decide.' : 'OSA / Понять. Проверить. Решить.') : (osaLocale === 'en' ? 'OSGARD PLAY / Interactive worlds' : 'OSGARD PLAY / Игровые миры')}</span>
       <nav aria-label={englishChrome ? 'Section navigation' : 'Навигация раздела'}>
         {local.map(([name, href]) => <a key={name} href={href} aria-current={localState(href)}>{name}</a>)}
       </nav>
+      <button type="button" className="brand-motion" aria-pressed={reduced || !motion} disabled={reduced}
+        aria-label={englishChrome ? 'Reduce motion' : 'Меньше движения'} title={englishChrome ? (reduced ? 'Reduced motion is enabled in device settings' : 'Turn off nonessential animation') : (reduced ? 'Уменьшение движения включено в настройках устройства' : 'Отключить необязательную анимацию')} onClick={toggleMotion}>
+        <span className="brand-motion-state" aria-hidden="true">{reduced || !motion ? '◌' : '◉'}</span> {englishChrome ? 'Reduce motion' : 'Меньше движения'}
+        <span className="brand-motion-value">{reduced ? (englishChrome ? 'System' : 'Система') : motion ? (englishChrome ? 'Off' : 'Выкл.') : (englishChrome ? 'On' : 'Вкл.')}</span>
+      </button>
     </div>
     <nav className="brand-breadcrumbs" aria-label="Путь к странице" hidden={!crumbs.length}>
       <ol>{crumbs.map((item, index) => <li key={index}>{item.href ? <a href={item.href}>{item.label}</a> : <span aria-current="page">{item.label}</span>}</li>)}</ol>
@@ -136,12 +113,6 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     <div id="product-main" tabIndex={-1}>{children}</div>
     <Suspense fallback={<footer className="brand-footer brand-footer-loading" aria-label="Загрузка ссылок" />}>
       <OsgardFooter product={product} motion={motion} reduced={reduced} locale={osaLocale} />
-    </Suspense>
-    <Suspense fallback={null}>
-      {quickOpen && <OsgardQuickNav onClose={closeQuickNav} onNavigate={() => {
-          setQuickOpen(false)
-          requestAnimationFrame(() => document.getElementById('product-main')?.focus({ preventScroll: true }))
-        }} />}
     </Suspense>
   </div>
 }
