@@ -959,7 +959,7 @@ func _process(delta: float) -> void:
             r25_telemetry_period = fmod(r25_telemetry_period, 0.20)
             _r25_emit_browser_flight_state()
     r21_launch_protection = maxf(0.0, r21_launch_protection - delta)
-    if world_pulse > 92.0 and mission_index > 0 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
+    if not garage_open_r39 and world_pulse > 92.0 and mission_index > 0 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
         world_pulse = 0.0
         _spawn_pirate_ambush()
     _r16_update_beam_pool(delta)
@@ -1007,7 +1007,11 @@ func _process(delta: float) -> void:
         r21_dashboard.show_objective = mission_index < MISSIONS.size()
         if r21_dashboard.show_objective:
             r21_dashboard.objective = MISSIONS[mission_index]["position"]
-    if ship.hull <= 0.0:
+    if garage_open_r39:
+        # The dock is a safe room, not a place for pirates to farm the player.
+        ship.shield = fleet_r15.ship_shield_cap()
+        ship.hull = fleet_r15.ship_hull_cap()
+    elif ship.hull <= 0.0:
         ship.global_position = r21_safe_spawn
         ship.velocity = Vector3.ZERO
         ship.shield = fleet_r15.ship_shield_cap()
@@ -1182,7 +1186,7 @@ func _on_mission_drone_destroyed(drone: Node3D) -> void:
     _on_drone_destroyed(drone)
 
 func _on_drone_fire(from: Vector3, to: Vector3) -> void:
-    if not is_instance_valid(ship):return
+    if garage_open_r39 or not is_instance_valid(ship):return
     _laser_effect_colored(from,to,Color(1.0,0.26,0.39))
     if from.distance_to(ship.global_position)<250.0 and ship.global_position.distance_to(to)<7.0:
         # The approved first-flight mission must be playable before pirates
