@@ -19,6 +19,10 @@ var panel: PanelContainer
 var root_control: Control
 var header_panel: PanelContainer
 var description_label: Label
+var story_label: Label
+var objective_label: Label
+var stakes_label: Label
+var debrief_label: Label
 
 const BG := Color(0.018, 0.035, 0.058, 0.96)
 const PANEL := Color(0.035, 0.073, 0.105, 0.94)
@@ -112,6 +116,11 @@ func _build() -> void:
     _label(column, "АНГАР АВРОРЫ  /  ПОДГОТОВКА", 12, CYAN)
     _label(column, "Корабль ждёт командира.", 23, Color(0.94, 0.97, 0.98))
     description_label = _label(column, "Осмотри экипаж и задачу. Когда будешь готов — выходи на маршрут.", 13, MUTED)
+    story_label = _label(column, "АДА ВЕЙЛ · КОМАНДИР", 12, GOLD)
+    objective_label = _label(column, "ЦЕЛЬ · ДОСТИГНУТЬ МАЯКА", 13, CYAN)
+    stakes_label = _label(column, "Учебный вылет без атаки в начале.", 12, MUTED)
+    debrief_label = _label(column, "", 12, GOLD)
+    debrief_label.visible = false
 
     var ship_card := PanelContainer.new()
     ship_card.name = "R39_FleetCard"
@@ -205,6 +214,16 @@ func refresh(data: Dictionary) -> void:
         for ally in allies:
             names.append("ACE" if str(ally) == "wingman_ace" else "ESCORT")
         roster_label.text = "ЭКИПАЖ  ·  Капитан %d ур.  |  " % level + "  +  ".join(names)
+    var story: Dictionary = data.get("story", {})
+    var last_result: Dictionary = data.get("last_result", {})
+    var new_result: bool = not last_result.is_empty() and int(last_result.get("mission_index", -1)) >= 0 and int(last_result.get("mission_index", -1)) == int(data.get("mission_index", 0)) - 1
+    story_label.text = str(story.get("act", "КАМПАНИЯ")) + "\n" + str(story.get("speaker", "КОМАНДОВАНИЕ АВРОРЫ"))
+    description_label.text = str(story.get("brief", "Подготовь корабль и экипаж к следующему вылету."))
+    objective_label.text = "ЦЕЛЬ  /  " + str(story.get("objective", "Следуй к навигационному маяку"))
+    stakes_label.text = str(story.get("stakes", ""))
+    debrief_label.visible = new_result
+    if new_result:
+        debrief_label.text = "ПОСЛЕДНИЙ ВЫЛЕТ: +%d CR  /  +%d XP\n%s" % [int(last_result.get("credits", 0)), int(last_result.get("xp", 0)), str(last_result.get("reveal", ""))]
     var mission_index := int(data.get("mission_index", 0))
     var missions: Array = data.get("missions", [])
     if mission_index >= missions.size():
@@ -212,6 +231,7 @@ func refresh(data: Dictionary) -> void:
         mission_detail.text = "Кампания завершена. Исследуй шесть районов."
         launch_button.text = "▶  СВОБОДНЫЙ ПОЛЁТ"
         status_label.text = "Сюжет пройден — теперь город открыт для исследования."
+        mission_detail.text = str(story.get("objective", "Кампания завершена"))
     else:
         var mission: Dictionary = missions[mission_index]
         mission_label.text = "%02d  ·  %s" % [mission_index + 1, str(mission.get("title", "ЗАДАНИЕ"))]
@@ -221,6 +241,7 @@ func refresh(data: Dictionary) -> void:
             _format_number(int(mission.get("reward", 0)))]
         launch_button.text = "▶  ВЫЛЕТЕТЬ"
         status_label.text = "Цель отмечена на HUD. Автопилот доведёт до неё; управление можно перехватить в любой момент."
+        mission_detail.text += "\n" + str(story.get("objective", ""))
 
 func _format_number(value: int) -> String:
     var raw := str(maxi(value, 0))

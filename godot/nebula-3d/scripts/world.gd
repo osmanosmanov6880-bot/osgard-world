@@ -28,6 +28,7 @@ const PremiumFulfillmentR15Script = preload("res://scripts/premium_fulfillment_r
 const MobileControlsR21Script = preload("res://scripts/mobile_controls_r21.gd")
 const PremiumHUDR21Script = preload("res://scripts/premium_hud_r21.gd")
 const GarageHubR39Script = preload("res://scripts/garage_hub_r39.gd")
+const CampaignStoryR41Script = preload("res://scripts/campaign_story_r41.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -128,6 +129,7 @@ var r21_touch
 var r21_dashboard
 var garage_hub_r39
 var garage_open_r39: bool = false
+var r41_last_debrief: Dictionary = {}
 var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
 var r21_mobile_enabled: bool = false
@@ -391,7 +393,7 @@ func _ready() -> void:
     _load_progress()
     _r21_rescue_blocked_spawn()
     _r15_apply_loadout()
-    _start_mission()
+    # R41: never spawn combat objectives while the pilot is in the garage.
     _r39_create_garage_hub()
     # Start the browser on HIGH instead of MAX. Real FPS can then
     # automatically downshift further; native CI retains deterministic MAX.
@@ -1075,6 +1077,7 @@ func _start_mission() -> void:
         for i in mission_enemies:
             var drone = DroneScript.new()
             drone.hostile=true
+            drone.add_to_group("nebula_mission_hostiles")
             drone.health=17.0 if mission_index==5 else 9.0
             drone.target=ship
             drone.position=data["position"]+Vector3(float(i-2)*14.0,3.0,float(i%2)*17.0)
@@ -1084,13 +1087,43 @@ func _start_mission() -> void:
             drones.append(drone)
 
 func _complete_mission() -> void:
-    var data: Dictionary = MISSIONS[mission_index]
-    credits+=int(data["reward"])
-    xp+=150+mission_index*65
-    mission_index+=1
-    _show_notice("МИССИЯ ВЫПОЛНЕНА · +"+str(data["reward"])+" CR")
+    # R41: close the active sortie exactly once; do not chain directly to
+    # another combat encounter or leave the player trapped in open flight.
+    if garage_open_r39 or mission_index >= MISSIONS.size():
+        return
+    var completed_index := mission_index
+    var data: Dictionary = MISSIONS[completed_index]
+    var awarded_credits := int(data["reward"])
+    var awarded_xp := 150 + completed_index * 65
+    credits += awarded_credits
+    xp += awarded_xp
+    mission_index += 1
+    var story: Dictionary = CampaignStoryR41Script.briefing(completed_index)
+    r41_last_debrief = {
+        "mission_index": completed_index,
+        "credits": awarded_credits,
+        "xp": awarded_xp,
+        "reveal": str(story.get("reveal", "")),
+    }
+    mission_started = false
+    mission_enemies = 0
+    if is_instance_valid(mission_beacon):
+        mission_beacon.queue_free()
+        mission_beacon = null
+    # Remove only the remaining mission hostiles before the next sortie.
+    # Civilian traffic stays untouched.
+    for actor in drones.duplicate():
+        if is_instance_valid(actor) and actor.is_in_group("nebula_mission_hostiles"):
+            drones.erase(actor)
+            actor.queue_free()
+    ship.set_cruise_assist(false)
+    ship.clear_navigation_target()
+    ship.velocity = Vector3.ZERO
+    ship.global_position = R21_LAUNCH_CANDIDATES[0]
+    _r21_rescue_blocked_spawn()
     _save_progress()
-    _start_mission()
+    _r39_create_garage_hub()
+    _show_notice("МИССИЯ ВЫПОЛНЕНА · +%d CR · +%d XP" % [awarded_credits, awarded_xp])
 
 func _on_drone_destroyed(drone: Node3D) -> void:
     drones.erase(drone)
@@ -1576,7 +1609,7 @@ func _safe_float(value: Variant, fallback: float) -> float:
 func _save_progress() -> void:
     var file:=FileAccess.open(SAVE_PATH,FileAccess.WRITE)
     if file==null:return
-    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15}))
+    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief}))
     file.close()
 
 func _load_progress() -> void:
@@ -1589,6 +1622,17 @@ func _load_progress() -> void:
     mission_index=clampi(int(_safe_float(raw.get("mission",0),0.0)),0,MISSIONS.size())
     credits=clampi(int(_safe_float(raw.get("credits",950),950.0)),0,99999999)
     xp=clampi(int(_safe_float(raw.get("xp",0),0.0)),0,99999999)
+    # Optional additive save field; original v1 save and premium ownership remain intact.
+    var stored_result: Variant = raw.get("r41_last_debrief", {})
+    if typeof(stored_result) == TYPE_DICTIONARY:
+        var result_index: int = int(_safe_float(stored_result.get("mission_index", -1), -1.0))
+        if result_index >= 0 and result_index < MISSIONS.size():
+            r41_last_debrief = {
+                "mission_index": result_index,
+                "credits": clampi(int(_safe_float(stored_result.get("credits", 0), 0.0)), 0, 999999),
+                "xp": clampi(int(_safe_float(stored_result.get("xp", 0), 0.0)), 0, 999999),
+                "reveal": str(CampaignStoryR41Script.briefing(result_index).get("reveal", "")),
+            }
     ship.engine_rank=clampi(int(_safe_float(raw.get("engine_rank",0),0.0)),0,4)
     ship.weapon_rank=clampi(int(_safe_float(raw.get("weapon_rank",0),0.0)),0,4)
     var saved_owned: Variant = raw.get("owned_r15", {})
@@ -1648,6 +1692,8 @@ func _r39_refresh_garage() -> void:
     garage_hub_r39.refresh({
         "credits": credits, "xp": xp, "mission_index": mission_index,
         "missions": MISSIONS, "ship": equipped_r15, "wingmen": wingmen_r15,
+        "story": CampaignStoryR41Script.briefing(mission_index),
+        "last_result": r41_last_debrief,
     })
 
 func _r39_launch_sortie() -> void:
@@ -1665,4 +1711,5 @@ func _r39_launch_sortie() -> void:
     if is_instance_valid(performance_lab_r11):
         performance_lab_r11.visible = true
     r23_cruise_button.text = "▶  АВТОПИЛОТ К ЦЕЛИ"
+    _start_mission()
     _show_notice("ВЫЛЕТ · " + (str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"))
