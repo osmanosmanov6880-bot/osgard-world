@@ -1,0 +1,66 @@
+name: NEBULA public release exact-byte parity
+
+on:
+  workflow_run:
+    workflows: ["Publish REMIX ARENA standalone"]
+    types: [completed]
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/nebula-public-release-parity.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  public-parity:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download the four real public HTTPS assets
+        env:
+          GAME_URL: https://osgard.world/games/remix/arena-v2/nebula-3d
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nebula-public-verified
+          for name in index.html index.js index.wasm index.pck; do
+            curl --fail-with-body --silent --show-error --location --retry 3 \
+              --max-time 120 --header 'Cache-Control: no-cache' \
+              --header 'Accept-Encoding: identity' \
+              "$GAME_URL/$name" -o "/tmp/nebula-public-verified/$name"
+            test -s "/tmp/nebula-public-verified/$name"
+          done
+      - name: Match production allowlist and display exact evidence
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import {createHash} from 'node:crypto';
+          import assert from 'node:assert/strict';
+          const p = JSON.parse(fs.readFileSync('.github/nebula-production-allowlist.json','utf8'));
+          assert.equal(p.schema,'NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1');
+          assert.ok(['R39','R41','R43','R40'].includes(p.approved_variant));
+          if(['R39','R41','R43'].includes(p.approved_variant)){
+            assert.equal(p.release_status,p.approved_variant+'_OWNER_DIRECTED_OVERRIDE');
+            assert.equal(p.approval.physical_device_qa,'NOT_PERFORMED');
+            if(p.approved_variant!=='R39')
+              assert.equal(p.approval.hardware_qa_certified,false);
+          }else{
+            assert.equal(p.release_status,'R40_HARDWARE_QA_APPROVED');
+            assert.equal(p.approval.human_visual_approved,true);
+          }
+          for(const name of ['index.html','index.js','index.wasm','index.pck']){
+            const raw=fs.readFileSync('/tmp/nebula-public-verified/'+name);
+            const hash=createHash('sha1')
+              .update('blob '+raw.length+'\0').update(raw).digest('hex');
+            assert.equal(hash,p.artifacts?.[name],'MISMATCH: '+name+' is stale or not approved');
+            console.log('PUBLIC_RELEASE_BYTE_MATCH',p.approved_variant,name,raw.length,hash);
+          }
+          console.log('NEBULA_PUBLIC_RELEASE_PARITY_PASS variant='+p.approved_variant+
+            ' actual_hardware_qa='+String(p.approval.physical_device_qa||'SEE_APPROVAL'));
+          NODE
