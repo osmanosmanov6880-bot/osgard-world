@@ -16,6 +16,8 @@ static func hull_profile(id: String) -> Dictionary:
 ## are never fulfilled from browser state. Allies assist in real combat.
 signal missile_hit(target: Node3D)
 signal ally_fired(origin: Vector3, endpoint: Vector3)
+## R49: only a real successful missile launch emits this gameplay event.
+signal missile_launched
 var active_ship: String = "ship_scout"
 var active_weapon: String = "weapon_basic"
 var missiles: int = 0
@@ -203,6 +205,7 @@ func launch_missile() -> bool:
         return false
     missiles -= 1
     cooldown = 1.1
+    missile_launched.emit()
     return true
 
 func weapon_damage() -> float:
