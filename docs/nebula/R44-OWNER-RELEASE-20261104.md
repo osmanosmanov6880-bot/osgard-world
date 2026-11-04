@@ -60,3 +60,7 @@ A failed production hash check, SSH disconnect or route check must preserve the 
 - Result: `NEBULA_PUBLIC_RELEASE_PARITY_PASS variant=R44 actual_hardware_qa=NOT_PERFORMED`.
 
 This proves exact release bytes are served publicly. It is **not** proof of correct appearance on an actual iPhone/Android GPU or sustained mobile FPS. Unique silhouettes for NX-12/NX-21 and acts III–V also remain incomplete.
+
+## Monitoring race follow-up
+
+The premature parity race was fixed in [PR #730](https://github.com/osmanosmanov6880-bot/osgard-world/pull/730), merged at `4dc381f66aa03b360bbec85a855b4d295f1a99b9`. The parity workflow now runs automatically **only after a successful** `Publish REMIX ARENA standalone` workflow, or on explicit manual dispatch. The old push-triggered pre-deployment comparison was removed. This changes no game, payments, release hashes or rollback behavior.
