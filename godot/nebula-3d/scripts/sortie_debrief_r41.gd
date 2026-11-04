@@ -144,6 +144,7 @@ func show_result(data: Dictionary) -> void:
     var title: String = str(data.get("title", "ЗАДАНИЕ"))
     var gained_credits: int = maxi(0, int(data.get("reward", 0)))
     var gained_xp: int = maxi(0, int(data.get("xp_gain", 0)))
+    var repair_paid: int = maxi(0, int(data.get("repair_paid", 0)))
     var total_xp: int = maxi(0, int(data.get("total_xp", 0)))
     var total_credits: int = maxi(0, int(data.get("total_credits", 0)))
     var seconds: int = maxi(0, int(data.get("elapsed_seconds", 0)))
@@ -153,7 +154,7 @@ func show_result(data: Dictionary) -> void:
     title_label.text = "МИССИЯ ВЫПОЛНЕНА" if succeeded else "КОРАБЛЬ ПОТЕРЯН"
     title_label.add_theme_color_override("font_color", WHITE if succeeded else GOLD)
     mission_label.text = "%02d  ·  %s" % [number, title]
-    reward_label.text = ("+%d CR   /   +%d XP" % [gained_credits, gained_xp]) if succeeded else "РЕМОНТ  ·  -220 CR"
+    reward_label.text = ("+%d CR   /   +%d XP" % [gained_credits, gained_xp]) if succeeded else ("РЕМОНТ  ·  -%d CR" % repair_paid)
     outcome_label.text = "ВРЕМЯ %02d:%02d   ·   ЦЕЛЕЙ %d   ·   КОРПУС %d%%" % [
         int(seconds / 60), seconds % 60, targets, hull_percent]
     career_label.text = "КАПИТАН УР. %d   ·   %d CR   ·   %d XP" % [
