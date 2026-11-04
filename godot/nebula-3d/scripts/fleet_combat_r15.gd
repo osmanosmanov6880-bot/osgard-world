@@ -75,6 +75,9 @@ func set_loadout(ship_id: String, weapon_id: String, rockets: int,
 func _apply_ship_stats() -> void:
     if not is_instance_valid(player_ship):return
     player_ship.turn_speed = 2.4 if active_ship == "ship_interceptor" else 1.5 if active_ship == "ship_guardian" else 1.9
+    # Keep visible in-flight geometry synchronized with real owned/equipped hull.
+    if player_ship.has_method("set_hull_variant"):
+        player_ship.set_hull_variant(active_ship)
 
 func _process(delta: float) -> void:
     if not is_instance_valid(player_ship):return
