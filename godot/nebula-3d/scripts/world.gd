@@ -1740,6 +1740,8 @@ func _r39_create_garage_hub() -> void:
     garage_hub_r39.wingman_toggled_r47.connect(_r47_toggle_owned_wingman)
     garage_open_r39 = true
     r47_launch_camera_time = 0.0
+    if is_instance_valid(fleet_r15):
+        fleet_r15.combat_active = false
     ship.controls_locked = true
     ship.velocity = Vector3.ZERO
     ship.set_cruise_assist(false)
@@ -1846,6 +1848,8 @@ func _r39_launch_sortie() -> void:
     if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
         return
     garage_open_r39 = false
+    if is_instance_valid(fleet_r15):
+        fleet_r15.combat_active = true
     garage_hub_r39.queue_free()
     garage_hub_r39 = null
     var captain: Dictionary = CaptainRosterR42Script.info(selected_captain_r42)
