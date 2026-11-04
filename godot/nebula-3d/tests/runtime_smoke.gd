@@ -1595,6 +1595,17 @@ func _run() -> void:
         is_instance_valid(world.r49_terminal_button) and
         world.MISSIONS[10]["title"] == "ТЕНИ ПОРТА",
         "R49 must instantiate real terminal mission in the live world"):return
+    # R49 regression: autopilot must fly to current terminal, not legacy port center.
+    var real_goal_r49: Vector3 = world.r49_investigation.objective_position()
+    world.ship.set_cruise_assist(false)
+    world._r23_toggle_cruise()
+    if not check(world.ship.cruise_assist and
+        world.ship.navigation_target_valid and
+        world.ship.navigation_target.distance_to(real_goal_r49) < 0.1 and
+        world.ship.navigation_target.distance_to(
+            world.MISSIONS[10]["position"]) > 30.0,
+        "R49 autopilot must select the active terminal, never old mission center"):return
+    world._r23_toggle_cruise()
     world.ship.global_position = world.MISSIONS[10]["position"]
     world._mission_tick(0.25)
     if not check(world.mission_index == 10 and world.credits == r49_balance,
