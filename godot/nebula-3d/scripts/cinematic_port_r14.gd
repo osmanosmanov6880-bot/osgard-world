@@ -323,44 +323,40 @@ func _make_command_hangar() -> void:
     command_hangar.name = "R40_AuroraLaunchHangar"
     command_hangar.position = Vector3(0, 0, 100)
     add_child(command_hangar)
-    var floor := _block(command_hangar, "R40_HangarDeck", Vector3(0, 23.8, 0),
-        Vector3(92, 1.6, 124), graphite, true)
-    floor.extra_cull_margin = 180.0
-    _block(command_hangar, "R40_LandingPadCore", Vector3(0, 30.4, 0),
-        Vector3(31, 0.9, 62), ceramic, true)
+    var armor_parts: Array[Transform3D] = []
+    var titanium_parts: Array[Transform3D] = []
+    var ceramic_parts: Array[Transform3D] = []
+    var trim_parts: Array[Transform3D] = []
+    var glass_parts: Array[Transform3D] = []
+    var worklight_parts: Array[Transform3D] = []
+    armor_parts.append(_transform(Vector3(0, 23.8, 0), Vector3(92, 1.6, 124)))
+    armor_parts.append(_transform(Vector3(0, 66.2, 1.0), Vector3(90, 2.2, 112)))
+    armor_parts.append(_transform(Vector3(0, 44.0, 57.0), Vector3(90.0, 40.0, 3.0)))
+    titanium_parts.append(_transform(Vector3(0, 30.4, 0), Vector3(31, 0.9, 62)))
+    titanium_parts.append(_transform(Vector3(0, 44.0, -56.5), Vector3(90.0, 2.5, 3.0)))
     for side in [-1.0, 1.0]:
-        _block(command_hangar, "R40_LandingRail", Vector3(side * 11.2, 31.0, 0),
-            Vector3(1.1, 0.25, 55), trim, true)
-        _block(command_hangar, "R40_AmberDeckStripe", Vector3(side * 16.0, 24.8, 0),
-            Vector3(0.42, 0.08, 104), worklamp, true)
-        _block(command_hangar, "R40_ArmoredSideWall", Vector3(side * 45.0, 44.0, 1.0),
-            Vector3(3.0, 40.0, 112.0), graphite, true)
-        _block(command_hangar, "R40_CyanServiceSpine", Vector3(side * 42.9, 47.0, 6.0),
-            Vector3(0.45, 1.0, 92.0), glass, true)
+        worklight_parts.append(_transform(Vector3(side * 16.0, 24.8, 0), Vector3(0.42, 0.08, 104)))
+        armor_parts.append(_transform(Vector3(side * 45.0, 44.0, 1.0), Vector3(3.0, 40.0, 112.0)))
+        glass_parts.append(_transform(Vector3(side * 42.9, 47.0, 6.0), Vector3(0.45, 1.0, 92.0)))
         for bay in range(3):
             var z: float = -27.0 + float(bay) * 27.0
-            _block(command_hangar, "R40_MaintenanceCradle", Vector3(side * 34.0, 30.2, z),
-                Vector3(10.5, 0.9, 18.0), titanium, true)
-            _block(command_hangar, "R40_CradleLight", Vector3(side * 30.3, 31.0, z),
-                Vector3(0.30, 0.12, 15.0), worklamp, true)
+            ceramic_parts.append(_transform(Vector3(side * 34.0, 30.2, z), Vector3(10.5, 0.9, 18.0)))
+            worklight_parts.append(_transform(Vector3(side * 30.3, 31.0, z), Vector3(0.30, 0.12, 15.0)))
         for rib in range(6):
             var z: float = -46.0 + float(rib) * 18.0
-            _block(command_hangar, "R40_CeilingRib", Vector3(side * 36.0, 64.0, z),
-                Vector3(1.2, 1.2, 3.4), titanium, true)
-    _block(command_hangar, "R40_ArmoredRoof", Vector3(0, 66.2, 1.0),
-        Vector3(90.0, 2.2, 112.0), graphite, true)
+            titanium_parts.append(_transform(Vector3(side * 36.0, 64.0, z), Vector3(1.2, 1.2, 3.4)))
+            worklight_parts.append(_transform(Vector3(side * 22.0, 63.8, z), Vector3(9.5, 0.20, 0.40)))
+    for side in [-1.0, 1.0]:
+        trim_parts.append(_transform(Vector3(side * 11.2, 31.0, 0), Vector3(1.1, 0.25, 55)))
     for beam in range(5):
         var z: float = -36.0 + float(beam) * 18.0
-        _block(command_hangar, "R40_RoofTruss", Vector3(0, 64.6, z),
-            Vector3(86.0, 1.1, 1.4), titanium, true)
-        for side in [-1.0, 1.0]:
-            _block(command_hangar, "R40_OverheadLight", Vector3(side * 22.0, 63.8, z),
-                Vector3(9.5, 0.20, 0.40), worklamp, true)
-    _block(command_hangar, "R40_RearBulkhead", Vector3(0, 44.0, 57.0),
-        Vector3(90.0, 40.0, 3.0), graphite, true)
-    # Framed translucent doors seal the vista until sortie; they slide clear on launch.
-    _block(command_hangar, "R40_BayDoorFrame", Vector3(0, 44.0, -56.5),
-        Vector3(90.0, 2.5, 3.0), titanium, true)
+        titanium_parts.append(_transform(Vector3(0, 64.6, z), Vector3(86.0, 1.1, 1.4)))
+    _gpu_batch(command_hangar, "R40_BatchedHangarArmor", armor_parts, graphite)
+    _gpu_batch(command_hangar, "R40_BatchedMachinedTrusses", titanium_parts, titanium)
+    _gpu_batch(command_hangar, "R40_BatchedServiceCradles", ceramic_parts, ceramic)
+    _gpu_batch(command_hangar, "R40_BatchedFlightRails", trim_parts, trim)
+    _gpu_batch(command_hangar, "R40_BatchedCyanSpines", glass_parts, glass)
+    _gpu_batch(command_hangar, "R40_BatchedGuideLights", worklight_parts, worklamp)
     hangar_door_left = _block(command_hangar, "R40_LeftSlidingBayDoor",
         Vector3(-12.0, 44.0, -56.5), Vector3(24.0, 37.0, 1.0), glass, true)
     hangar_door_right = _block(command_hangar, "R40_RightSlidingBayDoor",
