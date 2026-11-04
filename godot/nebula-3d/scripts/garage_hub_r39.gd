@@ -31,6 +31,10 @@ var captain_bonus_label: Label
 var captain_choice_buttons: Dictionary = {}
 var ship_choice_buttons_r45: Dictionary = {}
 var ship_ownership_hint_r45: Label
+var comparison_toggle_r46: Button
+var comparison_detail_r46: Label
+var readiness_label_r46: Label
+var comparison_open_r46: bool = false
 ## R44 separate 3D dock, actual in-game NX imported geometry and orbit controls.
 var ship_preview_r44
 var preview_frame_r44: PanelContainer
@@ -204,6 +208,20 @@ func _build() -> void:
         ship_choice_buttons_r45[hull_id] = selector
     ship_ownership_hint_r45 = _label(ship_stack,
         "Недоступную технику можно открыть в магазине.", 11, MUTED)
+    readiness_label_r46 = _label(ship_stack, "ПОДГОТОВКА · ОРУЖИЕ / РАКЕТЫ / ВЕДОМЫЕ", 12, CYAN)
+    comparison_toggle_r46 = Button.new()
+    comparison_toggle_r46.name = "R46_CompareRealFleet"
+    comparison_toggle_r46.text = "СРАВНИТЬ ТЕХНИКУ  ▾"
+    comparison_toggle_r46.custom_minimum_size = Vector2(148, 44)
+    comparison_toggle_r46.add_theme_font_override("font", ui_font)
+    comparison_toggle_r46.add_theme_font_size_override("font_size", 12)
+    comparison_toggle_r46.add_theme_color_override("font_color", CYAN)
+    comparison_toggle_r46.add_theme_stylebox_override("normal", _panel_style(PANEL))
+    comparison_toggle_r46.pressed.connect(_r46_toggle_comparison)
+    ship_stack.add_child(comparison_toggle_r46)
+    comparison_detail_r46 = _label(ship_stack, "", 12, MUTED)
+    comparison_detail_r46.name = "R46_RealShipStatistics"
+    comparison_detail_r46.visible = false
 
     var captain_card := PanelContainer.new()
     captain_card.name = "R39_CaptainCard"
@@ -306,6 +324,13 @@ func _on_turn_preview_r44(direction: int) -> void:
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.rotate_step(direction)
 
+func _r46_toggle_comparison() -> void:
+    comparison_open_r46 = not comparison_open_r46
+    comparison_detail_r46.visible = comparison_open_r46
+    comparison_toggle_r46.text = (
+        "СКРЫТЬ СРАВНЕНИЕ  ▴" if comparison_open_r46 else
+        "СРАВНИТЬ ТЕХНИКУ  ▾")
+
 func _on_r45_ship_pressed(id: String) -> void:
     ship_selected_r45.emit(id)
 
@@ -356,6 +381,27 @@ func refresh(data: Dictionary) -> void:
             ("Выбрать принадлежащий корабль" if permitted else
             "Сначала приобрести в магазине"))
     ship_ownership_hint_r45.text = "Три корпуса с разными 3D-силуэтами · выбор без доплаты"
+    var specs: Dictionary = data.get("ship_profiles", {})
+    var compare_rows := PackedStringArray()
+    for hull_id in ["ship_scout", "ship_interceptor", "ship_guardian"]:
+        var spec: Dictionary = specs.get(hull_id, {})
+        var model_name: String = str({
+            "ship_scout":"NX-08", "ship_interceptor":"NX-12",
+            "ship_guardian":"NX-21"}.get(hull_id, "NX"))
+        var access: String = "ДОСТУПЕН" if bool(owned_hulls.get(
+            hull_id, hull_id == "ship_scout")) else "ЗАКРЫТ"
+        compare_rows.append("%s · %s\n  КОРПУС %d  /  ЩИТ %d  /  ПОВОРОТ %.1f рад/с" % [
+            model_name, access, int(spec.get("hull", 0)),
+            int(spec.get("shield", 0)), float(spec.get("turn_speed", 0.0))])
+    comparison_detail_r46.text = "\n".join(compare_rows)
+    comparison_detail_r46.visible = comparison_open_r46
+    var equipment: Dictionary = data.get("flight_equipment", {})
+    readiness_label_r46.text = "БОЕГОТОВНОСТЬ · %s · УРОН %.1f\nРАКЕТЫ %d  /  ВЕДОМЫЕ %d ИЗ 2  /  ДВИГАТЕЛЬ %d" % [
+        str(equipment.get("weapon_name", "СТАНДАРТ")),
+        float(equipment.get("weapon_damage", 4.0)),
+        int(equipment.get("rockets", 0)),
+        int(equipment.get("wingmen", 0)),
+        int(equipment.get("engine_rank", 0))]
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.set_ship_type(ship_id)
     if is_instance_valid(preview_title_r44):
