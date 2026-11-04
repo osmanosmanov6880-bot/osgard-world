@@ -30,19 +30,20 @@ const PremiumHUDR21Script = preload("res://scripts/premium_hud_r21.gd")
 const GarageHubR39Script = preload("res://scripts/garage_hub_r39.gd")
 const CampaignStoryR41Script = preload("res://scripts/campaign_story_r41.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
+const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
 const SECTOR_POSITIONS = [Vector3(0,0,0),Vector3(610,0,-330),Vector3(1070,0,330),Vector3(-500,0,670),Vector3(480,0,940),Vector3(1250,0,-730)]
 const MISSIONS = [
     {"title":"ПЕРВЫЙ ПОЛЁТ","hint":"Ты пилот-наёмник. Достигни золотого маяка Авроры: город просит защиты. W — газ, кнопка — автопилот.","position":Vector3(210,18,-270),"type":"reach","reward":350},
-    {"title":"НЕОНОВЫЙ КВАРТАЛ","hint":"Проложи безопасный маршрут эвакуации через Неоновый квартал; держи маяк в поле зрения.","position":Vector3(610,20,-330),"type":"reach","reward":450},
+    {"title":"НЕОНОВЫЙ КВАРТАЛ","hint":"Сначала найди гражданских у сигнала бедствия, затем доставь их в убежище. На каждой точке удерживай позицию.","position":Vector3(610,20,-330),"type":"evacuation","reward":450},
     {"title":"СИГНАЛ ПЕРЕХВАТА","hint":"Аврора под огнём: наведи прицел и уничтожь 3 дрона Хелиос. Осталось видно в HUD.","position":Vector3(1070,19,330),"type":"combat","reward":900},
     {"title":"ВОЗВРАЩЕНИЕ В ПОРТ","hint":"Вернись в порт Аврора с данными обломков: знак Хелиос связывает нападение с корпорацией.","position":Vector3(0,16,0),"type":"reach","reward":600},
-    {"title":"РАЗЛОМ","hint":"Исследуй Разлом и найди источник сигнала, который вывел дроны на город.","position":Vector3(480,23,940),"type":"reach","reward":1300},
+    {"title":"РАЗЛОМ","hint":"Просканируй три разные точки Разлома: приблизься к голубому маркеру и удерживай расстояние до завершения записи.","position":Vector3(480,23,940),"type":"scan","reward":1300},
     {"title":"НЕКСУС","hint":"Перехвати эскадрилью Хелиос: уничтожь 5 истребителей и добудь ключ к заказчику.","position":Vector3(1250,26,-730),"type":"combat","reward":2100},
     {"title":"ПРОТОКОЛ ХЕЛИОС","hint":"Найди терминал Хелиос. Его журнал раскроет, кто оплатил нападение на Аврору.","position":Vector3(690,21,-400),"type":"reach","reward":1700},
-    {"title":"ПОХИЩЕННЫЙ КОНВОЙ","hint":"Освободи конвой эвакуации: уничтожь охрану Хелиос, пока корабли не вышли из строя.","position":Vector3(-500,20,670),"type":"combat","reward":2400},
+    {"title":"ПОХИЩЕННЫЙ КОНВОЙ","hint":"Сопроводи движущийся гражданский корабль до точки эвакуации. Держись рядом и уничтожай дроны, пока они не разрушили его.","position":Vector3(-500,20,670),"type":"escort","reward":2400},
     {"title":"СЕРДЦЕ РАЗЛОМА","hint":"Доставь стабилизатор в Разлом: без него атака повторится и город не удержать.","position":Vector3(520,24,1010),"type":"reach","reward":2600},
     {"title":"ПОСЛЕДНИЙ СИГНАЛ","hint":"Останови командование Хелиос у Нексуса и предъяви доказательства заговора.","position":Vector3(1290,28,-780),"type":"combat","reward":4300}
 ]
@@ -57,6 +58,9 @@ var credits: int = 950
 var xp: int = 0
 var mission_enemies: int = 0
 var mission_started: bool = false
+var mission_objectives_r48: Node3D
+var r48_escort_enemies_spawned: bool = false
+var r48_last_goal: Vector3 = Vector3.ZERO
 var shot_flash: float = 0.0
 var hud_mission: Label
 var hud_status: Label
@@ -967,7 +971,7 @@ func _process(delta: float) -> void:
             r25_telemetry_period = fmod(r25_telemetry_period, 0.20)
             _r25_emit_browser_flight_state()
     r21_launch_protection = maxf(0.0, r21_launch_protection - delta)
-    if not garage_open_r39 and world_pulse > 92.0 and mission_index > 0 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
+    if not garage_open_r39 and world_pulse > 92.0 and mission_index > 1 and mission_index != 7 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
         world_pulse = 0.0
         _spawn_pirate_ambush()
     _r16_update_beam_pool(delta)
@@ -1019,7 +1023,10 @@ func _process(delta: float) -> void:
     if is_instance_valid(r21_dashboard):
         r21_dashboard.show_objective = mission_index < MISSIONS.size()
         if r21_dashboard.show_objective:
-            r21_dashboard.objective = MISSIONS[mission_index]["position"]
+            r21_dashboard.objective = (
+                mission_objectives_r48.objective_position()
+                if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active
+                else MISSIONS[mission_index]["position"])
     if garage_open_r39:
         # The dock is a safe room, not a place for pirates to farm the player.
         ship.shield = fleet_r15.ship_shield_cap()
@@ -1047,7 +1054,10 @@ func _process(delta: float) -> void:
         radar.player_forward = -ship.global_transform.basis.z
         radar.has_objective = mission_index < MISSIONS.size()
         if radar.has_objective:
-            radar.objective = MISSIONS[mission_index]["position"]
+            radar.objective = (
+                mission_objectives_r48.objective_position()
+                if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active
+                else MISSIONS[mission_index]["position"])
         radar.targets.clear()
         for n in drones:
             if is_instance_valid(n) and n.hostile and n.global_position.distance_squared_to(ship.global_position) < 211600.0:
@@ -1057,18 +1067,66 @@ func _process(delta: float) -> void:
         world_timer=0.0
         _save_progress()
 
-func _mission_tick(_dt: float) -> void:
-    if garage_open_r39 or mission_index>=MISSIONS.size():return
+func _mission_tick(dt: float) -> void:
+    if garage_open_r39 or mission_index >= MISSIONS.size():
+        return
     var mission: Dictionary = MISSIONS[mission_index]
     var target: Vector3 = mission["position"]
-    if mission["type"]=="reach" and ship.global_position.distance_to(target)<47.0:
+    if is_instance_valid(mission_objectives_r48):
+        var outcome: String = mission_objectives_r48.step(dt, ship.global_position)
+        if mission["type"] == "escort" and (
+                mission_objectives_r48.convoy_started and
+                not r48_escort_enemies_spawned):
+            _r48_spawn_convoy_threats()
+        if outcome == "failed":
+            _r43_fail_sortie("Конвой уничтожен. Гражданские не добрались до убежища. Повтори защиту.")
+            return
+        if outcome == "success":
+            _complete_mission()
+            return
+        var next_goal: Vector3 = mission_objectives_r48.objective_position()
+        if r48_last_goal.distance_to(next_goal) > 5.0:
+            r48_last_goal = next_goal
+            ship.set_navigation_target(next_goal)
+        if is_instance_valid(mission_beacon):
+            mission_beacon.global_position = next_goal
+        return
+    if mission["type"] == "reach" and ship.global_position.distance_to(target) < 47.0:
         _complete_mission()
-    elif mission["type"]=="combat" and mission_started and mission_enemies<=0:
+    elif mission["type"] == "combat" and mission_started and mission_enemies <= 0:
         _complete_mission()
+
+func _r48_spawn_convoy_threats() -> void:
+    if r48_escort_enemies_spawned or garage_open_r39 or (
+            not is_instance_valid(mission_objectives_r48)) or (
+            mission_index != 7) or (
+            not mission_objectives_r48.is_active_convoy()):
+        return
+    r48_escort_enemies_spawned = true
+    mission_enemies = 3
+    for i in mission_enemies:
+        var hostile = DroneScript.new()
+        hostile.hostile = true
+        hostile.health = 14.0
+        hostile.speed = 23.0
+        hostile.activation_distance = 350.0
+        hostile.target = mission_objectives_r48
+        hostile.add_to_group("nebula_mission_hostiles")
+        hostile.global_position = mission_objectives_r48.global_position + (
+            Vector3(float(i - 1) * 42.0, 9.0, -69.0))
+        hostile.destroyed.connect(_on_mission_drone_destroyed)
+        hostile.fired.connect(_on_drone_fire)
+        add_child(hostile)
+        drones.append(hostile)
+    _show_notice("КОНВОЙ ПОД АТАКОЙ · ЗАЩИТИ ГРАЖДАНСКИХ")
 
 func _start_mission() -> void:
     mission_started = false
     r43_pending_bounty = 0
+    r48_escort_enemies_spawned = false
+    if is_instance_valid(mission_objectives_r48):
+        mission_objectives_r48.queue_free()
+        mission_objectives_r48 = null
     if is_instance_valid(ship):
         if mission_index < MISSIONS.size():
             ship.set_navigation_target(MISSIONS[mission_index]["position"])
@@ -1080,9 +1138,17 @@ func _start_mission() -> void:
         _show_notice("СЮЖЕТ ЗАВЕРШЁН · СВОБОДНЫЙ ПОЛЁТ")
         return
     var data: Dictionary = MISSIONS[mission_index]
+    if str(data["type"]) in ["scan", "escort", "evacuation"]:
+        mission_objectives_r48 = MissionObjectivesR48Script.new()
+        add_child(mission_objectives_r48)
+        mission_objectives_r48.configure(str(data["type"]), data["position"])
+        mission_started = true
+        r48_last_goal = mission_objectives_r48.objective_position()
+        ship.set_navigation_target(r48_last_goal)
     var beacon := Node3D.new()
     beacon.name = "MissionBeacon"
-    beacon.position = data["position"]
+    beacon.position = (mission_objectives_r48.objective_position()
+        if is_instance_valid(mission_objectives_r48) else data["position"])
     var sphere := MeshInstance3D.new()
     var mesh := SphereMesh.new()
     mesh.radius=4.8
@@ -1135,6 +1201,10 @@ func _complete_mission() -> void:
     mission_started = false
     mission_enemies = 0
     r43_pending_bounty = 0
+    if is_instance_valid(mission_objectives_r48):
+        mission_objectives_r48.queue_free()
+        mission_objectives_r48 = null
+    r48_escort_enemies_spawned = false
     if is_instance_valid(mission_beacon):
         mission_beacon.queue_free()
         mission_beacon = null
@@ -1153,7 +1223,7 @@ func _complete_mission() -> void:
     _r39_create_garage_hub()
     _show_notice("МИССИЯ ВЫПОЛНЕНА · +%d CR · +%d XP" % [awarded_credits, awarded_xp])
 
-func _r43_fail_sortie() -> void:
+func _r43_fail_sortie(reason: String = "") -> void:
     if garage_open_r39 or mission_index >= MISSIONS.size():
         return
     # Mission stays available for retry. Unbanked enemy bounties are discarded,
@@ -1163,11 +1233,16 @@ func _r43_fail_sortie() -> void:
         "mission_index": mission_index,
         "credits": 0,
         "xp": 0,
-        "reveal": "Корпус уничтожен. Корабль отремонтирован в Авроре — миссию можно повторить.",
+        "reveal": reason if not reason.is_empty() else
+            "Корпус уничтожен. Корабль отремонтирован в Авроре — миссию можно повторить.",
     }
     mission_started = false
     mission_enemies = 0
     r43_pending_bounty = 0
+    if is_instance_valid(mission_objectives_r48):
+        mission_objectives_r48.queue_free()
+        mission_objectives_r48 = null
+    r48_escort_enemies_spawned = false
     if is_instance_valid(mission_beacon):
         mission_beacon.queue_free()
         mission_beacon = null
@@ -1185,7 +1260,8 @@ func _r43_fail_sortie() -> void:
     ship.boost = 100.0
     _save_progress()
     _r39_create_garage_hub()
-    _show_notice("КОРАБЛЬ УНИЧТОЖЕН · ВОЗВРАТ В АНГАР · ПОВТОРИТЬ МИССИЮ")
+    _show_notice("ПРОВАЛ МИССИИ · " + reason if not reason.is_empty() else
+        "КОРАБЛЬ УНИЧТОЖЕН · ВОЗВРАТ В АНГАР · ПОВТОРИТЬ МИССИЮ")
 
 func _on_drone_destroyed(drone: Node3D) -> void:
     drones.erase(drone)
@@ -1201,6 +1277,12 @@ func _on_mission_drone_destroyed(drone: Node3D) -> void:
 func _on_drone_fire(from: Vector3, to: Vector3) -> void:
     if garage_open_r39 or not is_instance_valid(ship):return
     _laser_effect_colored(from,to,Color(1.0,0.26,0.39))
+    if is_instance_valid(mission_objectives_r48) and (
+            mission_objectives_r48.is_active_convoy()) and (
+            to.distance_to(mission_objectives_r48.global_position) < 13.0) and (
+            from.distance_to(mission_objectives_r48.global_position) < 250.0):
+        mission_objectives_r48.take_damage(8.0)
+        return
     if from.distance_to(ship.global_position)<250.0 and ship.global_position.distance_to(to)<7.0:
         # The approved first-flight mission must be playable before pirates
         # drain the starting shield while the player learns the controls.
