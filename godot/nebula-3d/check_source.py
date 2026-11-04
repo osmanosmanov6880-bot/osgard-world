@@ -431,6 +431,16 @@ require(
 )
 require("scripts/architectural_detail_r4.gd", "func build(")
 
+garage = require(
+    "scripts/garage_hub_r39.gd",
+    "R39_GarageRoot", "R39_CaptainCard", "R39_MissionCard",
+    "R39_SortieButton", "func _layout_hub()", "func refresh(data: Dictionary)",
+)
+assert "GarageHubR39Script" in world
+assert "func _r39_launch_sortie()" in world
+assert "garage_hub_r39.visible = false" in world
+assert "state[\"garage_sortie_x\"]" in world
+
 require("scripts/drone.gd", "extends")
 require("scripts/radar.gd", "extends")
 smoke = require(
@@ -816,4 +826,9 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
+assert "world.store_r15.close()" in smoke
+assert "R39 campaign must open in a locked garage hub" in smoke
+assert "garage sortie button unlocks real flight" in r25_browser
+assert "mobile garage sortie touch unlocks flight" in r31_mobile
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")

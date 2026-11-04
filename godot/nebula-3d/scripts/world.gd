@@ -27,6 +27,7 @@ const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const PremiumFulfillmentR15Script = preload("res://scripts/premium_fulfillment_r15.gd")
 const MobileControlsR21Script = preload("res://scripts/mobile_controls_r21.gd")
 const PremiumHUDR21Script = preload("res://scripts/premium_hud_r21.gd")
+const GarageHubR39Script = preload("res://scripts/garage_hub_r39.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -125,6 +126,8 @@ var r21_safe_spawn: Vector3 = Vector3(0, 34, 100)
 var r21_camera_obstructions: int = 0
 var r21_touch
 var r21_dashboard
+var garage_hub_r39
+var garage_open_r39: bool = false
 var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
 var r21_mobile_enabled: bool = false
@@ -181,6 +184,15 @@ func _r25_emit_browser_flight_state() -> void:
         "quality": graphics_quality,
         "samples": r25_telemetry_samples
     }
+    if garage_open_r39 and is_instance_valid(garage_hub_r39):
+        var sortie_rect: Rect2 = garage_hub_r39.launch_button.get_global_rect()
+        var canvas_size: Vector2 = get_viewport().get_visible_rect().size
+        if r31_touch_web and r31_mobile_css_size.x > 0.0:
+            canvas_size = Vector2(r31_mobile_css_size)
+        state["garage_sortie_x"] = sortie_rect.position.x + sortie_rect.size.x * 0.5
+        state["garage_sortie_y"] = sortie_rect.position.y + sortie_rect.size.y * 0.5
+        state["garage_view_w"] = canvas_size.x
+        state["garage_view_h"] = canvas_size.y
     if r31_mobile_qa_enabled and is_instance_valid(r21_touch):
         # The browser test must touch the actual on-screen button, not set
         # ship velocity or inject an engine-side fake input.
@@ -380,6 +392,7 @@ func _ready() -> void:
     _r21_rescue_blocked_spawn()
     _r15_apply_loadout()
     _start_mission()
+    _r39_create_garage_hub()
     # Start the browser on HIGH instead of MAX. Real FPS can then
     # automatically downshift further; native CI retains deterministic MAX.
     if OS.has_feature("web"):
@@ -708,6 +721,9 @@ func _r21_rescue_blocked_spawn() -> void:
     r21_spawn_relocations += 1
 
 func _r21_toggle_hangar() -> void:
+    if garage_open_r39:
+        _r39_open_shop()
+        return
     if not is_instance_valid(store_r15):
         return
     if store_r15.visible:
@@ -722,7 +738,7 @@ func _r21_toggle_hangar() -> void:
         _show_notice("АНГАР ДОСТУПЕН ТОЛЬКО В ПОРТУ АВРОРА")
 
 func _r23_toggle_cruise() -> void:
-    if not is_instance_valid(ship):
+    if garage_open_r39 or not is_instance_valid(ship):
         return
     if is_instance_valid(store_r15) and store_r15.visible:
         return
@@ -738,6 +754,8 @@ func _r23_toggle_cruise() -> void:
         _show_notice("АВТОТЯГА ОТКЛЮЧЕНА · W ДЛЯ ПОЛЁТА")
 
 func _r21_launch_missile() -> void:
+    if garage_open_r39:
+        return
     if is_instance_valid(store_r15) and store_r15.visible:
         return
     if fleet_r15.launch_missile():
@@ -1013,7 +1031,7 @@ func _process(delta: float) -> void:
         _save_progress()
 
 func _mission_tick(_dt: float) -> void:
-    if mission_index>=MISSIONS.size():return
+    if garage_open_r39 or mission_index>=MISSIONS.size():return
     var mission: Dictionary = MISSIONS[mission_index]
     var target: Vector3 = mission["position"]
     if mission["type"]=="reach" and ship.global_position.distance_to(target)<47.0:
@@ -1111,6 +1129,8 @@ func _spawn_pirate_ambush() -> void:
     _show_notice("СОБЫТИЕ В МИРЕ · ПИРАТСКАЯ ЭСКАДРИЛЬЯ")
 
 func _on_ship_fire(origin: Vector3, direction: Vector3) -> void:
+    if garage_open_r39:
+        return
     var endpoint: Vector3 = origin+direction*180.0
     var best_distance: float = 180.0
     var best
@@ -1194,6 +1214,9 @@ func _show_notice(message: String) -> void:
     notice_timer=3.3
 
 func _update_hud() -> void:
+    if garage_open_r39:
+        _r39_refresh_garage()
+        return
     if not is_instance_valid(hud_status):
         return
     var resource_line: String = "КРЕДИТЫ  %d     XP  %d     ЩИТ  %d%%     КОРПУС  %d%%" % [
@@ -1275,6 +1298,11 @@ func _fit_hud() -> void:
             r21_touch.r35_safe_insets, rect)
 
 func _unhandled_key_input(event: InputEvent) -> void:
+    if garage_open_r39 and event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == KEY_ESCAPE or event.keycode == KEY_H:
+            _r39_launch_sortie()
+            get_viewport().set_input_as_handled()
+        return
     if event is InputEventKey and event.pressed and not event.echo:
         if event.keycode==KEY_F5:
             _save_progress()
@@ -1430,6 +1458,11 @@ func _upgrade_docked(slot: int) -> void:
     _show_notice("АНГАР · УЛУЧШЕНИЕ УСТАНОВЛЕНО")
 
 func _r16_hangar_closed() -> void:
+    if garage_open_r39:
+        if is_instance_valid(garage_hub_r39):
+            garage_hub_r39.visible = true
+            _r39_refresh_garage()
+        return
     if is_instance_valid(ship):
         ship.controls_locked = false
     if is_instance_valid(r21_touch):
@@ -1580,3 +1613,56 @@ func _load_progress() -> void:
     ship.global_position=Vector3(clampf(_safe_float(raw.get("player_x",0),0.0),-1700,1700),clampf(_safe_float(raw.get("player_y",19),19.0),4,160),clampf(_safe_float(raw.get("player_z",78),78.0),-1700,1700))
 
 # Godot 4.7 source contract: procedural skyline, mission radar, enemy weapons, harbor upgrades.
+
+## R39: Players enter the campaign through a command hub, not live combat.
+func _r39_create_garage_hub() -> void:
+    garage_hub_r39 = GarageHubR39Script.new()
+    garage_hub_r39.name = "R39_GarageCommandHub"
+    hud_canvas.add_child(garage_hub_r39)
+    garage_hub_r39.sortie_requested.connect(_r39_launch_sortie)
+    garage_hub_r39.shop_requested.connect(_r39_open_shop)
+    garage_open_r39 = true
+    ship.controls_locked = true
+    ship.velocity = Vector3.ZERO
+    ship.set_cruise_assist(false)
+    if is_instance_valid(r21_touch):
+        r21_touch.set_shop_open(true)
+    if is_instance_valid(r21_dashboard):
+        r21_dashboard.visible = false
+    if is_instance_valid(performance_lab_r11):
+        performance_lab_r11.visible = false
+    _r39_refresh_garage()
+
+func _r39_open_shop() -> void:
+    if not garage_open_r39 or not is_instance_valid(store_r15):
+        return
+    if is_instance_valid(garage_hub_r39):
+        garage_hub_r39.visible = false
+    store_r15.open(credits, owned_r15, equipped_r15)
+    if is_instance_valid(r21_touch):
+        r21_touch.set_shop_open(true)
+
+func _r39_refresh_garage() -> void:
+    if not is_instance_valid(garage_hub_r39):
+        return
+    garage_hub_r39.refresh({
+        "credits": credits, "xp": xp, "mission_index": mission_index,
+        "missions": MISSIONS, "ship": equipped_r15, "wingmen": wingmen_r15,
+    })
+
+func _r39_launch_sortie() -> void:
+    if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
+        return
+    garage_open_r39 = false
+    garage_hub_r39.queue_free()
+    garage_hub_r39 = null
+    ship.controls_locked = false
+    ship.velocity = Vector3.ZERO
+    if is_instance_valid(r21_touch):
+        r21_touch.set_shop_open(false)
+    if is_instance_valid(r21_dashboard):
+        r21_dashboard.visible = true
+    if is_instance_valid(performance_lab_r11):
+        performance_lab_r11.visible = true
+    r23_cruise_button.text = "▶  АВТОПИЛОТ К ЦЕЛИ"
+    _show_notice("ВЫЛЕТ · " + (str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"))
