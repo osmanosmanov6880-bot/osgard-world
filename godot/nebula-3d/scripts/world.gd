@@ -132,6 +132,7 @@ var garage_hub_r39
 var garage_open_r39: bool = false
 var r41_last_debrief: Dictionary = {}
 var selected_captain_r42: String = "ada"
+var r43_pending_bounty: int = 0
 var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
 var r21_mobile_enabled: bool = false
@@ -996,6 +997,11 @@ func _process(delta: float) -> void:
         Vector3.UP * 1.2, Vector3.UP)
     chase_camera.fov = lerpf(chase_camera.fov,
         65.0 + minf(6.0, speed * 0.060), 1.0 - exp(-1.8 * delta))
+    # A destroyed player should get an explicit failed sortie, never a hidden
+    # teleport and lost 220 CR while the mission keeps running.
+    if not garage_open_r39 and ship.hull <= 0.0 and mission_index < MISSIONS.size():
+        _r43_fail_sortie()
+        return
     _mission_tick(delta)
     if is_instance_valid(r21_dashboard):
         r21_dashboard.show_objective = mission_index < MISSIONS.size()
@@ -1045,6 +1051,7 @@ func _mission_tick(_dt: float) -> void:
 
 func _start_mission() -> void:
     mission_started = false
+    r43_pending_bounty = 0
     if is_instance_valid(ship):
         if mission_index < MISSIONS.size():
             ship.set_navigation_target(MISSIONS[mission_index]["position"])
@@ -1095,13 +1102,14 @@ func _complete_mission() -> void:
         return
     var completed_index := mission_index
     var data: Dictionary = MISSIONS[completed_index]
-    var awarded_credits: int = CaptainRosterR42Script.reward(int(data["reward"]), selected_captain_r42)
+    var awarded_credits: int = CaptainRosterR42Script.reward(int(data["reward"]), selected_captain_r42) + r43_pending_bounty
     var awarded_xp := 150 + completed_index * 65
     credits += awarded_credits
     xp += awarded_xp
     mission_index += 1
     var story: Dictionary = CampaignStoryR41Script.briefing(completed_index)
     r41_last_debrief = {
+        "status": "success",
         "mission_index": completed_index,
         "credits": awarded_credits,
         "xp": awarded_xp,
@@ -1109,6 +1117,7 @@ func _complete_mission() -> void:
     }
     mission_started = false
     mission_enemies = 0
+    r43_pending_bounty = 0
     if is_instance_valid(mission_beacon):
         mission_beacon.queue_free()
         mission_beacon = null
@@ -1127,9 +1136,46 @@ func _complete_mission() -> void:
     _r39_create_garage_hub()
     _show_notice("МИССИЯ ВЫПОЛНЕНА · +%d CR · +%d XP" % [awarded_credits, awarded_xp])
 
+func _r43_fail_sortie() -> void:
+    if garage_open_r39 or mission_index >= MISSIONS.size():
+        return
+    # Mission stays available for retry. Unbanked enemy bounties are discarded,
+    # so destroying enemies and crashing cannot be exploited for free credits.
+    r41_last_debrief = {
+        "status": "failed",
+        "mission_index": mission_index,
+        "credits": 0,
+        "xp": 0,
+        "reveal": "Корпус уничтожен. Корабль отремонтирован в Авроре — миссию можно повторить.",
+    }
+    mission_started = false
+    mission_enemies = 0
+    r43_pending_bounty = 0
+    if is_instance_valid(mission_beacon):
+        mission_beacon.queue_free()
+        mission_beacon = null
+    for actor in drones.duplicate():
+        if is_instance_valid(actor) and actor.is_in_group("nebula_mission_hostiles"):
+            drones.erase(actor)
+            actor.queue_free()
+    ship.set_cruise_assist(false)
+    ship.clear_navigation_target()
+    ship.velocity = Vector3.ZERO
+    ship.global_position = R21_LAUNCH_CANDIDATES[0]
+    _r21_rescue_blocked_spawn()
+    ship.shield = fleet_r15.ship_shield_cap()
+    ship.hull = fleet_r15.ship_hull_cap()
+    ship.boost = 100.0
+    _save_progress()
+    _r39_create_garage_hub()
+    _show_notice("КОРАБЛЬ УНИЧТОЖЕН · ВОЗВРАТ В АНГАР · ПОВТОРИТЬ МИССИЮ")
+
 func _on_drone_destroyed(drone: Node3D) -> void:
     drones.erase(drone)
-    credits+=45
+    if drone.is_in_group("nebula_mission_hostiles"):
+        r43_pending_bounty += 45
+    else:
+        credits += 45
 
 func _on_mission_drone_destroyed(drone: Node3D) -> void:
     mission_enemies=maxi(0,mission_enemies-1)
@@ -1632,10 +1678,11 @@ func _load_progress() -> void:
         var result_index: int = int(_safe_float(stored_result.get("mission_index", -1), -1.0))
         if result_index >= 0 and result_index < MISSIONS.size():
             r41_last_debrief = {
+                "status": "failed" if str(stored_result.get("status", "success")) == "failed" else "success",
                 "mission_index": result_index,
                 "credits": clampi(int(_safe_float(stored_result.get("credits", 0), 0.0)), 0, 999999),
                 "xp": clampi(int(_safe_float(stored_result.get("xp", 0), 0.0)), 0, 999999),
-                "reveal": str(CampaignStoryR41Script.briefing(result_index).get("reveal", "")),
+                "reveal": "Корабль отремонтирован. Можно повторить вылет." if str(stored_result.get("status", "success")) == "failed" else str(CampaignStoryR41Script.briefing(result_index).get("reveal", "")),
             }
     ship.engine_rank=clampi(int(_safe_float(raw.get("engine_rank",0),0.0)),0,4)
     ship.weapon_rank=clampi(int(_safe_float(raw.get("weapon_rank",0),0.0)),0,4)
