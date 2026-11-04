@@ -6,6 +6,7 @@ signal sortie_requested
 signal shop_requested
 signal captain_selected(captain_id: String)
 signal ship_selected_r45(ship_id: String)
+signal wingman_toggled_r47(wingman_id: String)
 
 var ui_font: Font
 var profile: Dictionary = {}
@@ -16,6 +17,8 @@ var captain_label: Label
 var ship_label: Label
 var progression_label: Label
 var roster_label: Label
+var wingman_choice_buttons_r47: Dictionary = {}
+var wingman_status_r47: Label
 var resource_label: Label
 var status_label: Label
 var panel: PanelContainer
@@ -256,6 +259,25 @@ func _build() -> void:
         captain_choice_buttons[id] = select_button
 
     roster_label = _label(column, "ЭКИПАЖ  ·  Ведомые", 13, Color(0.86,0.92,0.95))
+    var squad_choices := HBoxContainer.new()
+    squad_choices.name = "R47_RealWingmanSelectors"
+    squad_choices.add_theme_constant_override("separation", 7)
+    column.add_child(squad_choices)
+    for id in ["wingman_escort", "wingman_ace"]:
+        var button := Button.new()
+        button.name = "R47_Toggle_" + id
+        button.text = "ЭСКОРТ" if id == "wingman_escort" else "АС"
+        button.custom_minimum_size = Vector2(105, 44)
+        button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        button.focus_mode = Control.FOCUS_ALL
+        button.add_theme_font_override("font", ui_font)
+        button.add_theme_font_size_override("font_size", 12)
+        button.add_theme_stylebox_override("normal", _panel_style(PANEL))
+        button.pressed.connect(_on_wingman_pressed_r47.bind(id))
+        squad_choices.add_child(button)
+        wingman_choice_buttons_r47[id] = button
+    wingman_status_r47 = _label(column,
+        "2 МЕСТА В СТРОЮ · ВЕДОМЫХ МОЖНО ВЗЯТЬ В МАГАЗИНЕ", 11, MUTED)
 
     var mission_card := PanelContainer.new()
     mission_card.name = "R39_MissionCard"
@@ -334,6 +356,9 @@ func _r46_toggle_comparison() -> void:
 func _on_r45_ship_pressed(id: String) -> void:
     ship_selected_r45.emit(id)
 
+func _on_wingman_pressed_r47(id: String) -> void:
+    wingman_toggled_r47.emit(id)
+
 func _on_captain_pressed(id: String) -> void:
     captain_selected.emit(id)
 
@@ -408,6 +433,24 @@ func refresh(data: Dictionary) -> void:
         preview_title_r44.text = "3D АНГАР  /  " + str(ship_names.get(ship_id,
             "NX-08  /  РАЗВЕДЧИК"))
     var allies: Array = data.get("wingmen", [])
+    var owned_wingmen: Dictionary = data.get("owned_wingmen", {})
+    for ally_id in wingman_choice_buttons_r47:
+        var button: Button = wingman_choice_buttons_r47[ally_id]
+        var owned: bool = bool(owned_wingmen.get(ally_id, false))
+        var equipped: bool = allies.has(ally_id)
+        button.disabled = not owned
+        button.text = ("✓ " if equipped else "") + (
+            "ЭСКОРТ" if ally_id == "wingman_escort" else "АС")
+        button.add_theme_color_override("font_color",
+            BG if equipped else (CYAN if owned else MUTED))
+        button.add_theme_stylebox_override("normal",
+            _panel_style(CYAN if equipped else PANEL, CYAN if equipped else LINE))
+        button.tooltip_text = ("Исключить из группы" if equipped else
+            ("Поставить на взлётную площадку" if owned else
+             "Сначала получить в магазине"))
+    wingman_status_r47.text = "В СТРОЮ: %d ИЗ 2 · ПЛОЩАДКИ ПОКАЗАНЫ В 3D" % allies.size()
+    if is_instance_valid(ship_preview_r44):
+        ship_preview_r44.set_wingmen_r47(allies)
     if allies.is_empty():
         roster_label.text = "ЭКИПАЖ  ·  Капитан %d ур.  |  Ведомые: резерв" % level
     else:
