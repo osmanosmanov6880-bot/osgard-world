@@ -1728,6 +1728,7 @@ func _r39_create_garage_hub() -> void:
     garage_hub_r39.sortie_requested.connect(_r39_launch_sortie)
     garage_hub_r39.shop_requested.connect(_r39_open_shop)
     garage_hub_r39.captain_selected.connect(_r42_select_captain)
+    garage_hub_r39.ship_selected_r45.connect(_r45_select_owned_ship)
     garage_open_r39 = true
     ship.controls_locked = true
     ship.velocity = Vector3.ZERO
@@ -1759,7 +1760,31 @@ func _r39_refresh_garage() -> void:
         "last_result": r41_last_debrief,
         "captain_id": selected_captain_r42,
         "captain_info": CaptainRosterR42Script.info(selected_captain_r42),
+        "owned_ships": {
+            "ship_scout": true,
+            "ship_interceptor": owned_r15.has("ship_interceptor") or
+                int(premium_r15.get("ship_interceptor", 0)) > 0,
+            "ship_guardian": owned_r15.has("ship_guardian") or
+                int(premium_r15.get("ship_guardian", 0)) > 0,
+        },
     })
+
+func _r45_select_owned_ship(id: String) -> void:
+    if not garage_open_r39 or not id in [
+        "ship_scout", "ship_interceptor", "ship_guardian"]:
+        return
+    var permitted: bool = id == "ship_scout" or owned_r15.has(id) or int(
+        premium_r15.get(id, 0)) > 0
+    if not permitted:
+        _show_notice("КОРАБЛЬ НЕ ПРИОБРЕТЁН · ОТКРОЙ МАГАЗИН")
+        return
+    equipped_r15 = id
+    _r15_apply_loadout()
+    ship.shield = fleet_r15.ship_shield_cap()
+    ship.hull = fleet_r15.ship_hull_cap()
+    _save_progress()
+    _r39_refresh_garage()
+    _show_notice("КОРАБЛЬ ГОТОВ К ВЫЛЕТУ · " + id)
 
 func _r42_select_captain(id: String) -> void:
     if not garage_open_r39 or not CaptainRosterR42Script.valid_id(id):
