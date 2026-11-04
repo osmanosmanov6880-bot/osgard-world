@@ -16,5 +16,5 @@
     "authorized_date": "2026-11-04",
     "verification_workflow_run_id": 41747196254
   },
-  "notes": "Owner-directed production release override for R39. Desktop/mobile browser CI passed; physical-device QA was not performed. Exact four Git blob identities verified from master."
+  "notes": "Owner-directed production release override for R39. Desktop/mobile browser CI passed; physical-device QA was not performed. Exact four Git blob identities verified from master. Authorization was explicitly reconfirmed by the repository owner."
 }
