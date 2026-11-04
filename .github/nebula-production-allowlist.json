@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R41",
-  "release_status": "R41_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R42",
+  "release_status": "R42_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "bc56c6cecf3977c8d7c2e8359f10f7b47afc8676",
+    "index.html": "213ec7ed214cc27f865f9e0408ec7a30ca80a165",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "ec4be6fcf21c4062d2f0eb8171b5112e472fab35"
+    "index.pck": "8ed3d65816f87139ed2a742097d764c0a4973686"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,9 +15,9 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-04",
-    "verification_workflow_run_id": 41842409047,
-    "native_source_commit_sha": "09413461988ae2aa68f1260fdad5d2de42d90f84",
-    "web_export_commit_sha": "3e2bc2f57209db101779b28afc24997522972174"
+    "verification_workflow_run_id": 41845777254,
+    "native_source_commit_sha": "c7b63eb041eea9e36d84a6d69af6406666e4e0d0",
+    "web_export_commit_sha": "449eb944fcbcadbb0622ef402157fad16fb9149e"
   },
-  "notes": "Owner-directed R41 rollout with native Godot 4.7.2 + browser and emulated mobile CI; no real phone QA. Exact exported blobs match master commit 3e2bc2f. This is not R40 hardware certification; keep rollback and deployment verification."
+  "notes": "R42 owner-directed exact-byte release after PR #720 Godot native/browser/mobile CI #41844286188 success and master export #41845777254 success. Three free captains and actual ship/earned mission perks; physical-device QA not performed. R40 strict approval unchanged. R43 ship-destruction candidate remains excluded."
 }

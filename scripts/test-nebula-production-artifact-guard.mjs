@@ -44,10 +44,24 @@ try{
   },temp),/hardware QA explicitly false/);
   await assert.rejects(inspectProductionArtifact({
     ...r41,approval:{...r41.approval,verification_workflow_run_id:0}
-  },temp),/R41 override requires exact source/);
+  },temp),/Modern owner override requires exact source/);
   await assert.rejects(inspectProductionArtifact({
     ...r41,approval:{...r41.approval,web_export_commit_sha:r41.approval.native_source_commit_sha}
-  },temp),/R41 override requires exact source/);
+  },temp),/Modern owner override requires exact source/);
+  for(const variant of ['R42','R43']){
+    const owner={...r41,approved_variant:variant,
+      release_status:variant+'_OWNER_DIRECTED_OVERRIDE',
+      approval:{...r41.approval,
+        verification_workflow_run_id:41845777254}};
+    const proof=await inspectProductionArtifact(owner,temp);
+    assert.equal(proof.variant,variant,'Synthetic signed-off metadata only');
+    await assert.rejects(inspectProductionArtifact({...owner,
+      approval:{...owner.approval,hardware_qa_certified:true}},temp),
+      /hardware QA explicitly false/);
+    await assert.rejects(inspectProductionArtifact({...owner,
+      approval:{...owner.approval,physical_device_qa:'PASSED'}},temp),
+      /disclose missing physical-device QA/);
+  }
   const unsupported={...stable,approved_variant:'R40',
     release_status:'R40_HARDWARE_QA_APPROVED',approval:{human_visual_approved:true}};
   await assert.rejects(inspectProductionArtifact(unsupported,temp),/requires explicit human-reviewed evidence/);
