@@ -28,6 +28,7 @@ const PremiumFulfillmentR15Script = preload("res://scripts/premium_fulfillment_r
 const MobileControlsR21Script = preload("res://scripts/mobile_controls_r21.gd")
 const PremiumHUDR21Script = preload("res://scripts/premium_hud_r21.gd")
 const GarageHubR39Script = preload("res://scripts/garage_hub_r39.gd")
+const SortieDebriefR41Script = preload("res://scripts/sortie_debrief_r41.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -128,6 +129,16 @@ var r21_touch
 var r21_dashboard
 var garage_hub_r39
 var garage_open_r39: bool = false
+var garage_launch_pending_r40: bool = false
+var flight_hud_surface_r40: Control
+var sortie_result_open_r41: bool = false
+var sortie_debrief_r41
+var sortie_elapsed_r41: float = 0.0
+var sortie_targets_r41: int = 0
+var sortie_started_r41: bool = false
+var sortie_needs_mission_start_r41: bool = false
+var sortie_mission_drones_r41: Array[Node3D] = []
+var sortie_result_data_r41: Dictionary = {}
 var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
 var r21_mobile_enabled: bool = false
@@ -754,7 +765,7 @@ func _r23_toggle_cruise() -> void:
         _show_notice("АВТОТЯГА ОТКЛЮЧЕНА · W ДЛЯ ПОЛЁТА")
 
 func _r21_launch_missile() -> void:
-    if garage_open_r39:
+    if garage_open_r39 or sortie_result_open_r41:
         return
     if is_instance_valid(store_r15) and store_r15.visible:
         return
@@ -790,6 +801,7 @@ func _make_hud() -> void:
     hud_canvas = ui
     var surface := Control.new()
     surface.name = "R21_ApprovedAuroraOverlay"
+    flight_hud_surface_r40 = surface
     surface.set_anchors_preset(Control.PRESET_FULL_RECT)
     surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     ui.add_child(surface)
@@ -953,6 +965,10 @@ func _process(delta: float) -> void:
         if r25_telemetry_period >= 0.20:
             r25_telemetry_period = fmod(r25_telemetry_period, 0.20)
             _r25_emit_browser_flight_state()
+    if sortie_result_open_r41:
+        return
+    if sortie_started_r41 and not garage_open_r39:
+        sortie_elapsed_r41 += delta
     r21_launch_protection = maxf(0.0, r21_launch_protection - delta)
     if world_pulse > 92.0 and mission_index > 0 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
         world_pulse = 0.0
@@ -998,12 +1014,7 @@ func _process(delta: float) -> void:
         if r21_dashboard.show_objective:
             r21_dashboard.objective = MISSIONS[mission_index]["position"]
     if ship.hull <= 0.0:
-        ship.global_position = r21_safe_spawn
-        ship.velocity = Vector3.ZERO
-        ship.shield = fleet_r15.ship_shield_cap()
-        ship.hull = fleet_r15.ship_hull_cap()
-        credits = maxi(0,credits-220)
-        _show_notice("КОРАБЛЬ ВОССТАНОВЛЕН · -220 CR")
+        _r41_fail_sortie()
     elif ship.global_position.distance_to(Vector3(0,19,78))<70:
         ship.shield = minf(fleet_r15.ship_shield_cap(),ship.shield+12.0*delta)
         ship.hull = minf(fleet_r15.ship_hull_cap(),ship.hull+4.0*delta)
@@ -1031,7 +1042,7 @@ func _process(delta: float) -> void:
         _save_progress()
 
 func _mission_tick(_dt: float) -> void:
-    if garage_open_r39 or mission_index>=MISSIONS.size():return
+    if garage_open_r39 or garage_launch_pending_r40 or sortie_result_open_r41 or ship.hull <= 0.0 or mission_index>=MISSIONS.size():return
     var mission: Dictionary = MISSIONS[mission_index]
     var target: Vector3 = mission["position"]
     if mission["type"]=="reach" and ship.global_position.distance_to(target)<47.0:
@@ -1082,26 +1093,36 @@ func _start_mission() -> void:
             drone.fired.connect(_on_drone_fire)
             add_child(drone)
             drones.append(drone)
+            sortie_mission_drones_r41.append(drone)
 
 func _complete_mission() -> void:
+    if sortie_result_open_r41 or garage_open_r39 or mission_index >= MISSIONS.size():
+        return
+    var number: int = mission_index + 1
     var data: Dictionary = MISSIONS[mission_index]
-    credits+=int(data["reward"])
-    xp+=150+mission_index*65
-    mission_index+=1
-    _show_notice("МИССИЯ ВЫПОЛНЕНА · +"+str(data["reward"])+" CR")
+    var earned_cr: int = int(data["reward"])
+    var earned_xp: int = 150 + mission_index * 65
+    credits += earned_cr
+    xp += earned_xp
+    mission_index += 1
+    sortie_needs_mission_start_r41 = true
     _save_progress()
-    _start_mission()
+    _r41_show_result(true, number, str(data["title"]), earned_cr, earned_xp)
 
 func _on_drone_destroyed(drone: Node3D) -> void:
     drones.erase(drone)
     credits+=45
 
 func _on_mission_drone_destroyed(drone: Node3D) -> void:
+    if sortie_result_open_r41:
+        return
     mission_enemies=maxi(0,mission_enemies-1)
+    sortie_targets_r41 += 1
+    sortie_mission_drones_r41.erase(drone)
     _on_drone_destroyed(drone)
 
 func _on_drone_fire(from: Vector3, to: Vector3) -> void:
-    if not is_instance_valid(ship):return
+    if not is_instance_valid(ship) or garage_open_r39 or sortie_result_open_r41:return
     _laser_effect_colored(from,to,Color(1.0,0.26,0.39))
     if from.distance_to(ship.global_position)<250.0 and ship.global_position.distance_to(to)<7.0:
         # The approved first-flight mission must be playable before pirates
@@ -1129,7 +1150,7 @@ func _spawn_pirate_ambush() -> void:
     _show_notice("СОБЫТИЕ В МИРЕ · ПИРАТСКАЯ ЭСКАДРИЛЬЯ")
 
 func _on_ship_fire(origin: Vector3, direction: Vector3) -> void:
-    if garage_open_r39:
+    if garage_open_r39 or sortie_result_open_r41:
         return
     var endpoint: Vector3 = origin+direction*180.0
     var best_distance: float = 180.0
@@ -1214,6 +1235,8 @@ func _show_notice(message: String) -> void:
     notice_timer=3.3
 
 func _update_hud() -> void:
+    if sortie_result_open_r41:
+        return
     if garage_open_r39:
         _r39_refresh_garage()
         return
@@ -1298,6 +1321,8 @@ func _fit_hud() -> void:
             r21_touch.r35_safe_insets, rect)
 
 func _unhandled_key_input(event: InputEvent) -> void:
+    if sortie_result_open_r41:
+        return
     if garage_open_r39 and event is InputEventKey and event.pressed and not event.echo:
         if event.keycode == KEY_ESCAPE or event.keycode == KEY_H:
             _r39_launch_sortie()
@@ -1616,12 +1641,19 @@ func _load_progress() -> void:
 
 ## R39: Players enter the campaign through a command hub, not live combat.
 func _r39_create_garage_hub() -> void:
+    if is_instance_valid(garage_hub_r39):
+        garage_hub_r39.queue_free()
     garage_hub_r39 = GarageHubR39Script.new()
     garage_hub_r39.name = "R39_GarageCommandHub"
     hud_canvas.add_child(garage_hub_r39)
     garage_hub_r39.sortie_requested.connect(_r39_launch_sortie)
     garage_hub_r39.shop_requested.connect(_r39_open_shop)
     garage_open_r39 = true
+    garage_launch_pending_r40 = false
+    if is_instance_valid(port_r14):
+        port_r14.set_command_hangar_visible(true)
+    if is_instance_valid(flight_hud_surface_r40):
+        flight_hud_surface_r40.visible = false
     ship.controls_locked = true
     ship.velocity = Vector3.ZERO
     ship.set_cruise_assist(false)
@@ -1648,12 +1680,23 @@ func _r39_refresh_garage() -> void:
     garage_hub_r39.refresh({
         "credits": credits, "xp": xp, "mission_index": mission_index,
         "missions": MISSIONS, "ship": equipped_r15, "wingmen": wingmen_r15,
+        "hull": ship.hull, "shield": ship.shield,
+        "hull_cap": fleet_r15.ship_hull_cap(), "shield_cap": fleet_r15.ship_shield_cap(),
     })
 
 func _r39_launch_sortie() -> void:
-    if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
+    if not garage_open_r39 or garage_launch_pending_r40 or not is_instance_valid(garage_hub_r39):
         return
+    # Flight physics, HUD and touch unlock synchronously. The visual bay doors
+    # animate independently; they can never trap the ship in shop-open mode.
     garage_open_r39 = false
+    garage_launch_pending_r40 = true
+    if sortie_needs_mission_start_r41:
+        sortie_needs_mission_start_r41 = false
+        _start_mission()
+    sortie_started_r41 = true
+    sortie_elapsed_r41 = 0.0
+    sortie_targets_r41 = 0
     garage_hub_r39.queue_free()
     garage_hub_r39 = null
     ship.controls_locked = false
@@ -1664,5 +1707,133 @@ func _r39_launch_sortie() -> void:
         r21_dashboard.visible = true
     if is_instance_valid(performance_lab_r11):
         performance_lab_r11.visible = true
+    if is_instance_valid(flight_hud_surface_r40):
+        flight_hud_surface_r40.visible = true
+    # The waypoint is selected, but the original manual-first cruise button
+    # remains available; automatic cruise would break explicit player intent.
+    if mission_index < MISSIONS.size():
+        ship.set_navigation_target(MISSIONS[mission_index]["position"])
+    else:
+        ship.clear_navigation_target()
     r23_cruise_button.text = "▶  АВТОПИЛОТ К ЦЕЛИ"
     _show_notice("ВЫЛЕТ · " + (str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"))
+    if is_instance_valid(port_r14):
+        var door_tween: Tween = port_r14.animate_command_hangar_launch()
+        if door_tween != null:
+            door_tween.finished.connect(_r40_finish_garage_launch, CONNECT_ONE_SHOT)
+            return
+    _r40_finish_garage_launch()
+
+func _r40_finish_garage_launch() -> void:
+    if not garage_launch_pending_r40:
+        return
+    garage_launch_pending_r40 = false
+    if is_instance_valid(port_r14):
+        port_r14.set_command_hangar_visible(false)
+
+## R41: mission completion is a real choice, not a silent immediate chain.
+func _r41_show_result(succeeded: bool, mission_number: int, mission_title: String,
+        earned_credits: int, earned_xp: int, repair_paid: int = 0) -> void:
+    if sortie_result_open_r41:
+        return
+    sortie_result_open_r41 = true
+    sortie_started_r41 = false
+    ship.controls_locked = true
+    ship.velocity = Vector3.ZERO
+    ship.set_cruise_assist(false)
+    if is_instance_valid(r21_touch):
+        r21_touch.set_shop_open(true)
+    if is_instance_valid(r21_dashboard):
+        r21_dashboard.visible = false
+    if is_instance_valid(performance_lab_r11):
+        performance_lab_r11.visible = false
+    if is_instance_valid(flight_hud_surface_r40):
+        flight_hud_surface_r40.visible = false
+    var next_title: String = str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"
+    var next_hint: String = str(MISSIONS[mission_index]["hint"]) if mission_index < MISSIONS.size() else "Исследуй районы Авроры."
+    sortie_result_data_r41 = {
+        "repair_paid": repair_paid,
+        "success": succeeded, "number": mission_number, "title": mission_title,
+        "reward": earned_credits, "xp_gain": earned_xp, "total_credits": credits,
+        "total_xp": xp, "elapsed_seconds": roundi(sortie_elapsed_r41),
+        "targets_destroyed": sortie_targets_r41,
+        "hull_percent": roundi(100.0 * ship.hull / maxf(1.0, fleet_r15.ship_hull_cap())) if succeeded else 0,
+        "next_number": mission_index + 1, "next_title": next_title,
+        "next_hint": next_hint,
+        "campaign_finished": mission_index >= MISSIONS.size(),
+    }
+    sortie_debrief_r41 = SortieDebriefR41Script.new()
+    sortie_debrief_r41.name = "R41_SortieResult"
+    hud_canvas.add_child(sortie_debrief_r41)
+    sortie_debrief_r41.continue_requested.connect(_r41_continue_sortie)
+    sortie_debrief_r41.garage_requested.connect(_r41_return_to_garage)
+    sortie_debrief_r41.show_result(sortie_result_data_r41)
+
+func _r41_clear_mission_drones() -> void:
+    for enemy in sortie_mission_drones_r41:
+        if is_instance_valid(enemy):
+            drones.erase(enemy)
+            enemy.queue_free()
+    sortie_mission_drones_r41.clear()
+    mission_enemies = 0
+
+func _r41_fail_sortie() -> void:
+    if sortie_result_open_r41:
+        return
+    var failed_number: int = mini(mission_index + 1, MISSIONS.size())
+    var failed_title: String = str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"
+    _r41_clear_mission_drones()
+    var actual_repair_paid: int = mini(credits, 220)
+    credits -= actual_repair_paid
+    ship.global_position = r21_safe_spawn
+    ship.velocity = Vector3.ZERO
+    ship.hull = fleet_r15.ship_hull_cap()
+    ship.shield = fleet_r15.ship_shield_cap()
+    sortie_needs_mission_start_r41 = true
+    _save_progress()
+    _r41_show_result(false, failed_number, failed_title, 0, 0, actual_repair_paid)
+
+func _r41_close_debrief() -> void:
+    if is_instance_valid(sortie_debrief_r41):
+        sortie_debrief_r41.queue_free()
+    sortie_debrief_r41 = null
+    sortie_result_open_r41 = false
+    sortie_result_data_r41.clear()
+
+func _r41_continue_sortie() -> void:
+    if not sortie_result_open_r41:
+        return
+    _r41_close_debrief()
+    if sortie_needs_mission_start_r41:
+        sortie_needs_mission_start_r41 = false
+        _start_mission()
+    ship.controls_locked = false
+    ship.velocity = Vector3.ZERO
+    sortie_elapsed_r41 = 0.0
+    sortie_targets_r41 = 0
+    sortie_started_r41 = true
+    r21_launch_protection = 5.0
+    if is_instance_valid(r21_touch):
+        r21_touch.set_shop_open(false)
+    if is_instance_valid(r21_dashboard):
+        r21_dashboard.visible = true
+    if is_instance_valid(performance_lab_r11):
+        performance_lab_r11.visible = true
+    if is_instance_valid(flight_hud_surface_r40):
+        flight_hud_surface_r40.visible = true
+    _show_notice("ВЫЛЕТ · " + (str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"))
+
+func _r41_return_to_garage() -> void:
+    if not sortie_result_open_r41:
+        return
+    _r41_close_debrief()
+    ship.global_position = r21_safe_spawn
+    ship.velocity = Vector3.ZERO
+    ship.rotation = Vector3.ZERO
+    ship.set_cruise_assist(false)
+    # The garage must be visible immediately, without panning back from a distant crash site.
+    if is_instance_valid(chase_camera):
+        chase_camera.global_position = ship.global_position + Vector3(0.0, 6.0, 19.0)
+        chase_camera.look_at(ship.global_position + Vector3.UP * 1.5, Vector3.UP)
+    _r39_create_garage_hub()
+    _save_progress()

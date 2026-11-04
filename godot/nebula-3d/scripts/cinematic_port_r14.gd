@@ -23,6 +23,10 @@ var hydraulic_pivots: Array[Node3D] = []
 var scene_lights: Array[SpotLight3D] = []
 var groups: Array[Node3D] = []
 var player_ship: Node3D
+var command_hangar: Node3D
+var hangar_door_left: MeshInstance3D
+var hangar_door_right: MeshInstance3D
+var command_hangar_tween: Tween
 var titanium: StandardMaterial3D
 var ceramic: StandardMaterial3D
 var graphite: StandardMaterial3D
@@ -310,7 +314,95 @@ func build(centres: Array) -> void:
         group.add_child(fill)
         scene_lights.append(fill)
         site_count += 1
+    _make_command_hangar()
     set_quality(0)
+
+func _make_command_hangar() -> void:
+    # R40: physical Aurora launch bay, visible only while the player is in the garage.
+    # It is deliberately visual-only; the flight corridor and collision map stay unchanged.
+    command_hangar = Node3D.new()
+    command_hangar.name = "R40_AuroraLaunchHangar"
+    command_hangar.position = Vector3(0, 0, 100)
+    add_child(command_hangar)
+    var armor_parts: Array[Transform3D] = []
+    var titanium_parts: Array[Transform3D] = []
+    var ceramic_parts: Array[Transform3D] = []
+    var trim_parts: Array[Transform3D] = []
+    var glass_parts: Array[Transform3D] = []
+    var worklight_parts: Array[Transform3D] = []
+    armor_parts.append(_transform(Vector3(0, 23.8, 0), Vector3(92, 1.6, 124)))
+    armor_parts.append(_transform(Vector3(0, 66.2, 1.0), Vector3(90, 2.2, 112)))
+    armor_parts.append(_transform(Vector3(0, 44.0, 57.0), Vector3(90.0, 40.0, 3.0)))
+    titanium_parts.append(_transform(Vector3(0, 30.4, 0), Vector3(31, 0.9, 62)))
+    titanium_parts.append(_transform(Vector3(0, 44.0, -56.5), Vector3(90.0, 2.5, 3.0)))
+    for side in [-1.0, 1.0]:
+        worklight_parts.append(_transform(Vector3(side * 16.0, 24.8, 0), Vector3(0.42, 0.08, 104)))
+        armor_parts.append(_transform(Vector3(side * 45.0, 44.0, 1.0), Vector3(3.0, 40.0, 112.0)))
+        glass_parts.append(_transform(Vector3(side * 42.9, 47.0, 6.0), Vector3(0.45, 1.0, 92.0)))
+        for bay in range(3):
+            var z: float = -27.0 + float(bay) * 27.0
+            ceramic_parts.append(_transform(Vector3(side * 34.0, 30.2, z), Vector3(10.5, 0.9, 18.0)))
+            worklight_parts.append(_transform(Vector3(side * 30.3, 31.0, z), Vector3(0.30, 0.12, 15.0)))
+        for rib in range(6):
+            var z: float = -46.0 + float(rib) * 18.0
+            titanium_parts.append(_transform(Vector3(side * 36.0, 64.0, z), Vector3(1.2, 1.2, 3.4)))
+            worklight_parts.append(_transform(Vector3(side * 22.0, 63.8, z), Vector3(9.5, 0.20, 0.40)))
+    for side in [-1.0, 1.0]:
+        trim_parts.append(_transform(Vector3(side * 11.2, 31.0, 0), Vector3(1.1, 0.25, 55)))
+    for beam in range(5):
+        var z: float = -36.0 + float(beam) * 18.0
+        titanium_parts.append(_transform(Vector3(0, 64.6, z), Vector3(86.0, 1.1, 1.4)))
+    _gpu_batch(command_hangar, "R40_BatchedHangarArmor", armor_parts, graphite)
+    _gpu_batch(command_hangar, "R40_BatchedMachinedTrusses", titanium_parts, titanium)
+    _gpu_batch(command_hangar, "R40_BatchedServiceCradles", ceramic_parts, ceramic)
+    _gpu_batch(command_hangar, "R40_BatchedFlightRails", trim_parts, trim)
+    _gpu_batch(command_hangar, "R40_BatchedCyanSpines", glass_parts, glass)
+    _gpu_batch(command_hangar, "R40_BatchedGuideLights", worklight_parts, worklamp)
+    hangar_door_left = _block(command_hangar, "R40_LeftSlidingBayDoor",
+        Vector3(-12.0, 44.0, -56.5), Vector3(24.0, 37.0, 1.0), glass, true)
+    hangar_door_right = _block(command_hangar, "R40_RightSlidingBayDoor",
+        Vector3(12.0, 44.0, -56.5), Vector3(24.0, 37.0, 1.0), glass, true)
+    var marking := Label3D.new()
+    marking.name = "R40_HangarBayIdentity"
+    marking.text = "AURORA  /  FLIGHT BAY 01"
+    marking.font_size = 42
+    marking.pixel_size = 0.018
+    marking.position = Vector3(0, 57.0, 55.0)
+    marking.modulate = Color(0.39, 0.85, 0.94)
+    marking.rotation_degrees.y = 180.0
+    command_hangar.add_child(marking)
+    for side in [-1.0, 1.0]:
+        var lamp := OmniLight3D.new()
+        lamp.name = "R40_HangarCeilingWash"
+        lamp.position = Vector3(side * 24.0, 61.0, 4.0)
+        lamp.light_color = Color(0.30, 0.72, 0.86) if side < 0.0 else Color(0.95, 0.57, 0.27)
+        lamp.light_energy = 0.45
+        lamp.omni_range = 58.0
+        lamp.shadow_enabled = false
+        command_hangar.add_child(lamp)
+    command_hangar.visible = false
+
+func set_command_hangar_visible(active: bool) -> void:
+    if is_instance_valid(command_hangar):
+        command_hangar.visible = active
+    # R41: every garage visit resets the doors; never retain a previous takeoff pose.
+    if active and is_instance_valid(hangar_door_left) and is_instance_valid(hangar_door_right):
+        if command_hangar_tween != null and command_hangar_tween.is_running():
+            command_hangar_tween.kill()
+        hangar_door_left.position.x = -12.0
+        hangar_door_right.position.x = 12.0
+
+func animate_command_hangar_launch() -> Tween:
+    if not is_instance_valid(hangar_door_left) or not is_instance_valid(hangar_door_right):
+        return null
+    var tween := create_tween()
+    command_hangar_tween = tween
+    tween.set_parallel(true)
+    tween.set_trans(Tween.TRANS_QUART)
+    tween.set_ease(Tween.EASE_OUT)
+    tween.tween_property(hangar_door_left, "position:x", -37.0, 0.82)
+    tween.tween_property(hangar_door_right, "position:x", 37.0, 0.82)
+    return tween
 
 func set_quality(mode: int) -> void:
     quality_mode = clampi(mode, 0, 2)

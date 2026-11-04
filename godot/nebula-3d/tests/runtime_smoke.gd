@@ -34,6 +34,21 @@ func _run() -> void:
     if not check(world.garage_hub_r39.captain_label.text == "КАПИТАН · УРОВЕНЬ 1" and
         world.garage_hub_r39.resource_label.text.contains("950 CR"),
         "R39 captain level and campaign credits are not shown from live progression"):return
+    # R40+R41: physically instantiated launch bay must exist behind the garage UI.
+    var hangar_r40: Node3D = world.port_r14.command_hangar
+    if not check(is_instance_valid(hangar_r40) and hangar_r40.visible and
+        hangar_r40.get_node_or_null("R40_BatchedHangarArmor") is MultiMeshInstance3D and
+        hangar_r40.get_node_or_null("R40_BatchedMachinedTrusses") is MultiMeshInstance3D and
+        hangar_r40.get_node_or_null("R40_LeftSlidingBayDoor") is MeshInstance3D and
+        hangar_r40.get_node_or_null("R40_RightSlidingBayDoor") is MeshInstance3D and
+        is_instance_valid(world.flight_hud_surface_r40) and
+        not world.flight_hud_surface_r40.visible,
+        "R40 physical hangar must render six batched materials behind clean garage HUD"):return
+    if not check(world.garage_hub_r39.xp_meter.max_value == 500 and
+        world.garage_hub_r39.mission_reward_label.text.contains("350 CR") and
+        world.garage_hub_r39.integrity_label.text.contains("КОРПУС") and
+        world.garage_hub_r39.mission_detail.text.contains("Ты пилот"),
+        "R40 garage must show actual captain experience and mission briefing"):return
     world._r39_open_shop()
     if not check(world.store_r15.visible and not world.garage_hub_r39.visible and
         world.ship.controls_locked,
@@ -44,6 +59,10 @@ func _run() -> void:
     world._r39_launch_sortie()
     if not check(not world.garage_open_r39 and not world.ship.controls_locked,
         "R39 sortie action did not unlock flight"):return
+    if not check(not world.r21_touch.shop_open and world.flight_hud_surface_r40.visible and
+        world.garage_launch_pending_r40 and
+        world.ship.cruise_assist == false,
+        "R40 sortie must immediately unlock real touch/HUD while doors animate"):return
     # R21 approved Aurora: the ship starts in a physically clear corridor,
     # does respond to throttle, and the chase camera cannot remain behind
     # opaque collision geometry.
@@ -1096,6 +1115,56 @@ func _run() -> void:
     await process_frame
     if not check(world.mission_index >= 1, "Waypoint mission did not complete"):return
     if not check(world.credits > start_credits, "Mission reward missing"):return
+    # R41: rewards must be granted once, with the next sortie requiring explicit action.
+    var rewarded_once: int = world.credits
+    var first_result_xp: int = world.xp
+    if not check(world.sortie_result_open_r41 and world.ship.controls_locked and
+        is_instance_valid(world.sortie_debrief_r41) and
+        world.sortie_debrief_r41.reward_label.text.contains("+350 CR") and
+        world.sortie_debrief_r41.continue_button.text.contains("ДАЛЬШЕ") and
+        world.mission_index == 1,
+        "R41 first mission must show real earned rewards and explicit next sortie"):return
+    world._complete_mission()
+    if not check(world.credits == rewarded_once and world.xp == first_result_xp and
+        world.mission_index == 1,
+        "R41 duplicate completion incorrectly paid or advanced the campaign"):return
+    world._r41_return_to_garage()
+    if not check(is_instance_valid(world.port_r14.command_hangar) and
+        world.port_r14.command_hangar.visible and
+        not world.flight_hud_surface_r40.visible and
+        world.port_r14.hangar_door_left.position.x == -12.0 and
+        world.port_r14.hangar_door_right.position.x == 12.0 and
+        world.chase_camera.global_position.distance_to(world.ship.global_position) < 28.0,
+        "R40 return to garage must restore genuine bay and reset launch doors"):return
+    if not check(world.garage_open_r39 and world.ship.controls_locked and
+        not world.sortie_result_open_r41 and
+        world.garage_hub_r39.mission_label.text.contains("НЕОНОВЫЙ КВАРТАЛ"),
+        "R41 return to garage must show next mission without losing progression"):return
+    world._r39_launch_sortie()
+    if not check(not world.garage_open_r39 and not world.ship.controls_locked and
+        not world.sortie_needs_mission_start_r41,
+        "R41 relaunch must prepare and unlock the next mission"):return
+    # Force low-credit defeat: display actual 80 CR, never the full 220 CR charge.
+    world.credits = 80
+    world.ship.hull = 0.0
+    world._r41_fail_sortie()
+    if not check(world.sortie_result_open_r41 and world.ship.controls_locked and
+        world.mission_index == 1 and world.ship.hull > 0.0 and
+        world.credits == 0 and world.sortie_debrief_r41.reward_label.text.contains("-80 CR") and
+        int(world.sortie_result_data_r41.get("hull_percent", -1)) == 0 and
+        world.sortie_debrief_r41.continue_button.text.contains("ПОВТОРИТЬ"),
+        "R41 defeat must offer a retry without advancing the campaign"):return
+    var after_loss_credits: int = world.credits
+    world._r41_fail_sortie()
+    if not check(world.credits == after_loss_credits,
+        "R41 defeat rescue cost must be charged only once"):return
+    world._r41_continue_sortie()
+    if not check(not world.sortie_result_open_r41 and not world.ship.controls_locked and
+        world.mission_index == 1 and world.sortie_started_r41,
+        "R41 retry must restore actual player control in the same mission"):return
+    print("NEBULA_R41_SORTIE_LOOP_SUCCESS one_time_reward=350 garage=1 retry=1")
+    print("NEBULA_R40_HANGAR_INTEGRATION_SUCCESS physical_bay=1 immediate_touch=1 reset_doors=1")
+    print("NEBULA_R41_HONEST_ECONOMY_SUCCESS repair_paid=80 hull_at_defeat=0")
     var previous_credits: int = world.credits
     world.credits = 5000
     world.ship.global_position = Vector3(0,18,78)
