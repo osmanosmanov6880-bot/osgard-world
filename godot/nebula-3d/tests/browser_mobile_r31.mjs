@@ -89,6 +89,14 @@ try {
       s.touch_thrust_x > 0 && s.touch_boost_x > 0,
     100000
   );
+  if (ready?.r44_preview_present !== true ||
+      ready.r44_preview_width < 180 || ready.r44_preview_height < 100) {
+    throw new Error('R44 compact mobile garage lacks a real 3D ship stage: ' +
+      JSON.stringify(ready));
+  }
+  report.checks.push({label:'R44 real 3D aircraft stage exists on mobile',
+    preview_width:ready.r44_preview_width,
+    preview_height:ready.r44_preview_height});
   // The software GPU may need several seconds per Godot frame. Require
   // meaningful REAL telemetry progress without an arbitrary 12-frame barrier.
   // This QA scene hides only nonessential city meshes; no physics is mocked.

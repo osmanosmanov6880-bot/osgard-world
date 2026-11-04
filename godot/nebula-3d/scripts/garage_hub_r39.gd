@@ -1,5 +1,6 @@
 
 extends CanvasLayer
+const Hangar3DPreviewR44Script = preload("res://scripts/hangar_ship_preview_r44.gd")
 ## R39 garage command hub. Reads the live campaign state supplied by world.gd.
 signal sortie_requested
 signal shop_requested
@@ -27,6 +28,14 @@ var debrief_label: Label
 var captain_role_label: Label
 var captain_bonus_label: Label
 var captain_choice_buttons: Dictionary = {}
+## R44 separate 3D dock, actual in-game NX imported geometry and orbit controls.
+var ship_preview_r44
+var preview_frame_r44: PanelContainer
+var preview_title_r44: Label
+var preview_hint_r44: Label
+var turn_left_r44: Button
+var turn_right_r44: Button
+var brand_label_r44: Label
 
 const BG := Color(0.018, 0.035, 0.058, 0.96)
 const PANEL := Color(0.035, 0.073, 0.105, 0.94)
@@ -90,11 +99,47 @@ func _build() -> void:
     header.offset_bottom = 84
     header.add_theme_stylebox_override("panel", _panel_style(BG))
     root.add_child(header)
+    # The ship viewer is a dedicated SubViewport / World3D, not a flat JPG.
+    # It does not control or move the actual gameplay CharacterBody3D.
+    preview_frame_r44 = PanelContainer.new()
+    preview_frame_r44.name = "R44_Real3DShipGallery"
+    preview_frame_r44.set_anchors_preset(Control.PRESET_TOP_LEFT)
+    preview_frame_r44.add_theme_stylebox_override("panel",
+        _panel_style(Color(0.014, 0.032, 0.054, 0.98),
+            Color(0.13, 0.36, 0.49, 0.75)))
+    root.add_child(preview_frame_r44)
+    ship_preview_r44 = Hangar3DPreviewR44Script.new()
+    ship_preview_r44.name = "R44_RealShipViewport"
+    ship_preview_r44.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    ship_preview_r44.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    preview_frame_r44.add_child(ship_preview_r44)
+
+    preview_title_r44 = Label.new()
+    preview_title_r44.name = "R44_Real3DShipName"
+    preview_title_r44.text = "3D АНГАР  /  NX-08"
+    preview_title_r44.add_theme_font_override("font", ui_font)
+    preview_title_r44.add_theme_font_size_override("font_size", 13)
+    preview_title_r44.add_theme_color_override("font_color", CYAN)
+    preview_title_r44.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    root.add_child(preview_title_r44)
+
+    preview_hint_r44 = Label.new()
+    preview_hint_r44.name = "R44_InspectionHint"
+    preview_hint_r44.text = "РЕАЛЬНАЯ МОДЕЛЬ NX  ·  ПЕРЕТАЩИ, ЧТОБЫ ОСМОТРЕТЬ"
+    preview_hint_r44.add_theme_font_override("font", ui_font)
+    preview_hint_r44.add_theme_font_size_override("font_size", 11)
+    preview_hint_r44.add_theme_color_override("font_color", MUTED)
+    preview_hint_r44.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    root.add_child(preview_hint_r44)
+
+    turn_left_r44 = _turn_button_r44(root, "R44_TurnLeft", "↶", -1)
+    turn_right_r44 = _turn_button_r44(root, "R44_TurnRight", "↷", 1)
+
     var top := HBoxContainer.new()
     top.add_theme_constant_override("separation", 18)
     header.add_child(top)
-    var brand := _label(top, "NEBULA  /  КОМАНДОВАНИЕ", 20, CYAN)
-    brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    brand_label_r44 = _label(top, "NEBULA  /  КОМАНДОВАНИЕ", 20, CYAN)
+    brand_label_r44.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     resource_label = _label(top, "950 CR    •    0 XP", 16, GOLD)
     resource_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
@@ -215,6 +260,29 @@ func _build() -> void:
     launch_button.pressed.connect(func(): sortie_requested.emit())
     root.add_child(launch_button)
 
+func _turn_button_r44(parent: Control, node_name: String, glyph: String,
+        direction: int) -> Button:
+    var button := Button.new()
+    button.name = node_name
+    button.text = glyph
+    button.custom_minimum_size = Vector2(46, 44)
+    button.focus_mode = Control.FOCUS_ALL
+    button.add_theme_font_override("font", ui_font)
+    button.add_theme_font_size_override("font_size", 20)
+    button.add_theme_color_override("font_color", CYAN)
+    button.add_theme_stylebox_override("normal",
+        _panel_style(Color(0.018, 0.065, 0.100, 0.98), LINE))
+    button.add_theme_stylebox_override("hover",
+        _panel_style(Color(0.06, 0.18, 0.24, 0.98), CYAN))
+    button.tooltip_text = "Повернуть корабль"
+    button.pressed.connect(_on_turn_preview_r44.bind(direction))
+    parent.add_child(button)
+    return button
+
+func _on_turn_preview_r44(direction: int) -> void:
+    if is_instance_valid(ship_preview_r44):
+        ship_preview_r44.rotate_step(direction)
+
 func _on_captain_pressed(id: String) -> void:
     captain_selected.emit(id)
 
@@ -245,6 +313,11 @@ func refresh(data: Dictionary) -> void:
         "ship_guardian": "NX-21  /  СТРАЖ",
     }
     ship_label.text = str(ship_names.get(ship_id, "NX-08  /  РАЗВЕДЧИК"))
+    if is_instance_valid(ship_preview_r44):
+        ship_preview_r44.set_ship_type(ship_id)
+    if is_instance_valid(preview_title_r44):
+        preview_title_r44.text = "3D АНГАР  /  " + str(ship_names.get(ship_id,
+            "NX-08  /  РАЗВЕДЧИК"))
     var allies: Array = data.get("wingmen", [])
     if allies.is_empty():
         roster_label.text = "ЭКИПАЖ  ·  Капитан %d ур.  |  Ведомые: резерв" % level
@@ -302,18 +375,63 @@ func _layout_hub() -> void:
     if not is_instance_valid(root_control) or not is_instance_valid(panel):
         return
     var view := get_viewport().get_visible_rect().size
-    var short_view := view.y < 560.0
-    var margin := 12.0 if view.x < 520.0 else 30.0
+    var compact: bool = view.x < 580.0
+    var landscape: bool = view.x >= 740.0 and view.x > view.y * 1.28
+    var short_view: bool = view.y < 560.0
+    var margin: float = 10.0 if compact else (12.0 if view.x < 980.0 else 30.0)
+
     header_panel.offset_left = margin
     header_panel.offset_right = -margin
-    header_panel.offset_top = 14.0
-    header_panel.offset_bottom = 74.0
-    panel.offset_left = margin
-    panel.offset_top = 88.0 if short_view else 96.0
-    panel.offset_right = minf(430.0, view.x - margin)
-    panel.offset_bottom = view.y - 14.0
+    header_panel.offset_top = 12.0
+    header_panel.offset_bottom = 72.0
+    brand_label_r44.text = "NEBULA  /  АНГАР" if compact else "NEBULA  /  КОМАНДОВАНИЕ"
+    brand_label_r44.add_theme_font_size_override("font_size", 14 if compact else 20)
+    resource_label.add_theme_font_size_override("font_size", 10 if compact else 16)
+
+    var stage_left: float
+    var stage_top: float
+    var stage_width: float
+    var stage_height: float
+    if landscape:
+        var left_panel_width: float = clampf(view.x * 0.36, 300.0, 410.0)
+        panel.offset_left = margin
+        panel.offset_top = 88.0
+        panel.offset_right = margin + left_panel_width
+        panel.offset_bottom = view.y - 12.0
+        stage_left = panel.offset_right + 14.0
+        stage_top = 88.0
+        stage_width = maxf(160.0, view.x - stage_left - margin)
+        stage_height = maxf(142.0, view.y - stage_top - 12.0)
+    else:
+        stage_left = margin
+        stage_top = 80.0
+        stage_width = maxf(180.0, view.x - margin * 2.0)
+        stage_height = clampf(view.y * 0.255, 108.0, 218.0)
+        panel.offset_left = margin
+        panel.offset_top = stage_top + stage_height + 10.0
+        panel.offset_right = view.x - margin
+        panel.offset_bottom = view.y - 10.0
+
+    preview_frame_r44.offset_left = stage_left
+    preview_frame_r44.offset_top = stage_top
+    preview_frame_r44.offset_right = stage_left + stage_width
+    preview_frame_r44.offset_bottom = stage_top + stage_height
+    preview_title_r44.position = Vector2(stage_left + 19.0, stage_top + 14.0)
+    preview_title_r44.size = Vector2(stage_width - 32.0, 20.0)
+    preview_title_r44.add_theme_font_size_override("font_size", 10 if compact else 13)
+    preview_hint_r44.position = Vector2(stage_left + 18.0,
+        stage_top + stage_height - 32.0)
+    preview_hint_r44.visible = landscape and stage_width >= 480.0
+    turn_left_r44.position = Vector2(
+        stage_left + stage_width - 116.0, stage_top + stage_height - 58.0)
+    turn_right_r44.position = Vector2(
+        stage_left + stage_width - 65.0, stage_top + stage_height - 58.0)
+    turn_left_r44.size = Vector2(46.0, 44.0)
+    turn_right_r44.size = Vector2(46.0, 44.0)
+
     description_label.visible = not short_view
     status_label.visible = not short_view
     launch_button.position = Vector2(panel.offset_left + 16.0,
         minf(view.y - 62.0, panel.offset_bottom - 64.0))
-    launch_button.size = Vector2(maxf(170.0, panel.offset_right - panel.offset_left - 32.0), 48.0)
+    launch_button.size = Vector2(maxf(170.0,
+        panel.offset_right - panel.offset_left - 32.0), 48.0)

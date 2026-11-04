@@ -830,6 +830,20 @@ assert "high-detail" not in project.lower(), "project identity may remain stable
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
 assert "world.store_r15.close()" in smoke
 assert "R39 campaign must open in a locked garage hub" in smoke
+# R44: the garage must use a real Godot scene and the SAME imported ship
+# geometry as the live player, with isolated physics and explicit input.
+r44_preview = require(
+    "scripts/hangar_ship_preview_r44.gd",
+    "extends SubViewportContainer",
+    "res://assets/models/nx08_interceptor_r8.gltf",
+    "preview_viewport.own_world_3d = true",
+    "R44_ActualImportedNX08Mesh",
+    "func rotate_step(",
+    "func _gui_input(",
+)
+assert "R44 real 3D orbit control must not accidentally unlock" in smoke
+assert "R44 actual imported 3D ship viewport is mounted at desktop startup" in r25_browser
+assert "R44 real 3D aircraft stage exists on mobile" in r31_mobile
 assert "garage sortie button unlocks real flight" in r25_browser
 assert "mobile garage sortie touch unlocks flight" in r31_mobile
 

@@ -46,6 +46,9 @@ try {
   await waitFor(()=>window.__nebulaPilotTelemetry?.ready === true,90000);
   const t0=await checkpoint('real Godot runtime initialized',s=>s?.version==='R25' && s.samples>=1 && Number.isFinite(s.flight_distance));
   if(!t0.locked) throw new Error('The R39 command hub did not lock the craft at startup');
+  await checkpoint('R44 actual imported 3D ship viewport is mounted at desktop startup',
+    s=>s?.locked === true && s.r44_preview_present === true &&
+      s.r44_preview_width >= 320 && s.r44_preview_height >= 140);
   // Startup is the garage. Launch through the real in-game button before flight input.
   const garageBounds=await page.evaluate(() => { const r=document.querySelector('#canvas')?.getBoundingClientRect(); return r ? {x:r.x,y:r.y,width:r.width,height:r.height}:null; });
   if(!garageBounds) throw new Error('Game canvas bounds missing at garage startup');

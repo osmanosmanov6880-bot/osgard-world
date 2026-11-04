@@ -35,6 +35,38 @@ func _run() -> void:
     if not check(world.garage_hub_r39.captain_label.text == "КАПИТАН · УРОВЕНЬ 1" and
         world.garage_hub_r39.resource_label.text.contains("950 CR"),
         "R39 captain level and campaign credits are not shown from live progression"):return
+    # R44: inspect the real imported NX fighter in its own Godot 3D world.
+    var r44_view = world.garage_hub_r39.ship_preview_r44
+    if not check(is_instance_valid(r44_view) and
+        is_instance_valid(r44_view.preview_viewport) and
+        r44_view.preview_viewport.own_world_3d and
+        is_instance_valid(r44_view.inspection_camera) and
+        r44_view.inspection_camera.current and
+        is_instance_valid(r44_view.real_airframe) and
+        r44_view.real_airframe.get_child_count() > 0,
+        "R44 garage needs the real imported NX mesh and an independent 3D camera"):return
+    var real_nodes = r44_view.real_airframe.find_children("*", "MeshInstance3D", true, false)
+    if not check(real_nodes.size() >= 1,
+        "R44 must render a real imported in-game MeshInstance3D, not a flat art placeholder"):return
+    if not check(r44_view.preview_viewport.get_world_3d() != world.get_world_3d(),
+        "R44 preview world must be separate from live city collision and pilot physics"):return
+    var original_orbit: float = r44_view.orbit_angle
+    world.garage_hub_r39.turn_right_r44.pressed.emit()
+    if not check(r44_view.orbit_angle > original_orbit + 0.30 and
+        world.ship.controls_locked and world.garage_open_r39,
+        "R44 real 3D orbit control must not accidentally unlock or move the game ship"):return
+    r44_view.set_ship_type("ship_interceptor")
+    if not check(r44_view.selected_hull == "ship_interceptor" and
+        is_instance_valid(r44_view.real_airframe),
+        "R44 selection must preserve real model and reflect existing owned hull"):return
+    r44_view.set_ship_type("unsupported_premium_ship")
+    if not check(r44_view.selected_hull == "ship_scout",
+        "R44 inspection must reject invented, unowned or unsupported hull ids"):return
+    world._r39_refresh_garage()
+    if not check(r44_view.selected_hull == world.equipped_r15,
+        "R44 garage preview must follow saved equipped ship without changing purchases"):return
+    print("NEBULA_R44_REAL_HANGAR_SUCCESS imported_meshes=%d orbit=%.3f" % [
+        real_nodes.size(), r44_view.orbit_angle])
     # R42: selection is a real Godot Button signal, not a decorative mockup.
     var kai_button: Button = world.garage_hub_r39.captain_choice_buttons["kai"]
     kai_button.pressed.emit()
