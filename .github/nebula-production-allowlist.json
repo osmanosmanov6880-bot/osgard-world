@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R45",
-  "release_status": "R45_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R46",
+  "release_status": "R46_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "7ebc26989d570e7197810ebe87e06f05c6198574",
+    "index.html": "fe1ae0f80781a32083f96b38d1e70ff066f4e6d3",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "002028a43ab1a3ae96e1d4376dea49d8027122a1"
+    "index.pck": "0fe54d9d68bc5b1e781fc03503ea27bab509299a"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,9 +15,9 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-05",
-    "verification_workflow_run_id": 41915702181,
-    "native_source_commit_sha": "c20a1bf9b1dbf372e5e3efc521ea9abbcfd511cc",
-    "web_export_commit_sha": "80f77f155ed60aa7f6bea151f9670307e8f7af5e"
+    "verification_workflow_run_id": 41916829357,
+    "native_source_commit_sha": "5968de331a1b9d057a57a6856460540a983a016d",
+    "web_export_commit_sha": "fdff484974369fb821e84f9021ea21f85d21a833"
   },
-  "notes": "Owner-directed R45 exact-binary rollout. Source PR #731 hard native Godot, actual browser WebAssembly and mobile emulation checks passed #41914578026; master production source/export run #41915702181 passed. Distinct physical procedural hull variants on shared imported mesh; no independent AAA art asset claim. Hosted WebGL pixels remain advisory. Real Android/iOS QA NOT PERFORMED. R40 hardware evidence approval remains separately strict. R44 is fallback and R46 not included."
+  "notes": "R46 owner-directed promotion of real ship-stat comparison and compact sortie readiness; source PR #732 native/Chromium/mobile CI #41915003756 passed mandatory gates, master Godot export #41916829357 passed, exact four Git blob identities pinned. R45 is live rollback. Physical Android/iPhone testing NOT_PERFORMED, hosted GPU visual capture advisory. R40 independent hardware gate preserved."
 }
