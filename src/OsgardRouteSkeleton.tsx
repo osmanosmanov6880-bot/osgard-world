@@ -1,7 +1,7 @@
-import type { ProductTheme } from './BrandMark'
+import { BrandLockup, type ProductTheme } from './BrandMark'
 import './osgardRouteSkeleton.css'
 
-/** Real loading state for deferred route bundles. No mock metrics or fake actions. */
+/** Branded, lightweight loading state for deferred route bundles. */
 export default function OsgardRouteSkeleton({ theme, path }: { theme: ProductTheme; path: string }) {
   const area = path === '/development' || path.startsWith('/development/') ? 'development'
     : path === '/academy' ? 'academy'
@@ -18,23 +18,15 @@ export default function OsgardRouteSkeleton({ theme, path }: { theme: ProductThe
     entertainment: ['OSGARD PLAY', 'Загружаем каталог игровых миров…'],
   } as const
   const [name, description] = labels[area]
-  return <main className="osgard-route-skeleton" data-skeleton-theme={theme} data-skeleton-area={area} role="status"
-    aria-live="polite" aria-busy="true" aria-label={description}>
-    <div className="osgard-skeleton-ambient" aria-hidden="true" />
-    <div className="osgard-skeleton-copy">
-      <p className="osgard-skeleton-eyebrow">{name} <span>/ ЗАГРУЗКА</span></p>
-      <h2>{description}</h2>
-      <p>Экран откроется после загрузки необходимых файлов.</p>
-      <div className="osgard-skeleton-actions" aria-hidden="true">
-        <span /><span />
-      </div>
-      <div className="osgard-skeleton-bars" aria-hidden="true">
-        <span /><span /><span />
-      </div>
-    </div>
-    <div className="osgard-skeleton-art" aria-hidden="true">
-      <div className="osgard-skeleton-ring"><span /></div>
-      <div className="osgard-skeleton-grid"><span /><span /><span /></div>
-    </div>
+  const markTheme: ProductTheme = area === 'intelligence' || area === 'academy' || area === 'lectures' ? 'intelligence'
+    : area === 'play' || area === 'entertainment' ? 'play' : 'world'
+
+  return <main className="osgard-route-skeleton" data-skeleton-theme={markTheme} data-skeleton-area={area}
+    role="status" aria-live="polite" aria-busy="true" aria-label={description}>
+    <div className="osgard-loader-glow" aria-hidden="true" />
+    <div className="osgard-loader-lockup"><BrandLockup theme={markTheme} /></div>
+    <p className="osgard-loader-caption">{name}</p>
+    <p className="osgard-loader-description">{description}</p>
+    <div className="osgard-loader-track" aria-hidden="true"><i /></div>
   </main>
 }
