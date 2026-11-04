@@ -3,6 +3,7 @@ extends SubViewportContainer
 ## Uses the same authored imported NX airframe mesh as the live flight ship.
 ## Isolated camera/world: inspecting never moves or unlocks the flight ship.
 const NXHeroScene = preload("res://assets/models/nx08_interceptor_r8.gltf")
+const HullVariantsR45Script = preload("res://scripts/hull_variants_r45.gd")
 
 const VALID_HULLS = [
     "ship_scout", "ship_interceptor", "ship_guardian"
@@ -11,6 +12,7 @@ const VALID_HULLS = [
 var preview_viewport: SubViewport
 var ship_pivot: Node3D
 var real_airframe: Node3D
+var distinct_hull_r45: Node3D
 var inspection_camera: Camera3D
 var selected_hull: String = "ship_scout"
 var orbit_angle: float = -0.48
@@ -111,6 +113,10 @@ func _make_real_viewport() -> void:
     real_airframe = NXHeroScene.instantiate() as Node3D
     real_airframe.name = "R44_ActualImportedNX08Mesh"
     ship_pivot.add_child(real_airframe)
+    distinct_hull_r45 = HullVariantsR45Script.new()
+    distinct_hull_r45.name = "R45_VisibleFleetVariant"
+    ship_pivot.add_child(distinct_hull_r45)
+    distinct_hull_r45.set_hull(selected_hull)
     ship_pivot.rotation.y = orbit_angle
 
     var key_light := DirectionalLight3D.new()
@@ -164,6 +170,8 @@ func set_ship_type(id: String) -> void:
     # Do not pretend that buying a different loadout also provides a
     # separately modeled airframe that does not yet exist.
     selected_hull = id if VALID_HULLS.has(id) else "ship_scout"
+    if is_instance_valid(distinct_hull_r45):
+        distinct_hull_r45.set_hull(selected_hull)
 
 func rotate_step(direction: int) -> void:
     orbit_angle = wrapf(orbit_angle + float(clampi(direction, -1, 1)) * 0.40,

@@ -2,6 +2,7 @@ extends CharacterBody3D
 ## R21: physics-based, responsive flight-assist instead of per-frame rotate/
 ## instant speed clamp. Keeps player progression and the R5-R14 hero model.
 const ShipVisualR5Script = preload("res://scripts/ship_visual_r5.gd")
+const HullVariantsR45Script = preload("res://scripts/hull_variants_r45.gd")
 
 signal fired(origin: Vector3, direction: Vector3)
 
@@ -26,6 +27,7 @@ var weapon_rank: int = 0
 var turn_speed: float = 1.9
 var cooldown: float = 0.0
 var visual: Node3D
+var hull_kit_r45: Node3D
 var engine_flames: Array[MeshInstance3D] = []
 var glow_time: float = 0.0
 var controls_locked: bool = false
@@ -92,6 +94,9 @@ func _ready() -> void:
     model.name = "HighDetailInterceptorR5"
     visual.add_child(model)
     engine_flames = model.engine_flames
+    hull_kit_r45 = HullVariantsR45Script.new()
+    hull_kit_r45.name = "R45_ActualFlightHullKit"
+    visual.add_child(hull_kit_r45)
     if OS.has_feature("web"):
         browser_window = JavaScriptBridge.get_interface("window")
     # The R8 wing span is large, but collision uses a conservative swept
@@ -102,6 +107,10 @@ func _ready() -> void:
     collider.name = "ShipCollision"
     collider.shape = shape
     add_child(collider)
+
+func set_hull_variant(id: String) -> void:
+    if is_instance_valid(hull_kit_r45):
+        hull_kit_r45.set_hull(id)
 
 func set_touch_controls(steering: Vector2, throttle: float, vertical: float,
         boosting: bool, firing: bool) -> void:

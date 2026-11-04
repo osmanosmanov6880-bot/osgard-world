@@ -5,6 +5,7 @@ const Hangar3DPreviewR44Script = preload("res://scripts/hangar_ship_preview_r44.
 signal sortie_requested
 signal shop_requested
 signal captain_selected(captain_id: String)
+signal ship_selected_r45(ship_id: String)
 
 var ui_font: Font
 var profile: Dictionary = {}
@@ -28,6 +29,8 @@ var debrief_label: Label
 var captain_role_label: Label
 var captain_bonus_label: Label
 var captain_choice_buttons: Dictionary = {}
+var ship_choice_buttons_r45: Dictionary = {}
+var ship_ownership_hint_r45: Label
 ## R44 separate 3D dock, actual in-game NX imported geometry and orbit controls.
 var ship_preview_r44
 var preview_frame_r44: PanelContainer
@@ -181,6 +184,26 @@ func _build() -> void:
     _label(ship_stack, "АКТИВНЫЙ КОРАБЛЬ", 11, MUTED)
     ship_label = _label(ship_stack, "NX-08  /  SCOUT", 18, Color(0.93,0.97,0.99))
     _label(ship_stack, "ЩИТ И КОРПУС · СИСТЕМЫ ГОТОВЫ", 11, CYAN)
+    var hull_selector := HBoxContainer.new()
+    hull_selector.name = "R45_ActualFleetSelector"
+    hull_selector.add_theme_constant_override("separation", 5)
+    ship_stack.add_child(hull_selector)
+    for hull_id in ["ship_scout", "ship_interceptor", "ship_guardian"]:
+        var selector := Button.new()
+        selector.name = "R45_Choose_" + hull_id
+        selector.text = {"ship_scout":"NX-08", "ship_interceptor":"NX-12",
+            "ship_guardian":"NX-21"}[hull_id]
+        selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        selector.custom_minimum_size = Vector2(64, 44)
+        selector.focus_mode = Control.FOCUS_ALL
+        selector.add_theme_font_override("font", ui_font)
+        selector.add_theme_font_size_override("font_size", 12)
+        selector.add_theme_stylebox_override("normal", _panel_style(PANEL))
+        selector.pressed.connect(_on_r45_ship_pressed.bind(hull_id))
+        hull_selector.add_child(selector)
+        ship_choice_buttons_r45[hull_id] = selector
+    ship_ownership_hint_r45 = _label(ship_stack,
+        "Недоступную технику можно открыть в магазине.", 11, MUTED)
 
     var captain_card := PanelContainer.new()
     captain_card.name = "R39_CaptainCard"
@@ -283,6 +306,9 @@ func _on_turn_preview_r44(direction: int) -> void:
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.rotate_step(direction)
 
+func _on_r45_ship_pressed(id: String) -> void:
+    ship_selected_r45.emit(id)
+
 func _on_captain_pressed(id: String) -> void:
     captain_selected.emit(id)
 
@@ -313,6 +339,23 @@ func refresh(data: Dictionary) -> void:
         "ship_guardian": "NX-21  /  СТРАЖ",
     }
     ship_label.text = str(ship_names.get(ship_id, "NX-08  /  РАЗВЕДЧИК"))
+    var owned_hulls: Dictionary = data.get("owned_ships", {})
+    for hull_id in ship_choice_buttons_r45:
+        var button: Button = ship_choice_buttons_r45[hull_id]
+        var permitted: bool = bool(owned_hulls.get(hull_id, hull_id == "ship_scout"))
+        var current: bool = str(hull_id) == ship_id
+        button.disabled = not permitted
+        button.text = ("✓ " if current else "") + str({
+            "ship_scout":"NX-08", "ship_interceptor":"NX-12",
+            "ship_guardian":"NX-21"}.get(hull_id, "NX"))
+        button.add_theme_stylebox_override("normal",
+            _panel_style(CYAN if current else PANEL, CYAN if current else LINE))
+        button.add_theme_color_override("font_color",
+            BG if current else (CYAN if permitted else MUTED))
+        button.tooltip_text = ("Экипирован" if current else
+            ("Выбрать принадлежащий корабль" if permitted else
+            "Сначала приобрести в магазине"))
+    ship_ownership_hint_r45.text = "Три корпуса с разными 3D-силуэтами · выбор без доплаты"
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.set_ship_type(ship_id)
     if is_instance_valid(preview_title_r44):
