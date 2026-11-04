@@ -11,14 +11,14 @@
 
 ## Source / build proof
 
-- Source feature [PR #738](https://github.com/osmanosmanov6880-bot/osgard-world/pull/738). **Wait for mandatory Godot, real Chromium and emulated touchscreen CI to complete.**
-- Master source merge commit: PENDING.
+- Source feature [PR #738](https://github.com/osmanosmanov6880-bot/osgard-world/pull/738) merged after mandatory Godot native scene/runtime, real WebAssembly Chromium flight, emulated mobile touchscreen, secure commerce gates in [#41919514769](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41919514769). Hosted SwiftShader visual check is advisory and does NOT certify physical hardware.
+- Master source merge commit: `3102888ee9ed7e0e8997c55820b9ac74a87975aa`.
 - Master export CI run and exact exported commit: PENDING.
 - Artifact identities: PENDING — do not copy prior R46 hashes, especially `index.pck` and `index.html`.
 
 ## Release checklist
 
-- [ ] Source PR #738 merged **only after** native Godot runtime, browser flight and mobile touch gates passed
+- [x] Source PR #738 merged after native Godot runtime, browser flight and mobile touch gates passed — #41919514769
 - [ ] Fresh master Web export generated, committed, and succeeded
 - [ ] Four real Git blob SHA-1 hashes pinned in the allowlist with precise source/export provenance and successful run ID
 - [ ] R47 exact-binary negative guard tests passed on release PR
