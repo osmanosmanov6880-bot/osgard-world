@@ -4,10 +4,14 @@ on:
   workflow_run:
     workflows: ["Publish REMIX ARENA standalone"]
     types: [completed]
-  # Never execute the public-byte comparison on an unrelated policy/workflow
-  # push: public still serves the prior approved version until SSH deploy.
-  # A successful deployment triggers this automatically; dispatch remains
-  # available for manual incident verification.
+  # Self-check the verifier whenever its own logic changes. This is NOT
+  # triggered by allowlist changes: those must still go through SSH activation.
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/nebula-public-release-parity.yml"
+  # Successful deployment also triggers this automatically; dispatch remains
+  # available for manual verification without touching production bytes.
   workflow_dispatch:
 
 permissions:
