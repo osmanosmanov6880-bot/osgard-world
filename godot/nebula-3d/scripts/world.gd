@@ -1680,6 +1680,8 @@ func _r39_refresh_garage() -> void:
     garage_hub_r39.refresh({
         "credits": credits, "xp": xp, "mission_index": mission_index,
         "missions": MISSIONS, "ship": equipped_r15, "wingmen": wingmen_r15,
+        "hull": ship.hull, "shield": ship.shield,
+        "hull_cap": fleet_r15.ship_hull_cap(), "shield_cap": fleet_r15.ship_shield_cap(),
     })
 
 func _r39_launch_sortie() -> void:
@@ -1731,7 +1733,7 @@ func _r40_finish_garage_launch() -> void:
 
 ## R41: mission completion is a real choice, not a silent immediate chain.
 func _r41_show_result(succeeded: bool, mission_number: int, mission_title: String,
-        earned_credits: int, earned_xp: int) -> void:
+        earned_credits: int, earned_xp: int, repair_paid: int = 0) -> void:
     if sortie_result_open_r41:
         return
     sortie_result_open_r41 = true
@@ -1748,11 +1750,12 @@ func _r41_show_result(succeeded: bool, mission_number: int, mission_title: Strin
     var next_title: String = str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"
     var next_hint: String = str(MISSIONS[mission_index]["hint"]) if mission_index < MISSIONS.size() else "Исследуй районы Авроры."
     sortie_result_data_r41 = {
+        "repair_paid": repair_paid,
         "success": succeeded, "number": mission_number, "title": mission_title,
         "reward": earned_credits, "xp_gain": earned_xp, "total_credits": credits,
         "total_xp": xp, "elapsed_seconds": roundi(sortie_elapsed_r41),
         "targets_destroyed": sortie_targets_r41,
-        "hull_percent": roundi(100.0 * ship.hull / maxf(1.0, fleet_r15.ship_hull_cap())),
+        "hull_percent": roundi(100.0 * ship.hull / maxf(1.0, fleet_r15.ship_hull_cap())) if succeeded else 0,
         "next_number": mission_index + 1, "next_title": next_title,
         "next_hint": next_hint,
         "campaign_finished": mission_index >= MISSIONS.size(),
@@ -1778,14 +1781,15 @@ func _r41_fail_sortie() -> void:
     var failed_number: int = mini(mission_index + 1, MISSIONS.size())
     var failed_title: String = str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"
     _r41_clear_mission_drones()
-    credits = maxi(0, credits - 220)
+    var actual_repair_paid: int = mini(credits, 220)
+    credits -= actual_repair_paid
     ship.global_position = r21_safe_spawn
     ship.velocity = Vector3.ZERO
     ship.hull = fleet_r15.ship_hull_cap()
     ship.shield = fleet_r15.ship_shield_cap()
     sortie_needs_mission_start_r41 = true
     _save_progress()
-    _r41_show_result(false, failed_number, failed_title, 0, 0)
+    _r41_show_result(false, failed_number, failed_title, 0, 0, actual_repair_paid)
 
 func _r41_close_debrief() -> void:
     if is_instance_valid(sortie_debrief_r41):
