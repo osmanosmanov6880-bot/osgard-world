@@ -1096,6 +1096,44 @@ func _run() -> void:
     await process_frame
     if not check(world.mission_index >= 1, "Waypoint mission did not complete"):return
     if not check(world.credits > start_credits, "Mission reward missing"):return
+    # R41: rewards must be granted once, with the next sortie requiring explicit action.
+    var rewarded_once: int = world.credits
+    var first_result_xp: int = world.xp
+    if not check(world.sortie_result_open_r41 and world.ship.controls_locked and
+        is_instance_valid(world.sortie_debrief_r41) and
+        world.sortie_debrief_r41.reward_label.text.contains("+350 CR") and
+        world.sortie_debrief_r41.continue_button.text.contains("ДАЛЬШЕ") and
+        world.mission_index == 1,
+        "R41 first mission must show real earned rewards and explicit next sortie"):return
+    world._complete_mission()
+    if not check(world.credits == rewarded_once and world.xp == first_result_xp and
+        world.mission_index == 1,
+        "R41 duplicate completion incorrectly paid or advanced the campaign"):return
+    world._r41_return_to_garage()
+    if not check(world.garage_open_r39 and world.ship.controls_locked and
+        not world.sortie_result_open_r41 and
+        world.garage_hub_r39.mission_label.text.contains("НЕОНОВЫЙ КВАРТАЛ"),
+        "R41 return to garage must show next mission without losing progression"):return
+    world._r39_launch_sortie()
+    if not check(not world.garage_open_r39 and not world.ship.controls_locked and
+        not world.sortie_needs_mission_start_r41,
+        "R41 relaunch must prepare and unlock the next mission"):return
+    # Force one real loss path; no mission reward or mission advance.
+    world.ship.hull = 0.0
+    world._r41_fail_sortie()
+    if not check(world.sortie_result_open_r41 and world.ship.controls_locked and
+        world.mission_index == 1 and world.ship.hull > 0.0 and
+        world.sortie_debrief_r41.continue_button.text.contains("ПОВТОРИТЬ"),
+        "R41 defeat must offer a retry without advancing the campaign"):return
+    var after_loss_credits: int = world.credits
+    world._r41_fail_sortie()
+    if not check(world.credits == after_loss_credits,
+        "R41 defeat rescue cost must be charged only once"):return
+    world._r41_continue_sortie()
+    if not check(not world.sortie_result_open_r41 and not world.ship.controls_locked and
+        world.mission_index == 1 and world.sortie_started_r41,
+        "R41 retry must restore actual player control in the same mission"):return
+    print("NEBULA_R41_SORTIE_LOOP_SUCCESS one_time_reward=350 garage=1 retry=1")
     var previous_credits: int = world.credits
     world.credits = 5000
     world.ship.global_position = Vector3(0,18,78)
