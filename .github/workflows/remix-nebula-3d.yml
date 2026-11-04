@@ -185,7 +185,7 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid" || true' EXIT
           sleep 2
-          timeout 300s node godot/nebula-3d/tests/browser_flight_r25.mjs
+          timeout 480s node godot/nebula-3d/tests/browser_flight_r25.mjs
       - name: Verify real mobile touchscreen flight in WebAssembly (PR gate)
         if: github.event_name == 'pull_request'
         run: |
@@ -194,7 +194,7 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid" || true' EXIT
           sleep 2
-          timeout 390s node godot/nebula-3d/tests/browser_mobile_r31.mjs
+          timeout 540s node godot/nebula-3d/tests/browser_mobile_r31.mjs
       - name: Save R31 real mobile touchscreen physics evidence
         if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4

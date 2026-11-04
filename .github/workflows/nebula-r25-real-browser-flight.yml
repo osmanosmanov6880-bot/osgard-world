@@ -44,7 +44,7 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid" || true' EXIT
           sleep 2
-          timeout 300s node godot/nebula-3d/tests/browser_flight_r25.mjs
+          timeout 480s node godot/nebula-3d/tests/browser_flight_r25.mjs
       - name: Upload true WebAssembly physics telemetry report
         if: always()
         uses: actions/upload-artifact@v4

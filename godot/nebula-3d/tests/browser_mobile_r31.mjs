@@ -146,6 +146,39 @@ try {
   cdp = await context.newCDPSession(page);
   const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent',
     {type, touchPoints});
+  // R43 introduced a proper crashed-ship -> garage -> manual retry loop.
+  // Unlike previous silent respawn, the real ship stays locked after defeat.
+  // Long software-GL touch suites can genuinely hit buildings: when this
+  // happens, press the *real visible Godot sortie button* before continuing.
+  const resumeAfterRealDefeat = async (stage) => {
+    const state = await snapshot();
+    if (!state?.locked) return false;
+    if (!(state.garage_view_w > 0 && state.garage_view_h > 0 &&
+          state.garage_sortie_x > 0 && state.garage_sortie_y > 0)) {
+      throw new Error('R43 failure has no accessible garage retry button: ' +
+        JSON.stringify({stage,state}));
+    }
+    await send('touchEnd', []);
+    const css = await page.evaluate(() => {
+      const r=document.querySelector('#canvas')?.getBoundingClientRect();
+      return r ? {x:r.x,y:r.y,width:r.width,height:r.height} : null;
+    });
+    if (!css || css.width < 200 || css.height < 200)
+      throw new Error('R43 retry has no visible canvas');
+    const retry = {
+      id: 19, force: 1,
+      x: css.x + state.garage_sortie_x * css.width/state.garage_view_w,
+      y: css.y + state.garage_sortie_y * css.height/state.garage_view_h
+    };
+    report.checks.push({label:'R43 physical defeat reached actual locked garage',
+      stage, telemetry:state, retry_position:retry});
+    await send('touchStart', [retry]);
+    await send('touchEnd', []);
+    await expectTelemetry('R43 actual touchscreen garage retry unlocks ship',
+      s => s?.locked===false && s.touch_count===0, 35000);
+    await page.waitForTimeout(350);
+    return true;
+  };
   const garageLaunch = point(ready.garage_sortie_x, ready.garage_sortie_y, 7);
   await send('touchStart', [garageLaunch]);
   await send('touchEnd', []);
@@ -198,6 +231,7 @@ try {
     if (!landscapeRect || landscapeRect.width < 400) {
       throw new Error('Rotated phone viewport is not visible');
     }
+    await resumeAfterRealDefeat('landscape rotation');
     const landscapeThrust = {
       x: landscapeRect.x + rotated.touch_thrust_x *
         landscapeRect.width / rotated.touch_view_w,
@@ -227,14 +261,54 @@ try {
     if (!tinyRect || tinyRect.width < 300) {
       throw new Error('Compact portrait WebGL canvas missing');
     }
-    const tinyThrust = {
-      x: tinyRect.x + tiny.touch_thrust_x * tinyRect.width / tiny.touch_view_w,
-      y: tinyRect.y + tiny.touch_thrust_y * tinyRect.height / tiny.touch_view_h,
-      id:4,force:1
-    };
-    await send('touchStart',[tinyThrust]);
-    await expectTelemetry('compact portrait GAS drives real Godot ship',
-      s => s?.touch_count >= 1 && s.touch_throttle >= 0.9, 30000);
+    // R43: the earlier landscape test can legitimately crash the actual
+    // ship just AFTER the resize telemetry was captured. Never send GAS to
+    // a locked garage and incorrectly report a broken touch layout.
+    // Recovery must use the real on-screen sortie button; if flight resumes,
+    // the next attempt must prove actual Godot throttle telemetry.
+    let compactThrustConfirmed = false;
+    for (let retry = 0; retry < 3; retry++) {
+      await resumeAfterRealDefeat('compact portrait pre-thrust attempt '+(retry+1));
+      const now = await snapshot();
+      const canvasRect = await page.evaluate(() => {
+        const r = document.querySelector('#canvas')?.getBoundingClientRect();
+        return r ? {x:r.x, y:r.y, width:r.width, height:r.height} : null;
+      });
+      if (!now || !canvasRect || now.touch_view_w < 200 ||
+          now.touch_view_h < 200) {
+        throw new Error('R43 compact throttle lacks live viewport geometry');
+      }
+      const liveThrust = {
+        x: canvasRect.x + now.touch_thrust_x * canvasRect.width / now.touch_view_w,
+        y: canvasRect.y + now.touch_thrust_y * canvasRect.height / now.touch_view_h,
+        id:4,force:1
+      };
+      await send('touchStart',[liveThrust]);
+      // Observe BOTH legitimate engine outcomes: throttle or physical crash.
+      // A locked ship is never a substitute for a successful throttle check.
+      const outcome = await expectTelemetry(
+        'compact portrait throttle or actual ship destruction',
+        s => s?.locked === true ||
+          (s?.locked === false && s.touch_count >= 1 && s.touch_throttle >= 0.9),
+        30000
+      );
+      if (!outcome.locked) {
+        report.checks.push({
+          label:'compact portrait GAS drives real Godot ship after genuine retry',
+          attempts:retry+1, telemetry:outcome
+        });
+        compactThrustConfirmed = true;
+        break;
+      }
+      await send('touchEnd',[]);
+      report.checks.push({
+        label:'R43 ship crashed between compact layout and throttle sampling',
+        attempts:retry+1, telemetry:outcome
+      });
+    }
+    if (!compactThrustConfirmed) {
+      throw new Error('Compact GAS never drove real unlocked Godot flight after 3 actual UI retries');
+    }
     await send('touchEnd',[]);
     await expectTelemetry('compact portrait GAS release prevents ghost thrust',
       s => s?.touch_count === 0 && s.touch_throttle <= 0.01, 25000);
