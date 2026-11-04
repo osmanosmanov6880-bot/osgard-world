@@ -31,6 +31,7 @@ const GarageHubR39Script = preload("res://scripts/garage_hub_r39.gd")
 const CampaignStoryR41Script = preload("res://scripts/campaign_story_r41.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
+const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -45,7 +46,8 @@ const MISSIONS = [
     {"title":"ПРОТОКОЛ ХЕЛИОС","hint":"Найди терминал Хелиос. Его журнал раскроет, кто оплатил нападение на Аврору.","position":Vector3(690,21,-400),"type":"reach","reward":1700},
     {"title":"ПОХИЩЕННЫЙ КОНВОЙ","hint":"Сопроводи движущийся гражданский корабль до точки эвакуации. Держись рядом и уничтожай дроны, пока они не разрушили его.","position":Vector3(-500,20,670),"type":"escort","reward":2400},
     {"title":"СЕРДЦЕ РАЗЛОМА","hint":"Доставь стабилизатор в Разлом: без него атака повторится и город не удержать.","position":Vector3(520,24,1010),"type":"reach","reward":2600},
-    {"title":"ПОСЛЕДНИЙ СИГНАЛ","hint":"Останови командование Хелиос у Нексуса и предъяви доказательства заговора.","position":Vector3(1290,28,-780),"type":"combat","reward":4300}
+    {"title":"ПОСЛЕДНИЙ СИГНАЛ","hint":"Останови командование Хелиос у Нексуса и предъяви доказательства заговора.","position":Vector3(1290,28,-780),"type":"combat","reward":4300},
+    {"title":"ТЕНИ ПОРТА","hint":"Изучи три терминала Авроры. Удерживай T или кнопку ВВОД у каждого. Не стреляй.","position":Vector3(0,26,0),"type":"investigation","reward":3200}
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -61,6 +63,10 @@ var mission_started: bool = false
 var mission_objectives_r48
 var r48_escort_enemies_spawned: bool = false
 var r48_last_goal: Vector3 = Vector3.ZERO
+var r49_investigation
+var r49_interact_held := false
+var r49_command_button: Button
+var r49_terminal_button: Button
 var shot_flash: float = 0.0
 var hud_mission: Label
 var hud_status: Label
@@ -371,6 +377,7 @@ func _ready() -> void:
     r21_touch.hangar_requested.connect(_r21_toggle_hangar)
     r21_touch.camera_requested.connect(_r21_cycle_camera)
     r21_touch.cruise_requested.connect(_r23_toggle_cruise)
+    _r49_make_buttons()
     r21_mobile_enabled = r21_touch.enabled
     _r16_setup_beam_pool()
     store_r15 = HangarStoreR15Script.new()
@@ -1019,6 +1026,7 @@ func _process(delta: float) -> void:
     if not garage_open_r39 and ship.hull <= 0.0 and mission_index < MISSIONS.size():
         _r43_fail_sortie()
         return
+    _r49_refresh_buttons()
     _mission_tick(delta)
     if is_instance_valid(r21_dashboard):
         r21_dashboard.show_objective = mission_index < MISSIONS.size()
@@ -1072,6 +1080,22 @@ func _mission_tick(dt: float) -> void:
         return
     var mission: Dictionary = MISSIONS[mission_index]
     var target: Vector3 = mission["position"]
+    if is_instance_valid(r49_investigation):
+        var result_r49: String = r49_investigation.step(dt, ship.global_position,
+            r49_interact_held or Input.is_key_pressed(KEY_T))
+        var goal_r49: Vector3 = r49_investigation.objective_position()
+        if is_instance_valid(mission_beacon):
+            mission_beacon.global_position = goal_r49
+        if r48_last_goal.distance_to(goal_r49) > 5.0:
+            r48_last_goal = goal_r49
+            ship.set_navigation_target(goal_r49)
+        if result_r49 == "event":
+            _show_notice(r49_investigation.last_event)
+        elif result_r49 == "failed":
+            _r43_fail_sortie("Тревога в порту. Повтори расследование без выстрелов.")
+        elif result_r49 == "success":
+            _complete_mission()
+        return
     if is_instance_valid(mission_objectives_r48):
         var outcome: String = mission_objectives_r48.step(dt, ship.global_position)
         if mission["type"] == "escort" and (
@@ -1124,6 +1148,8 @@ func _start_mission() -> void:
     mission_started = false
     r43_pending_bounty = 0
     r48_escort_enemies_spawned = false
+    _r49_clear_investigation()
+    if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
         mission_objectives_r48 = null
@@ -1138,17 +1164,27 @@ func _start_mission() -> void:
         _show_notice("СЮЖЕТ ЗАВЕРШЁН · СВОБОДНЫЙ ПОЛЁТ")
         return
     var data: Dictionary = MISSIONS[mission_index]
+    if str(data["type"]) == "investigation":
+        r49_investigation = PortInvestigationR49Script.new()
+        add_child(r49_investigation)
+        r49_investigation.configure(data["position"])
+        mission_started = true
+        r48_last_goal = r49_investigation.objective_position()
+        ship.set_navigation_target(r48_last_goal)
     if str(data["type"]) in ["scan", "escort", "evacuation"]:
         mission_objectives_r48 = MissionObjectivesR48Script.new()
         add_child(mission_objectives_r48)
         mission_objectives_r48.configure(str(data["type"]), data["position"])
+        if str(data["type"]) == "escort": fleet_r15.defend_anchor = mission_objectives_r48
         mission_started = true
         r48_last_goal = mission_objectives_r48.objective_position()
         ship.set_navigation_target(r48_last_goal)
     var beacon := Node3D.new()
     beacon.name = "MissionBeacon"
-    beacon.position = (mission_objectives_r48.objective_position()
-        if is_instance_valid(mission_objectives_r48) else data["position"])
+    beacon.position = (r49_investigation.objective_position()
+        if is_instance_valid(r49_investigation) else (
+        mission_objectives_r48.objective_position()
+        if is_instance_valid(mission_objectives_r48) else data["position"]))
     var sphere := MeshInstance3D.new()
     var mesh := SphereMesh.new()
     mesh.radius=4.8
@@ -1201,6 +1237,8 @@ func _complete_mission() -> void:
     mission_started = false
     mission_enemies = 0
     r43_pending_bounty = 0
+    _r49_clear_investigation()
+    if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
         mission_objectives_r48 = null
@@ -1239,6 +1277,8 @@ func _r43_fail_sortie(reason: String = "") -> void:
     mission_started = false
     mission_enemies = 0
     r43_pending_bounty = 0
+    _r49_clear_investigation()
+    if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
         mission_objectives_r48 = null
@@ -1311,6 +1351,7 @@ func _spawn_pirate_ambush() -> void:
 func _on_ship_fire(origin: Vector3, direction: Vector3) -> void:
     if garage_open_r39:
         return
+    if is_instance_valid(r49_investigation): r49_investigation.report_weapon_discharge()
     var endpoint: Vector3 = origin+direction*180.0
     var best_distance: float = 180.0
     var best
@@ -1409,18 +1450,23 @@ func _update_hud() -> void:
         hud_status.text = "Исследуй шесть районов космического города.\n" + resource_line
     else:
         var m: Dictionary = MISSIONS[mission_index]
-        var goal: Vector3 = (mission_objectives_r48.objective_position()
+        var goal: Vector3 = (r49_investigation.objective_position()
+            if is_instance_valid(r49_investigation) else (
+            mission_objectives_r48.objective_position()
             if is_instance_valid(mission_objectives_r48) and
-                mission_objectives_r48.active else m["position"])
+                mission_objectives_r48.active else m["position"]))
         var d: int = roundi(ship.global_position.distance_to(goal))
         hud_mission.text = "%02d  ·  %s" % [mission_index + 1, m["title"]]
-        if is_instance_valid(mission_objectives_r48):
+        if is_instance_valid(r49_investigation):
+            hud_objective.text = "◇  " + r49_investigation.status_line()
+        elif is_instance_valid(mission_objectives_r48):
             hud_objective.text = "◇  " + mission_objectives_r48.status_line()
         elif m["type"] == "combat" and mission_started:
             hud_objective.text = "◇  ВРАГОВ ОСТАЛОСЬ  /  %d" % mission_enemies
         else:
             hud_objective.text = "◇  ЦЕЛЬ МИССИИ  /  %d М" % d
         hud_status.text = "%s  ·  %d м\n%s" % [m["hint"], d, resource_line]
+        if is_instance_valid(r49_investigation): hud_status.text += "\n" + r49_investigation.status_line()
 
 func _fit_hud() -> void:
     if not is_instance_valid(hud_panel):
@@ -1440,6 +1486,7 @@ func _fit_hud() -> void:
     var short_landscape: bool = r21_mobile_enabled and height < 530.0 and width > height
     if is_instance_valid(r23_cruise_button):
         r23_cruise_button.visible = not r21_mobile_enabled and width >= 800.0
+    _r49_layout_buttons(rect, safe)
     if compact:
         hud_panel.offset_left = safe_left + 8.0
         hud_panel.offset_top = safe_top + 8.0
@@ -1492,7 +1539,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
             get_viewport().set_input_as_handled()
         return
     if event is InputEventKey and event.pressed and not event.echo:
-        if event.keycode==KEY_F5:
+        if event.keycode == KEY_C:
+            _r49_cycle_command()
+        elif event.keycode==KEY_F5:
             _save_progress()
             _show_notice("ИГРА СОХРАНЕНА")
         elif event.keycode==KEY_H:
@@ -1832,6 +1881,7 @@ func _r39_create_garage_hub() -> void:
     r47_launch_camera_time = 0.0
     if is_instance_valid(fleet_r15):
         fleet_r15.combat_active = false
+        fleet_r15.set_command("follow")
     ship.controls_locked = true
     ship.velocity = Vector3.ZERO
     ship.set_cruise_assist(false)
@@ -1934,12 +1984,75 @@ func _r42_select_captain(id: String) -> void:
     _r39_refresh_garage()
     _save_progress()
 
+
+func _r49_make_buttons() -> void:
+    r49_command_button = Button.new()
+    r49_command_button.name = "R49_WingmanOrders"
+    r49_command_button.focus_mode = Control.FOCUS_NONE
+    r49_command_button.add_theme_font_override("font", r21_ui_font)
+    r49_command_button.pressed.connect(_r49_cycle_command)
+    hud_canvas.add_child(r49_command_button)
+    r49_terminal_button = Button.new()
+    r49_terminal_button.name = "R49_TerminalHold"
+    r49_terminal_button.focus_mode = Control.FOCUS_NONE
+    r49_terminal_button.text = "УДЕРЖИВАТЬ · ВВОД"
+    r49_terminal_button.button_down.connect(_r49_hold_on)
+    r49_terminal_button.button_up.connect(_r49_hold_off)
+    r49_terminal_button.mouse_exited.connect(_r49_hold_off)
+    hud_canvas.add_child(r49_terminal_button)
+    _r49_refresh_buttons()
+
+func _r49_hold_on() -> void:
+    r49_interact_held = not garage_open_r39 and is_instance_valid(r49_investigation)
+
+func _r49_hold_off() -> void:
+    r49_interact_held = false
+
+func _r49_clear_investigation() -> void:
+    r49_interact_held = false
+    if is_instance_valid(r49_investigation):
+        r49_investigation.queue_free()
+        r49_investigation = null
+
+func _r49_order_label() -> String:
+    if not is_instance_valid(fleet_r15): return "СЛЕДОВАТЬ"
+    match fleet_r15.command_mode:
+        "attack": return "АТАКОВАТЬ"
+        "defend": return "ЗАЩИЩАТЬ"
+        _: return "СЛЕДОВАТЬ"
+
+func _r49_cycle_command() -> void:
+    if garage_open_r39 or not is_instance_valid(fleet_r15) or fleet_r15.helpers.is_empty():
+        return
+    var modes: Array = fleet_r15.SQUAD_COMMANDS
+    fleet_r15.set_command(str(modes[(modes.find(fleet_r15.command_mode) + 1) % modes.size()]))
+    _r49_refresh_buttons()
+    _show_notice("ВЕДОМЫЕ · " + _r49_order_label())
+
+func _r49_refresh_buttons() -> void:
+    if is_instance_valid(r49_command_button):
+        r49_command_button.visible = not garage_open_r39 and is_instance_valid(fleet_r15) and not fleet_r15.helpers.is_empty()
+        r49_command_button.text = "ВЕДОМЫЕ · " + _r49_order_label()
+    if is_instance_valid(r49_terminal_button):
+        r49_terminal_button.visible = not garage_open_r39 and is_instance_valid(r49_investigation)
+
+func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
+    if not is_instance_valid(r49_command_button): return
+    var wide: float = minf(220.0, rect.x * 0.35)
+    var top: float = safe.y + (115.0 if rect.y < 530.0 else 164.0)
+    var left: float = maxf(safe.x + 5.0, (rect.x - wide) * 0.5)
+    r49_command_button.position = Vector2(left, top)
+    r49_command_button.size = Vector2(wide, 44.0)
+    r49_terminal_button.position = Vector2(left, top + 52.0)
+    r49_terminal_button.size = Vector2(wide, 48.0)
+
 func _r39_launch_sortie() -> void:
     if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
         return
     garage_open_r39 = false
     if is_instance_valid(fleet_r15):
         fleet_r15.combat_active = true
+        fleet_r15.set_command("follow")
     garage_hub_r39.queue_free()
     garage_hub_r39 = null
     var captain: Dictionary = CaptainRosterR42Script.info(selected_captain_r42)
