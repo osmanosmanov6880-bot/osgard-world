@@ -1,6 +1,6 @@
 # NEBULA R47 — production release evidence
 
-**Date:** 2026-11-05. **State:** RELEASE CANDIDATE — verified master export and exact hashes pinned; public R46 remains live until isolated SSH deploy and independent HTTPS parity PASS.
+**Date:** 2026-11-05. **State:** RELEASED AND PUBLICLY VERIFIED on 2026-11-05. Isolated SSH deployment #41921437692 and independently downloaded four HTTPS assets #41921519962 all succeeded. Real Android/iPhone device QA NOT PERFORMED.
 
 ## Planned release scope
 
@@ -21,11 +21,11 @@
 - [x] Source PR #738 merged after native Godot runtime, browser flight and mobile touch gates passed — #41919514769
 - [x] Fresh master Web export generated, committed, and succeeded — #41920850005
 - [x] Four real Git blob SHA-1 hashes pinned in the allowlist with precise source/export provenance and successful run ID
-- [ ] R47 exact-binary negative guard tests passed on release PR
-- [ ] R47 owner-directed override explicitly declares `physical_device_qa=NOT_PERFORMED` and `hardware_qa_certified=false`
-- [ ] R40's independent real-hardware evidence rule unchanged
-- [ ] Only isolated SSH deployment activates R47 with disk, lock, rollback and internal Nginx checks
-- [ ] Independent public HTTPS 4/4 exact file hash parity confirms R47
+- [x] R47 exact-binary negative guard tests passed on release PR #741 — #41921257619 and #41921437621
+- [x] R47 owner-directed override explicitly declares `physical_device_qa=NOT_PERFORMED` and `hardware_qa_certified=false`
+- [x] R40's independent real-hardware evidence rule unchanged
+- [x] Only isolated SSH deployment activates R47 with disk, lock, rollback and internal Nginx checks — #41921437692
+- [x] Independent public HTTPS 4/4 exact file hash parity confirms R47 — #41921519962
 - [ ] Real Android/iPhone performance, sustained FPS and visual acceptance not yet performed
 
 ## Rollback and boundaries
@@ -44,3 +44,11 @@
 | `index.pck` | `99f54fa47073b1ededeb93f5f822b7800a24af0d` | 5,873,932 |
 
 **Do not mark public production success until the independent HTTPS four-byte identity check returns `NEBULA_PUBLIC_RELEASE_PARITY_PASS variant=R47`.**
+
+## Final production verification
+
+- [Exact R47 release PR #741](https://github.com/osmanosmanov6880-bot/osgard-world/pull/741) — merged from verified master Web export, not the superseded draft PR #740.
+- [Strict asset guard #41921437621](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41921437621) — PASS.
+- [Isolated SSH deployment #41921437692](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41921437692) — PASS, server package activated with rollback/health checks.
+- [Independent public HTTPS parity #41921519962](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41921519962) — `NEBULA_PUBLIC_RELEASE_PARITY_PASS variant=R47 actual_hardware_qa=NOT_PERFORMED`.
+- Public `index.html`, `index.js`, `index.wasm` and `index.pck` matched the exact four git blob SHA-1 hashes in this record, each after real HTTP download. **No hardware iPhone/Android visual sign-off or physical FPS evidence.**
