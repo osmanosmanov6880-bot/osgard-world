@@ -1,6 +1,6 @@
 # NEBULA R45 — verified-source release record
 
-**Date:** 2026-11-05. **Status:** release candidate, **not** production confirmation until independent public HTTPS parity passes.
+**Date:** 2026-11-05. **Status:** RELEASED AND PUBLICLY VERIFIED — isolated SSH activation #41916128495 and public 4/4 HTTPS byte parity #41916624645 succeeded. Physical-device QA remains NOT PERFORMED.
 
 ## Source and mandatory verification
 - Source feature PR [#731](https://github.com/osmanosmanov6880-bot/osgard-world/pull/731) merged at `c20a1bf9b1dbf372e5e3efc521ea9abbcfd511cc`.
@@ -13,8 +13,8 @@
 - [x] Git commit SHA: source `c20a1bf9b1dbf372e5e3efc521ea9abbcfd511cc`; exported assets `80f77f155ed60aa7f6bea151f9670307e8f7af5e`.
 - [x] Pin exact four Git blob hashes in `.github/nebula-production-allowlist.json`; must still pass the independent production guard.
 - [ ] Pass strict negative tests that prevent fake hardware QA claims.
-- [ ] Merge release PR only after confirmation, invoking isolated SSH rollout with rollback.
-- [ ] Verify 4/4 public HTTPS assets match exact approved hashes; **do not** equate server HTTP health with actual gameplay.
+- [x] Release PR #733 merged; isolated SSH rollout #41916128495 completed with rollback and Nginx health checks.
+- [x] Public 4/4 HTTPS file hashes verified in #41916624645. The first public check #41916251523 failed due an outdated version-enum before hashing; fixed in PRs #734/#735.
 - [ ] Real Android and iPhone physical-device QA **NOT PERFORMED**.
 
 ## Guardrails
@@ -32,3 +32,10 @@
 | `index.pck` | `002028a43ab1a3ae96e1d4376dea49d8027122a1` | 5,837,288 |
 
 **Important:** This record proves exact generated files and source CI only. Until the SSH deployment and public HTTPS checks pass, R44 remains the publicly confirmed release.
+
+## Final public evidence
+
+- [Release policy PR #733](https://github.com/osmanosmanov6880-bot/osgard-world/pull/733) — exact SHA assets + owner-directed no-hardware-QA override
+- [Production SSH deployment #41916128495](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41916128495) — success
+- [Independent public HTTPS check #41916624645](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41916624645) — success, `NEBULA_PUBLIC_RELEASE_PARITY_PASS variant=R45 actual_hardware_qa=NOT_PERFORMED`
+- **Not evidenced:** physical iPhone/Android frame rate, visual GPU approval by owner or full thirty-mission narrative.
