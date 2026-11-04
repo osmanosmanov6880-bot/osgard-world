@@ -294,7 +294,7 @@ try {
       );
       if (!outcome.locked) {
         report.checks.push({
-          label:'compact portrait GAS drives actual Godot physics after real retry',
+          label:'compact portrait GAS drives real Godot ship after genuine retry',
           attempts:retry+1, telemetry:outcome
         });
         compactThrustConfirmed = true;
