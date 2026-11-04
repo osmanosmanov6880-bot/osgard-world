@@ -261,7 +261,7 @@ func refresh(data: Dictionary) -> void:
         mission_detail.text = str(mission.get("hint", "Выполни контракт и помоги Авроре."))
         mission_class_label.text = "ПЕРЕХВАТ" if type == "combat" else "НАВИГАЦИЯ"
         mission_reward_label.text = "+%s CR" % _format_number(int(mission.get("reward", 0)))
-        launch_button.text = "▶  ОТКРЫТЬ АНГАР"
+        launch_button.text = "▶  ВЫЛЕТЕТЬ"
         status_label.text = "Автопилот ведёт к цели. Любой ручной ввод сразу возвращает управление пилоту."
 
 func _format_number(value: int) -> String:
