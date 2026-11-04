@@ -1760,6 +1760,19 @@ func _r39_refresh_garage() -> void:
         "last_result": r41_last_debrief,
         "captain_id": selected_captain_r42,
         "captain_info": CaptainRosterR42Script.info(selected_captain_r42),
+        "ship_profiles": {
+            "ship_scout": FleetCombatR15Script.hull_profile("ship_scout"),
+            "ship_interceptor": FleetCombatR15Script.hull_profile("ship_interceptor"),
+            "ship_guardian": FleetCombatR15Script.hull_profile("ship_guardian"),
+        },
+        "flight_equipment": {
+            "weapon_name": "ПЛАЗМА" if weapon_r15 == "weapon_plasma" else
+                ("ИМПУЛЬС" if weapon_r15 == "weapon_pulse" else "БАЗОВОЕ"),
+            "weapon_damage": fleet_r15.weapon_damage() + float(ship.weapon_rank),
+            "rockets": rockets_r15,
+            "wingmen": mini(2, wingmen_r15.size()),
+            "engine_rank": ship.engine_rank,
+        },
         "owned_ships": {
             "ship_scout": true,
             "ship_interceptor": owned_r15.has("ship_interceptor") or
