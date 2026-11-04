@@ -1034,11 +1034,9 @@ func _process(delta: float) -> void:
             r21_dashboard.objective = (
                 r49_investigation.objective_position()
                 if is_instance_valid(r49_investigation) else (
-                r49_investigation.objective_position()
-                if is_instance_valid(r49_investigation) else (
                 mission_objectives_r48.objective_position()
                 if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active
-                else MISSIONS[mission_index]["position"])))
+                else MISSIONS[mission_index]["position"]))
     if garage_open_r39:
         # The dock is a safe room, not a place for pirates to farm the player.
         ship.shield = fleet_r15.ship_shield_cap()
@@ -1067,9 +1065,11 @@ func _process(delta: float) -> void:
         radar.has_objective = mission_index < MISSIONS.size()
         if radar.has_objective:
             radar.objective = (
+                r49_investigation.objective_position()
+                if is_instance_valid(r49_investigation) else (
                 mission_objectives_r48.objective_position()
                 if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active
-                else MISSIONS[mission_index]["position"])
+                else MISSIONS[mission_index]["position"]))
         radar.targets.clear()
         for n in drones:
             if is_instance_valid(n) and n.hostile and n.global_position.distance_squared_to(ship.global_position) < 211600.0:
