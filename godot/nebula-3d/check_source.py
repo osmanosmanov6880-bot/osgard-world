@@ -655,7 +655,9 @@ r25_workflow = require(
     "workflow_run:",
     "REMIX NEBULA 3D native Web release",
     "browser_flight_r25.mjs",
-    "timeout 300s",
+    # Hosted SwiftShader needs a bounded 480-second limit for real physics
+    # sampling; never change this to a no-timeout or mock-GPU smoke.
+    "timeout 480s",
 )
 assert "func _r25_emit_browser_flight_state() -> void:" in world
 assert 'JavaScriptBridge.eval("window.__nebulaPilotTelemetry = "' in world
