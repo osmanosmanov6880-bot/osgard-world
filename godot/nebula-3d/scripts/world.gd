@@ -1409,9 +1409,17 @@ func _update_hud() -> void:
         hud_status.text = "Исследуй шесть районов космического города.\n" + resource_line
     else:
         var m: Dictionary = MISSIONS[mission_index]
-        var d: int = roundi(ship.global_position.distance_to(m["position"]))
+        var goal: Vector3 = (mission_objectives_r48.objective_position()
+            if is_instance_valid(mission_objectives_r48) and
+                mission_objectives_r48.active else m["position"])
+        var d: int = roundi(ship.global_position.distance_to(goal))
         hud_mission.text = "%02d  ·  %s" % [mission_index + 1, m["title"]]
-        hud_objective.text = ("◇  ВРАГОВ ОСТАЛОСЬ  /  %d" % mission_enemies) if m["type"] == "combat" and mission_started else ("◇  ЦЕЛЬ МИССИИ  /  %d М" % d)
+        if is_instance_valid(mission_objectives_r48):
+            hud_objective.text = "◇  " + mission_objectives_r48.status_line()
+        elif m["type"] == "combat" and mission_started:
+            hud_objective.text = "◇  ВРАГОВ ОСТАЛОСЬ  /  %d" % mission_enemies
+        else:
+            hud_objective.text = "◇  ЦЕЛЬ МИССИИ  /  %d М" % d
         hud_status.text = "%s  ·  %d м\n%s" % [m["hint"], d, resource_line]
 
 func _fit_hud() -> void:
