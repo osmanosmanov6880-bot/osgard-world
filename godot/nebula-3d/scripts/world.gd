@@ -363,6 +363,7 @@ func _ready() -> void:
     fleet_r15.player_ship = ship
     fleet_r15.targets = drones
     fleet_r15.ally_fired.connect(_r16_ally_fire)
+    fleet_r15.missile_launched.connect(_r49_report_weapon_discharge)
     _make_hud()
     r21_dashboard = PremiumHUDR21Script.new()
     r21_dashboard.name = "R21_PremiumFlightDashboard"
@@ -1026,7 +1027,6 @@ func _process(delta: float) -> void:
     if not garage_open_r39 and ship.hull <= 0.0 and mission_index < MISSIONS.size():
         _r43_fail_sortie()
         return
-    _r49_refresh_buttons()
     _mission_tick(delta)
     if is_instance_valid(r21_dashboard):
         r21_dashboard.show_objective = mission_index < MISSIONS.size()
@@ -1086,7 +1086,8 @@ func _mission_tick(dt: float) -> void:
     var target: Vector3 = mission["position"]
     if is_instance_valid(r49_investigation):
         var result_r49: String = r49_investigation.step(dt, ship.global_position,
-            r49_interact_held or Input.is_key_pressed(KEY_T))
+            r49_interact_held or Input.is_key_pressed(KEY_T) or
+            Input.is_physical_key_pressed(KEY_T))
         var goal_r49: Vector3 = r49_investigation.objective_position()
         if is_instance_valid(mission_beacon):
             mission_beacon.global_position = goal_r49
@@ -1175,6 +1176,9 @@ func _start_mission() -> void:
         mission_started = true
         r48_last_goal = r49_investigation.objective_position()
         ship.set_navigation_target(r48_last_goal)
+        # Genuine stealth: the player's squad can fly, but cannot shoot.
+        fleet_r15.combat_active = false
+        fleet_r15.set_command("follow")
     if str(data["type"]) in ["scan", "escort", "evacuation"]:
         mission_objectives_r48 = MissionObjectivesR48Script.new()
         add_child(mission_objectives_r48)
@@ -1358,7 +1362,7 @@ func _spawn_pirate_ambush() -> void:
 func _on_ship_fire(origin: Vector3, direction: Vector3) -> void:
     if garage_open_r39:
         return
-    if is_instance_valid(r49_investigation): r49_investigation.report_weapon_discharge()
+    _r49_report_weapon_discharge()
     var endpoint: Vector3 = origin+direction*180.0
     var best_distance: float = 180.0
     var best
@@ -1442,6 +1446,8 @@ func _show_notice(message: String) -> void:
     notice_timer=3.3
 
 func _update_hud() -> void:
+    # Avoid reflowing button labels at rendering frame rate on mobile.
+    _r49_refresh_buttons()
     if garage_open_r39:
         _r39_refresh_garage()
         return
@@ -1546,7 +1552,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
             get_viewport().set_input_as_handled()
         return
     if event is InputEventKey and event.pressed and not event.echo:
-        if event.keycode == KEY_C:
+        if event.keycode == KEY_C or event.physical_keycode == KEY_C:
             _r49_cycle_command()
         elif event.keycode==KEY_F5:
             _save_progress()
@@ -1992,6 +1998,10 @@ func _r42_select_captain(id: String) -> void:
     _save_progress()
 
 
+func _r49_report_weapon_discharge() -> void:
+    if is_instance_valid(r49_investigation):
+        r49_investigation.report_weapon_discharge()
+
 func _r49_make_buttons() -> void:
     r49_command_button = Button.new()
     r49_command_button.name = "R49_WingmanOrders"
@@ -2029,7 +2039,7 @@ func _r49_order_label() -> String:
         _: return "СЛЕДОВАТЬ"
 
 func _r49_cycle_command() -> void:
-    if garage_open_r39 or not is_instance_valid(fleet_r15) or fleet_r15.helpers.is_empty():
+    if garage_open_r39 or is_instance_valid(r49_investigation) or not is_instance_valid(fleet_r15) or fleet_r15.helpers.is_empty():
         return
     var modes: Array = fleet_r15.SQUAD_COMMANDS
     fleet_r15.set_command(str(modes[(modes.find(fleet_r15.command_mode) + 1) % modes.size()]))
@@ -2039,7 +2049,10 @@ func _r49_cycle_command() -> void:
 func _r49_refresh_buttons() -> void:
     if is_instance_valid(r49_command_button):
         r49_command_button.visible = not garage_open_r39 and is_instance_valid(fleet_r15) and not fleet_r15.helpers.is_empty()
-        r49_command_button.text = "ВЕДОМЫЕ · " + _r49_order_label()
+        r49_command_button.disabled = is_instance_valid(r49_investigation)
+        r49_command_button.text = ("ВЕДОМЫЕ · ТИХИЙ РЕЖИМ"
+            if is_instance_valid(r49_investigation) else
+            "ВЕДОМЫЕ · " + _r49_order_label())
     if is_instance_valid(r49_terminal_button):
         r49_terminal_button.visible = not garage_open_r39 and is_instance_valid(r49_investigation)
 
@@ -2080,4 +2093,5 @@ func _r39_launch_sortie() -> void:
         performance_lab_r11.visible = true
     r23_cruise_button.text = "▶  АВТОПИЛОТ К ЦЕЛИ"
     _start_mission()
+    _r49_refresh_buttons()
     _show_notice("ВЫЛЕТ · " + (str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"))
