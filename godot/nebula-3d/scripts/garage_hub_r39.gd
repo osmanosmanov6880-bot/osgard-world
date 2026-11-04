@@ -216,7 +216,7 @@ func refresh(data: Dictionary) -> void:
         roster_label.text = "ЭКИПАЖ  ·  Капитан %d ур.  |  " % level + "  +  ".join(names)
     var story: Dictionary = data.get("story", {})
     var last_result: Dictionary = data.get("last_result", {})
-    var new_result: bool = int(last_result.get("mission_index", -1)) == int(data.get("mission_index", 0)) - 1
+    var new_result: bool = not last_result.is_empty() and int(last_result.get("mission_index", -1)) >= 0 and int(last_result.get("mission_index", -1)) == int(data.get("mission_index", 0)) - 1
     story_label.text = str(story.get("act", "КАМПАНИЯ")) + "\n" + str(story.get("speaker", "КОМАНДОВАНИЕ АВРОРЫ"))
     description_label.text = str(story.get("brief", "Подготовь корабль и экипаж к следующему вылету."))
     objective_label.text = "ЦЕЛЬ  /  " + str(story.get("objective", "Следуй к навигационному маяку"))
