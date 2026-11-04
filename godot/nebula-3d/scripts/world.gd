@@ -771,7 +771,14 @@ func _r23_toggle_cruise() -> void:
         return
     ship.set_cruise_assist(not ship.cruise_assist)
     if ship.cruise_assist and mission_index < MISSIONS.size():
-        ship.set_navigation_target(MISSIONS[mission_index]["position"])
+        # R49: a staged objective always owns the current navigation goal.
+        # Do not overwrite the next terminal/rescue stop with the old mission center.
+        if is_instance_valid(r49_investigation):
+            ship.set_navigation_target(r49_investigation.objective_position())
+        elif is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active:
+            ship.set_navigation_target(mission_objectives_r48.objective_position())
+        else:
+            ship.set_navigation_target(MISSIONS[mission_index]["position"])
     r23_launch_button_events += 1
     if ship.cruise_assist:
         _show_notice("АВТОПИЛОТ К ЦЕЛИ · ЛЮБОЕ УПРАВЛЕНИЕ ОТКЛЮЧАЕТ")
