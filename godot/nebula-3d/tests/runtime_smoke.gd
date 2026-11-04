@@ -4,6 +4,7 @@ const MaterialFabricR12Script = preload("res://scripts/material_fabric_r12.gd")
 const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
+const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
 ## validates persistent progression, shields, damage and the radar.
 func _initialize() -> void:
@@ -112,6 +113,81 @@ func _run() -> void:
         world.garage_open_r39 and world.ship.controls_locked,
         "R46 compare toggle must not spend money or start a sortie"):return
     print("NEBULA_R46_TRUE_FLEET_COMPARISON_SUCCESS")
+    # R48: independent three-mechanic objective engine. These are real
+    # proximity+time, moving vulnerable target and staged rescue conditions.
+    var objectives_r48 = MissionObjectivesR48Script.new()
+    world.add_child(objectives_r48)
+    objectives_r48.configure("scan", Vector3(400, 37, 800))
+    if not check(objectives_r48.marker_nodes.size() == 3 and
+        objectives_r48.marker_nodes[0].get_node_or_null(
+            "R48_RealSignalCore") is MeshInstance3D and
+        objectives_r48.step(0.25, Vector3(0, 0, 0)) == "running" and
+        objectives_r48.stage == 0,
+        "R48 scan must create 3 actual 3D probes and reject remote completion"):return
+    for point_index in 3:
+        var scan_goal: Vector3 = objectives_r48.objective_position()
+        var scan_result: String = ""
+        for sample in 10:
+            scan_result = objectives_r48.step(0.25, scan_goal)
+            if scan_result == "success":
+                break
+        if not check(objectives_r48.stage == point_index + 1 and
+            not objectives_r48.marker_nodes[point_index].visible and
+            (scan_result == "success") == (point_index == 2),
+            "R48 multi-probe scan must require three separate timed holds"):return
+    if not check(objectives_r48.step(0.25, objectives_r48.destination) ==
+        "inactive", "R48 completed scan must not award twice"):return
+    objectives_r48.configure("evacuation", Vector3(650, 30, -330))
+    var rescue_pickup: Vector3 = objectives_r48.objective_position()
+    if not check(objectives_r48.step(0.25, objectives_r48.destination) ==
+        "running" and objectives_r48.stage == 0,
+        "R48 evac must not complete at its old one-shot destination"):return
+    for sample in 10:
+        objectives_r48.step(0.25, rescue_pickup)
+    if not check(objectives_r48.stage == 1 and
+        objectives_r48.marker_nodes[0].visible == false and
+        objectives_r48.marker_nodes[1].visible and
+        objectives_r48.step(0.25, rescue_pickup) == "running",
+        "R48 rescue must pick up people before shelter delivery"):return
+    var shelter: Vector3 = objectives_r48.objective_position()
+    var evac_result: String = ""
+    for sample in 10:
+        evac_result = objectives_r48.step(0.25, shelter)
+        if evac_result == "success":
+            break
+    if not check(evac_result == "success" and objectives_r48.stage == 2,
+        "R48 rescue cannot finish without a real second hold at shelter"):return
+    objectives_r48.configure("escort", Vector3(-500, 24, 670))
+    var convoy_start: Vector3 = objectives_r48.global_position
+    if not check(objectives_r48.moving_convoy.get_node_or_null(
+        "R48_VisibleCivilianHull") is MeshInstance3D and
+        objectives_r48.step(0.25, Vector3(2000, 0, 2000)) == "running" and
+        objectives_r48.global_position == convoy_start,
+        "R48 convoy must be an actual 3D craft that waits for the escort"):return
+    objectives_r48.take_damage(-100.0)
+    if not check(is_equal_approx(objectives_r48.escort_health, 200.0),
+        "R48 convoy integrity must reject negative enemy damage"):return
+    objectives_r48.step(0.25, convoy_start)
+    if not check(objectives_r48.convoy_started and
+        objectives_r48.global_position.distance_to(convoy_start) > 0.1,
+        "R48 convoy must physically advance when the pilot joins"):return
+    objectives_r48.take_damage(999.0)
+    if not check(objectives_r48.step(0.25,
+            objectives_r48.global_position) == "failed" and
+        objectives_r48.escort_health == 0.0,
+        "R48 destroyed convoy must fail rather than silently win"):return
+    objectives_r48.configure("escort", Vector3(-500, 24, 670))
+    var convoy_result: String = "running"
+    for sample in 85:
+        convoy_result = objectives_r48.step(
+            0.25, objectives_r48.global_position)
+        if convoy_result == "success":
+            break
+    if not check(convoy_result == "success" and
+        objectives_r48.escort_health > 0.0,
+        "R48 escort requires real convoy arrival with positive integrity"):return
+    objectives_r48.queue_free()
+    print("NEBULA_R48_THREE_REAL_OBJECTIVE_ENGINES_SUCCESS")
     # R47: two real 3D craft bays, empty until an owned crew is assigned.
     var bays_r47 = r44_view.formation_bays_r47
     if not check(is_instance_valid(bays_r47) and
@@ -1374,5 +1450,84 @@ func _run() -> void:
     world._on_drone_fire(world.ship.global_position, world.ship.global_position)
     if not check(is_equal_approx(world.ship.shield, retry_shield),
         "R43 enemy fire must not destroy the pilot instantly after an authentic retry"):return
+    # R48 integrated mission 02: stale reach marker is not a free success.
+    if not check(world.mission_index == 1 and
+        world.MISSIONS[1]["type"] == "evacuation" and
+        is_instance_valid(world.mission_objectives_r48) and
+        world.mission_objectives_r48.stage == 0,
+        "R48 mission 02 must use actual staged rescue in the live world"):return
+    var rescue_balance: int = world.credits
+    world.ship.global_position = world.MISSIONS[1]["position"]
+    world._mission_tick(0.25)
+    if not check(world.mission_index == 1 and
+        world.credits == rescue_balance,
+        "R48 cannot award mission 02 just for reaching old waypoint"):return
+    var active_pickup: Vector3 = world.mission_objectives_r48.objective_position()
+    world.ship.global_position = active_pickup
+    for sample in 10:
+        world._mission_tick(0.25)
+    if not check(world.mission_index == 1 and
+        world.mission_objectives_r48.stage == 1 and
+        world.credits == rescue_balance,
+        "R48 pickup cannot grant rewards until citizens reach the shelter"):return
+    var active_shelter: Vector3 = world.mission_objectives_r48.objective_position()
+    world.ship.global_position = active_shelter
+    for sample in 10:
+        world._mission_tick(0.25)
+    if not check(world.mission_index == 2 and world.garage_open_r39 and
+        world.credits > rescue_balance and
+        world.r41_last_debrief.get("status", "") == "success" and
+        not is_instance_valid(world.mission_objectives_r48),
+        "R48 actual rescue success must grant exactly one reward and return to garage"):return
+    var balance_after_rescue: int = world.credits
+    world._complete_mission()
+    if not check(world.credits == balance_after_rescue and world.mission_index == 2,
+        "R48 cannot duplicate rescue awards from garage"):return
+    # Integrated scan: three independent timed probes before the real reward.
+    world.mission_index = 4 # Isolated CI setup only; not a player shortcut.
+    world._r39_refresh_garage()
+    world._r39_launch_sortie()
+    if not check(is_instance_valid(world.mission_objectives_r48) and
+        world.mission_objectives_r48.mission_type == "scan",
+        "R48 scan mission did not instantiate in live campaign"):return
+    for point_index in 3:
+        world.ship.global_position = world.mission_objectives_r48.objective_position()
+        for sample in 10:
+            world._mission_tick(0.25)
+        if point_index < 2 and not check(world.mission_index == 4,
+            "R48 scan must not award credits before the final probe"):return
+    if not check(world.garage_open_r39 and world.mission_index == 5 and
+        world.r41_last_debrief.get("mission_index", -1) == 4,
+        "R48 full three-probe scan must advance only one campaign mission"):return
+    # Integrated vulnerable convoy: actual drones attack the target,
+    # failure returns to garage with unchanged mission/wallet and no bounty.
+    world.mission_index = 7 # Isolated CI setup only.
+    world._r39_refresh_garage()
+    var escort_balance: int = world.credits
+    world._r39_launch_sortie()
+    if not check(is_instance_valid(world.mission_objectives_r48) and
+        world.mission_objectives_r48.mission_type == "escort",
+        "R48 campaign convoy must be an actual moving 3D target"):return
+    var escort_start: Vector3 = world.mission_objectives_r48.global_position
+    world.ship.global_position = escort_start
+    world._mission_tick(0.25)
+    if not check(world.r48_escort_enemies_spawned and
+        world.mission_enemies == 3 and
+        world.mission_objectives_r48.global_position != escort_start,
+        "R48 escort must move and spawn actual target-seeking hostile drones"):return
+    var integrity_before: float = world.mission_objectives_r48.escort_health
+    var hit_point: Vector3 = world.mission_objectives_r48.global_position
+    world._on_drone_fire(hit_point + Vector3(0, 3, 60), hit_point)
+    if not check(world.mission_objectives_r48.escort_health < integrity_before,
+        "R48 convoy damage must derive from genuine drone-fire signal"):return
+    world.mission_objectives_r48.take_damage(999.0)
+    world._mission_tick(0.25)
+    if not check(world.garage_open_r39 and world.mission_index == 7 and
+        world.credits == escort_balance and
+        world.r43_pending_bounty == 0 and
+        world.r41_last_debrief.get("status", "") == "failed" and
+        str(world.r41_last_debrief.get("reveal", "")).contains("Конвой"),
+        "R48 lost convoy must permit replay without false hull crash or CR award"):return
+    print("NEBULA_R48_INTEGRATED_RESCUE_SCAN_CONVOY_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
