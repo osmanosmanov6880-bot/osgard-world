@@ -1,7 +1,7 @@
 # NEBULA R42 — owner-directed exact binary release
 
 **Дата:** 2026-11-04  
-**Статус:** КАНДИДАТ на момент создания документа. После выпуска фиксировать фактический run и SHA, не заявлять успех заранее.  
+**Статус:** ПРОИЗВОДСТВЕННАЯ ПУБЛИКАЦИЯ ПРОШЛА: GitHub SSH workflow #41847979367, независимый публичный HTTPS SHA parity #41848297900.  
 **Аппаратный QA:** NOT PERFORMED. Испытаний на реальных iPhone/Android не было; эмуляция Chromium ими не является.
 
 ## Цель
@@ -36,3 +36,13 @@
 ## Фактический выпуск
 
 Пока не заполнен: CI релизного PR, SSH запуск, HTTPS parity и проверка на аппаратных устройствах фиксируются отдельно.
+
+## Зафиксированные факты после выпуска
+
+- PR релизной политики #725 merged to master: `bb03d23633388f64ad9f6f654eea7addf63f9c57`.
+- Production asset guard CI: https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41847978875 — **success**.
+- Изолированный SSH deploy, проверка Nginx и уборка rollback staging: https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41847979367 — **success**.
+- Первоначальная post-deploy проверка HTTPS #41848113621 завершилась неудачей по причине ошибки скрипта проверки: не был включён идентификатор R42 в белый список вариантов. **Это не было несовпадением хешей файлов**. Исправлено в коммите `a51ccdb1e3650a628dbb95df085ca92cf29017f5`.
+- Повторный независимый публичный HTTPS паритет четырёх реальных файлов: https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41848297900 — **success**, все четыре Git blob identities совпали с опубликованным R42 allowlist.
+- **Физические Android/iPhone:** NOT PERFORMED. В CI использовался настоящий Godot/WebGL в Chromium с программным renderer/touch emulation, это не аппаратный device test.
+- R43 ship-failure/retry **не включён** в R42 и остаётся в отдельном PR #723, который требует своего CI и нового точного выпуска.
