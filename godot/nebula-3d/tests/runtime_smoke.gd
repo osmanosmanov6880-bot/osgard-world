@@ -41,6 +41,12 @@ func _run() -> void:
     world.store_r15.close()
     if not check(world.garage_hub_r39.visible and world.ship.controls_locked,
         "R39 shop close must return to the locked garage"):return
+    # R41: zero hostile objective actors while the first briefing is open.
+    if not check(not world.mission_started and world.mission_enemies == 0,
+        "R41 must defer mission spawning until an explicit sortie"):return
+    if not check(world.garage_hub_r39.story_label.text.contains("АДА ВЕЙЛ") and
+        world.garage_hub_r39.objective_label.text.contains("Долететь"),
+        "R41 authored story and objective are missing from garage"):return
     world._r39_launch_sortie()
     if not check(not world.garage_open_r39 and not world.ship.controls_locked,
         "R39 sortie action did not unlock flight"):return
@@ -1096,6 +1102,23 @@ func _run() -> void:
     await process_frame
     if not check(world.mission_index >= 1, "Waypoint mission did not complete"):return
     if not check(world.credits > start_credits, "Mission reward missing"):return
+    if not check(world.garage_open_r39 and world.ship.controls_locked and
+        not world.mission_started and world.mission_enemies == 0 and
+        is_instance_valid(world.garage_hub_r39),
+        "R41 mission completion must return to garage and lock controls"):return
+    if not check(world.garage_hub_r39.debrief_label.visible and
+        world.garage_hub_r39.debrief_label.text.contains("350 CR") and
+        world.garage_hub_r39.story_label.text.contains("АДА ВЕЙЛ"),
+        "R41 reward debrief must be visible after successful sortie"):return
+    var award_guard_credits: int = world.credits
+    var award_guard_index: int = world.mission_index
+    world._complete_mission()
+    if not check(world.credits == award_guard_credits and
+        world.mission_index == award_guard_index,
+        "R41 duplicate mission completion double-awarded credits"):return
+    if not check(world.r41_last_debrief.get("mission_index", -1) == 0 and
+        world.r41_last_debrief.get("xp", 0) > 0,
+        "R41 last mission reward data missing"):return
     var previous_credits: int = world.credits
     world.credits = 5000
     world.ship.global_position = Vector3(0,18,78)
@@ -1108,6 +1131,8 @@ func _run() -> void:
     var parsed = JSON.parse_string(save.get_as_text())
     save.close()
     if not check(parsed is Dictionary and parsed.get("engine_rank",-1) == 1,"Upgrade missing in save"):return
+    if not check(parsed.get("r41_last_debrief", {}).get("mission_index", -1) == 0,
+        "R41 debrief was not persisted in backward-compatible v1 save"):return
     var shield_before: float = world.ship.shield
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
