@@ -6,6 +6,7 @@ const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
+const DroneR49TestScript = preload("res://scripts/drone.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
 ## validates persistent progression, shields, damage and the radar.
 func _initialize() -> void:
@@ -1554,6 +1555,16 @@ func _run() -> void:
         investigation.step(0.25, investigation.destination, true) == "running" and
         investigation.stage == 0,
         "R49 genuine 3D terminals may not complete from old port waypoint"):return
+    # An interrupted hold may never count as a completed interaction.
+    var interrupted_goal: Vector3 = investigation.objective_position()
+    for partial in 4:
+        investigation.step(0.25, interrupted_goal, true)
+    if not check(investigation.stage == 0 and investigation.hold_time >= 0.99,
+        "R49 hold must accumulate from actual proximity and held input"):return
+    investigation.step(0.25, Vector3(2000, 100, 2000), false)
+    investigation.step(0.25, Vector3(2000, 100, 2000), false)
+    if not check(investigation.stage == 0 and investigation.hold_time <= 0.01,
+        "R49 leaving terminal must cancel a partial evidence transfer"):return
     for terminal_index in 3:
         var terminal_goal: Vector3 = investigation.objective_position()
         var status_r49 := "running"
@@ -1594,6 +1605,30 @@ func _run() -> void:
         world.credits == r49_balance and
         world.r41_last_debrief.get("status", "") == "failed",
         "R49 shoot-on-stealth fail must not pay rewards"):return
+    # Attempt a real rocket in silent mode; all successful weapon types must fail.
+    world._r39_launch_sortie()
+    if not check(not world.fleet_r15.combat_active and
+        world.r49_command_button.disabled,
+        "R49 silent sortie must stop AI wingman weapons and disable attack orders"):return
+    var rocket_target_r49 = DroneR49TestScript.new()
+    rocket_target_r49.hostile = true
+    rocket_target_r49.target = null
+    world.add_child(rocket_target_r49)
+    rocket_target_r49.global_position = world.ship.global_position + Vector3(0, 35, -110)
+    world.drones.append(rocket_target_r49)
+    world.fleet_r15.targets = world.drones
+    world.fleet_r15.missiles = 1
+    world.rockets_r15 = 1
+    world.fleet_r15.cooldown = 0.0
+    world._r21_launch_missile()
+    if not check(world.rockets_r15 == 0 and world.r49_investigation.alarm,
+        "R49 real rocket launch must trigger the silent-operation alarm"):return
+    world._mission_tick(0.25)
+    if not check(world.garage_open_r39 and world.mission_index == 10 and
+        world.credits == r49_balance and world.r43_pending_bounty == 0,
+        "R49 rocket-triggered alarm must fail without paying CR or XP"):return
+    world.drones.erase(rocket_target_r49)
+    rocket_target_r49.queue_free()
     world._r39_launch_sortie()
     for terminal_index in 3:
         world.ship.global_position = world.r49_investigation.objective_position()
