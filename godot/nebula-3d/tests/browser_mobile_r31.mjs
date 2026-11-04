@@ -152,8 +152,17 @@ try {
     }
   }
   cdp = await context.newCDPSession(page);
-  const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent',
-    {type, touchPoints});
+  // CDP rejects touchEnd when there is no active finger. R43's genuine
+  // crash -> garage -> retry path can execute *after* the previous test
+  // already released all fingers. Make redundant release idempotent while
+  // preserving actual touchStart/touchMove errors and flight telemetry.
+  let fingerDown = false;
+  const send = async (type, touchPoints) => {
+    if (type === 'touchEnd' && !fingerDown) return;
+    await cdp.send('Input.dispatchTouchEvent', {type, touchPoints});
+    if (type === 'touchStart') fingerDown = true;
+    if (type === 'touchEnd') fingerDown = false;
+  };
   // R43 introduced a proper crashed-ship -> garage -> manual retry loop.
   // Unlike previous silent respawn, the real ship stays locked after defeat.
   // Long software-GL touch suites can genuinely hit buildings: when this
