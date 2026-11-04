@@ -1,0 +1,54 @@
+name: NEBULA R41 public HTTPS exact-byte evidence
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/nebula-r41-live-https-identity.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/nebula-r41-live-https-identity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-exact-bytes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download actual public game assets (not the internal Nginx port)
+        env:
+          GAME_BASE: https://osgard.world/games/remix/arena-v2/nebula-3d
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nebula-public-identity
+          for name in index.html index.js index.wasm index.pck; do
+            echo "Checking public $name over HTTPS"
+            curl --fail-with-body --silent --show-error --location --retry 2               --max-time 90 --header 'Accept-Encoding: identity'               --header 'Cache-Control: no-cache'               "$GAME_BASE/$name" -o "/tmp/nebula-public-identity/$name"
+            test -s "/tmp/nebula-public-identity/$name"
+          done
+      - name: Verify bytes against the explicitly approved R41 Git blob identities
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {createHash} from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import assert from 'node:assert/strict';
+          const policy=JSON.parse(fs.readFileSync('.github/nebula-production-allowlist.json','utf8'));
+          assert.equal(policy.approved_variant,'R41','Only compare against the R41 owner-directed release');
+          assert.equal(policy.release_status,'R41_OWNER_DIRECTED_OVERRIDE');
+          assert.equal(policy.approval.physical_device_qa,'NOT_PERFORMED');
+          for(const name of ['index.html','index.js','index.wasm','index.pck']){
+            const raw=fs.readFileSync(path.join('/tmp/nebula-public-identity',name));
+            const blob=createHash('sha1')
+              .update('blob '+raw.length+'\0').update(raw).digest('hex');
+            assert.equal(blob,policy.artifacts[name],
+              name+' is stale, substituted or not the released exact bytes');
+            console.log('NEBULA_R41_PUBLIC_SHA_MATCH '+name+' '+blob+' bytes='+raw.length);
+          }
+          console.log('NEBULA_R41_PUBLIC_HTTPS_IDENTITY=PASS hardware_qa=NOT_PERFORMED');
+          NODE
