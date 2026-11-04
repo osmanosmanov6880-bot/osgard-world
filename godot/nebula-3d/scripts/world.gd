@@ -1077,6 +1077,7 @@ func _start_mission() -> void:
         for i in mission_enemies:
             var drone = DroneScript.new()
             drone.hostile=true
+            drone.add_to_group("nebula_mission_hostiles")
             drone.health=17.0 if mission_index==5 else 9.0
             drone.target=ship
             drone.position=data["position"]+Vector3(float(i-2)*14.0,3.0,float(i%2)*17.0)
@@ -1112,7 +1113,7 @@ func _complete_mission() -> void:
     # Remove only the remaining mission hostiles before the next sortie.
     # Civilian traffic stays untouched.
     for actor in drones.duplicate():
-        if is_instance_valid(actor) and actor.hostile and actor.target == ship:
+        if is_instance_valid(actor) and actor.is_in_group("nebula_mission_hostiles"):
             drones.erase(actor)
             actor.queue_free()
     ship.set_cruise_assist(false)
