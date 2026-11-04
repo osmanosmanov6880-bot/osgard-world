@@ -44,10 +44,10 @@ try{
   },temp),/hardware QA explicitly false/);
   await assert.rejects(inspectProductionArtifact({
     ...r41,approval:{...r41.approval,verification_workflow_run_id:0}
-  },temp),/R41 override requires exact source/);
+  },temp),/Modern owner override requires exact source/);
   await assert.rejects(inspectProductionArtifact({
     ...r41,approval:{...r41.approval,web_export_commit_sha:r41.approval.native_source_commit_sha}
-  },temp),/R41 override requires exact source/);
+  },temp),/Modern owner override requires exact source/);
   for(const variant of ['R42','R43']){
     const owner={...r41,approved_variant:variant,
       release_status:variant+'_OWNER_DIRECTED_OVERRIDE',
