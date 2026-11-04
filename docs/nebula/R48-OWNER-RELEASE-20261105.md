@@ -1,6 +1,6 @@
 # NEBULA R48 — owner-directed release evidence
 
-**Date:** 2026-11-05. **State:** R48 verified source/export and pinned assets; **NOT PUBLICLY CONFIRMED** until rollback-safe SSH activation plus 4/4 independent public HTTPS parity succeed. Verified public rollback: R47.
+**Date:** 2026-11-05. **State:** RELEASED AND PUBLICLY VERIFIED — R48 rollback-safe SSH activation #41925327744 PASSED and independent public HTTPS 4/4 byte parity #41925429274 PASSED. Real phone QA NOT PERFORMED; R47 remains verified rollback.
 
 ## Precisely implemented
 
@@ -28,12 +28,20 @@ The convoy is scripted Node3D movement with enemy laser/contact damage, not a fu
 
 ## Release gates
 
-- [ ] Exact-binary production guard synthetic negative tests for R48 all successful
-- [ ] Merge owner release PR, then only existing isolated SSH pipeline performs activation with disk/lock/rollback/Nginx verification
-- [ ] Independent public HTTPS check downloads 4/4 files and matches **the exact SHA values above** with R48 approval status
-- [ ] Update implementation/GAME BIBLE statuses after public parity success
+- [x] Exact-binary production guard synthetic negative tests for R48 all successful — #41925240692 and #41925327795
+- [x] Release PR #744 merged; isolated SSH activated R48 with disk/lock/rollback/Nginx checks — #41925327744
+- [x] Independent public HTTPS downloaded 4/4 files and matched **the exact SHA values above** with R48 approval — #41925429274
+- [x] Publication status recorded here; implementation/GAME BIBLE updates recorded in separate documentation commits
 - [ ] Physical Android/iPhone FPS, touch endurance and visual sign-off: **NOT PERFORMED**
 
 Owner override is explicitly `R48_OWNER_DIRECTED_OVERRIDE`, with `physical_device_qa=NOT_PERFORMED`, `hardware_qa_certified=false`. R40's separate signed hardware attestation path remains unchanged. This is an exception for owner-directed publication of R48—not a fabricated real-device QA certificate.
 
 Before the 4/4 public check passes, do not claim R48 is live even if SSH or HTTP 200 succeeded.
+
+## Successful production evidence
+
+- [Source PR #742](https://github.com/osmanosmanov6880-bot/osgard-world/pull/742) — implemented three mechanics and passed hard native/Chromium/mobile CI.
+- [Exact release PR #744](https://github.com/osmanosmanov6880-bot/osgard-world/pull/744) — guarded, exact binary SHA pinned.
+- [R48 isolated SSH activation #41925327744](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41925327744) — successful server activation and internal checks.
+- [R48 independent public HTTPS verification #41925429274](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41925429274) — `NEBULA_PUBLIC_RELEASE_PARITY_PASS variant=R48 actual_hardware_qa=NOT_PERFORMED`.
+- Actual public downloads: `index.html`, `index.js`, `index.wasm`, `index.pck` matched all **four** Git blob SHA-1 identities above. Their correct deployment does **not** constitute physical iPhone or Android acceptance, high-end frame-rate evidence, or proof that the 20 remaining story missions are implemented.
