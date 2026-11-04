@@ -45,7 +45,7 @@ export async function inspectProductionArtifact(policy,dir=GAME_DIR){
     'unexpected approved build');
   if(policy.approved_variant==='R38'){
     check(policy.release_status==='R38_PINNED_PRODUCTION_BASELINE' &&
-      policy.approval===null,'R38 stable baseline cannot claim a later release');
+      policy.approval===null,'R38 stable baseline cannot claim R40 approval');
   }else if(policy.approved_variant==='R39'){
     const a=policy.approval;
     check(policy.release_status==='R39_OWNER_DIRECTED_OVERRIDE'&&a &&
