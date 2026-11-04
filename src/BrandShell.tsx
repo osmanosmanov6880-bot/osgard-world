@@ -11,6 +11,7 @@ import './brandSystem.css'
 import './omegaSystems.css'
 
 const OsgardFooter = lazy(() => import('./OsgardFooter'))
+const OsgardQuickNav = lazy(() => import('./OsgardQuickNav'))
 
 const readMotion = () => { try { return localStorage.getItem('osgard:motion') !== 'off' } catch { return true } }
 const readOSALocale = (): 'ru' | 'en' => { try { return localStorage.getItem('osa:locale') === 'en' ? 'en' : 'ru' } catch { return 'ru' } }
@@ -19,6 +20,8 @@ const productNames = { world: 'OSGARD WORLD', intelligence: 'OSA Intelligence', 
 const globalLinks = [['OSGARD', '/'], ['Intelligence', '/intelligence'], ['Play', '/play'], ['Development', '/development']] as const
 export function BrandShell({ theme, children }: { theme: ProductTheme; children: ReactNode }) {
   const [motion, setMotion] = useState(readMotion)
+  const [quickOpen, setQuickOpen] = useState(false)
+  const closeQuickNav = () => setQuickOpen(false)
   const [osaLocale, setOSALocale] = useState(readOSALocale)
   const [reduced, setReduced] = useState(false)
   const currentLocation = useSyncExternalStore(subscribeBrowserNavigation, getBrowserSnapshot, getServerSnapshot)
@@ -70,6 +73,18 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     }
   }, [])
 
+  // The navigator is lazy and only loads after explicit interaction.
+  // Control+K Meta+K are usable on desktop, while the button works on touch.
+  useEffect(() => {
+    const handleQuickNavShortcut = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'k' || !(event.ctrlKey || event.metaKey) || event.altKey) return
+      event.preventDefault()
+      setQuickOpen(isOpen => !isOpen)
+    }
+    window.addEventListener('keydown', handleQuickNavShortcut)
+    return () => window.removeEventListener('keydown', handleQuickNavShortcut)
+  }, [])
+
   const localState = (href: string): 'page' | 'location' | undefined => {
     const target = new URL(href, 'https://osgard.world')
     if ((target.pathname.replace(/\/+$/, '') || '/') !== path) return undefined
@@ -94,7 +109,16 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       <nav aria-label={englishChrome ? 'OSGARD products' : 'Продукты OSGARD'} className="brand-global-nav">
         {globalLinks.map(([name, href]) => <a key={href} href={href} aria-current={globalNavigationState(path, product, href)}>{name}</a>)}
       </nav>
-
+      <button type="button" className="brand-quick-trigger"
+        aria-expanded={quickOpen} aria-haspopup="dialog"
+        aria-keyshortcuts="Control+K Meta+K"
+        aria-label={englishChrome ? 'Search OSGARD sections' : 'Поиск разделов OSGARD'}
+        title={englishChrome ? 'Search sections (Ctrl / Cmd + K)' : 'Поиск разделов (Ctrl / Cmd + K)'}
+        onClick={() => setQuickOpen(true)}>
+        <span className="brand-quick-symbol" aria-hidden="true">⌕</span>
+        <span className="brand-quick-label">{englishChrome ? 'Search' : 'Поиск'}</span>
+        <kbd aria-hidden="true">⌘K</kbd>
+      </button>
     </header>
     <div className="brand-local-bar">
       <span>{product === 'world' ? (englishChrome ? (development ? 'OSGARD DEVELOPMENT / Digital studio' : 'OSGARD WORLD / Digital studio') : (development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия')) : product === 'intelligence' ? (osaLocale === 'en' ? 'OSA / Understand. Verify. Decide.' : 'OSA / Понять. Проверить. Решить.') : (osaLocale === 'en' ? 'OSGARD PLAY / Interactive worlds' : 'OSGARD PLAY / Игровые миры')}</span>
@@ -111,6 +135,9 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       <ol>{crumbs.map((item, index) => <li key={index}>{item.href ? <a href={item.href}>{item.label}</a> : <span aria-current="page">{item.label}</span>}</li>)}</ol>
     </nav>
     <div id="product-main" tabIndex={-1}>{children}</div>
+    {quickOpen && <Suspense fallback={null}>
+      <OsgardQuickNav onClose={closeQuickNav} onNavigate={closeQuickNav} />
+    </Suspense>}
     <Suspense fallback={<footer className="brand-footer brand-footer-loading" aria-label="Загрузка ссылок" />}>
       <OsgardFooter product={product} motion={motion} reduced={reduced} locale={osaLocale} />
     </Suspense>
