@@ -41,12 +41,12 @@ export async function gitBlobHash(filename){
 export async function inspectProductionArtifact(policy,dir=GAME_DIR){
   check(policy?.schema==='NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1',
     'production allowlist missing or incorrect schema');
-  check(['R38','R39','R40','R41'].includes(policy.approved_variant),
+  check(['R38','R39','R40','R41','R42','R43'].includes(policy.approved_variant),
     'unexpected approved build');
   if(policy.approved_variant==='R38'){
     check(policy.release_status==='R38_PINNED_PRODUCTION_BASELINE' &&
       policy.approval===null,'R38 stable baseline cannot claim R40 approval');
-  }else if(policy.approved_variant==='R39'||policy.approved_variant==='R41'){
+  }else if(['R39','R41','R42','R43'].includes(policy.approved_variant)){
     const a=policy.approval;
     check(policy.release_status===policy.approved_variant+'_OWNER_DIRECTED_OVERRIDE'&&a &&
       a.owner_directed_release===true&&a.release_risk_accepted===true&&
@@ -54,12 +54,12 @@ export async function inspectProductionArtifact(policy,dir=GAME_DIR){
       a.authorization_source==='repository owner instruction'&&
       /^\d{4}-\d{2}-\d{2}$/.test(a.authorized_date||''),
       'Owner override must explicitly record authorization and disclose missing physical-device QA');
-    if(policy.approved_variant==='R41'){
+    if(['R41','R42','R43'].includes(policy.approved_variant)){
       check(a.hardware_qa_certified===false&&
         Number.isSafeInteger(a.verification_workflow_run_id)&&a.verification_workflow_run_id>0&&
         validCommit(a.native_source_commit_sha)&&validCommit(a.web_export_commit_sha)&&
         a.native_source_commit_sha!==a.web_export_commit_sha,
-        'R41 override requires exact source, exported-commit and verified CI run with hardware QA explicitly false');
+        'Modern owner override requires exact source, exported-commit and verified CI run with hardware QA explicitly false');
     }
   }else{
     const a=policy.approval;
@@ -104,9 +104,9 @@ export async function inspectProductionArtifact(policy,dir=GAME_DIR){
     }
     hashes[name]=actual;
   }
-  return {status:['R39','R41'].includes(policy.approved_variant)?'OWNER_DIRECTED_OVERRIDE_BYTES_MATCH':'APPROVED_BYTES_ONLY',
+  return {status:['R39','R41','R42','R43'].includes(policy.approved_variant)?'OWNER_DIRECTED_OVERRIDE_BYTES_MATCH':'APPROVED_BYTES_ONLY',
     variant:policy.approved_variant,files:hashes,
-    caution:['R39','R41'].includes(policy.approved_variant)
+    caution:['R39','R41','R42','R43'].includes(policy.approved_variant)
       ?'Owner-directed release override; physical-device QA was NOT PERFORMED'
       :'R40 human visual/device attestations must be independently reviewed; bytes match alone is not field approval'};
 }
