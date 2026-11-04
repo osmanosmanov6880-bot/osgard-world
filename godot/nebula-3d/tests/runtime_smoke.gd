@@ -85,6 +85,32 @@ func _run() -> void:
         "R45 garage selection must never bypass launch lock"):return
     print("NEBULA_R45_DISTINCT_HULLS_SUCCESS scout=%d interceptor=%d guardian=%d" %
         [scout_parts, interceptor_parts, guardian_parts])
+    # R46: the comparison must read the SAME fleet limits used by actual
+    # combat, without inventing health, shields or premium ownership.
+    var real_scout: Dictionary = world.fleet_r15.hull_profile("ship_scout")
+    var real_interceptor: Dictionary = world.fleet_r15.hull_profile("ship_interceptor")
+    var real_guardian: Dictionary = world.fleet_r15.hull_profile("ship_guardian")
+    if not check(real_scout["hull"] == 100.0 and
+        real_interceptor["turn_speed"] == 2.4 and
+        real_guardian["hull"] == world.fleet_r15.hull_profile("ship_guardian")["hull"] and
+        real_guardian["hull"] == 160.0 and real_guardian["shield"] == 140.0,
+        "R46 ship comparison must be derived from real playable physics"):return
+    if not check(not world.garage_hub_r39.comparison_detail_r46.visible and
+        world.garage_hub_r39.readiness_label_r46.text.contains("УРОН 4.0") and
+        world.garage_hub_r39.readiness_label_r46.text.contains("ВЕДОМЫЕ 0 ИЗ 2"),
+        "R46 briefing must be concise and grounded in real equipment"):return
+    world.garage_hub_r39.comparison_toggle_r46.pressed.emit()
+    if not check(world.garage_hub_r39.comparison_detail_r46.visible and
+        world.garage_hub_r39.comparison_detail_r46.text.contains("NX-21") and
+        world.garage_hub_r39.comparison_detail_r46.text.contains("КОРПУС 160") and
+        world.garage_hub_r39.comparison_detail_r46.text.contains("ЗАКРЫТ"),
+        "R46 must reveal three real loadout profiles without granting ships"):return
+    world.garage_hub_r39.comparison_toggle_r46.pressed.emit()
+    if not check(not world.garage_hub_r39.comparison_detail_r46.visible and
+        world.equipped_r15 == "ship_scout" and world.credits == starting_wallet and
+        world.garage_open_r39 and world.ship.controls_locked,
+        "R46 compare toggle must not spend money or start a sortie"):return
+    print("NEBULA_R46_TRUE_FLEET_COMPARISON_SUCCESS")
     var original_orbit: float = r44_view.orbit_angle
     world.garage_hub_r39.turn_right_r44.pressed.emit()
     if not check(r44_view.orbit_angle > original_orbit + 0.30 and
