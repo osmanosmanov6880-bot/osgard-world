@@ -129,6 +129,8 @@ var r21_touch
 var r21_dashboard
 var garage_hub_r39
 var garage_open_r39: bool = false
+var garage_launch_pending_r40: bool = false
+var flight_hud_surface_r40: Control
 var sortie_result_open_r41: bool = false
 var sortie_debrief_r41
 var sortie_elapsed_r41: float = 0.0
@@ -799,6 +801,7 @@ func _make_hud() -> void:
     hud_canvas = ui
     var surface := Control.new()
     surface.name = "R21_ApprovedAuroraOverlay"
+    flight_hud_surface_r40 = surface
     surface.set_anchors_preset(Control.PRESET_FULL_RECT)
     surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     ui.add_child(surface)
@@ -1039,7 +1042,7 @@ func _process(delta: float) -> void:
         _save_progress()
 
 func _mission_tick(_dt: float) -> void:
-    if garage_open_r39 or sortie_result_open_r41 or ship.hull <= 0.0 or mission_index>=MISSIONS.size():return
+    if garage_open_r39 or garage_launch_pending_r40 or sortie_result_open_r41 or ship.hull <= 0.0 or mission_index>=MISSIONS.size():return
     var mission: Dictionary = MISSIONS[mission_index]
     var target: Vector3 = mission["position"]
     if mission["type"]=="reach" and ship.global_position.distance_to(target)<47.0:
@@ -1646,6 +1649,11 @@ func _r39_create_garage_hub() -> void:
     garage_hub_r39.sortie_requested.connect(_r39_launch_sortie)
     garage_hub_r39.shop_requested.connect(_r39_open_shop)
     garage_open_r39 = true
+    garage_launch_pending_r40 = false
+    if is_instance_valid(port_r14):
+        port_r14.set_command_hangar_visible(true)
+    if is_instance_valid(flight_hud_surface_r40):
+        flight_hud_surface_r40.visible = false
     ship.controls_locked = true
     ship.velocity = Vector3.ZERO
     ship.set_cruise_assist(false)
@@ -1675,9 +1683,12 @@ func _r39_refresh_garage() -> void:
     })
 
 func _r39_launch_sortie() -> void:
-    if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
+    if not garage_open_r39 or garage_launch_pending_r40 or not is_instance_valid(garage_hub_r39):
         return
+    # Flight physics, HUD and touch unlock synchronously. The visual bay doors
+    # animate independently; they can never trap the ship in shop-open mode.
     garage_open_r39 = false
+    garage_launch_pending_r40 = true
     if sortie_needs_mission_start_r41:
         sortie_needs_mission_start_r41 = false
         _start_mission()
@@ -1694,8 +1705,29 @@ func _r39_launch_sortie() -> void:
         r21_dashboard.visible = true
     if is_instance_valid(performance_lab_r11):
         performance_lab_r11.visible = true
+    if is_instance_valid(flight_hud_surface_r40):
+        flight_hud_surface_r40.visible = true
+    # The waypoint is selected, but the original manual-first cruise button
+    # remains available; automatic cruise would break explicit player intent.
+    if mission_index < MISSIONS.size():
+        ship.set_navigation_target(MISSIONS[mission_index]["position"])
+    else:
+        ship.clear_navigation_target()
     r23_cruise_button.text = "▶  АВТОПИЛОТ К ЦЕЛИ"
     _show_notice("ВЫЛЕТ · " + (str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"))
+    if is_instance_valid(port_r14):
+        var door_tween: Tween = port_r14.animate_command_hangar_launch()
+        if door_tween != null:
+            door_tween.finished.connect(_r40_finish_garage_launch, CONNECT_ONE_SHOT)
+            return
+    _r40_finish_garage_launch()
+
+func _r40_finish_garage_launch() -> void:
+    if not garage_launch_pending_r40:
+        return
+    garage_launch_pending_r40 = false
+    if is_instance_valid(port_r14):
+        port_r14.set_command_hangar_visible(false)
 
 ## R41: mission completion is a real choice, not a silent immediate chain.
 func _r41_show_result(succeeded: bool, mission_number: int, mission_title: String,
