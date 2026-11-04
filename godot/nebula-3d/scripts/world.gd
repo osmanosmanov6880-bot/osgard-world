@@ -1772,6 +1772,10 @@ func _r39_launch_sortie() -> void:
     ship.thrust_multiplier = float(captain.get("thrust_multiplier", 1.0))
     ship.controls_locked = false
     ship.velocity = Vector3.ZERO
+    # A repaired pilot must not be shot down on the very first frame of a
+    # retry. Restart the same short launch immunity every actual sortie.
+    # This does not turn off collisions or reward failed attempts.
+    r21_launch_protection = 7.0
     if is_instance_valid(r21_touch):
         r21_touch.set_shop_open(false)
     if is_instance_valid(r21_dashboard):
