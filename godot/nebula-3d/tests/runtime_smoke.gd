@@ -1187,6 +1187,17 @@ func _run() -> void:
         world.garage_hub_r39.debrief_label.visible and
         world.garage_hub_r39.debrief_label.text.contains("ВЫЛЕТ НЕ УДАЛСЯ"),
         "R43 crash must repair the ship and display explicit failure debrief"):return
+    # Dock safety: no hostile fire, no destruction penalty while reading briefing.
+    world.r21_launch_protection = 0.0
+    var garage_shield: float = world.ship.shield
+    world._on_drone_fire(world.ship.global_position, world.ship.global_position)
+    if not check(is_equal_approx(world.ship.shield, garage_shield),
+        "R43 garage must protect the player from ambient enemy weapons"):return
+    world.ship.hull = 0.0
+    await process_frame
+    if not check(world.ship.hull >= 90.0 and
+        world.credits == before_failure_credits and world.garage_open_r39,
+        "R43 parked ship must be repaired without a hidden 220-CR penalty"):return
     world._save_progress()
     var fail_save := FileAccess.open(world.SAVE_PATH, FileAccess.READ)
     if not check(fail_save != null, "R43 failed sortie save missing"):return
