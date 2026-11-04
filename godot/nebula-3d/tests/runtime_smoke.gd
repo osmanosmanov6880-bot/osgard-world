@@ -1133,7 +1133,8 @@ func _run() -> void:
         world.port_r14.command_hangar.visible and
         not world.flight_hud_surface_r40.visible and
         world.port_r14.hangar_door_left.position.x == -12.0 and
-        world.port_r14.hangar_door_right.position.x == 12.0,
+        world.port_r14.hangar_door_right.position.x == 12.0 and
+        world.chase_camera.global_position.distance_to(world.ship.global_position) < 28.0,
         "R40 return to garage must restore genuine bay and reset launch doors"):return
     if not check(world.garage_open_r39 and world.ship.controls_locked and
         not world.sortie_result_open_r41 and
