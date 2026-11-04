@@ -225,7 +225,7 @@ func refresh(data: Dictionary) -> void:
     var xp_next := xp % 500
     resource_label.text = "%s CR    •    %s XP" % [_format_number(credits), _format_number(xp)]
     captain_badge_label.text = "%02d" % level
-    captain_label.text = "КАПИТАН"
+    captain_label.text = "КАПИТАН · УРОВЕНЬ %d" % level
     progression_label.text = "%s / 500 XP до следующего уровня" % _format_number(xp_next)
     xp_meter.value = xp_next
     var ship_id := str(data.get("ship", "ship_scout"))
@@ -252,7 +252,7 @@ func refresh(data: Dictionary) -> void:
         mission_detail.text = "Кампания завершена. Город открыт: выбери маршрут и исследуй шесть районов."
         mission_class_label.text = "СВОБОДНЫЙ РЕЖИМ"
         mission_reward_label.text = "БЕЗ КОНТРАКТА"
-        launch_button.text = "▶  ОТКРЫТЬ АНГАР"
+        launch_button.text = "▶  ВЫЛЕТЕТЬ"
         status_label.text = "Открой двери и отправляйся исследовать мир в своём темпе."
     else:
         var mission: Dictionary = missions[mission_index]
