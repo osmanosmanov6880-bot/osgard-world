@@ -13,12 +13,14 @@ const viewports = [
   { name: 'tablet', width: 768, height: 1024 },
   { name: 'mobile', width: 390, height: 844 }
 ]
+// Explicitly validate the real public World/Portal hero, not an obsolete heading.
+const worldHero = /СОЗДАЁМ\s*ЦИФРОВЫЕ\s*МИРЫ|WE CREATE\s*DIGITAL\s*WORLDS/i
 const routes = [
-  { name: 'world', path: '/', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
+  { name: 'world', path: '/', selector: '.world-home .omega-portals-hero', heading: worldHero, product: 'OSGARD' },
   { name: 'intelligence', path: '/intelligence', selector: '.intelligence-home', heading: /Понимать ИИ/, product: 'Intelligence' },
   { name: 'development', path: '/development', selector: '.signature-showcase', heading: /СОЗДАЁМ/, product: 'Development' },
   { name: 'play', path: '/play', selector: '.play-universe', heading: /^OSGARD\s*Play$/, product: 'Play' },
-  { name: 'portal', path: '/portal', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
+  { name: 'portal', path: '/portal', selector: '.world-home .omega-portals-hero', heading: worldHero, product: 'OSGARD' },
   { name: 'academy', path: '/academy', selector: '.academy-learning-console', heading: /Понимайте ИИ/, product: 'Intelligence' },
   { name: 'lectures', path: '/lectures', selector: '.lecture-library' },
   { name: 'lesson-detail', path: '/lectures/intelligence-and-imitation', selector: '.osa-lesson-page' },
@@ -387,7 +389,7 @@ try {
       assert.equal(await transitionPage.evaluate(() => window.__osa5DocumentToken), documentToken, 'Product navigation must preserve the SPA document')
       await assertNaturalCinematic(transitionPage, index, kind, path)
       assert.equal(await transitionPage.evaluate(() => window.__osa5CinematicTrace.length), index + 1, 'A product click must create exactly one transition')
-      await transitionPage.getByRole('heading', { level: 1, name: path === '/play' ? /^OSGARD\s*Play$/ : /ТЕХНОЛОГИИ|Цифровые продукты/i }).waitFor({ state: 'visible', timeout: 5000 })
+      await transitionPage.getByRole('heading', { level: 1, name: path === '/play' ? /^OSGARD\s*Play$/ : worldHero }).waitFor({ state: 'visible', timeout: 5000 })
     }
 
     // A game detail is within Play: preserve the document without replaying the global portal.
@@ -428,7 +430,7 @@ try {
       transitionPage.waitForURL(url => url.pathname === '/', { timeout: 12000 }),
       transitionPage.getByRole('navigation', { name: 'Продукты OSGARD', exact: true }).getByRole('link', { name: 'OSGARD', exact: true }).click()
     ])
-    await transitionPage.getByRole('heading', { level: 1, name: /ТЕХНОЛОГИИ|Цифровые продукты/i }).waitFor({ state: 'visible', timeout: 8000 })
+    await transitionPage.getByRole('heading', { level: 1, name: worldHero }).waitFor({ state: 'visible', timeout: 8000 })
     assert.equal(await transitionPage.evaluate(() => window.__osa5CinematicTrace.length), reducedCount, 'Reduced motion must bypass cross-product transitions')
     const motion = transitionPage.getByRole('button', { name: 'Меньше движения', exact: true })
     assert.equal(await motion.isDisabled(), true, 'Live system preference must disable the optional motion control')
@@ -536,7 +538,7 @@ try {
   const accessibilityPage = await accessibilityContext.newPage()
   try {
     await accessibilityPage.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 25000 })
-    await accessibilityPage.getByRole('heading', { level: 1, name: /ТЕХНОЛОГИИ|Цифровые продукты/i }).waitFor({ state: 'visible', timeout: 8000 })
+    await accessibilityPage.getByRole('heading', { level: 1, name: worldHero }).waitFor({ state: 'visible', timeout: 8000 })
     assert.equal(await accessibilityPage.locator('.osgard-cinematic, [data-osgard-pending]').count(), 0, 'A returning visitor must reach the keyboard navigation immediately')
     await accessibilityPage.keyboard.press('Tab')
     const skipFocused = await accessibilityPage.evaluate(() => document.activeElement?.matches('.brand-skip') === true)
