@@ -1210,5 +1210,11 @@ func _run() -> void:
     if not check(not world.garage_open_r39 and not world.ship.controls_locked and
         world.mission_index == retry_index and world.r43_pending_bounty == 0,
         "R43 second launch must retry exactly the failed mission"):return
+    if not check(world.r21_launch_protection >= 6.5,
+        "R43 retried sortie must restore a real temporary enemy-fire safe launch"):return
+    var retry_shield: float = world.ship.shield
+    world._on_drone_fire(world.ship.global_position, world.ship.global_position)
+    if not check(is_equal_approx(world.ship.shield, retry_shield),
+        "R43 enemy fire must not destroy the pilot instantly after an authentic retry"):return
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
