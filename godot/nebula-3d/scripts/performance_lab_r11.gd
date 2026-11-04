@@ -8,6 +8,9 @@ signal r38_quality_cycle_requested
 const BENCH_SECONDS: float = 20.0
 const WARMUP_SECONDS: float = 2.0
 const MAX_SAMPLES: int = 4000
+## R40: a declared provenance string prevents accidentally labeling R38 JSON
+## as this batched-lights candidate. It is informational, not cryptographic.
+const R40_BUILD_VARIANT: String = "NEBULA_R40_BRIDGE_BATCH_3X32"
 
 var overlay: PanelContainer
 var stats_label: Label
@@ -353,6 +356,7 @@ func _complete() -> void:
         "MEETS_TARGET" if mean_fps >= target_fps and p95_ms <= max_p95_ms else "BELOW_TARGET")
     last_report = {
         "schema": "NEBULA_R12_HARDWARE_BENCHMARK",
+        "build_variant": R40_BUILD_VARIANT,
         "date_unix": Time.get_unix_time_from_system(),
         "engine": Engine.get_version_info().get("string", "unknown"),
         "runtime": source_name,
