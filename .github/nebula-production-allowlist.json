@@ -1,20 +1,23 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R39",
-  "release_status": "R39_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R41",
+  "release_status": "R41_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "93db58b4315afad3148048c4086876068adabd90",
+    "index.html": "bc56c6cecf3977c8d7c2e8359f10f7b47afc8676",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "7e0258c4a43e8990b41dd1ec78a3a2170349cbcb"
+    "index.pck": "ec4be6fcf21c4062d2f0eb8171b5112e472fab35"
   },
   "approval": {
     "owner_directed_release": true,
     "release_risk_accepted": true,
     "physical_device_qa": "NOT_PERFORMED",
+    "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-04",
-    "verification_workflow_run_id": 41747196254
+    "verification_workflow_run_id": 41842409047,
+    "native_source_commit_sha": "09413461988ae2aa68f1260fdad5d2de42d90f84",
+    "web_export_commit_sha": "3e2bc2f57209db101779b28afc24997522972174"
   },
-  "notes": "Owner-directed production release override for R39. Desktop/mobile browser CI passed; physical-device QA was not performed. Exact four Git blob identities verified from master. Authorization was explicitly reconfirmed by the repository owner."
+  "notes": "Owner-directed R41 rollout with native Godot 4.7.2 + browser and emulated mobile CI; no real phone QA. Exact exported blobs match master commit 3e2bc2f. This is not R40 hardware certification; keep rollback and deployment verification."
 }

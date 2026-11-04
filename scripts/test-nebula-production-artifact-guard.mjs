@@ -22,6 +22,32 @@ try{
   fs.appendFileSync(path.join(temp,'index.wasm'),'unauthorized');
   await assert.rejects(inspectProductionArtifact(stable,temp),/unapproved index.wasm bytes/);
   fs.writeFileSync(path.join(temp,'index.wasm'),Buffer.from('synthetic-release-gate-index.wasm'));
+  // R41 owner-directed release: synthetic binary pins, no fake hardware proof.
+  const r41={...stable,approved_variant:'R41',
+    release_status:'R41_OWNER_DIRECTED_OVERRIDE',
+    approval:{
+      owner_directed_release:true,release_risk_accepted:true,
+      physical_device_qa:'NOT_PERFORMED',hardware_qa_certified:false,
+      authorization_source:'repository owner instruction',
+      authorized_date:'2026-11-04',verification_workflow_run_id:41842409047,
+      native_source_commit_sha:'09413461988ae2aa68f1260fdad5d2de42d90f84',
+      web_export_commit_sha:'3e2bc2f57209db101779b28afc24997522972174'
+    }};
+  const r41Match=await inspectProductionArtifact(r41,temp);
+  assert.equal(r41Match.variant,'R41');
+  assert.equal(r41Match.status,'OWNER_DIRECTED_OVERRIDE_BYTES_MATCH');
+  await assert.rejects(inspectProductionArtifact({
+    ...r41,approval:{...r41.approval,physical_device_qa:'PASSED'}
+  },temp),/disclose missing physical-device QA/);
+  await assert.rejects(inspectProductionArtifact({
+    ...r41,approval:{...r41.approval,hardware_qa_certified:true}
+  },temp),/hardware QA explicitly false/);
+  await assert.rejects(inspectProductionArtifact({
+    ...r41,approval:{...r41.approval,verification_workflow_run_id:0}
+  },temp),/R41 override requires exact source/);
+  await assert.rejects(inspectProductionArtifact({
+    ...r41,approval:{...r41.approval,web_export_commit_sha:r41.approval.native_source_commit_sha}
+  },temp),/R41 override requires exact source/);
   const unsupported={...stable,approved_variant:'R40',
     release_status:'R40_HARDWARE_QA_APPROVED',approval:{human_visual_approved:true}};
   await assert.rejects(inspectProductionArtifact(unsupported,temp),/requires explicit human-reviewed evidence/);
