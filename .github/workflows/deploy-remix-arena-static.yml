@@ -66,9 +66,11 @@ jobs:
           set -euo pipefail
           release_id="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           remote_dir="/tmp/remix-arena-publish-${release_id}"
-          ssh -i ~/.ssh/osgard_remix_key -o BatchMode=yes "$USER@$HOST" "mkdir -p '$remote_dir'"
-          scp -i ~/.ssh/osgard_remix_key remix-arena-release.tgz remix-arena-release.sha256 "$USER@$HOST:$remote_dir/"
-          ssh -i ~/.ssh/osgard_remix_key -o BatchMode=yes "$USER@$HOST" "RELEASE_DIR='$remote_dir' RELEASE_ID='$release_id' bash -s" <<'REMOTE'
+          # Keep idle encrypted SSH sessions alive during large asset transfer and Docker activation.
+          # Do not retry a partially applied remote script automatically; rollback is owned by the server.
+          ssh -i ~/.ssh/osgard_remix_key -o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=12 -o ConnectTimeout=20 "$USER@$HOST" "mkdir -p '$remote_dir'"
+          scp -i ~/.ssh/osgard_remix_key -o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=12 -o ConnectTimeout=20 remix-arena-release.tgz remix-arena-release.sha256 "$USER@$HOST:$remote_dir/"
+          ssh -i ~/.ssh/osgard_remix_key -o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=12 -o ConnectTimeout=20 "$USER@$HOST" "RELEASE_DIR='$remote_dir' RELEASE_ID='$release_id' bash -s" <<'REMOTE'
           set -euo pipefail
           trap 'rm -rf "$RELEASE_DIR"' EXIT
           activation_lock=/run/lock/osgard-frontend-activation.lock
