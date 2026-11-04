@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R47",
-  "release_status": "R47_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R48",
+  "release_status": "R48_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "f2ad1bb91c71412dd44fe38addcf5f848c951d13",
+    "index.html": "f173fab08d1147e3cde720ac560dcdfe412e5acc",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "99f54fa47073b1ededeb93f5f822b7800a24af0d"
+    "index.pck": "a5dff5ca5e14fa09e525219e3c5db60ce70d76d2"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,9 +15,9 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-05",
-    "verification_workflow_run_id": 41920850005,
-    "native_source_commit_sha": "3102888ee9ed7e0e8997c55820b9ac74a87975aa",
-    "web_export_commit_sha": "5bb7948d770c1a7c784a1f3848020d916e10d101"
+    "verification_workflow_run_id": 41924907118,
+    "native_source_commit_sha": "4404add12bae0c82e104d2d4bce8d4960bcf75df",
+    "web_export_commit_sha": "708a0dce4624890e42bf10a44028dbf5ca377ab0"
   },
-  "notes": "R47 owner-directed exact-binary release. Real authenticated R15 ownership-gated wingman squad, 2 real 3D dock bays, safe garage ally weapons and nonblocking chase camera FOV launch effect. Native Godot, Chromium flight, mobile touch QA #41919514769 passed mandatory gates; trusted master Godot export #41920850005 succeeded. Real Android/iPhone QA and independent GPU visual acceptance NOT PERFORMED. R46 remains verified rollback. Separate R40 hardware evidence path unchanged."
+  "notes": "R48 owner-directed exact Web export of three actual staged mission mechanics: hold-to-scan three probes, pickup and shelter-dropoff evacuation, moving destructible convoy with real targeting hostile drones. Native Godot scene/runtime, actual Chromium flight and emulated mobile touch gates passed #41923987577. Trusted master export #41924907118 committed 4 assets. Real Android/iPhone and physical GPU QA NOT_PERFORMED, R40 independent signed hardware evidence remains unchanged. R47 is previous public rollback."
 }
