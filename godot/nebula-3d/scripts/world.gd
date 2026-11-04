@@ -1747,6 +1747,8 @@ func _r41_show_result(succeeded: bool, mission_number: int, mission_title: Strin
         r21_dashboard.visible = false
     if is_instance_valid(performance_lab_r11):
         performance_lab_r11.visible = false
+    if is_instance_valid(flight_hud_surface_r40):
+        flight_hud_surface_r40.visible = false
     var next_title: String = str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"
     var next_hint: String = str(MISSIONS[mission_index]["hint"]) if mission_index < MISSIONS.size() else "Исследуй районы Авроры."
     sortie_result_data_r41 = {
@@ -1817,6 +1819,8 @@ func _r41_continue_sortie() -> void:
         r21_dashboard.visible = true
     if is_instance_valid(performance_lab_r11):
         performance_lab_r11.visible = true
+    if is_instance_valid(flight_hud_surface_r40):
+        flight_hud_surface_r40.visible = true
     _show_notice("ВЫЛЕТ · " + (str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"))
 
 func _r41_return_to_garage() -> void:
@@ -1827,5 +1831,9 @@ func _r41_return_to_garage() -> void:
     ship.velocity = Vector3.ZERO
     ship.rotation = Vector3.ZERO
     ship.set_cruise_assist(false)
+    # The garage must be visible immediately, without panning back from a distant crash site.
+    if is_instance_valid(chase_camera):
+        chase_camera.global_position = ship.global_position + Vector3(0.0, 6.0, 19.0)
+        chase_camera.look_at(ship.global_position + Vector3.UP * 1.5, Vector3.UP)
     _r39_create_garage_hub()
     _save_progress()
