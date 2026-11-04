@@ -1,6 +1,6 @@
 # NEBULA R43 — real failure, hangar repair and mission retry
 
-**Status:** source candidate stacked on R42; never confuse a PR with a production release. **Date:** 2026-11-04.
+**Status:** R43 merged, built, released, and public HTTPS exact-byte parity verified on 2026-11-04; physical phone acceptance pending. **Date:** 2026-11-04.
 
 ## Player-facing flow
 
@@ -26,11 +26,14 @@
 
 ## Acceptance gates
 
-- [ ] Godot native scene parse and test
-- [ ] WebAssembly browser control/flight
-- [ ] Mobile touch emulation, including sortie controls
-- [ ] Preservation of all local and server-paid entitlements
-- [ ] Safe staging/production exact-byte promotion
-- [ ] Human Android/iPhone device test not yet performed
+- [x] Godot native scene parse and test — CI #41851169153
+- [x] WebAssembly browser control/flight — PR CI #41849503005
+- [x] Mobile touch emulation, including sortie controls — PR CI #41849503005
+- [x] Preservation of local v1 schema and unchanged server-paid entitlement logic — covered by native smoke and commerce CI; no actual paid-user migration was run
+- [x] Safe staging/production exact-byte promotion — deployment #41851783164 (second attempt) and public check #41852899805
+- [ ] Human Android/iPhone device test — NOT PERFORMED
 
 **Not implemented:** realistic crash animation and explosion debris, salvage persistence, differentiated boss mechanics, chapter 11+. These remain separate development work.
+
+## Canonical production release notes
+See [R43-OWNER-RELEASE-20261104.md](R43-OWNER-RELEASE-20261104.md) for source SHA, exact asset identities, failed first SSH attempt, successful second activation and independently verified public HTTPS R43 evidence. The 7-second respawn enemy-fire grace period and re-launched actual Godot Button emulation are included in this release.
