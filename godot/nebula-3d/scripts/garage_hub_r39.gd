@@ -255,13 +255,19 @@ func refresh(data: Dictionary) -> void:
         roster_label.text = "ЭКИПАЖ  ·  Капитан %d ур.  |  " % level + "  +  ".join(names)
     var story: Dictionary = data.get("story", {})
     var last_result: Dictionary = data.get("last_result", {})
-    var new_result: bool = not last_result.is_empty() and int(last_result.get("mission_index", -1)) >= 0 and int(last_result.get("mission_index", -1)) == int(data.get("mission_index", 0)) - 1
+    var result_index: int = int(last_result.get("mission_index", -1))
+    var current_index: int = int(data.get("mission_index", 0))
+    var failed_sortie: bool = str(last_result.get("status", "success")) == "failed" and result_index >= 0 and result_index == current_index
+    var completed_sortie: bool = str(last_result.get("status", "success")) != "failed" and result_index >= 0 and result_index == current_index - 1
+    var new_result: bool = failed_sortie or completed_sortie
     story_label.text = str(story.get("act", "КАМПАНИЯ")) + "\n" + str(story.get("speaker", "КОМАНДОВАНИЕ АВРОРЫ"))
     description_label.text = str(story.get("brief", "Подготовь корабль и экипаж к следующему вылету."))
     objective_label.text = "ЦЕЛЬ  /  " + str(story.get("objective", "Следуй к навигационному маяку"))
     stakes_label.text = str(story.get("stakes", ""))
     debrief_label.visible = new_result
-    if new_result:
+    if failed_sortie:
+        debrief_label.text = "ВЫЛЕТ НЕ УДАЛСЯ · НАГРАДА 0 CR / 0 XP\n" + str(last_result.get("reveal", "Повтори миссию после ремонта."))
+    elif completed_sortie:
         debrief_label.text = "ПОСЛЕДНИЙ ВЫЛЕТ: +%d CR  /  +%d XP\n%s" % [int(last_result.get("credits", 0)), int(last_result.get("xp", 0)), str(last_result.get("reveal", ""))]
     var mission_index := int(data.get("mission_index", 0))
     var missions: Array = data.get("missions", [])
