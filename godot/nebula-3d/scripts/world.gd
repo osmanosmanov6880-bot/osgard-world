@@ -1663,6 +1663,9 @@ func _r39_launch_sortie() -> void:
         return
     garage_launch_pending_r40 = true
     garage_hub_r39.visible = false
+    # Unlock the pilot immediately; the door animation is presentation only.
+    garage_open_r39 = false
+    ship.controls_locked = false
     if is_instance_valid(port_r14):
         var door_tween: Tween = port_r14.animate_command_hangar_launch()
         if door_tween != null:
