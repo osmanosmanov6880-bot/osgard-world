@@ -978,7 +978,7 @@ func _process(delta: float) -> void:
             r25_telemetry_period = fmod(r25_telemetry_period, 0.20)
             _r25_emit_browser_flight_state()
     r21_launch_protection = maxf(0.0, r21_launch_protection - delta)
-    if not garage_open_r39 and world_pulse > 92.0 and mission_index > 1 and mission_index != 7 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
+    if not garage_open_r39 and world_pulse > 92.0 and mission_index > 1 and mission_index != 7 and mission_index != 10 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
         world_pulse = 0.0
         _spawn_pirate_ambush()
     _r16_update_beam_pool(delta)
@@ -1032,9 +1032,13 @@ func _process(delta: float) -> void:
         r21_dashboard.show_objective = mission_index < MISSIONS.size()
         if r21_dashboard.show_objective:
             r21_dashboard.objective = (
+                r49_investigation.objective_position()
+                if is_instance_valid(r49_investigation) else (
+                r49_investigation.objective_position()
+                if is_instance_valid(r49_investigation) else (
                 mission_objectives_r48.objective_position()
                 if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active
-                else MISSIONS[mission_index]["position"])
+                else MISSIONS[mission_index]["position"])))
     if garage_open_r39:
         # The dock is a safe room, not a place for pirates to farm the player.
         ship.shield = fleet_r15.ship_shield_cap()
@@ -1316,6 +1320,9 @@ func _on_mission_drone_destroyed(drone: Node3D) -> void:
 
 func _on_drone_fire(from: Vector3, to: Vector3) -> void:
     if garage_open_r39 or not is_instance_valid(ship):return
+    # The story's silent port investigation is not a random combat encounter.
+    if is_instance_valid(r49_investigation):
+        return
     _laser_effect_colored(from,to,Color(1.0,0.26,0.39))
     if is_instance_valid(mission_objectives_r48) and (
             mission_objectives_r48.is_active_convoy()) and (
