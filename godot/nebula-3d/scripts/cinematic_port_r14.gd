@@ -26,6 +26,7 @@ var player_ship: Node3D
 var command_hangar: Node3D
 var hangar_door_left: MeshInstance3D
 var hangar_door_right: MeshInstance3D
+var command_hangar_tween: Tween
 var titanium: StandardMaterial3D
 var ceramic: StandardMaterial3D
 var graphite: StandardMaterial3D
@@ -386,6 +387,8 @@ func set_command_hangar_visible(active: bool) -> void:
         command_hangar.visible = active
     # R41: every garage visit resets the doors; never retain a previous takeoff pose.
     if active and is_instance_valid(hangar_door_left) and is_instance_valid(hangar_door_right):
+        if command_hangar_tween != null and command_hangar_tween.is_running():
+            command_hangar_tween.kill()
         hangar_door_left.position.x = -12.0
         hangar_door_right.position.x = 12.0
 
@@ -393,6 +396,7 @@ func animate_command_hangar_launch() -> Tween:
     if not is_instance_valid(hangar_door_left) or not is_instance_valid(hangar_door_right):
         return null
     var tween := create_tween()
+    command_hangar_tween = tween
     tween.set_parallel(true)
     tween.set_trans(Tween.TRANS_QUART)
     tween.set_ease(Tween.EASE_OUT)
