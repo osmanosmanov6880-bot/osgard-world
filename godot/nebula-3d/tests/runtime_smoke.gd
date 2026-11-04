@@ -1160,5 +1160,44 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
+    # R43: actually destroy the ship, with a staged mission-drone bounty.
+    # Neither the selected mission nor the player's wallet may advance.
+    var retry_index: int = world.mission_index
+    var before_failure_credits: int = world.credits
+    world._r39_launch_sortie()
+    if not check(not world.garage_open_r39 and
+        not world.ship.controls_locked and world.mission_index == retry_index,
+        "R43 retry test did not start the real next sortie"):return
+    var mission_dummy := Node3D.new()
+    world.add_child(mission_dummy)
+    mission_dummy.add_to_group("nebula_mission_hostiles")
+    world._on_drone_destroyed(mission_dummy)
+    mission_dummy.queue_free()
+    if not check(world.r43_pending_bounty == 45 and
+        world.credits == before_failure_credits,
+        "R43 mission bounty must remain unbanked before successful completion"):return
+    world.ship.take_damage(10000.0)
+    await process_frame
+    if not check(world.garage_open_r39 and world.ship.controls_locked and
+        world.mission_index == retry_index and
+        world.credits == before_failure_credits and
+        world.r43_pending_bounty == 0,
+        "R43 crash must return to garage without progress or currency exploit"):return
+    if not check(world.ship.hull >= 90.0 and world.ship.shield >= 90.0 and
+        world.garage_hub_r39.debrief_label.visible and
+        world.garage_hub_r39.debrief_label.text.contains("ВЫЛЕТ НЕ УДАЛСЯ"),
+        "R43 crash must repair the ship and display explicit failure debrief"):return
+    world._save_progress()
+    var fail_save := FileAccess.open(world.SAVE_PATH, FileAccess.READ)
+    if not check(fail_save != null, "R43 failed sortie save missing"):return
+    var fail_data: Variant = JSON.parse_string(fail_save.get_as_text())
+    fail_save.close()
+    if not check(fail_data is Dictionary and
+        fail_data.get("r41_last_debrief", {}).get("status", "") == "failed",
+        "R43 failed sortie status must persist without losing other v1 save fields"):return
+    world._r39_launch_sortie()
+    if not check(not world.garage_open_r39 and not world.ship.controls_locked and
+        world.mission_index == retry_index and world.r43_pending_bounty == 0,
+        "R43 second launch must retry exactly the failed mission"):return
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
