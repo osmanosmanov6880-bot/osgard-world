@@ -4,7 +4,7 @@ extends SubViewportContainer
 ## Isolated camera/world: inspecting never moves or unlocks the flight ship.
 const NXHeroScene = preload("res://assets/models/nx08_interceptor_r8.gltf")
 
-const VALID_HULLS: Array[String] = [
+const VALID_HULLS = [
     "ship_scout", "ship_interceptor", "ship_guardian"
 ]
 
