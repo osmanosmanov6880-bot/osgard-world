@@ -12,6 +12,7 @@ var mission_detail: Label
 var captain_label: Label
 var ship_label: Label
 var progression_label: Label
+var integrity_label: Label
 var captain_badge_label: Label
 var xp_meter: ProgressBar
 var roster_label: Label
@@ -126,7 +127,7 @@ func _build() -> void:
     ship_card.add_child(ship_stack)
     _label(ship_stack, "АКТИВНЫЙ КОРАБЛЬ", 11, MUTED)
     ship_label = _label(ship_stack, "NX-08  /  SCOUT", 18, Color(0.93,0.97,0.99))
-    _label(ship_stack, "ЩИТ И КОРПУС · СИСТЕМЫ ГОТОВЫ", 11, CYAN)
+    integrity_label = _label(ship_stack, "КОРПУС 100%  ·  ЩИТ 100%", 11, CYAN)
 
     var captain_card := PanelContainer.new()
     captain_card.name = "R39_CaptainCard"
@@ -235,6 +236,11 @@ func refresh(data: Dictionary) -> void:
         "ship_guardian": "NX-21  /  СТРАЖ",
     }
     ship_label.text = str(ship_names.get(ship_id, "NX-08  /  РАЗВЕДЧИК"))
+    var hull_max: float = maxf(1.0, float(data.get("hull_cap", 100.0)))
+    var shield_max: float = maxf(1.0, float(data.get("shield_cap", 100.0)))
+    var hull_ratio: int = clampi(roundi(100.0 * float(data.get("hull", hull_max)) / hull_max), 0, 100)
+    var shield_ratio: int = clampi(roundi(100.0 * float(data.get("shield", shield_max)) / shield_max), 0, 100)
+    integrity_label.text = "КОРПУС %d%%  ·  ЩИТ %d%%" % [hull_ratio, shield_ratio]
     var allies: Array = data.get("wingmen", [])
     if allies.is_empty():
         roster_label.text = "ВЕДОМЫЕ  ·  свободны 2 места"
