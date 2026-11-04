@@ -3,6 +3,7 @@ extends CanvasLayer
 ## R39 garage command hub. Reads the live campaign state supplied by world.gd.
 signal sortie_requested
 signal shop_requested
+signal captain_selected(captain_id: String)
 
 var ui_font: Font
 var profile: Dictionary = {}
@@ -23,6 +24,9 @@ var story_label: Label
 var objective_label: Label
 var stakes_label: Label
 var debrief_label: Label
+var captain_role_label: Label
+var captain_bonus_label: Label
+var captain_choice_buttons: Dictionary = {}
 
 const BG := Color(0.018, 0.035, 0.058, 0.96)
 const PANEL := Color(0.035, 0.073, 0.105, 0.94)
@@ -143,6 +147,27 @@ func _build() -> void:
     _label(captain_stack, "КОМАНДИР ЭСКАДРИЛЬИ", 11, MUTED)
     captain_label = _label(captain_stack, "КАПИТАН · УРОВЕНЬ 1", 17, GOLD)
     progression_label = _label(captain_stack, "0 / 500 XP до следующего уровня", 12, MUTED)
+    captain_role_label = _label(captain_stack, "ВЫБРАН · АДА ВЕЙЛ / ТАКТИК", 12, CYAN)
+    captain_bonus_label = _label(captain_stack, "−10% входящего урона", 12, MUTED)
+    var selectors := HBoxContainer.new()
+    selectors.name = "R42_CommanderSelector"
+    selectors.add_theme_constant_override("separation", 7)
+    captain_stack.add_child(selectors)
+    for id in ["ada", "kai", "leya"]:
+        var select_button := Button.new()
+        select_button.name = "R42_Captain_" + id
+        select_button.text = {"ada":"АДА", "kai":"КАЙ", "leya":"ЛЕЯ"}[id]
+        select_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        select_button.custom_minimum_size = Vector2(68, 44)
+        select_button.add_theme_font_override("font", ui_font)
+        select_button.add_theme_font_size_override("font_size", 13)
+        select_button.add_theme_color_override("font_color", CYAN)
+        select_button.add_theme_stylebox_override("normal", _panel_style(PANEL))
+        select_button.add_theme_stylebox_override("hover", _panel_style(Color(0.08,0.16,0.23,1.0), CYAN))
+        select_button.focus_mode = Control.FOCUS_ALL
+        select_button.pressed.connect(_on_captain_pressed.bind(id))
+        selectors.add_child(select_button)
+        captain_choice_buttons[id] = select_button
 
     roster_label = _label(column, "ЭКИПАЖ  ·  Ведомые", 13, Color(0.86,0.92,0.95))
 
@@ -190,6 +215,9 @@ func _build() -> void:
     launch_button.pressed.connect(func(): sortie_requested.emit())
     root.add_child(launch_button)
 
+func _on_captain_pressed(id: String) -> void:
+    captain_selected.emit(id)
+
 func refresh(data: Dictionary) -> void:
     profile = data
     var credits := int(data.get("credits", 0))
@@ -199,6 +227,17 @@ func refresh(data: Dictionary) -> void:
     resource_label.text = "%s CR    •    %s XP" % [_format_number(credits), _format_number(xp)]
     captain_label.text = "КАПИТАН · УРОВЕНЬ %d" % level
     progression_label.text = "%d / 500 XP до следующего уровня" % xp_next
+    var selected_id: String = str(data.get("captain_id", "ada"))
+    var captain: Dictionary = data.get("captain_info", {})
+    captain_role_label.text = "ВЫБРАН · " + str(captain.get("name", "АДА ВЕЙЛ")) + " / " + str(captain.get("role", "ТАКТИК"))
+    captain_bonus_label.text = str(captain.get("effect", "−10% входящего урона"))
+    for id in captain_choice_buttons:
+        var button: Button = captain_choice_buttons[id]
+        var active: bool = str(id) == selected_id
+        button.text = ("✓  " if active else "") + str({"ada":"АДА","kai":"КАЙ","leya":"ЛЕЯ"}.get(id, id))
+        button.add_theme_stylebox_override("normal", _panel_style(CYAN if active else PANEL, CYAN if active else LINE))
+        button.add_theme_color_override("font_color", BG if active else CYAN)
+        button.tooltip_text = "Текущий капитан" if active else "Выбрать капитана " + str(id)
     var ship_id := str(data.get("ship", "ship_scout"))
     var ship_names := {
         "ship_scout": "NX-08  /  РАЗВЕДЧИК",

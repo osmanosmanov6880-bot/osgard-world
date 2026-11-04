@@ -120,10 +120,33 @@ try {
   console.log('NEBULA_R25_BROWSER_FLIGHT_SUCCESS '+JSON.stringify(log.summary));
 } catch(e) {
   log.errors.push('R25 browser flight E2E: '+String(e.message));
-  console.error('NEBULA_R25_BROWSER_FLIGHT_FAILURE '+String(e.message));
-  throw e;
+  console.error('NEBULA_R25_BROWSER_FLIGHT_FAILURE '+String(e.stack || e.message));
+  process.exitCode = 1;
 } finally {
-  log.finished_at=new Date().toISOString();
-  fs.writeFileSync(path.join(output,'flight.json'),JSON.stringify(log,null,2));
-  await browser.close();
+  // Hosted Chromium with a running WebGL Godot canvas can hang forever in
+  // browser.close(), *after* every real telemetry check passed. Save proof
+  // first, bound cleanup, and explicitly close the standalone CI process.
+  // This must NEVER turn a failed flight check into a success.
+  log.finished_at = new Date().toISOString();
+  const reportPath = path.join(output,'flight.json');
+  fs.writeFileSync(reportPath,JSON.stringify(log,null,2));
+  let cleanupTimer;
+  try {
+    await Promise.race([
+      browser.close(),
+      new Promise((_,reject) => {
+        cleanupTimer = setTimeout(() => reject(
+          new Error('hosted SwiftShader browser.close() exceeded 6 seconds')),6000);
+      })
+    ]);
+  } catch(error) {
+    log.errors.push('Browser teardown warning: '+String(error.message));
+    console.warn('NEBULA_R25_BROWSER_TEARDOWN_WARNING '+String(error.message));
+    fs.writeFileSync(reportPath,JSON.stringify(log,null,2));
+  } finally {
+    clearTimeout(cleanupTimer);
+  }
+  const code = log.passed && process.exitCode !== 1 ? 0 : 1;
+  // This is a single-purpose CLI verification script, not production code.
+  process.exit(code);
 }
