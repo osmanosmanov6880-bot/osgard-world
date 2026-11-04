@@ -41,11 +41,19 @@ export async function gitBlobHash(filename){
 export async function inspectProductionArtifact(policy,dir=GAME_DIR){
   check(policy?.schema==='NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1',
     'production allowlist missing or incorrect schema');
-  check(policy.approved_variant==='R38'||policy.approved_variant==='R40',
+  check(['R38','R39','R40'].includes(policy.approved_variant),
     'unexpected approved build');
   if(policy.approved_variant==='R38'){
     check(policy.release_status==='R38_PINNED_PRODUCTION_BASELINE' &&
-      policy.approval===null,'R38 stable baseline cannot claim R40 approval');
+      policy.approval===null,'R38 stable baseline cannot claim a later release');
+  }else if(policy.approved_variant==='R39'){
+    const a=policy.approval;
+    check(policy.release_status==='R39_OWNER_DIRECTED_OVERRIDE'&&a &&
+      a.owner_directed_release===true&&a.release_risk_accepted===true&&
+      a.physical_device_qa==='NOT_PERFORMED'&&
+      a.authorization_source==='repository owner instruction'&&
+      /^\\d{4}-\\d{2}-\\d{2}$/.test(a.authorized_date||''),
+      'R39 owner override must explicitly record authorization and disclose missing physical-device QA');
   }else{
     const a=policy.approval;
     check(policy.release_status==='R40_HARDWARE_QA_APPROVED'&&a &&
@@ -89,8 +97,11 @@ export async function inspectProductionArtifact(policy,dir=GAME_DIR){
     }
     hashes[name]=actual;
   }
-  return {status:'APPROVED_BYTES_ONLY',variant:policy.approved_variant,files:hashes,
-    caution:'R40 human visual/device attestations must be independently reviewed; bytes match alone is not field approval'};
+  return {status:policy.approved_variant==='R39'?'OWNER_DIRECTED_OVERRIDE_BYTES_MATCH':'APPROVED_BYTES_ONLY',
+    variant:policy.approved_variant,files:hashes,
+    caution:policy.approved_variant==='R39'
+      ?'Owner-directed release override; physical-device QA was NOT PERFORMED'
+      :'R40 human visual/device attestations must be independently reviewed; bytes match alone is not field approval'};
 }
 async function main(){
   const p=JSON.parse(fs.readFileSync(POLICY_FILE,'utf8'));
