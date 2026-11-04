@@ -848,6 +848,28 @@ assert "func _r41_fail_sortie() -> void:" in world
 assert "func _r41_return_to_garage() -> void:" in world
 assert "func _r41_continue_sortie() -> void:" in world
 assert "sortie_result_open_r41 or ship.hull <= 0.0" in world
+# R40 physical Aurora hangar merged into R41's sortie loop.
+hangar_port = require(
+    "scripts/cinematic_port_r14.gd",
+    "R40_AuroraLaunchHangar",
+    "R40_BatchedHangarArmor",
+    "R40_BatchedMachinedTrusses",
+    "R40_LeftSlidingBayDoor",
+    "func set_command_hangar_visible(active: bool) -> void:",
+    "func animate_command_hangar_launch() -> Tween:",
+)
+hangar_garage = require(
+    "scripts/garage_hub_r39.gd",
+    "R40_CaptainExperience",
+    "mission_reward_label",
+    "mission_detail.text = str(mission.get",
+)
+assert "var garage_launch_pending_r40: bool" in world
+assert "flight_hud_surface_r40.visible = false" in world
+assert "flight_hud_surface_r40.visible = true" in world
+assert "func _r40_finish_garage_launch() -> void:" in world
+assert "NEBULA_R40_HANGAR_INTEGRATION_SUCCESS" in smoke
+assert "R40 sortie must immediately unlock real touch/HUD" in smoke
 assert "NEBULA_R41_SORTIE_LOOP_SUCCESS" in smoke
 assert "R41 duplicate completion incorrectly paid or advanced the campaign" in smoke
 assert "R41 defeat rescue cost must be charged only once" in smoke
