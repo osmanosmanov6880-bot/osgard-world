@@ -1,6 +1,6 @@
 # NEBULA R46 — exact-binary production release record
 
-**Date:** 2026-11-05 · **State:** release candidate until SSH activation and independent public HTTPS parity succeed. **Real mobile device QA:** NOT PERFORMED.
+**Date:** 2026-11-05 · **State:** RELEASED AND PUBLICLY VERIFIED on 2026-11-05 — SSH activation #41917436317 and exact 4/4 HTTPS byte parity #41917552580 both succeeded. **Real mobile device QA:** NOT PERFORMED.
 
 ## Verified engineering scope
 
@@ -27,11 +27,20 @@ The user repeatedly requested direct NEBULA production delivery. This policy ret
 
 ## Release checklist
 
-- [ ] R46 guard synthetic negative tests + exact local four-binary guard green
-- [ ] Release PR merged after CI, not a manual insecure file swap
-- [ ] Isolated SSH activation with disk quota, lock, rollback and internal Nginx checks
-- [ ] Independent public HTTPS parity of four 4/4 exact file hashes against updated allowlist
-- [ ] Update this document with actual successful run URLs and failed attempts
+- [x] R46 guard synthetic negative tests + exact local four-binary guard green — #41917276954 and #41917436269
+- [x] Release PR #737 merged after guard CI, not a manual insecure file swap
+- [x] Isolated SSH activation with disk quota, lock, rollback and internal Nginx checks — #41917436317
+- [x] Independent public HTTPS parity of 4/4 exact file hashes against updated allowlist — #41917552580
+- [x] This document updated with verified run URLs and remaining limits
 - [ ] Physical Android/iPhone FPS + owner visual acceptance (not performed)
 
 **Do not call the release deployed based only on source PR, verified master export or HTTP 200.**
+
+## Verified actual activation
+
+- [R46 production policy PR #737](https://github.com/osmanosmanov6880-bot/osgard-world/pull/737).
+- [R46 isolated SSH deployment #41917436317](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41917436317) — successful activation and production health check.
+- [Independent public exact-byte parity #41917552580](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/41917552580) — `NEBULA_PUBLIC_RELEASE_PARITY_PASS variant=R46 actual_hardware_qa=NOT_PERFORMED`.
+- The public checker downloaded all 4 actual files, including 39,514,754-byte WebAssembly binary and 5,848,344-byte Godot pack. All four Git blob identities matched the R46 owner allowlist.
+- No R46-specific failed SSH or public-identity attempt occurred in the release path examined. Earlier R45 public verifier version-list issue was fixed before R46 rollout.
+- A successful HTTP/byte match establishes deployment identity, **not GPU frame quality or real iPhone/Android acceptance**.
