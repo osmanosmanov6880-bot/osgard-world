@@ -44,8 +44,8 @@ jobs:
           import assert from 'node:assert/strict';
           const p = JSON.parse(fs.readFileSync('.github/nebula-production-allowlist.json','utf8'));
           assert.equal(p.schema,'NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1');
-          assert.ok(['R39','R41','R42','R43','R44','R40'].includes(p.approved_variant));
-          if(['R39','R41','R42','R43','R44'].includes(p.approved_variant)){
+          assert.ok(['R39','R41','R42','R43','R44','R45','R40'].includes(p.approved_variant));
+          if(['R39','R41','R42','R43','R44','R45'].includes(p.approved_variant)){
             assert.equal(p.release_status,p.approved_variant+'_OWNER_DIRECTED_OVERRIDE');
             assert.equal(p.approval.physical_device_qa,'NOT_PERFORMED');
             if(p.approved_variant!=='R39')
