@@ -2,6 +2,7 @@ extends SceneTree
 const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
 const MaterialFabricR12Script = preload("res://scripts/material_fabric_r12.gd")
 const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
+const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
 ## validates persistent progression, shields, damage and the radar.
 func _initialize() -> void:
@@ -34,6 +35,19 @@ func _run() -> void:
     if not check(world.garage_hub_r39.captain_label.text == "КАПИТАН · УРОВЕНЬ 1" and
         world.garage_hub_r39.resource_label.text.contains("950 CR"),
         "R39 captain level and campaign credits are not shown from live progression"):return
+    # R42: selection is a real Godot Button signal, not a decorative mockup.
+    var kai_button: Button = world.garage_hub_r39.captain_choice_buttons["kai"]
+    kai_button.pressed.emit()
+    if not check(world.selected_captain_r42 == "kai" and
+        world.garage_hub_r39.captain_role_label.text.contains("КАЙ") and
+        world.garage_hub_r39.captain_bonus_label.text.contains("8%"),
+        "R42 interactive captain selection does not update the real garage"):return
+    world._r42_select_captain("not_a_captain")
+    if not check(world.selected_captain_r42 == "kai",
+        "R42 illegal captain selection must fail closed"):return
+    if not check(CaptainRosterR42Script.reward(350, "leya") == 392 and
+        CaptainRosterR42Script.reward(350, "ada") == 350,
+        "R42 free engineer mission credits must use the real deterministic bonus"):return
     world._r39_open_shop()
     if not check(world.store_r15.visible and not world.garage_hub_r39.visible and
         world.ship.controls_locked,
@@ -50,6 +64,9 @@ func _run() -> void:
     world._r39_launch_sortie()
     if not check(not world.garage_open_r39 and not world.ship.controls_locked,
         "R39 sortie action did not unlock flight"):return
+    if not check(is_equal_approx(world.ship.thrust_multiplier, 1.08) and
+        is_equal_approx(world.ship.damage_multiplier, 1.0),
+        "R42 Kai's acceleration perk must apply to actual physics"):return
     # R21 approved Aurora: the ship starts in a physically clear corridor,
     # does respond to throttle, and the chase camera cannot remain behind
     # opaque collision geometry.
@@ -1110,6 +1127,10 @@ func _run() -> void:
         world.garage_hub_r39.debrief_label.text.contains("350 CR") and
         world.garage_hub_r39.story_label.text.contains("АДА ВЕЙЛ"),
         "R41 reward debrief must be visible after successful sortie"):return
+    world._r42_select_captain("leya")
+    if not check(world.selected_captain_r42 == "leya" and
+        world.garage_hub_r39.captain_bonus_label.text.contains("12%"),
+        "R42 engineer captain cannot be chosen between sorties"):return
     var award_guard_credits: int = world.credits
     var award_guard_index: int = world.mission_index
     world._complete_mission()
@@ -1133,6 +1154,8 @@ func _run() -> void:
     if not check(parsed is Dictionary and parsed.get("engine_rank",-1) == 1,"Upgrade missing in save"):return
     if not check(parsed.get("r41_last_debrief", {}).get("mission_index", -1) == 0,
         "R41 debrief was not persisted in backward-compatible v1 save"):return
+    if not check(parsed.get("captain_r42", "") == "leya",
+        "R42 captain choice must persist in the additive version-1 save"):return
     var shield_before: float = world.ship.shield
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
