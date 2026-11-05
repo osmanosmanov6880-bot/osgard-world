@@ -35,6 +35,7 @@ const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49
 const ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")
 const CourierInterceptR51Script = preload("res://scripts/courier_intercept_r51.gd")
 const StationBlackoutR52Script = preload("res://scripts/station_blackout_r52.gd")
+const ZenithRescueR53Script = preload("res://scripts/zenith_rescue_r53.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -53,7 +54,8 @@ const MISSIONS = [
     {"title":"ТЕНИ ПОРТА","hint":"Изучи три терминала Авроры. Удерживай T или кнопку ВВОД у каждого. Не стреляй.","position":Vector3(0,26,0),"type":"investigation","reward":3200},
     {"title":"ЗАКРЫТЫЙ АРХИВ","hint":"Найди два ключа «Эхо», затем расшифруй архив. Удерживай ВВОД и защищай сервер от атак дронов.","position":Vector3(-500,32,670),"type":"archive","reward":3800},
     {"title":"КУРЬЕР «ЭХО»","hint":"Взломай приёмник, следуй за движущимся курьером, затем устрани подавители и эвакуируй данные за 90 секунд.","position":Vector3(1230,29,-710),"type":"courier","reward":4400},
-    {"title":"СТАНЦИЯ БЕЗ СВЕТА","hint":"Переключи два настоящих силовых реле. Удерживай оборону реактора, стабилизируй питание и используй резервный конденсатор только один раз.","position":Vector3(530,32,1060),"type":"blackout","reward":4900}
+    {"title":"СТАНЦИЯ БЕЗ СВЕТА","hint":"Переключи два настоящих силовых реле. Удерживай оборону реактора, стабилизируй питание и используй резервный конденсатор только один раз.","position":Vector3(530,32,1060),"type":"blackout","reward":4900},
+    {"title":"ПОСЛЕДНИЙ ЭКИПАЖ «ЗЕНИТА»","hint":"Пеленгуй три антенны, сопровождай движущуюся капсулу, уничтожь подавители и эвакуируй экипаж вручную.","position":Vector3(780,35,930),"type":"zenith_rescue","reward":5400}
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -76,6 +78,8 @@ var r51_courier
 var r51_jammer_wave_spawned: bool = false
 var r52_station
 var r52_hostiles_spawned: bool = false
+var r53_zenith
+var r53_raiders_spawned: bool = false
 var r49_interact_held := false
 var r49_command_button: Button
 var r49_terminal_button: Button
@@ -799,7 +803,9 @@ func _r23_toggle_cruise() -> void:
     if ship.cruise_assist and mission_index < MISSIONS.size():
         # R49: a staged objective always owns the current navigation goal.
         # Do not overwrite the next terminal/rescue stop with the old mission center.
-        if is_instance_valid(r52_station):
+        if is_instance_valid(r53_zenith):
+            ship.set_navigation_target(r53_zenith.objective_position())
+        elif is_instance_valid(r52_station):
             ship.set_navigation_target(r52_station.objective_position())
         elif is_instance_valid(r51_courier):
             # Lead the moving signal for steering, but keep the beacon and
@@ -1116,6 +1122,27 @@ func _mission_tick(dt: float) -> void:
         return
     var mission: Dictionary = MISSIONS[mission_index]
     var target: Vector3 = mission["position"]
+    if is_instance_valid(r53_zenith):
+        var live_raiders: int = _r53_active_raiders()
+        var result_r53: String = r53_zenith.step(dt, ship.global_position,
+            r49_interact_held or Input.is_key_pressed(KEY_T) or
+            Input.is_physical_key_pressed(KEY_T), live_raiders)
+        if r53_zenith.is_escort_active() and not r53_raiders_spawned:
+            _r53_spawn_pod_raiders()
+        var goal_r53: Vector3 = r53_zenith.objective_position()
+        if is_instance_valid(mission_beacon):
+            mission_beacon.global_position = goal_r53
+        if r48_last_goal.distance_to(goal_r53) > 4.0:
+            r48_last_goal = goal_r53
+            ship.set_navigation_target(goal_r53)
+        if result_r53 == "event":
+            r49_interact_held = false
+            _show_notice(r53_zenith.last_event)
+        elif result_r53 == "failed":
+            _r43_fail_sortie(r53_zenith.last_event)
+        elif result_r53 == "success":
+            _complete_mission()
+        return
     if is_instance_valid(r52_station):
         var result_r52: String = r52_station.step(dt,
             ship.global_position, r49_interact_held or
@@ -1350,9 +1377,50 @@ func _r52_clear_station() -> void:
         r52_station.queue_free()
         r52_station = null
 
+func _r53_active_raiders() -> int:
+    var remaining: int = 0
+    for fighter in drones:
+        if is_instance_valid(fighter) and (
+                fighter.is_in_group("nebula_r53_pod_raiders")) and fighter.hostile:
+            remaining += 1
+    return remaining
+
+func _r53_spawn_pod_raiders() -> void:
+    if r53_raiders_spawned or garage_open_r39 or (
+            not is_instance_valid(r53_zenith)) or (
+            not r53_zenith.is_escort_active()):
+        return
+    r53_raiders_spawned = true
+    mission_enemies = 3
+    for i in mission_enemies:
+        var raider = DroneScript.new()
+        raider.hostile = true
+        raider.health = 18.0
+        raider.speed = 23.0
+        raider.activation_distance = 470.0
+        raider.target = r53_zenith.rescue_pod
+        raider.add_to_group("nebula_mission_hostiles")
+        raider.add_to_group("nebula_r53_pod_raiders")
+        raider.destroyed.connect(_on_mission_drone_destroyed)
+        raider.fired.connect(_on_drone_fire)
+        add_child(raider)
+        raider.global_position = r53_zenith.rescue_pod.global_position + Vector3(
+            float(i - 1) * 49.0, 17.0, -73.0)
+        drones.append(raider)
+    _show_notice("КАПСУЛА «ЗЕНИТА» ПОД АТАКОЙ · ЗАЩИЩАЙ ЭКИПАЖ")
+
+func _r53_clear_zenith() -> void:
+    r49_interact_held = false
+    r53_raiders_spawned = false
+    if is_instance_valid(r53_zenith):
+        r53_zenith.queue_free()
+        r53_zenith = null
+
 func _active_mission_goal() -> Vector3:
     # Single physical objective for radar, HUD and waypoint beacon across
     # all staged mission types; predictive cruise steering is separate.
+    if is_instance_valid(r53_zenith):
+        return r53_zenith.objective_position()
     if is_instance_valid(r52_station):
         return r52_station.objective_position()
     if is_instance_valid(r51_courier):
@@ -1375,6 +1443,7 @@ func _start_mission() -> void:
     _r50_clear_archive()
     _r51_clear_courier()
     _r52_clear_station()
+    _r53_clear_zenith()
     if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
@@ -1390,6 +1459,15 @@ func _start_mission() -> void:
         _show_notice("СЮЖЕТ ЗАВЕРШЁН · СВОБОДНЫЙ ПОЛЁТ")
         return
     var data: Dictionary = MISSIONS[mission_index]
+    if str(data["type"]) == "zenith_rescue":
+        r53_zenith = ZenithRescueR53Script.new()
+        add_child(r53_zenith)
+        r53_zenith.configure(data["position"])
+        mission_started = true
+        r48_last_goal = r53_zenith.objective_position()
+        ship.set_navigation_target(r48_last_goal)
+        if is_instance_valid(fleet_r15):
+            fleet_r15.defend_anchor = r53_zenith.rescue_pod
     if str(data["type"]) == "blackout":
         r52_station = StationBlackoutR52Script.new()
         add_child(r52_station)
@@ -1493,6 +1571,7 @@ func _complete_mission() -> void:
     _r50_clear_archive()
     _r51_clear_courier()
     _r52_clear_station()
+    _r53_clear_zenith()
     if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
@@ -1536,6 +1615,7 @@ func _r43_fail_sortie(reason: String = "") -> void:
     _r50_clear_archive()
     _r51_clear_courier()
     _r52_clear_station()
+    _r53_clear_zenith()
     if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
@@ -1578,6 +1658,11 @@ func _on_drone_fire(from: Vector3, to: Vector3) -> void:
     if is_instance_valid(r49_investigation):
         return
     _laser_effect_colored(from,to,Color(1.0,0.26,0.39))
+    if is_instance_valid(r53_zenith) and r53_zenith.is_escort_active() and (
+            to.distance_to(r53_zenith.rescue_pod.global_position) < 20.0) and (
+            from.distance_to(r53_zenith.rescue_pod.global_position) < 275.0):
+        r53_zenith.take_damage(10.0)
+        return
     if is_instance_valid(r52_station) and r52_station.is_live_reactor() and (
             to.distance_to(r52_station.reactor.global_position) < 18.0) and (
             from.distance_to(r52_station.reactor.global_position) < 275.0):
@@ -1726,7 +1811,9 @@ func _update_hud() -> void:
         var goal: Vector3 = _active_mission_goal()
         var d: int = roundi(ship.global_position.distance_to(goal))
         hud_mission.text = "%02d  ·  %s" % [mission_index + 1, m["title"]]
-        if is_instance_valid(r52_station):
+        if is_instance_valid(r53_zenith):
+            hud_objective.text = "◇  " + r53_zenith.status_line(_r53_active_raiders())
+        elif is_instance_valid(r52_station):
             hud_objective.text = "◇  " + r52_station.status_line()
         elif is_instance_valid(r51_courier):
             hud_objective.text = "◇  " + r51_courier.status_line()
@@ -1745,6 +1832,7 @@ func _update_hud() -> void:
         if is_instance_valid(r50_archive): hud_status.text += "\n" + r50_archive.status_line()
         if is_instance_valid(r51_courier): hud_status.text += "\n" + r51_courier.status_line()
         if is_instance_valid(r52_station): hud_status.text += "\n" + r52_station.status_line()
+        if is_instance_valid(r53_zenith): hud_status.text += "\n" + r53_zenith.status_line(_r53_active_raiders())
 
 func _fit_hud() -> void:
     if not is_instance_valid(hud_panel):
