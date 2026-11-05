@@ -1920,22 +1920,47 @@ func _run() -> void:
         courier_controller.step(0.25, courier_controller.start_position, true)
     if not check(courier_controller.stage == 1 and
         courier_controller.courier.visible and
-        courier_controller.captured_fragments == 1,
-        "R51 first receiver must manually reveal a real moving courier"):return
+        courier_controller.captured_fragments == 1 and
+        courier_controller.pursuit_trail.size() == 5,
+        "R51 first receiver must reveal a moving courier and pooled 3D signal trail"):return
+    var live_signal_points: int = 0
+    for waypoint in courier_controller.pursuit_trail:
+        if waypoint.visible:
+            live_signal_points += 1
+    if not check(live_signal_points == 5,
+        "R51 pursuit must show all five actual in-world signal guide marks"):return
+    var actual_signal_position: Vector3 = courier_controller.objective_position()
+    var predicted_signal_position: Vector3 = courier_controller.navigation_position(
+        Vector3(9000.0, 9000.0, 9000.0))
+    if not check(predicted_signal_position.distance_to(actual_signal_position) > 2.0 and
+        predicted_signal_position.distance_to(actual_signal_position) <= 32.01 and
+        courier_controller.lead_guidance_updates > 0,
+        "R51 intercept guidance must lead real courier by at most 32m, not fake proximity"):return
+    if not check(courier_controller.navigation_position(actual_signal_position) ==
+        actual_signal_position,
+        "R51 nearby pilot guidance must track the actual courier without artificial lead"):return
+    var prior_trail_position: Vector3 = courier_controller.pursuit_trail[0].global_position
     var prior_courier_point: Vector3 = courier_controller.courier.global_position
     for far_tick in 6:
         courier_controller.step(0.25, Vector3(9000, 9000, 9000), false)
     if not check(courier_controller.stage == 1 and
         courier_controller.courier.global_position.distance_to(
-            prior_courier_point) > 3.0 and courier_controller.track_time <= 0.01,
-        "R51 courier must move on real path and cannot be tracked from afar"):return
+            prior_courier_point) > 3.0 and
+        courier_controller.pursuit_trail[0].global_position.distance_to(
+            prior_trail_position) > 3.0 and courier_controller.track_time <= 0.01,
+        "R51 courier and 3D trail must move, with no remote signal acquisition"):return
     for follow_tick in 19:
         courier_controller.step(0.25, courier_controller.objective_position(), false)
+    var invisible_signal_points: int = 0
+    for waypoint in courier_controller.pursuit_trail:
+        if not waypoint.visible:
+            invisible_signal_points += 1
     if not check(courier_controller.stage == 2 and
         courier_controller.captured_fragments == 2 and
         not courier_controller.courier.visible and
+        invisible_signal_points == 5 and
         courier_controller.extraction_console.visible,
-        "R51 tracking a moving courier within radius must unlock real extraction"):return
+        "R51 tracking real courier must hide guide marks and unlock extraction"):return
     var escape_pad: Vector3 = courier_controller.objective_position()
     for jammed_tick in 13:
         courier_controller.step(0.25, escape_pad, true, 2)
@@ -2006,6 +2031,14 @@ func _run() -> void:
     if not check(world.r51_courier.stage == 1 and
         world.r51_courier.courier.visible and not world.r49_interact_held,
         "R51 receiver must require real touch and clear stale held input after stage change"):return
+    # Pilot is outside tracking range; world must aim its actual autopilot
+    # at a bounded moving-target lead while the physical courier stays live.
+    world._mission_tick(0.25)
+    var real_courier_goal: Vector3 = world.r51_courier.objective_position()
+    if not check(world.ship.navigation_target.distance_to(real_courier_goal) <= 32.01 and
+        world.r51_courier.lead_guidance_updates > 0 and
+        world.mission_beacon.global_position.distance_to(real_courier_goal) < 0.1,
+        "R51 world steering may lead courier, but physical beacon cannot be spoofed"):return
     world.r51_courier.pursuit_remaining = 0.05
     world._mission_tick(0.25)
     if not check(world.garage_open_r39 and world.mission_index == 12 and
