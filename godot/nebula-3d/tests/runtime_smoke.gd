@@ -1692,7 +1692,7 @@ func _run() -> void:
         "R50 destroyed enemy cannot be retained as active target"):return
     var convoy_target := Node3D.new()
     world.add_child(convoy_target)
-    convoy_target.global_position = world.ship.global_position + Vector3(0, 1, 65)
+    convoy_target.global_position = world.ship.global_position + Vector3(0, 1, 40)
     dummy_a.target = convoy_target
     dummy_b.hostile = true
     tactics.defend_anchor = convoy_target
