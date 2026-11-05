@@ -30,6 +30,7 @@ const PremiumHUDR21Script = preload("res://scripts/premium_hud_r21.gd")
 const GarageHubR39Script = preload("res://scripts/garage_hub_r39.gd")
 const CampaignStoryR41Script = preload("res://scripts/campaign_story_r41.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
+const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
 const ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")
@@ -156,6 +157,7 @@ var garage_hub_r39
 var garage_open_r39: bool = false
 var r41_last_debrief: Dictionary = {}
 var selected_captain_r42: String = "ada"
+var pilot_training_r54: Dictionary = {"ada":0, "kai":0, "leya":0}
 var r43_pending_bounty: int = 0
 var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
@@ -1474,6 +1476,10 @@ func _complete_mission() -> void:
     var completed_index := mission_index
     var data: Dictionary = MISSIONS[completed_index]
     var awarded_credits: int = CaptainRosterR42Script.reward(int(data["reward"]), selected_captain_r42) + r43_pending_bounty
+    # A trained quartermaster pays only after a real successful mission.
+    awarded_credits += PilotAcademyR54Script.credit_bonus(
+        int(data["reward"]), selected_captain_r42,
+        PilotAcademyR54Script.rank(pilot_training_r54.get(selected_captain_r42, 0)))
     var awarded_xp := 150 + completed_index * 65
     credits += awarded_credits
     xp += awarded_xp
@@ -1972,6 +1978,8 @@ func _upgrade_docked(slot: int) -> void:
         ship.weapon_rank+=1
     credits-=price
     _save_progress()
+    if garage_open_r39:
+        _r39_refresh_garage()
     _show_notice("АНГАР · УЛУЧШЕНИЕ УСТАНОВЛЕНО")
 
 func _r16_hangar_closed() -> void:
@@ -2095,7 +2103,7 @@ func _safe_float(value: Variant, fallback: float) -> float:
 func _save_progress() -> void:
     var file:=FileAccess.open(SAVE_PATH,FileAccess.WRITE)
     if file==null:return
-    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42}))
+    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54}))
     file.close()
 
 func _load_progress() -> void:
@@ -2110,6 +2118,7 @@ func _load_progress() -> void:
     xp=clampi(int(_safe_float(raw.get("xp",0),0.0)),0,99999999)
     var saved_captain: String = str(raw.get("captain_r42", "ada"))
     selected_captain_r42 = saved_captain if CaptainRosterR42Script.valid_id(saved_captain) else "ada"
+    pilot_training_r54 = PilotAcademyR54Script.safe_roster(raw.get("pilot_training_r54", {}))
     # Optional additive save field; original v1 save and premium ownership remain intact.
     var stored_result: Variant = raw.get("r41_last_debrief", {})
     if typeof(stored_result) == TYPE_DICTIONARY:
@@ -2154,6 +2163,8 @@ func _r39_create_garage_hub() -> void:
     hud_canvas.add_child(garage_hub_r39)
     garage_hub_r39.sortie_requested.connect(_r39_launch_sortie)
     garage_hub_r39.shop_requested.connect(_r39_open_shop)
+    garage_hub_r39.upgrade_requested_r54.connect(_upgrade_docked)
+    garage_hub_r39.training_requested_r54.connect(_r54_train_selected_captain)
     garage_hub_r39.captain_selected.connect(_r42_select_captain)
     garage_hub_r39.ship_selected_r45.connect(_r45_select_owned_ship)
     garage_hub_r39.wingman_toggled_r47.connect(_r47_toggle_owned_wingman)
@@ -2192,6 +2203,9 @@ func _r39_refresh_garage() -> void:
         "last_result": r41_last_debrief,
         "captain_id": selected_captain_r42,
         "captain_info": CaptainRosterR42Script.info(selected_captain_r42),
+        "pilot_training_r54": pilot_training_r54.duplicate(true),
+        "engine_rank_r54": ship.engine_rank,
+        "weapon_rank_r54": ship.weapon_rank,
         "ship_profiles": {
             "ship_scout": FleetCombatR15Script.hull_profile("ship_scout"),
             "ship_interceptor": FleetCombatR15Script.hull_profile("ship_interceptor"),
@@ -2256,6 +2270,30 @@ func _r45_select_owned_ship(id: String) -> void:
     _save_progress()
     _r39_refresh_garage()
     _show_notice("КОРАБЛЬ ГОТОВ К ВЫЛЕТУ · " + id)
+
+func _r54_train_selected_captain() -> void:
+    # Garage-only purchase, signed entirely in the same local CR ledger as
+    # ships and upgrades. No Stripe state, external payment or fake XP.
+    if not garage_open_r39 or not is_instance_valid(garage_hub_r39) or (
+            not garage_hub_r39.visible):
+        return
+    var pilot_id: String = selected_captain_r42
+    if not PilotAcademyR54Script.valid_pilot(pilot_id):
+        return
+    var current: int = PilotAcademyR54Script.rank(
+        pilot_training_r54.get(pilot_id, 0))
+    if current >= PilotAcademyR54Script.MAX_RANK:
+        _show_notice("АКАДЕМИЯ · МАКСИМАЛЬНЫЙ РАНГ")
+        return
+    var price: int = PilotAcademyR54Script.cost(current)
+    if credits < price:
+        _show_notice("АКАДЕМИЯ · НУЖНО %d CR" % price)
+        return
+    credits -= price
+    pilot_training_r54[pilot_id] = current + 1
+    _save_progress()
+    _r39_refresh_garage()
+    _show_notice("АКАДЕМИЯ · РАНГ %d · −%d CR" % [current + 1, price])
 
 func _r42_select_captain(id: String) -> void:
     if not garage_open_r39 or not CaptainRosterR42Script.valid_id(id):
@@ -2442,8 +2480,14 @@ func _r39_launch_sortie() -> void:
     garage_hub_r39.queue_free()
     garage_hub_r39 = null
     var captain: Dictionary = CaptainRosterR42Script.info(selected_captain_r42)
-    ship.damage_multiplier = float(captain.get("damage_multiplier", 1.0))
-    ship.thrust_multiplier = float(captain.get("thrust_multiplier", 1.0))
+    var trained_rank: int = PilotAcademyR54Script.rank(
+        pilot_training_r54.get(selected_captain_r42, 0))
+    ship.damage_multiplier = PilotAcademyR54Script.damage_multiplier(
+        selected_captain_r42, float(captain.get("damage_multiplier", 1.0)),
+        trained_rank)
+    ship.thrust_multiplier = PilotAcademyR54Script.thrust_multiplier(
+        selected_captain_r42, float(captain.get("thrust_multiplier", 1.0)),
+        trained_rank)
     ship.controls_locked = false
     ship.velocity = Vector3.ZERO
     r47_launch_camera_time = 1.05
