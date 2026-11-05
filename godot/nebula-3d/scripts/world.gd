@@ -210,6 +210,17 @@ func _r25_emit_browser_flight_state() -> void:
         "quality": graphics_quality,
         "samples": r25_telemetry_samples
     }
+    # R51: real engine control geometry and pressed-signal count let the
+    # Chromium test distinguish a missed mouse click from broken autopilot.
+    # Gameplay positions only; no identifiers or user account telemetry.
+    if is_instance_valid(r23_cruise_button):
+        var cruise_rect: Rect2 = r23_cruise_button.get_global_rect()
+        state["cruise_button_visible"] = r23_cruise_button.is_visible_in_tree()
+        state["cruise_button_events"] = r23_launch_button_events
+        state["cruise_button_x"] = cruise_rect.get_center().x
+        state["cruise_button_y"] = cruise_rect.get_center().y
+        state["cruise_view_w"] = get_viewport().get_visible_rect().size.x
+        state["cruise_view_h"] = get_viewport().get_visible_rect().size.y
     if garage_open_r39 and is_instance_valid(garage_hub_r39):
         var sortie_rect: Rect2 = garage_hub_r39.launch_button.get_global_rect()
         var canvas_size: Vector2 = get_viewport().get_visible_rect().size
