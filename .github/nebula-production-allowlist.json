@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R50",
-  "release_status": "R50_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R51",
+  "release_status": "R51_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "7eadc58ac35fba9ad4a46ce979823b450baea147",
+    "index.html": "820ad1af7c0005cf119dde9aafaf736cc7f919f4",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "b04b826b7753da5151f948e0769fd9bf07caf2a9"
+    "index.pck": "f94df707342c8e28c4a500fe215ab04f1cf19d27"
   },
   "approval": {
     "owner_directed_release": true,
@@ -14,10 +14,10 @@
     "physical_device_qa": "NOT_PERFORMED",
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
-    "authorized_date": "2026-11-05",
-    "verification_workflow_run_id": 42087799818,
-    "native_source_commit_sha": "83835e3c9156f93e23afa496201c1ba27026e0d3",
-    "web_export_commit_sha": "02d043b0fafe1ec1127879497332ee673e81025a"
+    "authorized_date": "2026-11-06",
+    "verification_workflow_run_id": 42119339939,
+    "native_source_commit_sha": "3290e87d342547538f51e6af59d23222c7cd65bf",
+    "web_export_commit_sha": "8a97d6b143a83595b5e947fa631cb904e90bee1e"
   },
-  "notes": "R50 owner-directed exact Godot 4.7.2 Web export of 12 playable missions. Trusted native source PR #747 merged at 83835e3c9156f93e23afa496201c1ba27026e0d3; master Web export committed as 02d043b0fafe1ec1127879497332ee673e81025a by workflow #42087799818, attempt 1. Mission 12 encrypted archive has actual two keys, vulnerable server, 3 hostile drone attacks, one-use physical repair and no reward for failure. Wingmen focus enemy, respect actual collision/occlusion and prioritize locked missile. Exact Git blob hashes pinned for four game assets. R49 is last independently verified public release and rollback. Physical Android/iPhone and GPU QA NOT_PERFORMED. Owner-directed release does NOT claim hardware certification. Public HTTPS parity remains mandatory after SSH activation."
+  "notes": "NEBULA R51 owner-directed exact Godot 4.7.2 export with 13 playable campaign missions. Tested code PR #750 merged at 3290e87d342547538f51e6af59d23222c7cd65bf after six green checks, native and physical browser/touch simulations; trusted source build run #42119339939 SUCCESS, Git export commit 8a97d6b143a83595b5e947fa631cb904e90bee1e has that merge as sole parent. Mission 13: genuine moving encrypted courier, 105-second pursuit, five visible pooled 3D trail markers, bounded lead autopilot steering without cheating 95m physical tracking, 90-second extraction with real jammer drones, repeated manual hold and no failed-sortie rewards. All four Git blob SHA-1 asset identities pinned; no binaries regenerated after export. R50 is last independently confirmed public version and rollback before activation of R51; R51 public HTTPS four-asset parity is mandatory AFTER deployment. Physical Android/iPhone and hardware/GPU/FPS endurance QA NOT_PERFORMED; no hardware certification is claimed."
 }
