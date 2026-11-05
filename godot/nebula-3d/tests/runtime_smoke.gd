@@ -7,6 +7,7 @@ const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
 const ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")
+const CourierInterceptR51Script = preload("res://scripts/courier_intercept_r51.gd")
 const FleetTacticsR50Script = preload("res://scripts/fleet_combat_r15.gd")
 const DroneR49TestScript = preload("res://scripts/drone.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
@@ -1545,11 +1546,13 @@ func _run() -> void:
         fleet_r49.set_command("follow") and
         fleet_r49.command_mode == "follow",
         "R49 defend and follow orders must be independently selectable"):return
-    if not check(world.MISSIONS.size() == 12 and
+    if not check(world.MISSIONS.size() == 13 and
         world.MISSIONS[10]["type"] == "investigation" and
         world.MISSIONS[10]["reward"] == 3200 and
         world.MISSIONS[11]["type"] == "archive" and
-        world.MISSIONS[11]["reward"] == 3800,
+        world.MISSIONS[11]["reward"] == 3800 and
+        world.MISSIONS[12]["type"] == "courier" and
+        world.MISSIONS[12]["reward"] == 4400,
         "R49 must append mission 11 without renumbering the first 10"):return
     var investigation = PortInvestigationR49Script.new()
     world.add_child(investigation)
@@ -1892,5 +1895,142 @@ func _run() -> void:
     if not check(world.credits == archive_paid,
         "R50 archived campaign cannot duplicate the final reward"):return
     print("NEBULA_R50_INTEGRATED_ARCHIVE_AND_RETRY_SUCCESS")
+
+    # R51 isolated gameplay: moving ship really changes coordinates, the
+    # player must follow within range, and active signal jammers block escape.
+    var courier_controller = CourierInterceptR51Script.new()
+    world.add_child(courier_controller)
+    courier_controller.configure(Vector3(1230.0, 29.0, -710.0))
+    if not check(courier_controller.stage == 0 and courier_controller.active and
+        not courier_controller.courier.visible and
+        courier_controller.start_console.visible and
+        courier_controller.captured_fragments == 0,
+        "R51 receiver must start as real physical stage one"):return
+    for scan in 9:
+        courier_controller.step(0.25, courier_controller.courier_center, true)
+    if not check(courier_controller.stage == 0 and
+        courier_controller.hold_time <= 0.01,
+        "R51 old waypoint cannot bypass physical receiver"):return
+    for scan in 8:
+        courier_controller.step(0.25, courier_controller.start_position, true)
+    if not check(courier_controller.stage == 1 and
+        courier_controller.courier.visible and
+        courier_controller.captured_fragments == 1,
+        "R51 first receiver must manually reveal a real moving courier"):return
+    var prior_courier_point: Vector3 = courier_controller.courier.global_position
+    for far_tick in 6:
+        courier_controller.step(0.25, Vector3(9000, 9000, 9000), false)
+    if not check(courier_controller.stage == 1 and
+        courier_controller.courier.global_position.distance_to(
+            prior_courier_point) > 3.0 and courier_controller.track_time <= 0.01,
+        "R51 courier must move on real path and cannot be tracked from afar"):return
+    for follow_tick in 19:
+        courier_controller.step(0.25, courier_controller.objective_position(), false)
+    if not check(courier_controller.stage == 2 and
+        courier_controller.captured_fragments == 2 and
+        not courier_controller.courier.visible and
+        courier_controller.extraction_console.visible,
+        "R51 tracking a moving courier within radius must unlock real extraction"):return
+    var escape_pad: Vector3 = courier_controller.objective_position()
+    for jammed_tick in 13:
+        courier_controller.step(0.25, escape_pad, true, 2)
+    if not check(courier_controller.stage == 2 and
+        courier_controller.hold_time == 0.0 and
+        courier_controller.interference_count == 2,
+        "R51 signal jammers must actually prevent escape, not only change HUD text"):return
+    for remote_tick in 13:
+        courier_controller.step(0.25, courier_controller.start_position, true, 0)
+    if not check(courier_controller.stage == 2 and
+        courier_controller.hold_time <= 0.01,
+        "R51 manual extraction cannot complete remotely"):return
+    for final_tick in 13:
+        courier_controller.step(0.25, escape_pad, true, 0)
+    if not check(courier_controller.stage == 3 and
+        courier_controller.completed_once and not courier_controller.active and
+        courier_controller.captured_fragments == 3 and
+        courier_controller.step(0.25, escape_pad, true, 0) == "inactive",
+        "R51 three distinct real phases must award extraction at most once"):return
+    courier_controller.configure(Vector3(1230.0, 29.0, -710.0))
+    for scan in 8:
+        courier_controller.step(0.25, courier_controller.start_position, true)
+    for follow_tick in 19:
+        courier_controller.step(0.25, courier_controller.objective_position(), false)
+    courier_controller.extraction_remaining = 0.05
+    if not check(courier_controller.step(0.25,
+            courier_controller.extraction_position, true, 0) == "failed" and
+        not courier_controller.completed_once and courier_controller.stage == 2,
+        "R51 deadline expiry must fail with no fake extraction reward"):return
+    courier_controller.queue_free()
+    print("NEBULA_R51_MOVING_COURIER_JAMMED_EXTRACTION_CONTROLLER_SUCCESS")
+
+    # R51 full campaign integration: jammers are actual killable drones,
+    # physical T/hold and pursuit are required, and a failed run is retryable.
+    world.mission_index = 12
+    world._r39_refresh_garage()
+    var courier_wallet: int = world.credits
+    var courier_xp: int = world.xp
+    world._r39_launch_sortie()
+    if not check(is_instance_valid(world.r51_courier) and
+        world.r51_courier.stage == 0 and
+        world.MISSIONS[12]["title"] == "КУРЬЕР «ЭХО»",
+        "R51 mission must be a real stage-13 sortie, not a story-only entry"):return
+    world.ship.global_position = world.MISSIONS[12]["position"]
+    world._mission_tick(0.25)
+    if not check(world.mission_index == 12 and world.credits == courier_wallet,
+        "R51 arriving at old waypoint must never grant new mission rewards"):return
+    world.ship.global_position = world.r51_courier.start_position
+    world.r49_interact_held = true
+    for scan in 8:
+        world._mission_tick(0.25)
+    if not check(world.r51_courier.stage == 1 and
+        world.r51_courier.courier.visible,
+        "R51 actual T/touch hold must decode moving courier"):return
+    for follow_tick in 19:
+        world.ship.global_position = world.r51_courier.objective_position()
+        world._mission_tick(0.25)
+    if not check(world.r51_courier.stage == 2 and
+        world.r51_jammer_wave_spawned and world.mission_enemies == 2 and
+        world._r51_active_interference() == 2,
+        "R51 moving pursuit must spawn two actual jammer drone actors"):return
+    world.ship.global_position = world.r51_courier.extraction_position
+    for blocked_tick in 13:
+        world._mission_tick(0.25)
+    if not check(world.r51_courier.stage == 2 and
+        world.r51_courier.hold_time == 0.0 and world.mission_index == 12,
+        "R51 actual jammer drone actors must block physical pad until destroyed"):return
+    world.r51_courier.extraction_remaining = 0.05
+    world._mission_tick(0.25)
+    if not check(world.garage_open_r39 and world.mission_index == 12 and
+        world.credits == courier_wallet and world.xp == courier_xp and
+        world.r43_pending_bounty == 0 and
+        world.r41_last_debrief.get("status", "") == "failed",
+        "R51 real timer failure must preserve v1 progress and pay zero rewards"):return
+    world._r39_launch_sortie()
+    world.ship.global_position = world.r51_courier.start_position
+    world.r49_interact_held = true
+    for scan in 8:
+        world._mission_tick(0.25)
+    for follow_tick in 19:
+        world.ship.global_position = world.r51_courier.objective_position()
+        world._mission_tick(0.25)
+    for actor in world.drones.duplicate():
+        if is_instance_valid(actor) and actor.is_in_group("nebula_r51_jammer"):
+            actor.hit(10000.0)
+    if not check(world._r51_active_interference() == 0 and
+        world.mission_enemies == 0,
+        "R51 signal interference must clear only after genuine enemies die"):return
+    world.ship.global_position = world.r51_courier.extraction_position
+    for final_tick in 13:
+        world._mission_tick(0.25)
+        if world.garage_open_r39: break
+    if not check(world.garage_open_r39 and world.mission_index == 13 and
+        world.credits > courier_wallet and world.xp > courier_xp and
+        world.r41_last_debrief.get("status", "") == "success",
+        "R51 courier mission must reward a real timed extraction and garage return"):return
+    var courier_paid: int = world.credits
+    world._complete_mission()
+    if not check(world.credits == courier_paid,
+        "R51 finished mission must reject duplicated final payouts"):return
+    print("NEBULA_R51_INTEGRATED_MOVING_COURIER_RETRY_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
