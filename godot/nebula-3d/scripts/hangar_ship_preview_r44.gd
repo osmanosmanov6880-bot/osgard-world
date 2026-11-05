@@ -5,6 +5,7 @@ extends SubViewportContainer
 const NXHeroScene = preload("res://assets/models/nx08_interceptor_r8.gltf")
 const HullVariantsR45Script = preload("res://scripts/hull_variants_r45.gd")
 const FormationBaysR47Script = preload("res://scripts/formation_bays_r47.gd")
+const AuroraHangarZeroR54Script = preload("res://scripts/hangar_environment_r54.gd")
 
 const VALID_HULLS = [
     "ship_scout", "ship_interceptor", "ship_guardian"
@@ -16,6 +17,10 @@ var real_airframe: Node3D
 var distinct_hull_r45: Node3D
 var formation_bays_r47: Node3D
 var inspection_camera: Camera3D
+var hangar_set_r54: Node3D
+var camera_distance_r54: float = 22.8
+var camera_direction_r54: Vector3 = Vector3(12.0, 7.5, -18.2).normalized()
+var last_compact_r54: bool = false
 var selected_hull: String = "ship_scout"
 var orbit_angle: float = -0.48
 var elapsed: float = 0.0
@@ -30,6 +35,9 @@ func _ready() -> void:
     stretch_shrink = 1
     clip_contents = true
     _make_real_viewport()
+    resized.connect(_r54_fit_quality)
+    get_viewport().size_changed.connect(_r54_fit_quality)
+    _r54_fit_quality()
     set_process(true)
 
 func _material(color: Color, metal: float, rough: float,
@@ -60,21 +68,26 @@ func _make_real_viewport() -> void:
     preview_viewport.own_world_3d = true
     preview_viewport.transparent_bg = false
     preview_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
-    preview_viewport.size = Vector2i(640, 350)
+    # stretch=true automatically tracks actual screen pixels, not a fake
+    # fixed 640x350 render. Keep a 1:1 native-resolution preview.
+    preview_viewport.msaa_3d = Viewport.MSAA_4X
     add_child(preview_viewport)
 
     var world_root := Node3D.new()
     world_root.name = "R44_DockSet"
     preview_viewport.add_child(world_root)
+    # R54: a complete enclosed maintenance hall in this isolated 3D scene.
+    hangar_set_r54 = AuroraHangarZeroR54Script.new()
+    world_root.add_child(hangar_set_r54)
 
     var background := WorldEnvironment.new()
     background.name = "R44_DockAtmosphere"
     var environment := Environment.new()
     environment.background_mode = Environment.BG_COLOR
-    environment.background_color = Color(0.009, 0.020, 0.038)
+    environment.background_color = Color(0.014, 0.024, 0.038)
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color(0.38, 0.53, 0.70)
-    environment.ambient_light_energy = 0.60
+    environment.ambient_light_color = Color(0.50, 0.62, 0.72)
+    environment.ambient_light_energy = 0.42
     background.environment = environment
     world_root.add_child(background)
 
@@ -152,13 +165,35 @@ func _make_real_viewport() -> void:
 
     inspection_camera = Camera3D.new()
     inspection_camera.name = "R44_IndependentShipCamera"
-    inspection_camera.position = Vector3(11.0, 11.0, -21.0)
-    inspection_camera.fov = 48.0
+    inspection_camera.position = camera_direction_r54 * camera_distance_r54
+    inspection_camera.fov = 40.0
     inspection_camera.near = 0.1
     inspection_camera.far = 120.0
     world_root.add_child(inspection_camera)
     inspection_camera.look_at(Vector3(0.0, 0.0, 0.0), Vector3.UP)
     inspection_camera.current = true
+
+func _r54_fit_quality() -> void:
+    if not is_instance_valid(preview_viewport):
+        return
+    # Godot SubViewportContainer.stretch tracks actual Control dimensions
+    # automatically. Never manually assign a frozen 640x350 canvas.
+    var view_size: Vector2 = get_viewport().get_visible_rect().size
+    var compact: bool = view_size.x < 760.0 or view_size.y < 590.0
+    last_compact_r54 = compact
+    stretch_shrink = 1
+    preview_viewport.msaa_3d = (
+        Viewport.MSAA_2X if compact else Viewport.MSAA_4X)
+    if is_instance_valid(hangar_set_r54):
+        hangar_set_r54.set_quality_tier(1 if compact else 0)
+
+func zoom_r54(direction: int) -> void:
+    camera_distance_r54 = clampf(
+        camera_distance_r54 + float(clampi(direction, -1, 1)) * 2.1,
+        16.0, 32.0)
+    if is_instance_valid(inspection_camera):
+        inspection_camera.position = camera_direction_r54 * camera_distance_r54
+        inspection_camera.look_at(Vector3.ZERO, Vector3.UP)
 
 func _process(delta: float) -> void:
     if not is_visible_in_tree() or not is_instance_valid(ship_pivot):
@@ -189,7 +224,12 @@ func rotate_step(direction: int) -> void:
         ship_pivot.rotation.y = orbit_angle
 
 func _gui_input(event: InputEvent) -> void:
-    if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+    if event is InputEventMouseButton and event.pressed and (
+            event.button_index == MOUSE_BUTTON_WHEEL_UP or
+            event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+        zoom_r54(-1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1)
+        accept_event()
+    elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
         dragging = event.pressed
         previous_pointer_x = event.position.x
         accept_event()
