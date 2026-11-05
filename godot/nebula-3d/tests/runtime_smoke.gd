@@ -1984,6 +1984,12 @@ func _run() -> void:
         world.r51_courier.stage == 0 and
         world.MISSIONS[12]["title"] == "КУРЬЕР «ЭХО»",
         "R51 mission must be a real stage-13 sortie, not a story-only entry"):return
+    world._r49_layout_buttons(Vector2(320.0, 480.0), Vector4.ZERO)
+    if not check(world.r49_terminal_button.size.x >= 190.0 and
+        world.r50_focus_button.position.y >=
+        world.r49_terminal_button.position.y +
+            world.r49_terminal_button.size.y + 6.0,
+        "R51 compact portrait terminal and target controls must not overlap"):return
     world.ship.global_position = world.MISSIONS[12]["position"]
     world._mission_tick(0.25)
     if not check(world.mission_index == 12 and world.credits == courier_wallet,
@@ -1993,8 +1999,8 @@ func _run() -> void:
     for scan in 8:
         world._mission_tick(0.25)
     if not check(world.r51_courier.stage == 1 and
-        world.r51_courier.courier.visible,
-        "R51 actual T/touch hold must decode moving courier"):return
+        world.r51_courier.courier.visible and not world.r49_interact_held,
+        "R51 receiver must require real touch and clear stale held input after stage change"):return
     world.r51_courier.pursuit_remaining = 0.05
     world._mission_tick(0.25)
     if not check(world.garage_open_r39 and world.mission_index == 12 and
@@ -2012,6 +2018,7 @@ func _run() -> void:
         world._mission_tick(0.25)
     if not check(world.r51_courier.stage == 2 and
         world.r51_jammer_wave_spawned and world.mission_enemies == 2 and
+        not world.r49_interact_held and
         world._r51_active_interference() == 2,
         "R51 moving pursuit must spawn two actual jammer drone actors"):return
     world.ship.global_position = world.r51_courier.extraction_position
@@ -2042,6 +2049,15 @@ func _run() -> void:
         world.mission_enemies == 0,
         "R51 signal interference must clear only after genuine enemies die"):return
     world.ship.global_position = world.r51_courier.extraction_position
+    # A fresh manual press is necessary at the final extraction terminal.
+    # An old receiver hold may NEVER carry across distinct mission stages.
+    for forgotten_press_tick in 13:
+        world._mission_tick(0.25)
+    if not check(world.r51_courier.stage == 2 and
+        world.r51_courier.hold_time <= 0.01 and
+        world.mission_index == 12,
+        "R51 extraction cannot auto-complete from stale previous hold"):return
+    world.r49_interact_held = true
     for final_tick in 13:
         world._mission_tick(0.25)
         if world.garage_open_r39: break
