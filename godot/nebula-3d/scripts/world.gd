@@ -796,7 +796,10 @@ func _r23_toggle_cruise() -> void:
         # R49: a staged objective always owns the current navigation goal.
         # Do not overwrite the next terminal/rescue stop with the old mission center.
         if is_instance_valid(r51_courier):
-            ship.set_navigation_target(r51_courier.objective_position())
+            # Lead the moving signal for steering, but keep the beacon and
+            # actual capture gate on its real physical position.
+            ship.set_navigation_target(
+                r51_courier.navigation_position(ship.global_position))
         elif is_instance_valid(r50_archive):
             ship.set_navigation_target(r50_archive.objective_position())
         elif is_instance_valid(r49_investigation):
@@ -1133,11 +1136,15 @@ func _mission_tick(dt: float) -> void:
         if r51_courier.is_extraction_active() and not r51_jammer_wave_spawned:
             _r51_spawn_jammers()
         var next_r51_goal: Vector3 = r51_courier.objective_position()
+        var r51_flight_guidance: Vector3 = r51_courier.navigation_position(
+            ship.global_position)
+        # The beacon and the 95m capture condition remain at the real ship;
+        # only the autopilot aims a bounded distance ahead of its trajectory.
         if is_instance_valid(mission_beacon):
             mission_beacon.global_position = next_r51_goal
-        if r48_last_goal.distance_to(next_r51_goal) > 5.0:
-            r48_last_goal = next_r51_goal
-            ship.set_navigation_target(next_r51_goal)
+        if r48_last_goal.distance_to(r51_flight_guidance) > 4.0:
+            r48_last_goal = r51_flight_guidance
+            ship.set_navigation_target(r51_flight_guidance)
         if result_r51 == "event":
             # Releasing the receiver or hiding a touch button can skip a
             # button_up signal. A NEW physical press is mandatory for the
