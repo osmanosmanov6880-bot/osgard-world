@@ -11,6 +11,8 @@ const EXTRACTION_RADIUS: float = 42.0
 const EXTRACT_HOLD: float = 3.0
 const EXTRACTION_DEADLINE: float = 90.0
 const COURIER_ANGULAR_SPEED: float = 0.25
+const PURSUIT_DEADLINE: float = 105.0
+const SIGNAL_DECAY_RATE: float = 1.3
 
 var active: bool = false
 var stage: int = 0
@@ -18,6 +20,8 @@ var hold_time: float = 0.0
 var track_time: float = 0.0
 var courier_phase: float = 0.0
 var extraction_remaining: float = EXTRACTION_DEADLINE
+var pursuit_remaining: float = PURSUIT_DEADLINE
+var lost_signal_seconds: float = 0.0
 var captured_fragments: int = 0
 var interference_count: int = 0
 var completed_once: bool = false
@@ -102,6 +106,8 @@ func configure(center: Vector3) -> void:
     track_time = 0.0
     courier_phase = 0.0
     extraction_remaining = EXTRACTION_DEADLINE
+    pursuit_remaining = PURSUIT_DEADLINE
+    lost_signal_seconds = 0.0
     captured_fragments = 0
     interference_count = 0
     completed_once = false
@@ -144,9 +150,9 @@ func status_line() -> String:
         return "ПРИЁМНИК · УДЕРЖИВАЙ %d%%" % roundi(
             clampf(hold_time / START_HOLD, 0.0, 1.0) * 100.0)
     if stage == 1:
-        return "СЛЕДУЙ ЗА КУРЬЕРОМ · ЗАХВАТ %d%% · %d М" % [
+        return "ПЕРЕХВАТ %d%% · РАДИУС %d М · ОСТАЛОСЬ %d С" % [
             roundi(clampf(track_time / TRACK_HOLD, 0.0, 1.0) * 100.0),
-            roundi(COURIER_RANGE)]
+            roundi(COURIER_RANGE), ceili(pursuit_remaining)]
     if interference_count > 0:
         return "ЭВАКУАЦИЯ %d С · УСТРАНИ ПОМЕХИ: %d ДРОНА" % [
             ceili(extraction_remaining), interference_count]
@@ -172,12 +178,23 @@ func step(delta: float, pilot: Vector3, holding: bool,
         courier.visible = true
         return "event"
     if stage == 1:
+        # A moving target cannot orbit forever while the pilot farms enemies.
+        # The countdown uses bounded real Godot delta and is not reset by
+        # briefly leaving and re-entering the acquisition radius.
+        pursuit_remaining = maxf(0.0, pursuit_remaining - dt)
+        if pursuit_remaining <= 0.0:
+            active = false
+            last_event = "КУРЬЕР УШЁЛ · ВРЕМЯ ПЕРЕХВАТА ИСТЕКЛО"
+            return "failed"
         courier_phase += dt * COURIER_ANGULAR_SPEED
         courier.global_position = _courier_path_point()
         courier.rotate_y(dt * COURIER_ANGULAR_SPEED)
-        track_time = (track_time + dt
-            if pilot.distance_to(courier.global_position) <= COURIER_RANGE
-            else maxf(0.0, track_time - dt * 1.3))
+        if pilot.distance_to(courier.global_position) <= COURIER_RANGE:
+            track_time += dt
+            lost_signal_seconds = 0.0
+        else:
+            track_time = maxf(0.0, track_time - dt * SIGNAL_DECAY_RATE)
+            lost_signal_seconds += dt
         if track_time < TRACK_HOLD:
             return "running"
         stage = 2
