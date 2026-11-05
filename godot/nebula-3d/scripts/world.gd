@@ -1128,6 +1128,10 @@ func _mission_tick(dt: float) -> void:
             r48_last_goal = next_r51_goal
             ship.set_navigation_target(next_r51_goal)
         if result_r51 == "event":
+            # Releasing the receiver or hiding a touch button can skip a
+            # button_up signal. A NEW physical press is mandatory for the
+            # final extraction; never inherit the previous station's hold.
+            r49_interact_held = false
             _show_notice(r51_courier.last_event)
         elif result_r51 == "failed":
             # Report the actual failure condition (lost courier or timed
@@ -2303,15 +2307,23 @@ func _r49_refresh_buttons() -> void:
 
 func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     if not is_instance_valid(r49_command_button): return
-    var wide: float = minf(220.0, rect.x * 0.35)
+    # 320px portrait needs a readable terminal label and a safe tap target.
+    # The old 35% centre slot gave only 112px and clipped mission controls.
+    var wide: float = minf(228.0, rect.x * (
+        0.65 if rect.x < 430.0 else 0.35))
     var top: float = safe.y + (115.0 if rect.y < 530.0 else 164.0)
     var left: float = maxf(safe.x + 5.0, (rect.x - wide) * 0.5)
     r49_command_button.position = Vector2(left, top)
     r49_command_button.size = Vector2(wide, 44.0)
     r49_terminal_button.position = Vector2(left, top + 52.0)
     r49_terminal_button.size = Vector2(wide, 48.0)
+    # R51 receiver/extraction uses the terminal button. Keep a 12px
+    # gap before the focus button; stage-1 pursuit hides the terminal and
+    # can use the compact layout. No overlapping interactive touch regions.
+    var terminal_visible: bool = is_instance_valid(r50_archive) or (
+        is_instance_valid(r51_courier) and r51_courier.stage != 1)
     r50_focus_button.position = Vector2(left, top + (
-        108.0 if is_instance_valid(r50_archive) else 52.0))
+        108.0 if terminal_visible else 52.0))
     r50_focus_button.size = Vector2(wide, 48.0)
     r50_repair_button.position = Vector2(left, top + 160.0)
     r50_repair_button.size = Vector2(wide, 44.0)
