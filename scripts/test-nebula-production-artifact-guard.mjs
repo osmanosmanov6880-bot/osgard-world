@@ -48,7 +48,7 @@ try{
   await assert.rejects(inspectProductionArtifact({
     ...r41,approval:{...r41.approval,web_export_commit_sha:r41.approval.native_source_commit_sha}
   },temp),/Modern owner override requires exact source/);
-  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50','R51']){
+  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50','R51','R52']){
     const owner={...r41,approved_variant:variant,
       release_status:variant+'_OWNER_DIRECTED_OVERRIDE',
       approval:{...r41.approval,
@@ -129,6 +129,26 @@ try{
   await assert.rejects(inspectProductionArtifact({
     ...r51,artifacts:{...expected,extra:'0'.repeat(40)}
   },temp),/exactly four hashed game assets/);
+
+  // R52: never confuse a successful Web export with physical-device QA.
+  // These are synthetic negative cases; bytes and provenance remain pinned.
+  const r52={...r41,approved_variant:'R52',
+    release_status:'R52_OWNER_DIRECTED_OVERRIDE'};
+  const r52Good=await inspectProductionArtifact(r52,temp);
+  assert.equal(r52Good.variant,'R52');
+  for (const malicious of [
+    {...r52,release_status:'R52_HARDWARE_QA_APPROVED'},
+    {...r52,approval:{...r52.approval,physical_device_qa:'PASSED'}},
+    {...r52,approval:{...r52.approval,hardware_qa_certified:true}},
+    {...r52,approval:{...r52.approval,verification_workflow_run_id:0}},
+    {...r52,approval:{...r52.approval,web_export_commit_sha:r52.approval.native_source_commit_sha}},
+    {...r52,artifacts:{...expected,'index.html':'0'.repeat(40)}},
+    {...r52,artifacts:{...expected,'index.pck':'0'.repeat(40)}},
+    {...r52,artifacts:{...expected,extra:'0'.repeat(40)}}
+  ]) {
+    await assert.rejects(inspectProductionArtifact(malicious,temp),
+      /Owner override|Modern owner override|hardware QA explicitly false|unapproved index|exactly four hashed/);
+  }
   const unsupported={...stable,approved_variant:'R40',
     release_status:'R40_HARDWARE_QA_APPROVED',approval:{human_visual_approved:true}};
   await assert.rejects(inspectProductionArtifact(unsupported,temp),/requires explicit human-reviewed evidence/);
