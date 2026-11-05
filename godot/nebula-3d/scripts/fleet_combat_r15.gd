@@ -41,6 +41,45 @@ var command_mode: String = "follow"
 var defend_anchor: Node3D
 var command_changes: int = 0
 var ally_hits_r49: int = 0
+## R50: pilots can order an owned squad to focus a real hostile.
+## An invalid, distant or already destroyed target cannot be locked.
+const FOCUS_RANGE: float = 340.0
+var focus_target: Node3D
+var focus_changes: int = 0
+var focus_shots: int = 0
+
+func _valid_focus(candidate: Node3D) -> bool:
+    return is_instance_valid(player_ship) and is_instance_valid(candidate) and (
+        bool(candidate.hostile) and player_ship.global_position.distance_to(
+            candidate.global_position) <= FOCUS_RANGE)
+
+func clear_focus() -> void:
+    focus_target = null
+
+func select_next_focus() -> bool:
+    if not is_instance_valid(player_ship) or not combat_active or helpers.is_empty():
+        return false
+    if targets.is_empty():
+        clear_focus()
+        return false
+    var previous: int = targets.find(focus_target) if is_instance_valid(focus_target) else -1
+    for turn in targets.size():
+        var next_index: int = (previous + 1 + turn) % targets.size()
+        var enemy: Node3D = targets[next_index]
+        if _valid_focus(enemy):
+            if enemy != focus_target:
+                focus_changes += 1
+            focus_target = enemy
+            return true
+    clear_focus()
+    return false
+
+func focus_status() -> String:
+    if not _valid_focus(focus_target):
+        return "НЕТ ЦЕЛИ"
+    var distance: int = roundi(player_ship.global_position.distance_to(
+        focus_target.global_position))
+    return "ЦЕЛЬ %d М" % distance
 
 func set_command(mode: String) -> bool:
     if not SQUAD_COMMANDS.has(mode):
@@ -63,8 +102,26 @@ func _command_enemy() -> Node3D:
     if not is_instance_valid(player_ship):
         return null
     if command_mode == "attack":
+        if _valid_focus(focus_target):
+            return focus_target
         return _nearest_hostile_from(player_ship.global_position, 240.0)
     if command_mode == "defend":
+        # Drones striking the real vulnerable convoy take priority.
+        if is_instance_valid(defend_anchor):
+            var danger: Node3D = null
+            var closest: float = 145.0 * 145.0
+            for enemy in targets:
+                if not is_instance_valid(enemy) or not bool(enemy.hostile):
+                    continue
+                if enemy.target != defend_anchor:
+                    continue
+                var gap: float = enemy.global_position.distance_squared_to(
+                    _defend_center())
+                if gap < closest:
+                    closest = gap
+                    danger = enemy
+            if is_instance_valid(danger):
+                return danger
         return _nearest_hostile_from(_defend_center(), 145.0)
     return _nearest_hostile_from(player_ship.global_position, 90.0)
 
@@ -91,6 +148,7 @@ func set_loadout(ship_id: String, weapon_id: String, rockets: int,
         _apply_ship_stats()
         return
     helper_ids = wingmen.duplicate()
+    clear_focus()
     helper_rebuilds += 1
     for node in helpers:
         if is_instance_valid(node): node.queue_free()
@@ -130,8 +188,11 @@ func _apply_ship_stats() -> void:
 
 func _process(delta: float) -> void:
     if not is_instance_valid(player_ship):return
-    ally_timer += delta
-    cooldown = maxf(0.0, cooldown - delta)
+    var dt: float = clampf(delta, 0.0, 0.25)
+    ally_timer += dt
+    cooldown = maxf(0.0, cooldown - dt)
+    if not _valid_focus(focus_target):
+        clear_focus()
     var opponent: Node3D = _command_enemy() if combat_active else null
     for i in helpers.size():
         var ally: Node3D = helpers[i]
@@ -149,7 +210,7 @@ func _process(delta: float) -> void:
                 player_ship.global_basis.x * (side * 11.0)) + Vector3.UP * 6.0
         # Bounded real movement, never teleport a companion across a district.
         ally.global_position = ally.global_position.move_toward(target_pos,
-            maxf(0.0, delta) * (92.0 if command_mode == "attack" else 65.0))
+            dt * (92.0 if command_mode == "attack" else 65.0))
         if is_instance_valid(opponent) and command_mode == "attack" and (
                 opponent.global_position.distance_squared_to(ally.global_position) > 1.0):
             ally.look_at(opponent.global_position, Vector3.UP)
@@ -168,6 +229,8 @@ func _process(delta: float) -> void:
                     ally_fired.emit(wingman.global_position, opponent.global_position)
                     opponent.hit(5.5 if command_mode == "attack" else 4.3)
                     ally_hits_r49 += 1
+                    if opponent == focus_target:
+                        focus_shots += 1
 
 func _nearest_hostile_from(origin: Vector3, distance: float) -> Node3D:
     var selected: Node3D
