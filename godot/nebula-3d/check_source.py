@@ -911,6 +911,7 @@ r51_controller = require(
     "func step(delta: float, pilot: Vector3, holding: bool,",
     "EXTRACTION_DEADLINE: float = 90.0",
     "COURIER_RANGE: float = 95.0",
+    "PURSUIT_DEADLINE: float = 105.0",
     "interference_count",
 )
 assert 'CourierInterceptR51Script = preload("res://scripts/courier_intercept_r51.gd")' in world
@@ -920,6 +921,9 @@ assert "NEBULA_R51_MOVING_COURIER_JAMMED_EXTRACTION_CONTROLLER_SUCCESS" in smoke
 assert "NEBULA_R51_INTEGRATED_MOVING_COURIER_RETRY_SUCCESS" in smoke
 assert "R51 moving pursuit must spawn two actual jammer drone actors" in smoke
 assert "R51 real timer failure must preserve v1 progress and pay zero rewards" in smoke
+assert "R51 integrated courier escape must fail, show true reason and award nothing" in smoke
+assert "r38_genuine_button_presses" in world
+assert "r38_touch_button_presses" in require("scripts/performance_lab_r11.gd", "r38_touch_button_presses")
 assert "nebula_r51_jammer" in world
 assert "_r51_active_interference()" in world
 assert "r51_courier.objective_position()" in world
