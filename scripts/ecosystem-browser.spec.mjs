@@ -45,7 +45,7 @@ async function recordOsgardTransitions(page, returning = false) {
 }
 
 const surfaces = [
-  ['/', 'world', 'ТЕХНОЛОГИИ,'],
+  ['/', 'world', /СОЗДАЁМ\s*ЦИФРОВЫЕ\s*МИРЫ|WE CREATE\s*DIGITAL\s*WORLDS/i],
   ['/intelligence', 'intelligence', 'Понимать ИИ.'],
   ['/play', 'play', /OSGARD\s*Play/],
 ]
@@ -85,136 +85,63 @@ for (const [path, product, heading] of surfaces) {
   })
 }
 
-test('OSGARD cinema, 3D world and hybrid controls are functional and keyboard-accessible', async ({ page }) => {
-  // Multiple WebGL scene transitions and a full reload cost >30 seconds on
-  // saturated mobile CI runners. Keep every real pointer and keyboard assertion.
-  test.slow()
+// The World landing now uses real self-hosted portal artwork and actual
+// product links. The old interactive 3D-globe controls were removed from
+// this route, so exercise the current contract instead of timing out on
+// nonexistent controls or silently skipping accessibility checks.
+test('World portal has three operable product entrances and current self-hosted artwork', async ({ page }) => {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
-  await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
   await expectOsgardContentReady(page)
-  await page.locator('.omega-experience-panel summary').click()
-  const hero = page.locator('.omega-hero')
-  const mode = page.getByRole('group', { name: 'Выберите режим 3D-сцены' })
-
-  await expect(hero).toHaveAttribute('data-omega-mode', 'hybrid')
-  await expect(mode.getByRole('button', { name: 'Гибрид' })).toHaveAttribute('aria-pressed', 'true')
-  await mode.getByRole('button', { name: 'Кино' }).click()
-  await expect(hero).toHaveAttribute('data-omega-mode', 'cinema')
-  await expect(page.getByRole('group', { name: 'Кинематографические главы' }).getByRole('button')).toHaveCount(3)
-  await page.getByRole('button', { name: '03 / Миры' }).click()
-  await expect(page.getByRole('button', { name: '03 / Миры' })).toHaveAttribute('aria-pressed', 'true')
-
-  await mode.getByRole('button', { name: '3D-мир' }).click()
-  await expect(hero).toHaveAttribute('data-omega-mode', 'world')
-  await expect(hero).toHaveAttribute('data-omega-distance', '5.70')
-  await page.getByRole('button', { name: 'Приблизить глобус' }).click()
-  await expect(hero).toHaveAttribute('data-omega-distance', '5.28')
-  const initialYaw = Number(await hero.getAttribute('data-omega-yaw'))
-  await page.getByRole('button', { name: 'Повернуть Землю вправо' }).click()
-  expect(Number(await hero.getAttribute('data-omega-yaw'))).toBeGreaterThan(initialYaw + 0.35)
-  await hero.focus()
-  await page.keyboard.press('ArrowLeft')
-  expect(Number(await hero.getAttribute('data-omega-yaw'))).toBeCloseTo(initialYaw, 1)
-  await page.getByRole('button', { name: 'Сбросить' }).click()
-  await expect(hero).toHaveAttribute('data-omega-distance', '5.70')
-
-  await page.reload()
-  await page.locator('.omega-experience-panel summary').click()
-  await expect(hero).toHaveAttribute('data-omega-mode', 'world')
-  await mode.getByRole('button', { name: 'Гибрид' }).click()
-  await expect(hero).toHaveAttribute('data-omega-mode', 'hybrid')
-  await expect(page.getByRole('navigation', { name: 'Три направления экосистемы' }).getByRole('link')).toHaveCount(3)
-  await page.getByRole('button', { name: 'Меньше движения', exact: true }).click()
-  await expect(page.locator('html')).toHaveAttribute('data-motion', 'off')
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  const hero = page.locator('.omega-portals-hero')
+  await expect(hero).toBeVisible()
+  await expect(hero.getByRole('heading', { level: 1 })).toContainText(/СОЗДАЁМ.*ЦИФРОВЫЕ.*МИРЫ|WE CREATE.*DIGITAL.*WORLDS/i)
+  const image = hero.locator('.omega-portals-reference img')
+  await expect(image).toHaveAttribute('src', '/brand/osgard-portal-desktop.webp')
+  await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
+  const entrances = hero.getByRole('navigation', { name: /Входы в экосистему OSGARD|Enter the OSGARD ecosystem/ }).getByRole('link')
+  await expect(entrances).toHaveCount(3)
+  for (const href of ['/intelligence', '/play', '/development']) {
+    await expect(hero.locator('.omega-portal-stage a[href="' + href + '"]')).toHaveCount(1)
+  }
+  await expect(page.locator('.omega-cards > a')).toHaveCount(3)
+  await expect(page.locator('.omega-portals-live-cta')).toHaveAttribute('href', '#products')
+  await expect(page.locator('.omega-webgl-stage')).toHaveCount(0)
   expect(errors).toEqual([])
 })
 
-test('OSGARD globe fails gracefully without WebGL2 and keeps the experience switcher', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'no-preference' })
+test('World language toggle changes readable hero without losing navigation', async ({ page }) => {
+  await page.goto('/')
+  await expectOsgardContentReady(page)
+  const hero = page.locator('.omega-portals-hero')
+  const toggle = hero.getByRole('button', { name: 'Switch language to English' })
+  await expect(toggle).toBeVisible()
+  await toggle.click()
+  await expect(hero.getByRole('heading', { level: 1 })).toContainText('WORLDS')
+  await expect(hero.locator('nav.omega-portal-stage a')).toHaveCount(3)
+  await hero.getByRole('button', { name: 'Переключить язык на русский' }).click()
+  await expect(hero.getByRole('heading', { level: 1 })).toContainText('МИРЫ')
+})
+
+test('World keeps useful navigation with reduced motion and blocked WebGL2', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.addInitScript(() => {
-    const base = HTMLCanvasElement.prototype.getContext
-    HTMLCanvasElement.prototype.getContext = function(type, ...args) {
-      if (type === 'webgl2') return null
-      return base.call(this, type, ...args)
+    const original = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function(kind, ...args) {
+      if (kind === 'webgl2') return null
+      return original.call(this, kind, ...args)
     }
   })
   await page.goto('/')
   await expectOsgardContentReady(page)
-  await page.locator('.omega-experience-panel summary').click()
-  await expect(page.locator('.omega-webgl-stage')).toHaveAttribute('data-globe-status', 'fallback', { timeout: 20000 })
-  await expect(page.locator('.omega-globe')).toHaveCount(1)
-  await page.getByRole('button', { name: 'Кино' }).click()
-  await expect(page.locator('.omega-hero')).toHaveAttribute('data-omega-mode', 'cinema')
-  await expect(page.getByRole('link', { name: /Исследовать экосистему/ })).toBeVisible()
-})
-
-test('OSGARD Earth GPU quality changes real texture detail with safe remount', async ({ page }) => {
-  // Three GPU remounts include 4K textures and heavy mobile CI compositing.
-  // Keep all quality assertions; only extend the test's wall-clock allowance.
-  test.setTimeout(90_000)
-  await page.emulateMedia({ reducedMotion: 'no-preference' })
-  await page.goto('/')
-  await expectOsgardContentReady(page)
-  await page.locator('.omega-experience-panel summary').click()
-  const picker = page.getByRole('combobox', { name: 'Качество 3D-глобуса' })
-  const stage = page.locator('.omega-webgl-stage')
-  await expect(picker).toHaveValue('auto')
-  await expect(stage).toHaveAttribute('data-earth-texture', 'adaptive')
-  await picker.selectOption('ultra')
-  await expect(stage).toHaveAttribute('data-globe-quality', 'ultra')
-  await expect(stage).toHaveAttribute('data-earth-texture', '4096')
-  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
-  if (await stage.getAttribute('data-globe-status') === 'webgl') {
-    await expect(stage).toHaveAttribute('data-earth-cloud-mode', 'raymarched')
-    await expect(stage).toHaveAttribute('data-earth-cloud-samples', /^(7|12)$/)
-    await expect(stage).toHaveAttribute('data-earth-source', 'nasa')
-  }
-  await picker.selectOption('eco')
-  await expect(stage).toHaveAttribute('data-earth-texture', '512')
-  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
-  if (await stage.getAttribute('data-globe-status') === 'webgl') {
-    await expect(stage).toHaveAttribute('data-earth-cloud-mode', 'layered')
-    await expect(stage).toHaveAttribute('data-earth-cloud-samples', '0')
-  }
-  await expect(page.locator('.omega-globe')).toHaveCount(1)
-  await picker.selectOption('auto')
-  await expect(stage).toHaveAttribute('data-globe-quality', 'auto')
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
-})
-
-test('OSGARD raymarched cloud scene retains navigation, motion fallback and on-screen actions', async ({ page }) => {
-  // Software WebGL on shared CI can render the raymarched scene slowly.
-  // Keep all visual/status assertions but allow its GPU work to complete.
-  test.setTimeout(90_000)
-  const errors = []
-  page.on('pageerror', error => errors.push(error.message))
-  await page.emulateMedia({ reducedMotion: 'no-preference' })
-  await page.goto('/')
-  await expectOsgardContentReady(page)
-  await page.locator('.omega-experience-panel summary').click()
-  const stage = page.locator('.omega-webgl-stage')
-  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
-  const hasWebGL2 = await page.evaluate(() => {
-    const probe = document.createElement('canvas')
-    return Boolean(probe.getContext('webgl2'))
-  })
-  if (hasWebGL2) {
-    await expect(stage).toHaveAttribute('data-globe-status', 'webgl')
-    const mobile = await page.evaluate(() => window.matchMedia('(max-width: 760px)').matches)
-    await expect(stage).toHaveAttribute('data-earth-cloud-mode', mobile ? 'layered' : 'raymarched')
-    if (!mobile) await expect(stage).toHaveAttribute('data-earth-cloud-samples', /^(4|7)$/)
-  }
-  await page.getByRole('button', { name: 'Кино', exact: true }).click()
-  await page.getByRole('button', { name: '03 / Миры' }).click()
-  await expect(page.getByRole('button', { name: '03 / Миры' })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('button', { name: 'Меньше движения', exact: true }).click()
-  await expect(page.locator('html')).toHaveAttribute('data-motion', 'off')
-  await expect(page.locator('.omega-globe')).toHaveCount(1)
-  await expect(page.locator('.omega-gate a')).toHaveCount(3)
-  expect(errors).toEqual([])
+  await expect(page.locator('.omega-portals-hero')).toBeVisible()
+  await expect(page.locator('.omega-webgl-stage')).toHaveCount(0)
+  await expect(page.locator('.omega-cards .omega-card')).toHaveCount(3)
+  await expect(page.getByRole('button', { name: 'Меньше движения', exact: true })).toBeDisabled()
+  await page.locator('.omega-cards .omega-card[href="/play"]').click()
+  await expect(page).toHaveURL(/\/play\/?$/)
+  await expect(page.locator('.play-universe')).toBeVisible()
 })
 
 test('World mobile navigation keeps one stable row after fonts load without hiding any destination', async ({ page }, info) => {
@@ -247,28 +174,20 @@ test('World mobile navigation keeps one stable row after fonts load without hidi
   await expect(finalLink).toHaveAttribute('href', '/#contact')
 })
 
-test('World Cosmic Portal makes real product routes obvious and keeps Earth settings accessible', async ({ page }) => {
+test('World portal exposes real routes and accessible focusable hotspots', async ({ page }) => {
   await page.goto('/')
-  const hero = page.locator('.omega-command')
+  const hero = page.locator('.omega-portals-hero')
   await expect(hero).toBeVisible()
-  await expect(hero.getByRole('heading', { level: 1, name: /ТЕХНОЛОГИИ,/ })).toBeVisible()
-  const gateways = page.getByRole('navigation', { name: 'Три направления экосистемы' }).getByRole('link')
-  await expect(gateways).toHaveCount(3)
-  for (const [index, href] of ['/intelligence', '/play', '/development'].entries()) {
-    await expect(gateways.nth(index)).toHaveAttribute('href', href)
+  const links = hero.locator('.omega-portal-stage a')
+  await expect(links).toHaveCount(3)
+  const destinations = ['/intelligence', '/play', '/development']
+  for (const [index, href] of destinations.entries()) {
+    await expect(links.nth(index)).toHaveAttribute('href', href)
+    await expect(links.nth(index)).toHaveAttribute('aria-label', /перейти|Enter/i)
   }
-  const settings = page.locator('.omega-experience-panel')
-  await expect(settings).not.toHaveAttribute('open', '')
-  await settings.locator('summary').focus()
-  await page.keyboard.press('Enter')
-  await expect(settings).toHaveAttribute('open', '')
-  await expect(page.getByRole('combobox', { name: 'Качество 3D-глобуса' })).toBeVisible()
-  await settings.locator('summary').click()
-  await expect(settings).not.toHaveAttribute('open', '')
-  const fallback = page.locator('.omega-globe')
-  await expect(fallback).toHaveCount(1)
-  const photographicBackground = await fallback.evaluate(element => getComputedStyle(element).backgroundImage)
-  expect(photographicBackground).toContain('blue-marble-2048.webp')
+  await expect(page.locator('.omega-cards a')).toHaveCount(3)
+  await expect(hero.getByRole('link', { name: /Исследовать экосистему|Explore/i }).first()).toHaveAttribute('href', '#products')
+  await expect(page.locator('.omega-webgl-stage')).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
 })
 
@@ -292,68 +211,27 @@ test('NASA globe assets are self-hosted, historically credited and hash-verified
   }
 })
 
-test('OSGARD Earth uses bundled NASA satellite data with fallback if blocked', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'no-preference' })
+test('Portal artwork is first-party and responsive without remote image dependencies', async ({ page }) => {
   await page.goto('/')
-  await expectOsgardContentReady(page)
-  const stage = page.locator('.omega-webgl-stage')
-  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
-  const state = await stage.getAttribute('data-globe-status')
-  if (state === 'webgl') {
-    await expect(stage).toHaveAttribute('data-earth-source', 'nasa')
-    await expect(stage).toHaveAttribute('data-cloud-layers', '2')
-    await expect(stage).toHaveAttribute('data-earth-resolution', /^(512|1024|2048|4096)$/)
-  }
-  // Satellite source and historical night-light date live in a real disclosure.
-  // The closed control is intentional; expand it before testing provenance.
-  const settings = page.locator('.omega-experience-panel')
-  await settings.locator('summary').click()
-  await expect(settings).toHaveAttribute('open', '')
-  await expect(settings.getByText(/ночные огни 2016/)).toBeVisible()
-  await expect(settings.getByRole('link', { name: 'NASA Blue Marble ↗' })).toHaveAttribute('href', /science\.nasa\.gov/)
+  const picture = page.locator('.omega-portals-reference')
+  await expect(picture.locator('source')).toHaveAttribute('media', '(max-width: 760px)')
+  await expect(picture.locator('source')).toHaveAttribute('srcset', '/brand/osgard-portal-mobile.webp')
+  const image = picture.locator('img')
+  await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
+  const source = await image.evaluate(img => new URL(img.currentSrc).pathname)
+  const mobile = await page.evaluate(() => innerWidth <= 760)
+  expect(source).toBe(mobile ? '/brand/osgard-portal-mobile.webp' : '/brand/osgard-portal-desktop.webp')
+  await expect(page.locator('.omega-portal-stage a')).toHaveCount(3)
 })
 
-test('OSGARD Earth falls back to coastlines if NASA texture assets cannot load', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'no-preference' })
-  await page.route('**/brand/earth/*.webp', route => route.abort())
+test('Portal remains accessible even when its optional picture cannot load', async ({ page }) => {
+  await page.route('**/brand/osgard-portal-*.webp', route => route.abort())
   await page.goto('/')
-  await expectOsgardContentReady(page)
-  const stage = page.locator('.omega-webgl-stage')
-  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
-  if (await stage.getAttribute('data-globe-status') === 'webgl') {
-    await expect(stage).toHaveAttribute('data-earth-source', 'procedural')
-  }
-  await expect(page.locator('.omega-globe')).toHaveCount(1)
-  await expect(page.locator('.omega-mode-tabs button')).toHaveCount(3)
-})
-
-test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', async ({ page, request }) => {
-  const earth = await request.get('/brand/omega-earth-land.json')
-  expect(earth.status()).toBe(200)
-  const data = await earth.json()
-  expect(data.type).toBe('land-polygons')
-  expect(data.polygons.length).toBeGreaterThan(100)
-
-  const errors = []
-  page.on('pageerror', error => errors.push(error.message))
-  await page.emulateMedia({ reducedMotion: 'no-preference' })
-  await page.goto('/')
-  await expectOsgardContentReady(page)
-  const stage = page.locator('.omega-webgl-stage')
-  await expect(stage).toHaveCount(1)
-  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 20000 })
-  await expect(page.locator('.omega-globe')).toHaveCount(1)
-  await expect(page.locator('.omega-hero h1')).toContainText('ТЕХНОЛОГИИ')
-  if (await stage.getAttribute('data-globe-status') === 'webgl') {
-    await expect(page.locator('.omega-sky')).toHaveClass(/omega-webgl-ready/)
-    await expect(stage.locator('canvas')).toHaveCount(1)
-  }
-
-  await page.getByRole('button', { name: 'Меньше движения', exact: true }).click()
-  await expect(page.locator('html')).toHaveAttribute('data-motion', 'off')
-  await expect(page.locator('.omega-gate a')).toHaveCount(3)
+  await expect(page.locator('#world-title')).toBeVisible()
+  await expect(page.locator('.omega-portals-live-cta')).toBeVisible()
+  await expect(page.locator('.omega-portal-stage a')).toHaveCount(3)
+  await expect(page.locator('.omega-cards .omega-card')).toHaveCount(3)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
-  expect(errors).toEqual([])
 })
 
 test('OSGARD cinematic scenes preserve working routes and real responsive artwork', async ({ page }) => {
@@ -361,10 +239,10 @@ test('OSGARD cinematic scenes preserve working routes and real responsive artwor
   page.on('pageerror', error => pageErrors.push(error.message))
   await page.goto('/')
   await expectOsgardContentReady(page)
-  await expect(page.locator('.omega-hero .omega-globe')).toHaveCount(1)
+  await expect(page.locator('.omega-portals-reference img')).toHaveCount(1)
   await expect(page.locator('.omega-cards .omega-card')).toHaveCount(3)
   for (const path of ['/intelligence', '/play', '/development']) {
-    await expect(page.locator('.omega-gate a[href="' + path + '"]')).toHaveCount(1)
+    await expect(page.locator('.omega-portal-stage a[href="' + path + '"]')).toHaveCount(1)
   }
 
   await page.goto('/intelligence')
