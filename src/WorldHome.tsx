@@ -19,6 +19,7 @@ const process = [
 
 export default function WorldHome({ development = false }: { development?: boolean }) {
   const [locale, setLocale] = useState<Locale>(readWorldLocale)
+  const [portalArtFailed, setPortalArtFailed] = useState(false)
   // Fetch long-form English copy only when needed to keep the initial route within its gzip budget.
   const [englishCopy, setEnglishCopy] = useState<Record<string, string> | null>(null)
   useEffect(() => {
@@ -116,7 +117,7 @@ export default function WorldHome({ development = false }: { development?: boole
         </div>
       </section>
     </> : <>
-    <section className="omega-hero omega-portals-hero" data-locale={locale} aria-labelledby="world-title">
+    <section className={portalArtFailed ? "omega-hero omega-portals-hero portal-art-failed" : "omega-hero omega-portals-hero"} data-locale={locale} aria-labelledby="world-title">
       <div className="omega-copy omega-portals-copy">
         <p className="brand-eyebrow omega-portals-eyebrow">OSGARD WORLD <span>/ {locale === 'ru' ? 'ЦИФРОВАЯ ЭКОСИСТЕМА' : 'DIGITAL ECOSYSTEM'}</span></p>
         <h1 id="world-title">
@@ -128,7 +129,7 @@ export default function WorldHome({ development = false }: { development?: boole
       <div className="omega-portals-visual">
         <picture className="omega-portals-reference">
           <source media="(max-width: 760px)" srcSet="/brand/osgard-portal-mobile.webp" />
-          <img src="/brand/osgard-portal-desktop.webp" alt="" aria-hidden="true" width="1672" height="869" fetchPriority="high" decoding="async" />
+          <img src="/brand/osgard-portal-desktop.webp" alt="" aria-hidden="true" width="1672" height="869" fetchPriority="high" decoding="async" onError={() => setPortalArtFailed(true)} onLoad={() => setPortalArtFailed(false)} />
         </picture>
         <nav className="omega-portal-stage" aria-label={locale === 'ru' ? 'Входы в экосистему OSGARD' : 'Enter the OSGARD ecosystem'}>
           <a href="/intelligence" className="omega-portal omega-portal--osa" aria-label={locale === 'ru' ? 'OSA Intelligence — перейти' : 'Enter OSA Intelligence'}>

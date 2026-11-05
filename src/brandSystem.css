@@ -277,3 +277,44 @@ html[data-motion=off] :is(.world-case:hover img,.world-case:focus-visible img,.p
    secondary navigation chunk resolves; no fabricated placeholder links. */
 .brand-system .brand-footer-loading{min-height:290px;visibility:hidden;pointer-events:none}
 @media(max-width:760px){.brand-system .brand-footer-loading{min-height:520px}}
+
+
+/* Mobile OSGARD PLAY intentionally hides its dense secondary navigation.
+   Keep an explicit, accessible motion control in the compact top bar. */
+.brand-system .brand-header .brand-motion-mobile-play{display:none}
+@media(max-width:600px){
+  .theme-play.play-catalog-shell>.brand-header .brand-motion-mobile-play{
+    display:inline-flex;
+    order:2;
+    width:44px;
+    min-width:44px;
+    min-height:44px;
+    flex:0 0 44px;
+    justify-content:center;
+    align-items:center;
+    gap:0;
+    padding:6px;
+    margin-left:0;
+    font-size:0 !important;
+    line-height:1;
+    border-radius:10px;
+  }
+  .theme-play.play-catalog-shell>.brand-header .brand-motion-mobile-play .brand-motion-state{
+    font-size:20px;
+  }
+  .theme-play.play-catalog-shell>.brand-header .brand-motion-mobile-copy{
+    display:none;
+  }
+}
+
+
+/* Keep the Play footer outside the first viewport while the lazy Play route
+   resolves under slow mobile/network conditions. Real mobile lab evidence
+   (2026-11-05): before the hero was mounted, the footer was at y=540px;
+   replacing that temporary layout produced CLS=0.36019. Reserve the initial
+   viewport for real main content instead of weakening the CLS <= 0.10 gate.
+   Use the stable *small* viewport so browser chrome changes cannot resize it. */
+.theme-play.play-catalog-shell > #product-main {
+  min-height: 100vh;
+  min-height: 100svh;
+}

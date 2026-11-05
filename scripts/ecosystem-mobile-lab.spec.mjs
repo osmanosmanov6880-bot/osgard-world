@@ -16,7 +16,7 @@ const profile = {
   bypassServiceWorker: true,
 }
 const surfaces = [
-  { path: '/', product: 'world', heading: 'ТЕХНОЛОГИИ,', primary: '.omega-hero .brand-button.primary', href: /^#products$/ },
+  { path: '/', product: 'world', heading: /СОЗДАЁМ\s*ЦИФРОВЫЕ\s*МИРЫ|WE CREATE\s*DIGITAL\s*WORLDS/i, primary: '.omega-portals-live-cta', href: /^#products$/ },
   { path: '/intelligence', product: 'intelligence', heading: 'Понимать ИИ.', primary: '.intelligence-hero .brand-button.primary', href: /^#proof-card$/ },
   { path: '/play', product: 'play', heading: /OSGARD\s*Play/i, primary: '.cp-hero-actions .cp-button-primary', href: /^#featured$/ },
 ]
@@ -108,7 +108,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
             const initialLoading = document.querySelector('#product-main .route-loading[role="status"]')
             if (initialLoading && domMilestones.initialLoadingInsertedAtMs === null) domMilestones.initialLoadingInsertedAtMs = atMs
             if (!initialLoading && domMilestones.initialLoadingInsertedAtMs !== null && domMilestones.initialLoadingRemovedAtMs === null) domMilestones.initialLoadingRemovedAtMs = atMs
-            if (domMilestones.productHeroInsertedAtMs === null && document.querySelector('#product-main .world-hero, #product-main .intelligence-hero, #product-main .cp-hero')) domMilestones.productHeroInsertedAtMs = atMs
+            if (domMilestones.productHeroInsertedAtMs === null && document.querySelector('#product-main .omega-portals-hero, #product-main .intelligence-hero, #product-main .cp-hero')) domMilestones.productHeroInsertedAtMs = atMs
           }
           const domObserver = new MutationObserver(() => {
             recordDomMilestones()

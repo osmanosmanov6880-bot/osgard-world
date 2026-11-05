@@ -5,6 +5,8 @@ const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
+const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
+const DroneR49TestScript = preload("res://scripts/drone.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
 ## validates persistent progression, shields, damage and the radar.
 func _initialize() -> void:
@@ -1529,5 +1531,131 @@ func _run() -> void:
         str(world.r41_last_debrief.get("reveal", "")).contains("Конвой"),
         "R48 lost convoy must permit replay without false hull crash or CR award"):return
     print("NEBULA_R48_INTEGRATED_RESCUE_SCAN_CONVOY_SUCCESS")
+    # R49: tactical commands alter real wingman search, movement and attacks.
+    var fleet_r49 = world.fleet_r15
+    if not check(fleet_r49.SQUAD_COMMANDS == ["follow", "attack", "defend"] and
+        not fleet_r49.set_command("invalid") and
+        fleet_r49.set_command("attack") and
+        fleet_r49.command_mode == "attack",
+        "R49 squad must reject forged orders and accept real attack"):return
+    fleet_r49.set_command("defend")
+    if not check(fleet_r49.command_mode == "defend" and
+        fleet_r49.set_command("follow") and
+        fleet_r49.command_mode == "follow",
+        "R49 defend and follow orders must be independently selectable"):return
+    if not check(world.MISSIONS.size() == 11 and
+        world.MISSIONS[10]["type"] == "investigation" and
+        world.MISSIONS[10]["reward"] == 3200,
+        "R49 must append mission 11 without renumbering the first 10"):return
+    var investigation = PortInvestigationR49Script.new()
+    world.add_child(investigation)
+    investigation.configure(Vector3(0, 26, 0))
+    if not check(investigation.terminals.size() == 3 and
+        investigation.terminals[0].get_node_or_null("R49_LiveEvidenceScreen") is MeshInstance3D and
+        investigation.step(0.25, investigation.destination, true) == "running" and
+        investigation.stage == 0,
+        "R49 genuine 3D terminals may not complete from old port waypoint"):return
+    # An interrupted hold may never count as a completed interaction.
+    var interrupted_goal: Vector3 = investigation.objective_position()
+    for partial in 4:
+        investigation.step(0.25, interrupted_goal, true)
+    if not check(investigation.stage == 0 and investigation.hold_time >= 0.99,
+        "R49 hold must accumulate from actual proximity and held input"):return
+    investigation.step(0.25, Vector3(2000, 100, 2000), false)
+    investigation.step(0.25, Vector3(2000, 100, 2000), false)
+    if not check(investigation.stage == 0 and investigation.hold_time <= 0.01,
+        "R49 leaving terminal must cancel a partial evidence transfer"):return
+    for terminal_index in 3:
+        var terminal_goal: Vector3 = investigation.objective_position()
+        var status_r49 := "running"
+        for tick in 9:
+            status_r49 = investigation.step(0.25, terminal_goal, true)
+            if status_r49 != "running":
+                break
+        if not check(investigation.stage == terminal_index + 1 and
+            investigation.evidence_found.size() == terminal_index + 1,
+            "R49 each separate terminal requires a real manual hold"):return
+    if not check(not investigation.active and
+        investigation.evidence_found.size() == 3 and
+        investigation.step(0.25, investigation.destination, true) == "inactive",
+        "R49 completed case cannot be awarded twice"):return
+    investigation.configure(Vector3(0, 26, 0))
+    investigation.report_weapon_discharge()
+    if not check(investigation.step(0.25, investigation.objective_position(), true) == "failed" and
+        investigation.stage == 0 and investigation.evidence_found.is_empty(),
+        "R49 shots must fail a silent investigation without evidence"):return
+    investigation.queue_free()
+    print("NEBULA_R49_SQUAD_AND_PORT_CONTROLLER_SUCCESS")
+    # R49 integrated last mission: success returns to garage, failure grants nothing.
+    world.mission_index = 10
+    world._r39_refresh_garage()
+    var r49_balance: int = world.credits
+    world._r39_launch_sortie()
+    if not check(is_instance_valid(world.r49_investigation) and
+        is_instance_valid(world.r49_terminal_button) and
+        world.MISSIONS[10]["title"] == "ТЕНИ ПОРТА",
+        "R49 must instantiate real terminal mission in the live world"):return
+    # R49 regression: autopilot must fly to current terminal, not legacy port center.
+    var real_goal_r49: Vector3 = world.r49_investigation.objective_position()
+    world.ship.set_cruise_assist(false)
+    world._r23_toggle_cruise()
+    if not check(world.ship.cruise_assist and
+        world.ship.navigation_target_valid and
+        world.ship.navigation_target.distance_to(real_goal_r49) < 0.1 and
+        world.ship.navigation_target.distance_to(
+            world.MISSIONS[10]["position"]) > 30.0,
+        "R49 autopilot must select the active terminal, never old mission center"):return
+    world._r23_toggle_cruise()
+    world.ship.global_position = world.MISSIONS[10]["position"]
+    world._mission_tick(0.25)
+    if not check(world.mission_index == 10 and world.credits == r49_balance,
+        "R49 old arrival marker cannot unlock mission 11"):return
+    world._on_ship_fire(world.ship.global_position, -world.ship.global_basis.z)
+    world._mission_tick(0.25)
+    if not check(world.garage_open_r39 and world.mission_index == 10 and
+        world.credits == r49_balance and
+        world.r41_last_debrief.get("status", "") == "failed",
+        "R49 shoot-on-stealth fail must not pay rewards"):return
+    # Attempt a real rocket in silent mode; all successful weapon types must fail.
+    world._r39_launch_sortie()
+    if not check(not world.fleet_r15.combat_active and
+        world.r49_command_button.disabled,
+        "R49 silent sortie must stop AI wingman weapons and disable attack orders"):return
+    var rocket_target_r49 = DroneR49TestScript.new()
+    rocket_target_r49.hostile = true
+    rocket_target_r49.target = null
+    world.add_child(rocket_target_r49)
+    rocket_target_r49.global_position = world.ship.global_position + Vector3(0, 35, -110)
+    world.drones.append(rocket_target_r49)
+    world.fleet_r15.targets = world.drones
+    world.fleet_r15.missiles = 1
+    world.rockets_r15 = 1
+    world.fleet_r15.cooldown = 0.0
+    world._r21_launch_missile()
+    if not check(world.rockets_r15 == 0 and world.r49_investigation.alarm,
+        "R49 real rocket launch must trigger the silent-operation alarm"):return
+    world._mission_tick(0.25)
+    if not check(world.garage_open_r39 and world.mission_index == 10 and
+        world.credits == r49_balance and world.r43_pending_bounty == 0,
+        "R49 rocket-triggered alarm must fail without paying CR or XP"):return
+    world.drones.erase(rocket_target_r49)
+    rocket_target_r49.queue_free()
+    world._r39_launch_sortie()
+    for terminal_index in 3:
+        world.ship.global_position = world.r49_investigation.objective_position()
+        world.r49_interact_held = true
+        for tick in 9:
+            world._mission_tick(0.25)
+            if world.garage_open_r39: break
+    # Keyboard is not synthesized in native CI; the same real touch hold state is used.
+    if not check(world.garage_open_r39 and world.mission_index == 11 and
+        world.credits > r49_balance and
+        world.r41_last_debrief.get("status", "") == "success",
+        "R49 genuine three-terminal investigation must reward once and return to garage"):return
+    var after_case: int = world.credits
+    world._complete_mission()
+    if not check(world.credits == after_case,
+        "R49 mission 11 must reject double-award"):return
+    print("NEBULA_R49_INTEGRATED_INVESTIGATION_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
