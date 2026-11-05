@@ -1,6 +1,6 @@
 extends RefCounted
-## NEBULA R49: authored briefings for eleven implemented missions.
-## The 30-mission game bible remains a plan; missions 12-30 are not implemented.
+## NEBULA R50: authored briefings for twelve implemented missions.
+## The 30-mission game bible remains a plan; missions 13-30 are not implemented.
 ## Pure data: no rewards, player input, premium entitlement or save writes here.
 
 const ENTRIES = [
@@ -92,6 +92,14 @@ const ENTRIES = [
         "stakes": "Зажми T или кнопку ВВОД возле панели. Расстояние и удержание обязательны; выстрел поднимает тревогу и прерывает миссию.",
         "reveal": "Данные подтверждают: портовые пропуска выдавал неизвестный куратор «Эхо». Его след ведёт к закрытому архиву.",
     },
+    {
+        "act": "АКТ II · ЧУЖОЙ ПРОТОКОЛ",
+        "speaker": "ЛЕЯ НОКС · ГЛАВНЫЙ ИНЖЕНЕР",
+        "brief": "След из порта ведёт в закрытый архив Чёрного рынка. Собери два отдельных ключа на физических терминалах и открой зашифрованное ядро. Охрана обнаружит загрузку и пошлёт дронов для уничтожения сервера.",
+        "objective": "Забрать два ключа, удержать загрузку у настоящего архивного ядра и защитить его от трёх дронов",
+        "stakes": "Удерживай T или кнопку АРХИВ. Если сервер потеряет всю прочность, операция провалится без награды; сбитые дроны сохраняют только неполученные до победы бонусы.",
+        "reveal": "Секретный архив раскрывает маршрут куратора «Эхо» и координаты следующей закрытой станции.",
+    },
 ]
 
 static func briefing(index: int) -> Dictionary:
@@ -101,9 +109,9 @@ static func briefing(index: int) -> Dictionary:
         return {
             "act": "КАМПАНИЯ ПРОЙДЕНА",
             "speaker": "КОМАНДОВАНИЕ АВРОРЫ",
-            "brief": "Текущие одиннадцать операций завершены. Исследуй город в свободном полёте.",
+            "brief": "Текущие двенадцать операций завершены. Исследуй город в свободном полёте.",
             "objective": "Свободный полёт без сюжетной цели",
-            "stakes": "Новые главы 12–30 находятся в разработке.",
+            "stakes": "Новые главы 13–30 находятся в разработке.",
             "reveal": "",
         }
     return ENTRIES[index].duplicate(true)
