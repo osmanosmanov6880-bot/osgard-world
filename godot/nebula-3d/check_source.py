@@ -899,4 +899,34 @@ require(
     "NOT_PERFORMED", "1–11", "160", "ВВОД", "V", "38",
 )
 
+# R51: mission 13 is a physically moving ship, not a text-only waypoint.
+r51_controller = require(
+    "scripts/courier_intercept_r51.gd",
+    "extends Node3D",
+    "R51_PhysicallyMovingEncryptedCourier",
+    "func configure(center: Vector3) -> void:",
+    "func objective_position() -> Vector3:",
+    "func is_extraction_active() -> bool:",
+    "func can_hold(pilot: Vector3) -> bool:",
+    "func step(delta: float, pilot: Vector3, holding: bool,",
+    "EXTRACTION_DEADLINE: float = 90.0",
+    "COURIER_RANGE: float = 95.0",
+    "interference_count",
+)
+assert 'CourierInterceptR51Script = preload("res://scripts/courier_intercept_r51.gd")' in world
+assert '"type":"courier"' in world
+assert "mission_index == 13" in smoke
+assert "NEBULA_R51_MOVING_COURIER_JAMMED_EXTRACTION_CONTROLLER_SUCCESS" in smoke
+assert "NEBULA_R51_INTEGRATED_MOVING_COURIER_RETRY_SUCCESS" in smoke
+assert "R51 moving pursuit must spawn two actual jammer drone actors" in smoke
+assert "R51 real timer failure must preserve v1 progress and pay zero rewards" in smoke
+assert "nebula_r51_jammer" in world
+assert "_r51_active_interference()" in world
+assert "r51_courier.objective_position()" in world
+assert "r49_interact_held" in world
+assert "credits +=" not in r51_controller and "xp +=" not in r51_controller
+assert "FileAccess.open(" not in r51_controller
+require("docs/R51-REAL-COURIER-INTERCEPT-QA.md",
+    "NOT_PERFORMED", "90", "95", "42", "4,5", "14–30")
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
