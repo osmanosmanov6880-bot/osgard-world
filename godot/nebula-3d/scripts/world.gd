@@ -34,6 +34,7 @@ const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
 const ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")
 const CourierInterceptR51Script = preload("res://scripts/courier_intercept_r51.gd")
+const StationBlackoutR52Script = preload("res://scripts/station_blackout_r52.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -51,7 +52,8 @@ const MISSIONS = [
     {"title":"ПОСЛЕДНИЙ СИГНАЛ","hint":"Останови командование Хелиос у Нексуса и предъяви доказательства заговора.","position":Vector3(1290,28,-780),"type":"combat","reward":4300},
     {"title":"ТЕНИ ПОРТА","hint":"Изучи три терминала Авроры. Удерживай T или кнопку ВВОД у каждого. Не стреляй.","position":Vector3(0,26,0),"type":"investigation","reward":3200},
     {"title":"ЗАКРЫТЫЙ АРХИВ","hint":"Найди два ключа «Эхо», затем расшифруй архив. Удерживай ВВОД и защищай сервер от атак дронов.","position":Vector3(-500,32,670),"type":"archive","reward":3800},
-    {"title":"КУРЬЕР «ЭХО»","hint":"Взломай приёмник, следуй за движущимся курьером, затем устрани подавители и эвакуируй данные за 90 секунд.","position":Vector3(1230,29,-710),"type":"courier","reward":4400}
+    {"title":"КУРЬЕР «ЭХО»","hint":"Взломай приёмник, следуй за движущимся курьером, затем устрани подавители и эвакуируй данные за 90 секунд.","position":Vector3(1230,29,-710),"type":"courier","reward":4400},
+    {"title":"СТАНЦИЯ БЕЗ СВЕТА","hint":"Переключи два настоящих силовых реле. Удерживай оборону реактора, стабилизируй питание и используй резервный конденсатор только один раз.","position":Vector3(530,32,1060),"type":"blackout","reward":4900}
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -72,6 +74,8 @@ var r50_archive
 var r50_archive_wave_spawned: bool = false
 var r51_courier
 var r51_jammer_wave_spawned: bool = false
+var r52_station
+var r52_hostiles_spawned: bool = false
 var r49_interact_held := false
 var r49_command_button: Button
 var r49_terminal_button: Button
@@ -795,7 +799,9 @@ func _r23_toggle_cruise() -> void:
     if ship.cruise_assist and mission_index < MISSIONS.size():
         # R49: a staged objective always owns the current navigation goal.
         # Do not overwrite the next terminal/rescue stop with the old mission center.
-        if is_instance_valid(r51_courier):
+        if is_instance_valid(r52_station):
+            ship.set_navigation_target(r52_station.objective_position())
+        elif is_instance_valid(r51_courier):
             # Lead the moving signal for steering, but keep the beacon and
             # actual capture gate on its real physical position.
             ship.set_navigation_target(
@@ -1067,16 +1073,7 @@ func _process(delta: float) -> void:
     if is_instance_valid(r21_dashboard):
         r21_dashboard.show_objective = mission_index < MISSIONS.size()
         if r21_dashboard.show_objective:
-            r21_dashboard.objective = (
-                r51_courier.objective_position()
-                if is_instance_valid(r51_courier) else (
-                r50_archive.objective_position()
-                if is_instance_valid(r50_archive) else (
-                r49_investigation.objective_position()
-                if is_instance_valid(r49_investigation) else (
-                mission_objectives_r48.objective_position()
-                if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active
-                else MISSIONS[mission_index]["position"]))))
+            r21_dashboard.objective = _active_mission_goal()
     if garage_open_r39:
         # The dock is a safe room, not a place for pirates to farm the player.
         ship.shield = fleet_r15.ship_shield_cap()
@@ -1104,16 +1101,7 @@ func _process(delta: float) -> void:
         radar.player_forward = -ship.global_transform.basis.z
         radar.has_objective = mission_index < MISSIONS.size()
         if radar.has_objective:
-            radar.objective = (
-                r51_courier.objective_position()
-                if is_instance_valid(r51_courier) else (
-                r50_archive.objective_position()
-                if is_instance_valid(r50_archive) else (
-                r49_investigation.objective_position()
-                if is_instance_valid(r49_investigation) else (
-                mission_objectives_r48.objective_position()
-                if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active
-                else MISSIONS[mission_index]["position"]))))
+            radar.objective = _active_mission_goal()
         radar.targets.clear()
         for n in drones:
             if is_instance_valid(n) and n.hostile and n.global_position.distance_squared_to(ship.global_position) < 211600.0:
@@ -1128,6 +1116,26 @@ func _mission_tick(dt: float) -> void:
         return
     var mission: Dictionary = MISSIONS[mission_index]
     var target: Vector3 = mission["position"]
+    if is_instance_valid(r52_station):
+        var result_r52: String = r52_station.step(dt,
+            ship.global_position, r49_interact_held or
+            Input.is_key_pressed(KEY_T) or Input.is_physical_key_pressed(KEY_T))
+        if r52_station.is_live_reactor() and not r52_hostiles_spawned:
+            _r52_spawn_reactor_threats()
+        var live_goal_r52: Vector3 = r52_station.objective_position()
+        if is_instance_valid(mission_beacon):
+            mission_beacon.global_position = live_goal_r52
+        if r48_last_goal.distance_to(live_goal_r52) > 4.0:
+            r48_last_goal = live_goal_r52
+            ship.set_navigation_target(live_goal_r52)
+        if result_r52 == "event":
+            r49_interact_held = false
+            _show_notice(r52_station.last_event)
+        elif result_r52 == "failed":
+            _r43_fail_sortie(r52_station.last_event)
+        elif result_r52 == "success":
+            _complete_mission()
+        return
     if is_instance_valid(r51_courier):
         var jammer_count: int = _r51_active_interference()
         var result_r51: String = r51_courier.step(dt, ship.global_position,
@@ -1312,6 +1320,53 @@ func _r51_clear_courier() -> void:
         r51_courier.queue_free()
         r51_courier = null
 
+func _r52_spawn_reactor_threats() -> void:
+    if r52_hostiles_spawned or garage_open_r39 or not is_instance_valid(r52_station) or (
+            not r52_station.is_live_reactor()):
+        return
+    r52_hostiles_spawned = true
+    mission_enemies = 3
+    for i in mission_enemies:
+        var hostile = DroneScript.new()
+        hostile.hostile = true
+        hostile.health = 19.0
+        hostile.speed = 24.0
+        hostile.activation_distance = 460.0
+        hostile.target = r52_station.reactor
+        hostile.add_to_group("nebula_mission_hostiles")
+        hostile.add_to_group("nebula_r52_reactor_attackers")
+        hostile.destroyed.connect(_on_mission_drone_destroyed)
+        hostile.fired.connect(_on_drone_fire)
+        add_child(hostile)
+        hostile.global_position = r52_station.reactor.global_position + Vector3(
+            float(i - 1) * 56.0, 14.0, -85.0)
+        drones.append(hostile)
+    _show_notice("АВАРИЙНАЯ СТАНЦИЯ ПОД УДАРОМ · ПРИКРОЙ РЕАКТОР")
+
+func _r52_clear_station() -> void:
+    r49_interact_held = false
+    r52_hostiles_spawned = false
+    if is_instance_valid(r52_station):
+        r52_station.queue_free()
+        r52_station = null
+
+func _active_mission_goal() -> Vector3:
+    # Single physical objective for radar, HUD and waypoint beacon across
+    # all staged mission types; predictive cruise steering is separate.
+    if is_instance_valid(r52_station):
+        return r52_station.objective_position()
+    if is_instance_valid(r51_courier):
+        return r51_courier.objective_position()
+    if is_instance_valid(r50_archive):
+        return r50_archive.objective_position()
+    if is_instance_valid(r49_investigation):
+        return r49_investigation.objective_position()
+    if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active:
+        return mission_objectives_r48.objective_position()
+    if mission_index < MISSIONS.size():
+        return MISSIONS[mission_index]["position"]
+    return Vector3.ZERO
+
 func _start_mission() -> void:
     mission_started = false
     r43_pending_bounty = 0
@@ -1319,6 +1374,7 @@ func _start_mission() -> void:
     _r49_clear_investigation()
     _r50_clear_archive()
     _r51_clear_courier()
+    _r52_clear_station()
     if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
@@ -1334,6 +1390,15 @@ func _start_mission() -> void:
         _show_notice("СЮЖЕТ ЗАВЕРШЁН · СВОБОДНЫЙ ПОЛЁТ")
         return
     var data: Dictionary = MISSIONS[mission_index]
+    if str(data["type"]) == "blackout":
+        r52_station = StationBlackoutR52Script.new()
+        add_child(r52_station)
+        r52_station.configure(data["position"])
+        mission_started = true
+        r48_last_goal = r52_station.objective_position()
+        ship.set_navigation_target(r48_last_goal)
+        if is_instance_valid(fleet_r15):
+            fleet_r15.defend_anchor = r52_station.reactor
     if str(data["type"]) == "courier":
         r51_courier = CourierInterceptR51Script.new()
         add_child(r51_courier)
@@ -1371,14 +1436,7 @@ func _start_mission() -> void:
         ship.set_navigation_target(r48_last_goal)
     var beacon := Node3D.new()
     beacon.name = "MissionBeacon"
-    beacon.position = (r51_courier.objective_position()
-        if is_instance_valid(r51_courier) else (
-        r50_archive.objective_position()
-        if is_instance_valid(r50_archive) else (
-        r49_investigation.objective_position()
-        if is_instance_valid(r49_investigation) else (
-        mission_objectives_r48.objective_position()
-        if is_instance_valid(mission_objectives_r48) else data["position"]))))
+    beacon.position = _active_mission_goal()
     var sphere := MeshInstance3D.new()
     var mesh := SphereMesh.new()
     mesh.radius=4.8
@@ -1434,6 +1492,7 @@ func _complete_mission() -> void:
     _r49_clear_investigation()
     _r50_clear_archive()
     _r51_clear_courier()
+    _r52_clear_station()
     if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
@@ -1476,6 +1535,7 @@ func _r43_fail_sortie(reason: String = "") -> void:
     _r49_clear_investigation()
     _r50_clear_archive()
     _r51_clear_courier()
+    _r52_clear_station()
     if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
@@ -1518,6 +1578,11 @@ func _on_drone_fire(from: Vector3, to: Vector3) -> void:
     if is_instance_valid(r49_investigation):
         return
     _laser_effect_colored(from,to,Color(1.0,0.26,0.39))
+    if is_instance_valid(r52_station) and r52_station.is_live_reactor() and (
+            to.distance_to(r52_station.reactor.global_position) < 18.0) and (
+            from.distance_to(r52_station.reactor.global_position) < 275.0):
+        r52_station.take_damage(9.0)
+        return
     if is_instance_valid(r50_archive) and r50_archive.is_active_server() and (
             to.distance_to(r50_archive.global_position) < 14.0) and (
             from.distance_to(r50_archive.global_position) < 260.0):
@@ -1658,18 +1723,12 @@ func _update_hud() -> void:
         hud_status.text = "Исследуй шесть районов космического города.\n" + resource_line
     else:
         var m: Dictionary = MISSIONS[mission_index]
-        var goal: Vector3 = (r51_courier.objective_position()
-            if is_instance_valid(r51_courier) else (
-            r50_archive.objective_position()
-            if is_instance_valid(r50_archive) else (
-            r49_investigation.objective_position()
-            if is_instance_valid(r49_investigation) else (
-            mission_objectives_r48.objective_position()
-            if is_instance_valid(mission_objectives_r48) and
-                mission_objectives_r48.active else m["position"]))))
+        var goal: Vector3 = _active_mission_goal()
         var d: int = roundi(ship.global_position.distance_to(goal))
         hud_mission.text = "%02d  ·  %s" % [mission_index + 1, m["title"]]
-        if is_instance_valid(r51_courier):
+        if is_instance_valid(r52_station):
+            hud_objective.text = "◇  " + r52_station.status_line()
+        elif is_instance_valid(r51_courier):
             hud_objective.text = "◇  " + r51_courier.status_line()
         elif is_instance_valid(r50_archive):
             hud_objective.text = "◇  " + r50_archive.status_line()
@@ -1685,6 +1744,7 @@ func _update_hud() -> void:
         if is_instance_valid(r49_investigation): hud_status.text += "\n" + r49_investigation.status_line()
         if is_instance_valid(r50_archive): hud_status.text += "\n" + r50_archive.status_line()
         if is_instance_valid(r51_courier): hud_status.text += "\n" + r51_courier.status_line()
+        if is_instance_valid(r52_station): hud_status.text += "\n" + r52_station.status_line()
 
 func _fit_hud() -> void:
     if not is_instance_valid(hud_panel):
@@ -2243,7 +2303,9 @@ func _r49_make_buttons() -> void:
 func _r49_hold_on() -> void:
     r49_interact_held = not garage_open_r39 and (
         is_instance_valid(r49_investigation) or is_instance_valid(r50_archive) or (
-        is_instance_valid(r51_courier) and r51_courier.stage != 1))
+        is_instance_valid(r51_courier) and r51_courier.stage != 1) or (
+        is_instance_valid(r52_station) and (
+            r52_station.stage < 2 or r52_station.can_repair())))
 
 func _r49_hold_off() -> void:
     r49_interact_held = false
@@ -2267,6 +2329,17 @@ func _r50_next_focus() -> void:
     _r49_refresh_buttons()
 
 func _r50_toggle_repair_goal() -> void:
+    if not garage_open_r39 and is_instance_valid(r52_station) and (
+            r52_station.stage == 2) and r52_station.can_repair():
+        if r52_station.select_capacitor(not r52_station.focus_on_capacitor):
+            var charge_goal: Vector3 = r52_station.objective_position()
+            r48_last_goal = charge_goal
+            ship.set_navigation_target(charge_goal)
+            _show_notice("СТАНЦИЯ · " + (
+                "ПОДЛЕТИ К РЕЗЕРВУ И УДЕРЖИВАЙ ВВОД" if
+                r52_station.focus_on_capacitor else "ВЕРНИСЬ К РЕАКТОРУ"))
+            _r49_refresh_buttons()
+        return
     if garage_open_r39 or not is_instance_valid(r50_archive) or (
             r50_archive.stage != 2) or r50_archive.repair_used:
         return
@@ -2305,12 +2378,17 @@ func _r49_refresh_buttons() -> void:
     if is_instance_valid(r49_terminal_button):
         r49_terminal_button.visible = not garage_open_r39 and (
             is_instance_valid(r49_investigation) or is_instance_valid(r50_archive) or (
-        is_instance_valid(r51_courier) and r51_courier.stage != 1))
-        r49_terminal_button.text = ("ВВОД · ЭВАКУАЦИЯ" if (
+        is_instance_valid(r51_courier) and r51_courier.stage != 1) or (
+        is_instance_valid(r52_station) and (
+            r52_station.stage < 2 or r52_station.can_repair())))
+        r49_terminal_button.text = ("ВВОД · РЕЛЕ" if (
+            is_instance_valid(r52_station) and r52_station.stage < 2) else (
+            "ВВОД · КОНДЕНСАТОР" if is_instance_valid(r52_station) else (
+            "ВВОД · ЭВАКУАЦИЯ" if (
             is_instance_valid(r51_courier) and r51_courier.stage == 2) else (
             "ВВОД · ПРИЁМНИК" if is_instance_valid(r51_courier) else (
             "УДЕРЖИВАТЬ · АРХИВ" if is_instance_valid(r50_archive)
-            else "УДЕРЖИВАТЬ · ВВОД")))
+            else "УДЕРЖИВАТЬ · ВВОД")))))
     if is_instance_valid(r50_focus_button):
         r50_focus_button.visible = not garage_open_r39 and (
             not is_instance_valid(r49_investigation)) and is_instance_valid(fleet_r15) and (
@@ -2318,10 +2396,15 @@ func _r49_refresh_buttons() -> void:
         r50_focus_button.text = "ПРИЦЕЛ · " + fleet_r15.focus_status()
     if is_instance_valid(r50_repair_button):
         r50_repair_button.visible = not garage_open_r39 and (
-            is_instance_valid(r50_archive) and r50_archive.can_repair())
-        r50_repair_button.text = ("РЕМОНТ · К СЕРВЕРУ" if
-            is_instance_valid(r50_archive) and r50_archive.focus_on_repair else
-            "РЕМОНТ · К ЭЛЕМЕНТУ")
+            (is_instance_valid(r50_archive) and r50_archive.can_repair()) or (
+            is_instance_valid(r52_station) and r52_station.can_repair()))
+        if is_instance_valid(r52_station):
+            r50_repair_button.text = ("РЕЗЕРВ · К РЕАКТОРУ" if
+                r52_station.focus_on_capacitor else "РЕЗЕРВ · К МОДУЛЮ")
+        else:
+            r50_repair_button.text = ("РЕМОНТ · К СЕРВЕРУ" if
+                is_instance_valid(r50_archive) and r50_archive.focus_on_repair else
+                "РЕМОНТ · К ЭЛЕМЕНТУ")
 
 func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     if not is_instance_valid(r49_command_button): return
@@ -2339,7 +2422,9 @@ func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     # gap before the focus button; stage-1 pursuit hides the terminal and
     # can use the compact layout. No overlapping interactive touch regions.
     var terminal_visible: bool = is_instance_valid(r50_archive) or (
-        is_instance_valid(r51_courier) and r51_courier.stage != 1)
+        is_instance_valid(r51_courier) and r51_courier.stage != 1) or (
+        is_instance_valid(r52_station) and (
+            r52_station.stage < 2 or r52_station.can_repair()))
     r50_focus_button.position = Vector2(left, top + (
         108.0 if terminal_visible else 52.0))
     r50_focus_button.size = Vector2(wide, 48.0)
