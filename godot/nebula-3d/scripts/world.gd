@@ -67,6 +67,7 @@ var r49_investigation
 var r49_interact_held := false
 var r49_command_button: Button
 var r49_terminal_button: Button
+var r50_focus_button: Button
 var shot_flash: float = 0.0
 var hud_mission: Label
 var hud_status: Label
@@ -1561,6 +1562,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:
         if event.keycode == KEY_C or event.physical_keycode == KEY_C:
             _r49_cycle_command()
+        elif event.keycode == KEY_V or event.physical_keycode == KEY_V:
+            _r50_next_focus()
         elif event.keycode==KEY_F5:
             _save_progress()
             _show_notice("ИГРА СОХРАНЕНА")
@@ -2024,6 +2027,13 @@ func _r49_make_buttons() -> void:
     r49_terminal_button.button_up.connect(_r49_hold_off)
     r49_terminal_button.mouse_exited.connect(_r49_hold_off)
     hud_canvas.add_child(r49_terminal_button)
+    r50_focus_button = Button.new()
+    r50_focus_button.name = "R50_RealEnemyTargetLock"
+    r50_focus_button.focus_mode = Control.FOCUS_NONE
+    r50_focus_button.add_theme_font_override("font", r21_ui_font)
+    r50_focus_button.add_theme_font_size_override("font_size", 14)
+    r50_focus_button.pressed.connect(_r50_next_focus)
+    hud_canvas.add_child(r50_focus_button)
     _r49_refresh_buttons()
 
 func _r49_hold_on() -> void:
@@ -2037,6 +2047,18 @@ func _r49_clear_investigation() -> void:
     if is_instance_valid(r49_investigation):
         r49_investigation.queue_free()
         r49_investigation = null
+
+func _r50_next_focus() -> void:
+    if garage_open_r39 or is_instance_valid(r49_investigation) or (
+            not is_instance_valid(fleet_r15)) or fleet_r15.helpers.is_empty():
+        return
+    fleet_r15.set_command("attack")
+    if fleet_r15.select_next_focus():
+        _show_notice("ВЕДОМЫЕ · СОСРЕДОТОЧИТЬ ОГОНЬ · " +
+            fleet_r15.focus_status())
+    else:
+        _show_notice("ВЕДОМЫЕ · НЕТ ПРОТИВНИКОВ В РАДИУСЕ")
+    _r49_refresh_buttons()
 
 func _r49_order_label() -> String:
     if not is_instance_valid(fleet_r15): return "СЛЕДОВАТЬ"
@@ -2062,6 +2084,11 @@ func _r49_refresh_buttons() -> void:
             "ВЕДОМЫЕ · " + _r49_order_label())
     if is_instance_valid(r49_terminal_button):
         r49_terminal_button.visible = not garage_open_r39 and is_instance_valid(r49_investigation)
+    if is_instance_valid(r50_focus_button):
+        r50_focus_button.visible = not garage_open_r39 and (
+            not is_instance_valid(r49_investigation)) and is_instance_valid(fleet_r15) and (
+            not fleet_r15.helpers.is_empty())
+        r50_focus_button.text = "ПРИЦЕЛ · " + fleet_r15.focus_status()
 
 func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     if not is_instance_valid(r49_command_button): return
@@ -2072,6 +2099,8 @@ func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     r49_command_button.size = Vector2(wide, 44.0)
     r49_terminal_button.position = Vector2(left, top + 52.0)
     r49_terminal_button.size = Vector2(wide, 48.0)
+    r50_focus_button.position = Vector2(left, top + 52.0)
+    r50_focus_button.size = Vector2(wide, 48.0)
 
 func _r39_launch_sortie() -> void:
     if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
@@ -2079,6 +2108,7 @@ func _r39_launch_sortie() -> void:
     garage_open_r39 = false
     if is_instance_valid(fleet_r15):
         fleet_r15.combat_active = true
+        fleet_r15.clear_focus()
         fleet_r15.set_command("follow")
     garage_hub_r39.queue_free()
     garage_hub_r39 = null
