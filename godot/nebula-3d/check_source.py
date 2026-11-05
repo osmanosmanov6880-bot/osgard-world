@@ -854,6 +854,10 @@ r50_fleet = require(
     "func focus_status() -> String:",
     "FOCUS_RANGE: float = 340.0",
     "enemy.target != defend_anchor",
+    "R50_ActualEnemyFocusReticle",
+    "func _has_clear_laser_path(origin: Vector3, destination: Vector3) -> bool:",
+    "missile_focus_launches",
+    "blocked_ally_shots",
 )
 r50_archive = require(
     "scripts/archive_breach_r50.gd",
@@ -864,6 +868,11 @@ r50_archive = require(
     "func is_active_server() -> bool:",
     "func step(delta: float, pilot: Vector3, pressing: bool) -> String:",
     "R50_DestructibleArchiveReactor",
+    "R50_OneUseEmergencyPowerCell",
+    "func can_repair_here(pilot: Vector3) -> bool:",
+    "func set_repair_navigation(enabled: bool) -> bool:",
+    "REPAIR_HOLD: float = 2.0",
+    "REPAIR_AMOUNT: float = 45.0",
 )
 assert 'ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")' in world
 assert '"title":"ЗАКРЫТЫЙ АРХИВ"' in world
@@ -875,6 +884,12 @@ assert "_r50_spawn_archive_threats()" in world
 assert "r50_archive.take_damage(8.0)" in world
 assert "r50_archive.objective_position()" in world
 assert "r50_focus_button.pressed.connect(_r50_next_focus)" in world
+assert "r50_repair_button.pressed.connect(_r50_toggle_repair_goal)" in world
+assert "fleet_r15.defend_anchor = r50_archive" in world
+assert "R50 solid world obstacle must actually block wingman laser path" in smoke
+assert "R50 guided missile must prioritize focused enemy and consume one rocket" in smoke
+assert "R50 one-use repair must never refill repeatedly" in smoke
+assert "R50 integrated touch hold must truly repair once and reset autopilot" in smoke
 assert 'SAVE_PATH = "user://nebula_3d_save.json"' in world
 assert '"version": 1' in world or "'version': 1" in world or '"version":1' in world
 assert "credits +=" not in r50_archive and "xp +=" not in r50_archive
