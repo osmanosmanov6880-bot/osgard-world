@@ -1130,7 +1130,11 @@ func _mission_tick(dt: float) -> void:
         if result_r51 == "event":
             _show_notice(r51_courier.last_event)
         elif result_r51 == "failed":
-            _r43_fail_sortie("Данные «Эхо» потеряны. Время эвакуации истекло.")
+            # Report the actual failure condition (lost courier or timed
+            # extraction), without rewarding an incomplete mission.
+            _r43_fail_sortie(r51_courier.last_event if (
+                not r51_courier.last_event.is_empty()) else
+                "Данные «Эхо» потеряны. Повтори перехват.")
         elif result_r51 == "success":
             _complete_mission()
         return
