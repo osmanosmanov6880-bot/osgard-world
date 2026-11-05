@@ -55,7 +55,7 @@ try {
     /unapproved index.wasm bytes/);
 
   makePolicy('R49');
-  await assert.rejects(verifyPublicRelease({...good, approved_variant:'R50'},directory),
+  await assert.rejects(verifyPublicRelease({...good, approved_variant:'R51'},directory),
     /unexpected approved build/);
 
   await assert.rejects(verifyPublicRelease({
