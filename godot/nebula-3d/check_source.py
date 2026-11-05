@@ -946,4 +946,43 @@ assert "FileAccess.open(" not in r51_controller
 require("docs/R51-REAL-COURIER-INTERCEPT-QA.md",
     "NOT_PERFORMED", "90", "95", "42", "4,5", "14–30")
 
+# R52: real 14th mission is a destructible physical energy-defense system.
+r52_controller = require(
+    "scripts/station_blackout_r52.gd",
+    "extends Node3D",
+    "R52_RealPhysicalCircuitBreaker_",
+    "R52_RealDestructiblePowerCore",
+    "R52_OneUseBackupCapacitor",
+    "func configure(center: Vector3) -> void:",
+    "func is_live_reactor() -> bool:",
+    "func can_repair() -> bool:",
+    "func select_capacitor(enabled: bool) -> bool:",
+    "func take_damage(amount: float) -> void:",
+    "func step(delta: float, pilot: Vector3, pressing: bool) -> String:",
+    "GRID_DEFENSE_SECONDS: float = 95.0",
+    "STABILIZATION_SECONDS: float = 14.0",
+    "CAPACITOR_RECOVERY: float = 40.0",
+    "input_armed = false",
+)
+assert 'StationBlackoutR52Script = preload("res://scripts/station_blackout_r52.gd")' in world
+assert '"type":"blackout"' in world
+assert 'mission_index == 14' in smoke
+assert "NEBULA_R52_PHYSICAL_RELAY_GRID_CAPACITOR_CONTROLLER_SUCCESS" in smoke
+assert "NEBULA_R52_REAL_REACTOR_COMBAT_RETRY_AND_REWARD_SUCCESS" in smoke
+assert "nebula_r52_reactor_attackers" in world
+assert "_r52_spawn_reactor_threats()" in world
+assert "r52_station.take_damage(9.0)" in world
+assert "fleet_r15.defend_anchor = r52_station.reactor" in world
+assert "r52_station.objective_position()" in world
+assert "func _active_mission_goal() -> Vector3:" in world
+assert "r52_station.can_repair()" in world
+assert "R52 held button from breaker A cannot arm the second breaker" in smoke
+assert "R52 world drone fire signal must apply actual reactor damage" in smoke
+assert "R52 destroyed station must return to garage with no CR/XP farming" in smoke
+assert "R52 used backup capacitor must never generate repeatable energy" in smoke
+assert "credits +=" not in r52_controller and "xp +=" not in r52_controller
+assert "FileAccess.open(" not in r52_controller
+require("docs/R52-REAL-STATION-BLACKOUT-QA.md",
+    "NOT_PERFORMED", "95", "78", "14", "40", "15", "Android")
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
