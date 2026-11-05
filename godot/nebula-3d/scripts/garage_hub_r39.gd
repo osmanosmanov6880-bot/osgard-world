@@ -542,8 +542,8 @@ func refresh(data: Dictionary) -> void:
     var trained: int = clampi(int(training_map.get(selected_training, 0)), 0, 3)
     var training_cost: int = [650, 1100, 1800][mini(trained, 2)]
     if is_instance_valid(academy_status_r54):
-        var title_for_pilot: String = {"ada":"АДА","kai":"КАЙ",
-            "leya":"ЛЕЯ"}.get(selected_training, "ПИЛОТ")
+        var title_for_pilot: String = str({"ada":"АДА","kai":"КАЙ",
+            "leya":"ЛЕЯ"}.get(selected_training, "ПИЛОТ"))
         academy_status_r54.text = "%s · РАНГ %d/3 · %s" % [
             title_for_pilot, trained, 
             ("ЗАЩИТА +%d%%" % (trained*3)) if selected_training == "ada" else
@@ -589,7 +589,9 @@ func refresh(data: Dictionary) -> void:
         button.tooltip_text = ("Экипирован" if current else
             ("Выбрать принадлежащий корабль" if permitted else
             "Сначала приобрести в магазине"))
-    ship_ownership_hint_r45.text = "Три корпуса с разными 3D-силуэтами · выбор без доплаты"
+    ship_ownership_hint_r45.text = ("КАТАЛОГ  ·  NX-12: 1 700 CR  ·  NX-21: 4 200 CR" if (
+        not owned_hulls.get("ship_interceptor", false) or not owned_hulls.get("ship_guardian", false))
+        else "ВСЕ ТРИ КОРАБЛЯ ПРИОБРЕТЕНЫ")
     var specs: Dictionary = data.get("ship_profiles", {})
     var compare_rows := PackedStringArray()
     for hull_id in ["ship_scout", "ship_interceptor", "ship_guardian"]:
@@ -754,7 +756,7 @@ func _layout_hub() -> void:
     zoom_in_button_r54.size = Vector2(46.0, 44.0)
 
     description_label.visible = not short_view
-    status_label.visible = not short_view
+    status_label.visible = not short_view and active_section_r54 == "operations"
     launch_button.position = Vector2(panel.offset_left + 16.0,
         minf(view.y - 62.0, panel.offset_bottom - 64.0))
     launch_button.size = Vector2(maxf(170.0,
