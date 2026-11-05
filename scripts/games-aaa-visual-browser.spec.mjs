@@ -1,23 +1,23 @@
 import { test, expect } from '@playwright/test'
 
 // Browser-level verification of actual /games/ composition — not only source text.
-test('OSGARD PLAY presents 22 distinct visual identities and a usable game window', async ({ page }, info) => {
+test('OSGARD PLAY presents 24 distinct visual identities and a usable game window', async ({ page }, info) => {
   test.setTimeout(60_000)
   const failures=[]
   page.on('pageerror',error=>failures.push(error.message))
   const response=await page.goto('/games/',{waitUntil:'domcontentloaded'})
   expect(response?.status()).toBe(200)
   const cards=page.locator('#games-grid article.card[data-game]')
-  await expect(cards).toHaveCount(22)
-  await expect(page.locator('#games-grid .world-emblem')).toHaveCount(22)
-  await expect(page.locator('#games-grid .game-cover-image')).toHaveCount(22)
-  await expect(page.locator('#games-grid .cover-illustration-note')).toHaveCount(22)
+  await expect(cards).toHaveCount(24)
+  await expect(page.locator('#games-grid .world-emblem')).toHaveCount(24)
+  await expect(page.locator('#games-grid .game-cover-image')).toHaveCount(24)
+  await expect(page.locator('#games-grid .cover-illustration-note')).toHaveCount(24)
   const ids=await cards.evaluateAll(nodes=>nodes.map(node=>node.dataset.game))
-  expect(new Set(ids).size).toBe(22)
+  expect(new Set(ids).size).toBe(24)
   const icons=await page.locator('#games-grid .world-emblem').evaluateAll(nodes=>nodes.map(node=>new URL(node.currentSrc||node.src).pathname))
-  expect(new Set(icons).size).toBe(22)
+  expect(new Set(icons).size).toBe(24)
   const covers=await page.locator('#games-grid .game-cover-image').evaluateAll(nodes=>nodes.map(node=>new URL(node.src).pathname))
-  expect(new Set(covers).size).toBe(22)
+  expect(new Set(covers).size).toBe(24)
   // Verify the first, a flagship Godot world, and the last ZION world really decode.
   for(const id of ['null-shift','empire-omega','zion-030']){
     const card=cards.filter({has:page.locator('[data-game="'+id+'"]')})
