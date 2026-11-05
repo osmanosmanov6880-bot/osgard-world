@@ -1677,7 +1677,8 @@ func _run() -> void:
     world.add_child(dummy_b)
     dummy_a.global_position = world.ship.global_position + Vector3(15, 4, -82)
     dummy_b.global_position = world.ship.global_position + Vector3(-16, 5, -95)
-    tactics.targets = [dummy_a, dummy_b]
+    tactics.targets.append(dummy_a)
+    tactics.targets.append(dummy_b)
     if not check(tactics.helpers.size() == 1 and
         tactics.select_next_focus() and tactics.focus_target == dummy_a and
         tactics.set_command("attack") and tactics._command_enemy() == dummy_a,
@@ -1708,7 +1709,7 @@ func _run() -> void:
     print("NEBULA_R50_REAL_FOCUS_AND_CONVOY_THREAT_SUCCESS")
 
     # R50 pure objective: no old-waypoint completion, manual hold, damage gate.
-    var archive: Node3D = ArchiveBreachR50Script.new()
+    var archive = ArchiveBreachR50Script.new()
     world.add_child(archive)
     archive.configure(Vector3(-500, 32, 670))
     if not check(archive.nodes.size() == 3 and archive.stage == 0 and
