@@ -8,6 +8,12 @@ const TERMINAL_RADIUS: float = 38.0
 const KEY_HOLD: float = 1.75
 const DOWNLOAD_HOLD: float = 5.0
 const SERVER_CAPACITY: float = 160.0
+## R50 second-round gameplay: a one-use emergency cell restores real
+## reactor integrity, at the cost of abandoning the download position.
+const REPAIR_RADIUS: float = 29.0
+const REPAIR_HOLD: float = 2.0
+const REPAIR_AMOUNT: float = 45.0
+const REPAIR_OFFSET: Vector3 = Vector3(86.0, 5.0, -44.0)
 const STATIONS = [
     Vector3(-88.0, 15.0, -50.0),
     Vector3(70.0, 27.0, 37.0),
@@ -30,6 +36,13 @@ var evidence: Array[String] = []
 var last_event: String = ""
 var completed_once: bool = false
 var anchor: Vector3 = Vector3.ZERO
+var repair_node: Node3D
+var repair_point: Vector3 = Vector3.ZERO
+var repair_hold_time: float = 0.0
+var repair_used: bool = false
+var focus_on_repair: bool = false
+var repair_events: int = 0
+
 
 func _material(tint: Color, energy: float = 0.0) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
@@ -98,6 +111,11 @@ func configure(location: Vector3) -> void:
     stage = 0
     combat_started = false
     completed_once = false
+    repair_hold_time = 0.0
+    repair_used = false
+    focus_on_repair = false
+    repair_events = 0
+    repair_node = null
     anchor = location
     for offset in STATIONS:
         points.append(location + offset)
@@ -108,15 +126,36 @@ func configure(location: Vector3) -> void:
         var station: Node3D = _create_station(i, points[i])
         station.visible = i == 0
         nodes.append(station)
+    repair_point = points[2] + REPAIR_OFFSET
+    repair_node = _create_station(3, repair_point)
+    repair_node.name = "R50_OneUseEmergencyPowerCell"
+    repair_node.visible = false
 
 func objective_position() -> Vector3:
+    if stage == 2 and focus_on_repair and can_repair():
+        return repair_point
     if stage < points.size():
         return points[stage]
     return points[2] if not points.is_empty() else anchor
 
 func can_interact(pilot: Vector3) -> bool:
+    # The navigation preference can never spoof the physical main terminal.
     return active and stage < points.size() and pilot.distance_to(
-        objective_position()) <= TERMINAL_RADIUS
+        points[stage]) <= TERMINAL_RADIUS
+
+func can_repair() -> bool:
+    return active and stage == 2 and combat_started and not repair_used and (
+        security_health > 0.0 and security_health < SERVER_CAPACITY)
+
+func can_repair_here(pilot: Vector3) -> bool:
+    return can_repair() and pilot.distance_to(repair_point) <= REPAIR_RADIUS
+
+func set_repair_navigation(enabled: bool) -> bool:
+    if not active or stage != 2 or repair_used:
+        focus_on_repair = false
+        return false
+    focus_on_repair = enabled
+    return true
 
 func is_active_server() -> bool:
     return active and stage == 2 and combat_started
@@ -131,9 +170,14 @@ func status_line() -> String:
     if stage < 2:
         return "КЛЮЧ %d/2 · УДЕРЖИВАЙ ВВОД · %d%%" % [
             stage + 1, roundi(100.0 * clampf(hold_time / KEY_HOLD, 0.0, 1.0))]
-    return "ЗАГРУЗКА %d%% · АРХИВ %d%% · УДЕРЖИВАЙ ВВОД" % [
+    if focus_on_repair and not repair_used:
+        return "АВАРИЙНЫЙ ЭЛЕМЕНТ · УДЕРЖИВАЙ %d%% · АРХИВ %d%%" % [
+            roundi(100.0 * clampf(repair_hold_time / REPAIR_HOLD, 0.0, 1.0)),
+            roundi(100.0 * security_health / SERVER_CAPACITY)]
+    return "ЗАГРУЗКА %d%% · АРХИВ %d%% · %s" % [
         roundi(100.0 * clampf(hold_time / DOWNLOAD_HOLD, 0.0, 1.0)),
-        roundi(100.0 * security_health / SERVER_CAPACITY)]
+        roundi(100.0 * security_health / SERVER_CAPACITY),
+        "РЕМОНТ ДОСТУПЕН" if can_repair() else "ЗАЩИЩАЙ СЕРВЕР"]
 
 func step(delta: float, pilot: Vector3, pressing: bool) -> String:
     if not active:
@@ -142,6 +186,20 @@ func step(delta: float, pilot: Vector3, pressing: bool) -> String:
         active = false
         return "failed"
     var dt: float = clampf(delta, 0.0, 0.25)
+    if can_repair_here(pilot) and pressing:
+        repair_hold_time += dt
+        if repair_hold_time >= REPAIR_HOLD:
+            security_health = minf(SERVER_CAPACITY, security_health + REPAIR_AMOUNT)
+            repair_used = true
+            repair_hold_time = 0.0
+            repair_events += 1
+            focus_on_repair = false
+            if is_instance_valid(repair_node):
+                repair_node.visible = false
+            last_event = "АРХИВ · +45 ПРОЧНОСТИ · ЭЛЕМЕНТ ИСПОЛЬЗОВАН"
+            return "event"
+    else:
+        repair_hold_time = maxf(0.0, repair_hold_time - 2.0 * dt)
     if can_interact(pilot) and pressing:
         hold_time += dt
     else:
@@ -162,4 +220,6 @@ func step(delta: float, pilot: Vector3, pressing: bool) -> String:
     nodes[stage].visible = true
     if stage == 2:
         combat_started = true
+        if is_instance_valid(repair_node):
+            repair_node.visible = true
     return "event"
