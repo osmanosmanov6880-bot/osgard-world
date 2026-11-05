@@ -4,14 +4,9 @@ on:
   workflow_run:
     workflows: ["Publish REMIX ARENA standalone"]
     types: [completed]
-  # Self-check the verifier whenever its own logic changes. This is NOT
-  # triggered by allowlist changes: those must still go through SSH activation.
-  push:
-    branches: [master]
-    paths:
-      - ".github/workflows/nebula-public-release-parity.yml"
-      - "scripts/nebula-public-release-parity.mjs"
-      - "scripts/test-nebula-public-release-parity.mjs"
+  # PR tests compare to the last approved production; only a successful
+  # deploy workflow_run can claim new public bytes. Do not race deployment
+  # by running a candidate parity check immediately on master push.
   pull_request:
     paths:
       - ".github/workflows/nebula-public-release-parity.yml"
@@ -48,5 +43,23 @@ jobs:
               "$GAME_URL/$name" -o "/tmp/nebula-public-verified/$name"
             test -s "/tmp/nebula-public-verified/$name"
           done
-      - name: Verify the public bytes using the SAME strict production policy
-        run: node scripts/nebula-public-release-parity.mjs /tmp/nebula-public-verified
+      # The PR contains a *candidate* allowlist. It must prove the public
+      # R49/R50 files still match the currently approved master release until
+      # the candidate is actually deployed. Never treat a pending PR as live.
+      - name: Resolve current approved policy from master for PR-only parity
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin refs/heads/master
+          git show FETCH_HEAD:.github/nebula-production-allowlist.json > /tmp/nebula-approved-live-policy.json
+          node -e "const p=require('/tmp/nebula-approved-live-policy.json'); console.log('CHECK_AGAINST_APPROVED_LIVE',p.approved_variant)"
+      - name: Verify public HTTPS against current approved release or deployed master
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            node scripts/nebula-public-release-parity.mjs /tmp/nebula-public-verified /tmp/nebula-approved-live-policy.json
+          else
+            node scripts/nebula-public-release-parity.mjs /tmp/nebula-public-verified
+          fi
