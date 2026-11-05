@@ -13,6 +13,9 @@ const EXTRACTION_DEADLINE: float = 90.0
 const COURIER_ANGULAR_SPEED: float = 0.25
 const PURSUIT_DEADLINE: float = 105.0
 const SIGNAL_DECAY_RATE: float = 1.3
+const PURSUIT_TRAIL_SEGMENTS: int = 5
+const LEAD_TIME_SECONDS: float = 1.5
+const LEAD_MAX_DISTANCE: float = 32.0
 
 var active: bool = false
 var stage: int = 0
@@ -32,6 +35,8 @@ var extraction_position: Vector3
 var start_console: Node3D
 var courier: Node3D
 var extraction_console: Node3D
+var pursuit_trail: Array[MeshInstance3D] = []
+var lead_guidance_updates: int = 0
 
 func _material(color: Color) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
@@ -90,16 +95,63 @@ func _build_courier() -> Node3D:
         Vector3(0.0, 2.5, 0.0), Color(1.0, 0.68, 0.2))
     return node
 
-func _courier_path_point() -> Vector3:
+func _courier_path_point_at(phase: float) -> Vector3:
     return courier_center + Vector3(
-        cos(courier_phase) * 72.0,
-        sin(courier_phase * 2.0) * 9.0,
-        sin(courier_phase) * 56.0)
+        cos(phase) * 72.0,
+        sin(phase * 2.0) * 9.0,
+        sin(phase) * 56.0)
+
+func _courier_path_point() -> Vector3:
+    return _courier_path_point_at(courier_phase)
+
+func _setup_pursuit_trail() -> void:
+    pursuit_trail.clear()
+    var glow: StandardMaterial3D = _material(Color(0.14, 0.87, 0.96))
+    glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    var bead := SphereMesh.new()
+    bead.radius = 1.4
+    bead.height = 2.8
+    bead.radial_segments = 10
+    bead.rings = 5
+    for i in PURSUIT_TRAIL_SEGMENTS:
+        var marker := MeshInstance3D.new()
+        marker.name = "R51_ActualFutureSignalTrail_%d" % (i + 1)
+        marker.mesh = bead
+        marker.material_override = glow
+        marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        marker.visible = false
+        add_child(marker)
+        pursuit_trail.append(marker)
+
+func _update_pursuit_trail() -> void:
+    var show_trail: bool = active and stage == 1
+    for i in pursuit_trail.size():
+        var marker: MeshInstance3D = pursuit_trail[i]
+        marker.visible = show_trail
+        if show_trail:
+            # Short fixed-horizon path forecast, not a waypoint teleport.
+            marker.global_position = _courier_path_point_at(
+                courier_phase + COURIER_ANGULAR_SPEED * float(i + 1) * 0.7)
+
+func navigation_position(pilot_position: Vector3) -> Vector3:
+    # Keep real objective_position() untouched for the 95m proximity gate,
+    # beacon and HUD. Autopilot receives a bounded moving-target lead only.
+    var live: Vector3 = objective_position()
+    if not active or stage != 1 or not is_instance_valid(courier):
+        return live
+    if pilot_position.distance_to(live) < COURIER_RANGE * 0.65:
+        return live
+    var future: Vector3 = _courier_path_point_at(courier_phase +
+        COURIER_ANGULAR_SPEED * LEAD_TIME_SECONDS)
+    lead_guidance_updates += 1
+    return live + (future - live).limit_length(LEAD_MAX_DISTANCE)
 
 func configure(center: Vector3) -> void:
     for child in get_children():
         remove_child(child)
         child.queue_free()
+    pursuit_trail.clear()
+    lead_guidance_updates = 0
     active = true
     stage = 0
     hold_time = 0.0
@@ -122,6 +174,7 @@ func configure(center: Vector3) -> void:
     courier = _build_courier()
     courier.global_position = _courier_path_point()
     courier.visible = false
+    _setup_pursuit_trail()
     extraction_console.visible = false
 
 func objective_position() -> Vector3:
@@ -176,6 +229,7 @@ func step(delta: float, pilot: Vector3, holding: bool,
         last_event = "ШИФР ПОЛУЧЕН · СЛЕДИ ЗА ЖИВЫМ КУРЬЕРОМ"
         start_console.visible = false
         courier.visible = true
+        _update_pursuit_trail()
         return "event"
     if stage == 1:
         # A moving target cannot orbit forever while the pilot farms enemies.
@@ -189,6 +243,7 @@ func step(delta: float, pilot: Vector3, holding: bool,
         courier_phase += dt * COURIER_ANGULAR_SPEED
         courier.global_position = _courier_path_point()
         courier.rotate_y(dt * COURIER_ANGULAR_SPEED)
+        _update_pursuit_trail()
         if pilot.distance_to(courier.global_position) <= COURIER_RANGE:
             track_time += dt
             lost_signal_seconds = 0.0
@@ -203,6 +258,7 @@ func step(delta: float, pilot: Vector3, holding: bool,
         track_time = 0.0
         last_event = "КУРЬЕР ПЕРЕХВАЧЕН · ЭВАКУИРУЙ ДАННЫЕ"
         courier.visible = false
+        _update_pursuit_trail()
         extraction_console.visible = true
         return "event"
     if stage == 2:
