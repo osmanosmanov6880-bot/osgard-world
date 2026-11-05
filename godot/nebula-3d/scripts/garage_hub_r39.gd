@@ -4,6 +4,8 @@ const Hangar3DPreviewR44Script = preload("res://scripts/hangar_ship_preview_r44.
 ## R39 garage command hub. Reads the live campaign state supplied by world.gd.
 signal sortie_requested
 signal shop_requested
+signal upgrade_requested_r54(slot: int)
+signal training_requested_r54
 signal captain_selected(captain_id: String)
 signal ship_selected_r45(ship_id: String)
 signal wingman_toggled_r47(wingman_id: String)
@@ -46,6 +48,22 @@ var preview_hint_r44: Label
 var turn_left_r44: Button
 var turn_right_r44: Button
 var brand_label_r44: Label
+var shop_header_button_r54: Button
+var zoom_in_button_r54: Button
+var zoom_out_button_r54: Button
+var section_buttons_r54: Dictionary = {}
+var active_section_r54: String = "fleet"
+var ship_card_r54: PanelContainer
+var captain_card_r54: PanelContainer
+var mission_card_r54: PanelContainer
+var introductory_section_r54: VBoxContainer
+var squad_controls_r54: HBoxContainer
+var academy_panel_r54: PanelContainer
+var academy_status_r54: Label
+var academy_train_button_r54: Button
+var engine_upgrade_r54: Button
+var weapon_upgrade_r54: Button
+var footer_r54: HBoxContainer
 
 const BG := Color(0.018, 0.035, 0.058, 0.96)
 const PANEL := Color(0.035, 0.073, 0.105, 0.94)
@@ -126,7 +144,7 @@ func _build() -> void:
 
     preview_title_r44 = Label.new()
     preview_title_r44.name = "R44_Real3DShipName"
-    preview_title_r44.text = "3D АНГАР  /  NX-08"
+    preview_title_r44.text = "AURORA  /  BAY ZERO  /  NX-08"
     preview_title_r44.add_theme_font_override("font", ui_font)
     preview_title_r44.add_theme_font_size_override("font_size", 13)
     preview_title_r44.add_theme_color_override("font_color", CYAN)
@@ -135,7 +153,7 @@ func _build() -> void:
 
     preview_hint_r44 = Label.new()
     preview_hint_r44.name = "R44_InspectionHint"
-    preview_hint_r44.text = "РЕАЛЬНАЯ МОДЕЛЬ NX  ·  ПЕРЕТАЩИ, ЧТОБЫ ОСМОТРЕТЬ"
+    preview_hint_r44.text = "ТЕХНИЧЕСКИЙ АНГАР  ·  ВРАЩЕНИЕ: ПЕРЕТАЩИ  ·  МАСШТАБ: + / −"
     preview_hint_r44.add_theme_font_override("font", ui_font)
     preview_hint_r44.add_theme_font_size_override("font_size", 11)
     preview_hint_r44.add_theme_color_override("font_color", MUTED)
@@ -144,14 +162,27 @@ func _build() -> void:
 
     turn_left_r44 = _turn_button_r44(root, "R44_TurnLeft", "↶", -1)
     turn_right_r44 = _turn_button_r44(root, "R44_TurnRight", "↷", 1)
+    zoom_out_button_r54 = _r54_zoom_button(root, "R54_ZoomOut", "−", 1)
+    zoom_in_button_r54 = _r54_zoom_button(root, "R54_ZoomIn", "+", -1)
 
     var top := HBoxContainer.new()
-    top.add_theme_constant_override("separation", 18)
+    top.add_theme_constant_override("separation", 10)
     header.add_child(top)
-    brand_label_r44 = _label(top, "NEBULA  /  КОМАНДОВАНИЕ", 20, CYAN)
+    brand_label_r44 = _label(top, "NEBULA  /  AURORA ZERO", 20, CYAN)
     brand_label_r44.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     resource_label = _label(top, "950 CR    •    0 XP", 16, GOLD)
     resource_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    shop_header_button_r54 = Button.new()
+    shop_header_button_r54.name = "R54_AlwaysVisibleRealCreditHangarShop"
+    shop_header_button_r54.text = "МАГАЗИН"
+    shop_header_button_r54.custom_minimum_size = Vector2(116, 42)
+    shop_header_button_r54.add_theme_font_override("font", ui_font)
+    shop_header_button_r54.add_theme_font_size_override("font_size", 13)
+    shop_header_button_r54.add_theme_color_override("font_color", GOLD)
+    shop_header_button_r54.add_theme_stylebox_override("normal",
+        _panel_style(Color(0.085, 0.066, 0.038, 0.98), GOLD))
+    shop_header_button_r54.pressed.connect(func(): shop_requested.emit())
+    top.add_child(shop_header_button_r54)
 
     panel = PanelContainer.new()
     panel.name = "R39_GarageBriefing"
@@ -163,26 +194,52 @@ func _build() -> void:
     panel.add_theme_stylebox_override("panel", _panel_style(BG))
     root.add_child(panel)
 
+    var content_root := VBoxContainer.new()
+    content_root.name = "R54_GarageNavigatorAndScrollableContent"
+    content_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    panel.add_child(content_root)
+    var nav := HBoxContainer.new()
+    nav.name = "R54_AlwaysAvailableHubSections"
+    nav.add_theme_constant_override("separation", 6)
+    content_root.add_child(nav)
+    for tab_id in ["fleet", "crew", "operations"]:
+        var tab := Button.new()
+        tab.name = "R54_Tab_" + tab_id
+        tab.text = {"fleet":"ФЛОТ", "crew":"ПИЛОТЫ",
+            "operations":"МИССИИ"}[tab_id]
+        tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        tab.custom_minimum_size = Vector2(76, 42)
+        tab.focus_mode = Control.FOCUS_ALL
+        tab.add_theme_font_override("font", ui_font)
+        tab.add_theme_font_size_override("font_size", 12)
+        tab.pressed.connect(_r54_select_section.bind(tab_id))
+        nav.add_child(tab)
+        section_buttons_r54[tab_id] = tab
     var scroll := ScrollContainer.new()
     scroll.name = "R39_GarageContents"
     scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    panel.add_child(scroll)
+    content_root.add_child(scroll)
     var column := VBoxContainer.new()
     column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     column.add_theme_constant_override("separation", 12)
     scroll.add_child(column)
-    _label(column, "АНГАР АВРОРЫ  /  ПОДГОТОВКА", 12, CYAN)
-    _label(column, "Корабль ждёт командира.", 23, Color(0.94, 0.97, 0.98))
-    description_label = _label(column, "Осмотри экипаж и задачу. Когда будешь готов — выходи на маршрут.", 13, MUTED)
-    story_label = _label(column, "АДА ВЕЙЛ · КОМАНДИР", 12, GOLD)
-    objective_label = _label(column, "ЦЕЛЬ · ДОСТИГНУТЬ МАЯКА", 13, CYAN)
-    stakes_label = _label(column, "Учебный вылет без атаки в начале.", 12, MUTED)
-    debrief_label = _label(column, "", 12, GOLD)
+    introductory_section_r54 = VBoxContainer.new()
+    introductory_section_r54.name = "R54_SingleMissionBriefOnlyWhenSelected"
+    introductory_section_r54.add_theme_constant_override("separation", 7)
+    column.add_child(introductory_section_r54)
+    _label(introductory_section_r54, "AURORA  /  ЦЕНТР ОПЕРАЦИЙ", 12, CYAN)
+    _label(introductory_section_r54, "БРИФИНГ ВЫЛЕТА", 22, Color(0.94,0.97,0.98))
+    description_label = _label(introductory_section_r54, "Осмотри задачу и подготовь экипаж.", 13, MUTED)
+    story_label = _label(introductory_section_r54, "АДА ВЕЙЛ · КОМАНДИР", 12, GOLD)
+    objective_label = _label(introductory_section_r54, "ЦЕЛЬ · ДОСТИГНУТЬ МАЯКА", 13, CYAN)
+    stakes_label = _label(introductory_section_r54, "Учебный вылет без атаки в начале.", 12, MUTED)
+    debrief_label = _label(introductory_section_r54, "", 12, GOLD)
     debrief_label.visible = false
 
     var ship_card := PanelContainer.new()
     ship_card.name = "R39_FleetCard"
+    ship_card_r54 = ship_card
     ship_card.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.059, 0.086, 0.96)))
     column.add_child(ship_card)
     var ship_stack := VBoxContainer.new()
@@ -212,6 +269,16 @@ func _build() -> void:
     ship_ownership_hint_r45 = _label(ship_stack,
         "Недоступную технику можно открыть в магазине.", 11, MUTED)
     readiness_label_r46 = _label(ship_stack, "ПОДГОТОВКА · ОРУЖИЕ / РАКЕТЫ / ВЕДОМЫЕ", 12, CYAN)
+    var upgrade_tools := HBoxContainer.new()
+    upgrade_tools.name = "R54_DockedEngineAndWeaponWorkbench"
+    upgrade_tools.add_theme_constant_override("separation", 6)
+    ship_stack.add_child(upgrade_tools)
+    engine_upgrade_r54 = _r54_credit_action(upgrade_tools,
+        "R54_EngineUpgrade", "ДВИГАТЕЛЬ · 600 CR")
+    weapon_upgrade_r54 = _r54_credit_action(upgrade_tools,
+        "R54_WeaponUpgrade", "ОРУЖИЕ · 600 CR")
+    engine_upgrade_r54.pressed.connect(func(): upgrade_requested_r54.emit(0))
+    weapon_upgrade_r54.pressed.connect(func(): upgrade_requested_r54.emit(1))
     comparison_toggle_r46 = Button.new()
     comparison_toggle_r46.name = "R46_CompareRealFleet"
     comparison_toggle_r46.text = "СРАВНИТЬ ТЕХНИКУ  ▾"
@@ -228,6 +295,7 @@ func _build() -> void:
 
     var captain_card := PanelContainer.new()
     captain_card.name = "R39_CaptainCard"
+    captain_card_r54 = captain_card
     captain_card.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.059, 0.086, 0.96)))
     column.add_child(captain_card)
     var captain_stack := VBoxContainer.new()
@@ -258,9 +326,24 @@ func _build() -> void:
         selectors.add_child(select_button)
         captain_choice_buttons[id] = select_button
 
+    academy_panel_r54 = PanelContainer.new()
+    academy_panel_r54.name = "R54_CreditBasedCaptainAcademy"
+    academy_panel_r54.add_theme_stylebox_override("panel",
+        _panel_style(Color(0.026,0.052,0.078,0.97), LINE))
+    column.add_child(academy_panel_r54)
+    var academy_column := VBoxContainer.new()
+    academy_column.add_theme_constant_override("separation", 8)
+    academy_panel_r54.add_child(academy_column)
+    _label(academy_column, "АКАДЕМИЯ · ОБУЧЕНИЕ ЗА CR", 13, GOLD)
+    academy_status_r54 = _label(academy_column, "РАНГ 0 / 3", 12, MUTED)
+    academy_train_button_r54 = _r54_credit_action(academy_column,
+        "R54_ActualCaptainTrainingPurchase", "ОБУЧИТЬ · 650 CR")
+    academy_train_button_r54.pressed.connect(
+        func(): training_requested_r54.emit())
     roster_label = _label(column, "ЭКИПАЖ  ·  Ведомые", 13, Color(0.86,0.92,0.95))
     var squad_choices := HBoxContainer.new()
     squad_choices.name = "R47_RealWingmanSelectors"
+    squad_controls_r54 = squad_choices
     squad_choices.add_theme_constant_override("separation", 7)
     column.add_child(squad_choices)
     for id in ["wingman_escort", "wingman_ace"]:
@@ -281,6 +364,7 @@ func _build() -> void:
 
     var mission_card := PanelContainer.new()
     mission_card.name = "R39_MissionCard"
+    mission_card_r54 = mission_card
     mission_card.add_theme_stylebox_override("panel", _panel_style(Color(0.09, 0.071, 0.043, 0.94), Color(0.62, 0.42, 0.19, 0.82)))
     column.add_child(mission_card)
     var mission_stack := VBoxContainer.new()
@@ -293,6 +377,7 @@ func _build() -> void:
     status_label = _label(column, "Задача простая: следуй за маркером. Бой начнётся позже по сюжету.", 11, MUTED)
 
     var footer := HBoxContainer.new()
+    footer_r54 = footer
     footer.add_theme_constant_override("separation", 10)
     column.add_child(footer)
     var shop := Button.new()
@@ -322,6 +407,79 @@ func _build() -> void:
     launch_button.add_theme_stylebox_override("pressed", launch_style)
     launch_button.pressed.connect(func(): sortie_requested.emit())
     root.add_child(launch_button)
+    # Keep the old shop action reachable for regression, but never bury the
+    # primary shop CTA inside a scrollable column.
+    footer_r54.visible = false
+    var bottom_scroll_space := Control.new()
+    bottom_scroll_space.custom_minimum_size = Vector2(0.0, 78.0)
+    column.add_child(bottom_scroll_space)
+    _r54_select_section("fleet")
+
+func _r54_credit_action(parent: Container, button_name: String,
+        label: String) -> Button:
+    var action := Button.new()
+    action.name = button_name
+    action.text = label
+    action.custom_minimum_size = Vector2(0, 42)
+    action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    action.focus_mode = Control.FOCUS_ALL
+    action.add_theme_font_override("font", ui_font)
+    action.add_theme_font_size_override("font_size", 12)
+    action.add_theme_color_override("font_color", CYAN)
+    action.add_theme_stylebox_override("normal",
+        _panel_style(Color(0.032,0.062,0.090,0.98), LINE))
+    parent.add_child(action)
+    return action
+
+func _r54_zoom_button(parent: Control, button_name: String, glyph: String,
+        direction: int) -> Button:
+    var action := Button.new()
+    action.name = button_name
+    action.text = glyph
+    action.focus_mode = Control.FOCUS_ALL
+    action.add_theme_font_override("font", ui_font)
+    action.add_theme_font_size_override("font_size", 18)
+    action.add_theme_stylebox_override("normal", _panel_style(PANEL, CYAN))
+    action.pressed.connect(_r54_zoom_preview.bind(direction))
+    parent.add_child(action)
+    return action
+
+func _r54_zoom_preview(direction: int) -> void:
+    if is_instance_valid(ship_preview_r44):
+        ship_preview_r44.zoom_r54(direction)
+
+func _r54_select_section(section_id: String) -> void:
+    if not section_buttons_r54.has(section_id):
+        return
+    active_section_r54 = section_id
+    var fleet: bool = section_id == "fleet"
+    var crew: bool = section_id == "crew"
+    var operations: bool = section_id == "operations"
+    if is_instance_valid(ship_card_r54):
+        ship_card_r54.visible = fleet
+    if is_instance_valid(captain_card_r54):
+        captain_card_r54.visible = crew
+    if is_instance_valid(academy_panel_r54):
+        academy_panel_r54.visible = crew
+    if is_instance_valid(roster_label):
+        roster_label.visible = crew
+    if is_instance_valid(squad_controls_r54):
+        squad_controls_r54.visible = crew
+    if is_instance_valid(wingman_status_r47):
+        wingman_status_r47.visible = crew
+    if is_instance_valid(introductory_section_r54):
+        introductory_section_r54.visible = operations
+    if is_instance_valid(mission_card_r54):
+        mission_card_r54.visible = operations
+    if is_instance_valid(status_label):
+        status_label.visible = operations
+    for key in section_buttons_r54:
+        var tab: Button = section_buttons_r54[key]
+        var chosen: bool = str(key) == section_id
+        tab.add_theme_stylebox_override("normal",
+            _panel_style(Color(0.10,0.19,0.23,0.98) if chosen else PANEL,
+                CYAN if chosen else LINE))
+        tab.add_theme_color_override("font_color", CYAN if chosen else MUTED)
 
 func _turn_button_r44(parent: Control, node_name: String, glyph: String,
         direction: int) -> Button:
@@ -369,6 +527,32 @@ func refresh(data: Dictionary) -> void:
     var level := 1 + int(floor(float(xp) / 500.0))
     var xp_next := xp % 500
     resource_label.text = "%s CR    •    %s XP" % [_format_number(credits), _format_number(xp)]
+    if is_instance_valid(engine_upgrade_r54):
+        var engine_rank: int = clampi(int(data.get("engine_rank_r54", 0)), 0, 4)
+        engine_upgrade_r54.text = ("ДВИГАТЕЛЬ · MAX" if engine_rank >= 4
+            else "ДВИГАТЕЛЬ · %s CR" % _format_number(600 + engine_rank * 500))
+        engine_upgrade_r54.disabled = engine_rank >= 4
+    if is_instance_valid(weapon_upgrade_r54):
+        var weapon_rank: int = clampi(int(data.get("weapon_rank_r54", 0)), 0, 4)
+        weapon_upgrade_r54.text = ("ОРУЖИЕ · MAX" if weapon_rank >= 4
+            else "ОРУЖИЕ · %s CR" % _format_number(600 + weapon_rank * 500))
+        weapon_upgrade_r54.disabled = weapon_rank >= 4
+    var selected_training: String = str(data.get("captain_id", "ada"))
+    var training_map: Dictionary = data.get("pilot_training_r54", {})
+    var trained: int = clampi(int(training_map.get(selected_training, 0)), 0, 3)
+    var training_cost: int = [650, 1100, 1800][mini(trained, 2)]
+    if is_instance_valid(academy_status_r54):
+        var title_for_pilot: String = {"ada":"АДА","kai":"КАЙ",
+            "leya":"ЛЕЯ"}.get(selected_training, "ПИЛОТ")
+        academy_status_r54.text = "%s · РАНГ %d/3 · %s" % [
+            title_for_pilot, trained, 
+            ("ЗАЩИТА +%d%%" % (trained*3)) if selected_training == "ada" else
+            ("ТЯГА +%d%%" % (trained*4)) if selected_training == "kai" else
+            ("КРЕДИТЫ +%d%%" % (trained*4))]
+    if is_instance_valid(academy_train_button_r54):
+        academy_train_button_r54.text = ("ОБУЧЕНИЕ ЗАВЕРШЕНО" if trained >= 3
+            else "ОБУЧИТЬ · %s CR" % _format_number(training_cost))
+        academy_train_button_r54.disabled = trained >= 3
     captain_label.text = "КАПИТАН · УРОВЕНЬ %d" % level
     progression_label.text = "%d / 500 XP до следующего уровня" % xp_next
     var selected_id: String = str(data.get("captain_id", "ada"))
@@ -430,7 +614,7 @@ func refresh(data: Dictionary) -> void:
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.set_ship_type(ship_id)
     if is_instance_valid(preview_title_r44):
-        preview_title_r44.text = "3D АНГАР  /  " + str(ship_names.get(ship_id,
+        preview_title_r44.text = "AURORA  /  BAY ZERO  /  " + str(ship_names.get(ship_id,
             "NX-08  /  РАЗВЕДЧИК"))
     var allies: Array = data.get("wingmen", [])
     var owned_wingmen: Dictionary = data.get("owned_wingmen", {})
@@ -516,7 +700,9 @@ func _layout_hub() -> void:
     header_panel.offset_right = -margin
     header_panel.offset_top = 12.0
     header_panel.offset_bottom = 72.0
-    brand_label_r44.text = "NEBULA  /  АНГАР" if compact else "NEBULA  /  КОМАНДОВАНИЕ"
+    brand_label_r44.text = "NEBULA" if compact else "NEBULA  /  AURORA ZERO"
+    shop_header_button_r54.text = "КУПИТЬ" if compact else "МАГАЗИН" 
+    shop_header_button_r54.custom_minimum_size = Vector2(74 if compact else 116, 42)
     brand_label_r44.add_theme_font_size_override("font_size", 14 if compact else 20)
     resource_label.add_theme_font_size_override("font_size", 10 if compact else 16)
 
@@ -525,7 +711,7 @@ func _layout_hub() -> void:
     var stage_width: float
     var stage_height: float
     if landscape:
-        var left_panel_width: float = clampf(view.x * 0.36, 300.0, 410.0)
+        var left_panel_width: float = clampf(view.x * 0.31, 300.0, 440.0)
         panel.offset_left = margin
         panel.offset_top = 88.0
         panel.offset_right = margin + left_panel_width
@@ -560,6 +746,12 @@ func _layout_hub() -> void:
         stage_left + stage_width - 65.0, stage_top + stage_height - 58.0)
     turn_left_r44.size = Vector2(46.0, 44.0)
     turn_right_r44.size = Vector2(46.0, 44.0)
+    zoom_out_button_r54.position = Vector2(
+        stage_left + stage_width - 218.0, stage_top + stage_height - 58.0)
+    zoom_in_button_r54.position = Vector2(
+        stage_left + stage_width - 167.0, stage_top + stage_height - 58.0)
+    zoom_out_button_r54.size = Vector2(46.0, 44.0)
+    zoom_in_button_r54.size = Vector2(46.0, 44.0)
 
     description_label.visible = not short_view
     status_label.visible = not short_view
