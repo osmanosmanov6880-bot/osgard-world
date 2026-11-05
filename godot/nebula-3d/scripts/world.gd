@@ -72,6 +72,7 @@ var r49_interact_held := false
 var r49_command_button: Button
 var r49_terminal_button: Button
 var r50_focus_button: Button
+var r50_repair_button: Button
 var shot_flash: float = 0.0
 var hud_mission: Label
 var hud_status: Label
@@ -1240,6 +1241,9 @@ func _start_mission() -> void:
         r50_archive = ArchiveBreachR50Script.new()
         add_child(r50_archive)
         r50_archive.configure(data["position"])
+        # Defend order must protect the real server, not the pilot's location.
+        if is_instance_valid(fleet_r15):
+            fleet_r15.defend_anchor = r50_archive
         mission_started = true
         r48_last_goal = r50_archive.objective_position()
         ship.set_navigation_target(r48_last_goal)
@@ -2114,6 +2118,13 @@ func _r49_make_buttons() -> void:
     r50_focus_button.add_theme_font_size_override("font_size", 14)
     r50_focus_button.pressed.connect(_r50_next_focus)
     hud_canvas.add_child(r50_focus_button)
+    r50_repair_button = Button.new()
+    r50_repair_button.name = "R50_ActualEmergencyArchiveRepair"
+    r50_repair_button.focus_mode = Control.FOCUS_NONE
+    r50_repair_button.add_theme_font_override("font", r21_ui_font)
+    r50_repair_button.add_theme_font_size_override("font_size", 14)
+    r50_repair_button.pressed.connect(_r50_toggle_repair_goal)
+    hud_canvas.add_child(r50_repair_button)
     _r49_refresh_buttons()
 
 func _r49_hold_on() -> void:
@@ -2139,6 +2150,20 @@ func _r50_next_focus() -> void:
             fleet_r15.focus_status())
     else:
         _show_notice("ВЕДОМЫЕ · НЕТ ПРОТИВНИКОВ В РАДИУСЕ")
+    _r49_refresh_buttons()
+
+func _r50_toggle_repair_goal() -> void:
+    if garage_open_r39 or not is_instance_valid(r50_archive) or (
+            r50_archive.stage != 2) or r50_archive.repair_used:
+        return
+    if not r50_archive.set_repair_navigation(not r50_archive.focus_on_repair):
+        return
+    var goal: Vector3 = r50_archive.objective_position()
+    r48_last_goal = goal
+    ship.set_navigation_target(goal)
+    _show_notice("АРХИВ · " + (
+        "ЛЕТИ К АВАРИЙНОМУ ЭЛЕМЕНТУ" if r50_archive.focus_on_repair
+        else "ВЕРНИСЬ К СЕРВЕРУ"))
     _r49_refresh_buttons()
 
 func _r49_order_label() -> String:
@@ -2173,6 +2198,12 @@ func _r49_refresh_buttons() -> void:
             not is_instance_valid(r49_investigation)) and is_instance_valid(fleet_r15) and (
             not fleet_r15.helpers.is_empty())
         r50_focus_button.text = "ПРИЦЕЛ · " + fleet_r15.focus_status()
+    if is_instance_valid(r50_repair_button):
+        r50_repair_button.visible = not garage_open_r39 and (
+            is_instance_valid(r50_archive) and r50_archive.can_repair())
+        r50_repair_button.text = ("РЕМОНТ · К СЕРВЕРУ" if
+            is_instance_valid(r50_archive) and r50_archive.focus_on_repair else
+            "РЕМОНТ · К ЭЛЕМЕНТУ")
 
 func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     if not is_instance_valid(r49_command_button): return
@@ -2186,6 +2217,8 @@ func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     r50_focus_button.position = Vector2(left, top + (
         108.0 if is_instance_valid(r50_archive) else 52.0))
     r50_focus_button.size = Vector2(wide, 48.0)
+    r50_repair_button.position = Vector2(left, top + 160.0)
+    r50_repair_button.size = Vector2(wide, 44.0)
 
 func _r39_launch_sortie() -> void:
     if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
