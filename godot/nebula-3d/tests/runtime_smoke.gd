@@ -3,6 +3,7 @@ const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
 const MaterialFabricR12Script = preload("res://scripts/material_fabric_r12.gd")
 const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
+const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
@@ -58,6 +59,64 @@ func _run() -> void:
         "R44 must render a real imported in-game MeshInstance3D, not a flat art placeholder"):return
     if not check(r44_view.preview_viewport.get_world_3d() != world.get_world_3d(),
         "R44 preview world must be separate from live city collision and pilot physics"):return
+    # R54: this must be a REAL 3D hangar, not a photograph or dark sphere.
+    var zero_stage = r44_view.hangar_set_r54
+    if not check(is_instance_valid(zero_stage) and
+        zero_stage.name == "R54_AuroraEnclosedIndustrialHangar" and
+        zero_stage.get_node_or_null("R54_Real72mHangarDeck") is MeshInstance3D and
+        zero_stage.get_node_or_null("R54_RealRearHangarWall") is MeshInstance3D and
+        zero_stage.get_node_or_null("R54_TravellingInspectionCrane") is Node3D and
+        is_instance_valid(zero_stage.shadow_key) and
+        zero_stage.shadow_key is SpotLight3D,
+        "R54 must build actual enclosed 3D hangar with structural deck, real machinery and light"):return
+    var zero_meshes: Array = zero_stage.find_children("*", "MeshInstance3D", true, false)
+    if not check(zero_meshes.size() >= 80 and
+        r44_view.stretch and r44_view.stretch_shrink == 1 and
+        r44_view.preview_viewport.own_world_3d,
+        "R54 true 3D hangar needs detail geometry and 1:1 resizable WebGL viewport"):return
+    var orbit_safe_zoom: float = r44_view.camera_distance_r54
+    world.garage_hub_r39.zoom_in_button_r54.pressed.emit()
+    if not check(r44_view.camera_distance_r54 < orbit_safe_zoom and
+        world.garage_open_r39 and world.ship.controls_locked,
+        "R54 camera zoom must never move or unlock the real ship"):return
+    world.garage_hub_r39.zoom_out_button_r54.pressed.emit()
+    if not check(is_equal_approx(r44_view.camera_distance_r54, orbit_safe_zoom),
+        "R54 service camera zoom-out must restore original distance"):return
+    zero_stage.set_quality_tier(1)
+    if not check(not zero_stage.shadow_key.shadow_enabled,
+        "R54 touch tier must disable costly real-time maintenance shadow"):return
+    zero_stage.set_quality_tier(0)
+    if not check(zero_stage.shadow_key.shadow_enabled,
+        "R54 desktop tier must restore real maintenance shadow"):return
+    # The shop must be reachable without scrolling, while flight stays locked.
+    var r54_wallet: int = world.credits
+    var navigator = world.garage_hub_r39
+    if not check(is_instance_valid(navigator.shop_header_button_r54) and
+        navigator.shop_header_button_r54.visible and
+        navigator.resource_label.text.contains("950 CR") and
+        navigator.active_section_r54 == "fleet",
+        "R54 must show live wallet and accessible shop in the fixed header"):return
+    navigator.section_buttons_r54["crew"].pressed.emit()
+    if not check(navigator.active_section_r54 == "crew" and
+        navigator.captain_card_r54.visible and navigator.academy_panel_r54.visible and
+        not navigator.ship_card_r54.visible,
+        "R54 crew tab must show academy without piling all screens together"):return
+    navigator.section_buttons_r54["operations"].pressed.emit()
+    if not check(navigator.introductory_section_r54.visible and
+        navigator.mission_card_r54.visible and
+        not navigator.captain_card_r54.visible,
+        "R54 operations tab must show focused real story briefing"):return
+    navigator.section_buttons_r54["fleet"].pressed.emit()
+    navigator.shop_header_button_r54.pressed.emit()
+    if not check(world.store_r15.visible and not navigator.visible and
+        world.credits == r54_wallet and world.garage_open_r39,
+        "R54 fixed shop CTA must open existing real-credit shop without spending"):return
+    world.store_r15.close()
+    if not check(navigator.visible and not world.store_r15.visible and
+        navigator.active_section_r54 == "fleet" and world.ship.controls_locked,
+        "R54 closing shop must safely restore garage and retain selection"):return
+    print("NEBULA_R54_REAL_HANGAR_LAYOUT_WALLET_AND_SHOP_SUCCESS")
+
     # R45: independent physically distinct geometry in actual dock and flight.
     if not check(is_instance_valid(r44_view.distinct_hull_r45) and
         is_instance_valid(world.ship.hull_kit_r45) and
@@ -2285,5 +2344,58 @@ func _run() -> void:
     if not check(world.credits == grid_payout,
         "R52 finished mission cannot duplicate normal campaign reward"):return
     print("NEBULA_R52_REAL_REACTOR_COMBAT_RETRY_AND_REWARD_SUCCESS")
+    # R54: spend CR on an actual engine upgrade, purchase training for a
+    # specific captain and persist through the existing version-1 save.
+    if not check(world.garage_open_r39 and
+        PilotAcademyR54Script.cost(0) == 650 and
+        PilotAcademyR54Script.cost(1) == 1100 and
+        PilotAcademyR54Script.cost(2) == 1800 and
+        PilotAcademyR54Script.cost(3) == 0 and
+        is_equal_approx(PilotAcademyR54Script.damage_multiplier("ada", 0.9, 1), 0.87) and
+        is_equal_approx(PilotAcademyR54Script.thrust_multiplier("kai", 1.08, 2), 1.16) and
+        PilotAcademyR54Script.credit_bonus(900, "leya", 3) == 108,
+        "R54 captain academy must have bounded, actual ship and CR reward effects"):return
+    var original_engine_rank: int = world.ship.engine_rank
+    world.ship.engine_rank = 0
+    world.credits = 3000
+    world.selected_captain_r42 = "ada"
+    world.pilot_training_r54 = {"ada":0, "kai":0, "leya":0}
+    world._r39_refresh_garage()
+    var new_hub = world.garage_hub_r39
+    new_hub.engine_upgrade_r54.pressed.emit()
+    if not check(world.credits == 2400 and world.ship.engine_rank == 1 and
+        new_hub.engine_upgrade_r54.text.contains("1 100 CR"),
+        "R54 garage engine workbench must spend 600 CR and install real rank"):return
+    new_hub.section_buttons_r54["crew"].pressed.emit()
+    new_hub.academy_train_button_r54.pressed.emit()
+    if not check(world.credits == 1750 and
+        int(world.pilot_training_r54.get("ada", -1)) == 1 and
+        new_hub.academy_train_button_r54.text.contains("1 100 CR"),
+        "R54 training must debit 650 CR and persist independent Ada rank"):return
+    var training_wallet_after: int = world.credits
+    world._save_progress()
+    world.pilot_training_r54 = {"ada":0,"kai":0,"leya":0}
+    world._load_progress()
+    if not check(world.pilot_training_r54.get("ada", -1) == 1 and
+        world.pilot_training_r54.get("kai", -1) == 0 and
+        world.credits == training_wallet_after and
+        world.ship.engine_rank == 1,
+        "R54 version-1 local save must preserve credit wallet and academy separately"):return
+    var sanitized: Dictionary = PilotAcademyR54Script.safe_roster(
+        {"ada":999, "kai":-10, "leya":"free premium", "injected":"bad"})
+    if not check(sanitized["ada"] == 3 and sanitized["kai"] == 0 and
+        sanitized["leya"] == 0 and not sanitized.has("injected"),
+        "R54 rank loading must clamp and reject unknown or spoofed captain data"):return
+    new_hub.launch_button.pressed.emit()
+    if not check(not world.garage_open_r39 and
+        is_equal_approx(world.ship.damage_multiplier, 0.87) and
+        world.ship.engine_rank == 1,
+        "R54 actual departure must apply paid Ada training to combat damage"):return
+    var wallet_before_no_reward: int = world.credits
+    world._complete_mission()
+    if not check(world.credits == wallet_before_no_reward,
+        "R54 launch and training alone must never award campaign credits"):return
+    # This runtime scenario exits immediately; do not certify hardware QA.
+    print("NEBULA_R54_ACADEMY_REAL_SHIP_STATS_SAVE_AND_CREDITS_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
