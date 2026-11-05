@@ -455,18 +455,66 @@ try {
       throw new Error('R38 QA profile initialization is not ECO: ' +
         JSON.stringify(open));
     }
-    const modeButton = await uiPoint(settled.r38_mode_button_x,
-      settled.r38_mode_button_y, 9);
-    await calibratedUI(modeButton);
-    await expectTelemetry('R38 mobile quality touch enables real AUTO profile',
-      s => s?.r38_auto_enabled === true &&
-        s.r38_quality_mode === 1 && s.r38_mode_label === 'АВТО', 30000);
-    await calibratedUI(modeButton);
-    await expectTelemetry('R38 mobile quality touch selects real MAX graphics',
-      s => s?.r38_auto_enabled === false &&
-        s.r38_quality_mode === 0 && s.r38_mode_label === 'MAX', 30000);
-    const runBenchmark = await uiPoint(settled.r36_benchmark_button_x,
-      settled.r36_benchmark_button_y, 8);
+    // A Godot VBox/HBox can reposition the text button even after the
+    // benchmark button was stable. Require the two buttons in the *same
+    // row* to share a real vertical centre, then read CURRENT engine
+    // coordinates immediately before every touch. Never accept only a DOM
+    // touch event as proof: require the genuine Godot button.pressed signal.
+    let priorModeLayoutKey = '';
+    let priorModeSample = -1;
+    let alignedModeFrames = 0;
+    const liveGraphicsRow = async () => expectTelemetry(
+      'R38 real compact portrait graphics button fully laid out',
+      t => {
+        if (!t?.r36_perf_visible ||
+          t.r38_mode_button_x <= 0 || t.r38_mode_button_y <= 0 ||
+          t.r36_benchmark_button_y <= 0 ||
+          Math.abs(t.r38_mode_button_y - t.r36_benchmark_button_y) > 3) {
+          alignedModeFrames = 0;
+          return false;
+        }
+        if (t.samples !== priorModeSample) {
+          const k = [t.r38_mode_button_x,t.r38_mode_button_y,
+            t.r36_benchmark_button_x,t.r36_benchmark_button_y]
+            .map(n => Number(n).toFixed(1)).join(',');
+          alignedModeFrames = priorModeLayoutKey === k ? alignedModeFrames + 1 : 0;
+          priorModeLayoutKey = k;
+          priorModeSample = t.samples;
+        }
+        return alignedModeFrames >= 2;
+      }, 40000);
+    const actualQualityTouch = async (description, goal) => {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const position = await liveGraphicsRow();
+        const beforePresses = position.r38_genuine_button_presses ?? 0;
+        const button = await uiPoint(position.r38_mode_button_x,
+          position.r38_mode_button_y, 9);
+        await calibratedUI(button);
+        let pressed = false;
+        try {
+          await expectTelemetry(description + ' actual Godot Button.pressed',
+            t => t?.r38_genuine_button_presses > beforePresses, 10000);
+          pressed = true;
+        } catch (err) {
+          const current = await snapshot();
+          report.checks.push({label: description + ' live re-layout retry',
+            attempt, requested:button, last:current});
+        }
+        if (pressed) {
+          return await expectTelemetry(description, goal, 15000);
+        }
+      }
+      throw new Error(description + ': three genuine calibrated touches never activated Godot Button.pressed');
+    };
+    await actualQualityTouch('R38 mobile quality touch enables real AUTO profile',
+      t => t?.r38_auto_enabled === true &&
+        t.r38_quality_mode === 1 && t.r38_mode_label === 'АВТО');
+    await actualQualityTouch('R38 mobile quality touch selects real MAX graphics',
+      t => t?.r38_auto_enabled === false &&
+        t.r38_quality_mode === 0 && t.r38_mode_label === 'MAX');
+    const latestBenchmark = await snapshot();
+    const runBenchmark = await uiPoint(latestBenchmark.r36_benchmark_button_x,
+      latestBenchmark.r36_benchmark_button_y, 8);
     await calibratedUI(runBenchmark);
     await expectTelemetry('R36 real mobile 20-second FPS benchmark starts',
       s => s?.r36_perf_active === true && s.touch_count === 0 &&
