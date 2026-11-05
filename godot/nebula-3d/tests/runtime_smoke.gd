@@ -8,6 +8,7 @@ const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
 const ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")
 const CourierInterceptR51Script = preload("res://scripts/courier_intercept_r51.gd")
+const StationBlackoutR52Script = preload("res://scripts/station_blackout_r52.gd")
 const FleetTacticsR50Script = preload("res://scripts/fleet_combat_r15.gd")
 const DroneR49TestScript = preload("res://scripts/drone.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
@@ -1551,13 +1552,15 @@ func _run() -> void:
         fleet_r49.set_command("follow") and
         fleet_r49.command_mode == "follow",
         "R49 defend and follow orders must be independently selectable"):return
-    if not check(world.MISSIONS.size() == 13 and
+    if not check(world.MISSIONS.size() == 14 and
         world.MISSIONS[10]["type"] == "investigation" and
         world.MISSIONS[10]["reward"] == 3200 and
         world.MISSIONS[11]["type"] == "archive" and
         world.MISSIONS[11]["reward"] == 3800 and
         world.MISSIONS[12]["type"] == "courier" and
-        world.MISSIONS[12]["reward"] == 4400,
+        world.MISSIONS[12]["reward"] == 4400 and
+        world.MISSIONS[13]["type"] == "blackout" and
+        world.MISSIONS[13]["reward"] == 4900,
         "R49 must append mission 11 without renumbering the first 10"):return
     var investigation = PortInvestigationR49Script.new()
     world.add_child(investigation)
@@ -2108,5 +2111,175 @@ func _run() -> void:
     if not check(world.credits == courier_paid,
         "R51 finished mission must reject duplicated final payouts"):return
     print("NEBULA_R51_INTEGRATED_MOVING_COURIER_RETRY_SUCCESS")
+
+    # R52 isolated physical emergency grid: two distinct manual breakers,
+    # true attackable energy budget, one-use capacitor and 95s timeout.
+    var grid = StationBlackoutR52Script.new()
+    world.add_child(grid)
+    grid.configure(Vector3(530.0, 32.0, 1060.0))
+    if not check(grid.active and grid.stage == 0 and
+        grid.relays.size() == 2 and grid.relays[0].visible and
+        not grid.reactor.visible and not grid.can_repair() and
+        is_equal_approx(grid.grid_health, grid.GRID_MAX),
+        "R52 blackout must start with physical breaker and inert reactor"):return
+    for remote_tick in 9:
+        grid.step(0.25, Vector3(530, 32, 1060), true)
+    if not check(grid.stage == 0 and grid.hold_time <= 0.01,
+        "R52 old mission waypoint can never remotely flip the first breaker"):return
+    grid.take_damage(60.0)
+    if not check(grid.actual_damage_hits == 0 and
+        is_equal_approx(grid.grid_health, grid.GRID_MAX),
+        "R52 inactive station cannot receive enemy damage or use reserve"):return
+    for key_tick in 7:
+        grid.step(0.25, grid.relay_positions[0], true)
+    if not check(grid.stage == 1 and grid.relays[1].visible and
+        not grid.input_armed, "R52 first real breaker must require held access"):return
+    for stale_tick in 9:
+        grid.step(0.25, grid.relay_positions[1], true)
+    if not check(grid.stage == 1 and grid.hold_time <= 0.01,
+        "R52 held button from breaker A cannot arm the second breaker"):return
+    grid.step(0.25, grid.relay_positions[1], false)
+    for second_key in 7:
+        grid.step(0.25, grid.relay_positions[1], true)
+    if not check(grid.stage == 2 and grid.reactor_online and
+        grid.reactor.visible and grid.capacitor.visible and
+        grid.is_live_reactor(),
+        "R52 two separately pressed real switches must activate defense"):return
+    var untouched_charge: float = grid.grid_health
+    for far_tick in 6:
+        grid.step(0.25, Vector3(9000,9000,9000), false)
+    if not check(grid.stabilization <= 0.01 and grid.grid_health < untouched_charge,
+        "R52 autonomous station timer must drain actual energy without pilot presence"):return
+    grid.take_damage(33.0)
+    if not check(grid.actual_damage_hits == 1 and grid.can_repair() and
+        grid.select_capacitor(true) and
+        grid.objective_position() == grid.capacitor_position,
+        "R52 hostile shot must damage grid and unlock distinct capacitor route"):return
+    for far_repair in 8:
+        grid.step(0.25, Vector3(9000,9000,9000), true)
+    if not check(grid.capacitor_hold <= 0.01 and not grid.capacitor_used,
+        "R52 power restoration cannot happen from outside real 30m area"):return
+    grid.step(0.25, grid.capacitor_position, false)
+    for reserve_tick in 8:
+        grid.step(0.25, grid.capacitor_position, true)
+    if not check(grid.capacitor_used and grid.capacitor_events == 1 and
+        grid.grid_health <= grid.GRID_MAX and
+        grid.objective_position() == grid.reactor.global_position and
+        not grid.capacitor.visible,
+        "R52 real capacitor must be one-use, capped and reset navigation"):return
+    var healed_charge: float = grid.grid_health
+    for exploit_tick in 8:
+        grid.step(0.25, grid.capacitor_position, true)
+    if not check(grid.capacitor_events == 1 and grid.grid_health < healed_charge,
+        "R52 used backup capacitor must never generate repeatable energy"):return
+    for stabilize_tick in 57:
+        grid.step(0.25, grid.reactor.global_position, false)
+    if not check(grid.completed_once and grid.stage == 3 and not grid.active and
+        grid.step(0.25, grid.reactor.global_position, false) == "inactive",
+        "R52 real physical proximity must stabilize reactor only once"):return
+    grid.configure(Vector3(530.0, 32.0, 1060.0))
+    for key_tick in 7:
+        grid.step(0.25, grid.relay_positions[0], true)
+    grid.step(0.25, grid.relay_positions[1], false)
+    for key_tick in 7:
+        grid.step(0.25, grid.relay_positions[1], true)
+    grid.take_damage(1000.0)
+    if not check(grid.step(0.25, grid.reactor.global_position, false) == "failed" and
+        not grid.completed_once and grid.actual_damage_hits == 1,
+        "R52 fully destroyed reactor must fail with no generated success"):return
+    grid.configure(Vector3(530.0, 32.0, 1060.0))
+    for key_tick in 7:
+        grid.step(0.25, grid.relay_positions[0], true)
+    grid.step(0.25, grid.relay_positions[1], false)
+    for key_tick in 7:
+        grid.step(0.25, grid.relay_positions[1], true)
+    grid.defense_remaining = 0.05
+    if not check(grid.step(0.25, grid.reactor.global_position, false) == "failed" and
+        not grid.completed_once and grid.last_event.contains("ВРЕМЯ"),
+        "R52 95-second stabilization deadline must cause genuine failure"):return
+    grid.queue_free()
+    print("NEBULA_R52_PHYSICAL_RELAY_GRID_CAPACITOR_CONTROLLER_SUCCESS")
+
+    # R52 campaign integration: actual drone.fired hits the reactor,
+    # failure pays zero and retry gives a one-time normal mission reward.
+    world.mission_index = 13
+    world._r39_refresh_garage()
+    var station_wallet: int = world.credits
+    var station_xp: int = world.xp
+    world._r39_launch_sortie()
+    if not check(is_instance_valid(world.r52_station) and
+        world.MISSIONS[13]["title"] == "СТАНЦИЯ БЕЗ СВЕТА" and
+        world.fleet_r15.defend_anchor == world.r52_station.reactor and
+        world.r49_terminal_button.visible,
+        "R52 must launch a real physical mission with reactor defend anchor"):return
+    world.ship.global_position = world.MISSIONS[13]["position"]
+    world._mission_tick(0.25)
+    if not check(world.mission_index == 13 and world.credits == station_wallet,
+        "R52 reaching the old static waypoint cannot award a mission"):return
+    for key_index in 2:
+        world.ship.global_position = world.r52_station.relay_positions[key_index]
+        world.r49_interact_held = false
+        world._mission_tick(0.25)
+        world.r49_interact_held = true
+        for tick in 7:
+            world._mission_tick(0.25)
+    if not check(world.r52_station.is_live_reactor() and
+        world.r52_hostiles_spawned and world.mission_enemies == 3 and
+        not world.r49_interact_held,
+        "R52 real second breaker must spawn three attacking drone actors"):return
+    var grid_before_shot: float = world.r52_station.grid_health
+    var core_location: Vector3 = world.r52_station.reactor.global_position
+    world._on_drone_fire(core_location + Vector3(0.0, 5.0, 75.0), core_location)
+    if not check(world.r52_station.grid_health < grid_before_shot and
+        world.r52_station.actual_damage_hits == 1,
+        "R52 world drone fire signal must apply actual reactor damage"):return
+    world._r49_refresh_buttons()
+    if not check(world.r50_repair_button.visible,
+        "R52 actual damaged core must show repair choice on touch HUD"):return
+    world._r50_toggle_repair_goal()
+    if not check(world.r52_station.focus_on_capacitor and
+        world.ship.navigation_target.distance_to(
+            world.r52_station.capacitor_position) < 0.01,
+        "R52 mobile reserve button must navigate to actual physical capacitor"):return
+    world.ship.global_position = world.r52_station.capacitor_position
+    world.r49_interact_held = true
+    for reserve_tick in 8:
+        world._mission_tick(0.25)
+    if not check(world.r52_station.capacitor_events == 1 and
+        world.r52_station.capacitor_used and
+        world.ship.navigation_target.distance_to(
+            world.r52_station.reactor.global_position) < 0.01,
+        "R52 actual touch hold must restore energy once and return to reactor"):return
+    world.r52_station.take_damage(200.0)
+    world._mission_tick(0.25)
+    if not check(world.garage_open_r39 and world.mission_index == 13 and
+        world.credits == station_wallet and world.xp == station_xp and
+        world.r43_pending_bounty == 0,
+        "R52 destroyed station must return to garage with no CR/XP farming"):return
+    world._r39_launch_sortie()
+    for key_index in 2:
+        world.ship.global_position = world.r52_station.relay_positions[key_index]
+        world.r49_interact_held = false
+        world._mission_tick(0.25)
+        world.r49_interact_held = true
+        for tick in 7:
+            world._mission_tick(0.25)
+    for enemy in world.drones.duplicate():
+        if is_instance_valid(enemy) and enemy.is_in_group("nebula_r52_reactor_attackers"):
+            enemy.hit(10000.0)
+    world.ship.global_position = world.r52_station.reactor.global_position
+    for stabilize_tick in 57:
+        world._mission_tick(0.25)
+        if world.garage_open_r39:
+            break
+    if not check(world.garage_open_r39 and world.mission_index == 14 and
+        world.credits > station_wallet and world.xp > station_xp and
+        world.r41_last_debrief.get("status", "") == "success",
+        "R52 14-second defense must reward once and return safely to hangar"):return
+    var grid_payout: int = world.credits
+    world._complete_mission()
+    if not check(world.credits == grid_payout,
+        "R52 finished mission cannot duplicate normal campaign reward"):return
+    print("NEBULA_R52_REAL_REACTOR_COMBAT_RETRY_AND_REWARD_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
