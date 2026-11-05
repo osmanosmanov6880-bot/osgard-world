@@ -2386,6 +2386,7 @@ func _run() -> void:
     if not check(sanitized["ada"] == 3 and sanitized["kai"] == 0 and
         sanitized["leya"] == 0 and not sanitized.has("injected"),
         "R54 rank loading must clamp and reject unknown or spoofed captain data"):return
+    world.mission_index = world.MISSIONS.size()
     new_hub.launch_button.pressed.emit()
     if not check(not world.garage_open_r39 and
         is_equal_approx(world.ship.damage_multiplier, 0.87) and
