@@ -306,3 +306,15 @@ html[data-motion=off] :is(.world-case:hover img,.world-case:focus-visible img,.p
     display:none;
   }
 }
+
+
+/* Keep the Play footer outside the first viewport while the lazy Play route
+   resolves under slow mobile/network conditions. Real mobile lab evidence
+   (2026-11-05): before the hero was mounted, the footer was at y=540px;
+   replacing that temporary layout produced CLS=0.36019. Reserve the initial
+   viewport for real main content instead of weakening the CLS <= 0.10 gate.
+   Use the stable *small* viewport so browser chrome changes cannot resize it. */
+.theme-play.play-catalog-shell > #product-main {
+  min-height: 100vh;
+  min-height: 100svh;
+}
