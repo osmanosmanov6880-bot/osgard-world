@@ -9,6 +9,7 @@ const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49
 const ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")
 const CourierInterceptR51Script = preload("res://scripts/courier_intercept_r51.gd")
 const StationBlackoutR52Script = preload("res://scripts/station_blackout_r52.gd")
+const ZenithRescueR53Script = preload("res://scripts/zenith_rescue_r53.gd")
 const FleetTacticsR50Script = preload("res://scripts/fleet_combat_r15.gd")
 const DroneR49TestScript = preload("res://scripts/drone.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
@@ -1552,7 +1553,7 @@ func _run() -> void:
         fleet_r49.set_command("follow") and
         fleet_r49.command_mode == "follow",
         "R49 defend and follow orders must be independently selectable"):return
-    if not check(world.MISSIONS.size() == 14 and
+    if not check(world.MISSIONS.size() == 15 and
         world.MISSIONS[10]["type"] == "investigation" and
         world.MISSIONS[10]["reward"] == 3200 and
         world.MISSIONS[11]["type"] == "archive" and
@@ -1560,7 +1561,9 @@ func _run() -> void:
         world.MISSIONS[12]["type"] == "courier" and
         world.MISSIONS[12]["reward"] == 4400 and
         world.MISSIONS[13]["type"] == "blackout" and
-        world.MISSIONS[13]["reward"] == 4900,
+        world.MISSIONS[13]["reward"] == 4900 and
+        world.MISSIONS[14]["type"] == "zenith_rescue" and
+        world.MISSIONS[14]["reward"] == 5400,
         "R49 must append mission 11 without renumbering the first 10"):return
     var investigation = PortInvestigationR49Script.new()
     world.add_child(investigation)
@@ -2285,5 +2288,160 @@ func _run() -> void:
     if not check(world.credits == grid_payout,
         "R52 finished mission cannot duplicate normal campaign reward"):return
     print("NEBULA_R52_REAL_REACTOR_COMBAT_RETRY_AND_REWARD_SUCCESS")
+    # R53 isolated real antenna capture and moving survivor rescue.
+    var zenith = ZenithRescueR53Script.new()
+    world.add_child(zenith)
+    zenith.configure(Vector3(780.0, 35.0, 930.0))
+    if not check(zenith.active and zenith.scans_done == 0 and
+        zenith.antennae.size() == 3 and
+        not zenith.rescue_pod.visible and
+        zenith.objective_position() == zenith.scan_positions[0],
+        "R53 must create three real separate antennas and hidden survivor pod"):return
+    for remote_tick in 9:
+        zenith.step(0.25, Vector3.ZERO, true)
+    if not check(zenith.scans_done == 0 and zenith.hold_time == 0.0,
+        "R53 remote scanner input must never count as physical interaction"):return
+    for scan_tick in 7:
+        zenith.step(0.25, zenith.scan_positions[0], true)
+    for stale_tick in 9:
+        zenith.step(0.25, zenith.scan_positions[1], true)
+    if not check(zenith.scans_done == 1 and
+        not zenith.antennae[0].visible and zenith.antennae[1].visible,
+        "R53 stale held input cannot activate the second scanner"):return
+    for scanner_index in [1, 2]:
+        zenith.step(0.25, zenith.scan_positions[scanner_index], false)
+        for scan_tick in 7:
+            zenith.step(0.25, zenith.scan_positions[scanner_index], true)
+    if not check(zenith.stage == 1 and zenith.is_escort_active() and
+        zenith.rescue_pod.visible and zenith.docking_terminal.visible,
+        "R53 all three true scans must reveal a physical escape pod"):return
+    var pod_start: Vector3 = zenith.rescue_pod.global_position
+    for distant_tick in 8:
+        zenith.step(0.25, Vector3.ZERO, false, 3)
+    if not check(zenith.rescue_pod.global_position == pod_start and
+        zenith.travel_meters == 0.0,
+        "R53 survivor pod must not move while pilot is outside escort radius"):return
+    zenith.step(0.25, pod_start, false, 3)
+    if not check(zenith.travel_meters > 0.0 and
+        zenith.rescue_pod.global_position.distance_to(pod_start) > 0.0,
+        "R53 survivor pod must move in 3D during real close escort"):return
+    zenith.take_damage(17.0)
+    if not check(is_equal_approx(zenith.pod_health, 73.0) and
+        zenith.actual_damage_hits == 1,
+        "R53 enemy damage must actually reduce pod hull"):return
+    zenith.take_damage(10000.0)
+    if not check(zenith.step(0.25, pod_start, false, 3) == "failed" and
+        not zenith.completed_once and zenith.last_event.contains("УНИЧТОЖЕНА"),
+        "R53 destroyed survivor pod must fail with no success"):return
+    zenith.configure(Vector3(780.0, 35.0, 930.0))
+    for scanner_index in 3:
+        zenith.step(0.25, zenith.scan_positions[scanner_index], false)
+        for scan_tick in 7:
+            zenith.step(0.25, zenith.scan_positions[scanner_index], true)
+    zenith.time_remaining = 0.05
+    if not check(zenith.step(0.25, zenith.rescue_pod.global_position,
+            false, 3) == "failed" and not zenith.completed_once,
+        "R53 hard 125-second rescue deadline must cause real failure"):return
+    zenith.configure(Vector3(780.0, 35.0, 930.0))
+    for scanner_index in 3:
+        zenith.step(0.25, zenith.scan_positions[scanner_index], false)
+        for scan_tick in 7:
+            zenith.step(0.25, zenith.scan_positions[scanner_index], true)
+    for escort_tick in 90:
+        zenith.step(0.25, zenith.rescue_pod.global_position, false, 3)
+        if zenith.stage == 2:
+            break
+    if not check(zenith.stage == 2 and zenith.travel_meters > 200.0,
+        "R53 pilot must escort moving rescue pod all the way to dock"):return
+    for blocked_tick in 12:
+        zenith.step(0.25, zenith.dock_position, true, 3)
+    if not check(zenith.stage == 2 and zenith.hold_time == 0.0 and
+        zenith.raiders_block_extraction(3),
+        "R53 living enemy jammers must block physical extraction"):return
+    zenith.step(0.25, zenith.dock_position, false, 0)
+    for extract_tick in 10:
+        zenith.step(0.25, zenith.dock_position, true, 0)
+    if not check(zenith.stage == 3 and zenith.completed_once and
+        zenith.step(0.25, zenith.dock_position, true, 0) == "inactive",
+        "R53 final dock needs fresh manual hold and only completes once"):return
+    zenith.queue_free()
+    print("NEBULA_R53_REAL_ANTENNA_MOVING_SURVIVOR_EXTRACTION_SUCCESS")
+
+    # Full-world combat, failure, retry, hold and exact reward through coordinator.
+    world.mission_index = 14
+    world._r39_refresh_garage()
+    var zenith_wallet: int = world.credits
+    var zenith_xp: int = world.xp
+    world._r39_launch_sortie()
+    if not check(is_instance_valid(world.r53_zenith) and
+        world.fleet_r15.defend_anchor == world.r53_zenith.rescue_pod and
+        world.MISSIONS[14]["title"] == "ПОСЛЕДНИЙ ЭКИПАЖ «ЗЕНИТА»" and
+        world.r49_terminal_button.visible,
+        "R53 must launch real Zenith rescue and pod defense AI"):return
+    for scanner_index in 3:
+        world.ship.global_position = world.r53_zenith.scan_positions[scanner_index]
+        world.r49_interact_held = false
+        world._mission_tick(0.25)
+        world.r49_interact_held = true
+        for scan_tick in 7:
+            world._mission_tick(0.25)
+    if not check(world.r53_zenith.stage == 1 and
+        world.r53_raiders_spawned and world._r53_active_raiders() == 3 and
+        world.mission_enemies == 3,
+        "R53 scanning all antennas must spawn three real attacking drones"):return
+    var before_r53_shot: float = world.r53_zenith.pod_health
+    var pod_location: Vector3 = world.r53_zenith.rescue_pod.global_position
+    world._on_drone_fire(pod_location + Vector3(0.0, 4.0, 72.0), pod_location)
+    if not check(world.r53_zenith.pod_health < before_r53_shot and
+        world.r53_zenith.actual_damage_hits == 1,
+        "R53 drone.fired signal must damage physical escape pod"):return
+    world.r53_zenith.take_damage(10000.0)
+    world._mission_tick(0.25)
+    if not check(world.garage_open_r39 and world.mission_index == 14 and
+        world.credits == zenith_wallet and world.xp == zenith_xp and
+        world.r43_pending_bounty == 0,
+        "R53 lost survivor pod must abort without awarding CR or XP"):return
+    world._r39_launch_sortie()
+    for scanner_index in 3:
+        world.ship.global_position = world.r53_zenith.scan_positions[scanner_index]
+        world.r49_interact_held = false
+        world._mission_tick(0.25)
+        world.r49_interact_held = true
+        for scan_tick in 7:
+            world._mission_tick(0.25)
+    for raider in world.drones.duplicate():
+        if is_instance_valid(raider) and raider.is_in_group("nebula_r53_pod_raiders"):
+            raider.hit(10000.0)
+    if not check(world._r53_active_raiders() == 0 and world.mission_enemies == 0,
+        "R53 final extraction requires destruction of actual hostile actors"):return
+    for escort_tick in 90:
+        world.ship.global_position = world.r53_zenith.rescue_pod.global_position
+        world.r49_interact_held = false
+        world._mission_tick(0.25)
+        if world.r53_zenith.stage == 2:
+            break
+    world._r49_refresh_buttons()
+    if not check(world.r53_zenith.stage == 2 and
+        world.r53_zenith.rescue_pod.global_position.distance_to(
+            world.r53_zenith.dock_position) < 0.1 and
+        world.r49_terminal_button.visible,
+        "R53 moving pod must arrive at the physical extraction terminal"):return
+    world.ship.global_position = world.r53_zenith.dock_position
+    world.r49_interact_held = false
+    world._mission_tick(0.25)
+    world.r49_interact_held = true
+    for extraction_tick in 10:
+        world._mission_tick(0.25)
+        if world.garage_open_r39:
+            break
+    if not check(world.garage_open_r39 and world.mission_index == 15 and
+        world.credits > zenith_wallet and world.xp > zenith_xp and
+        world.r41_last_debrief.get("status", "") == "success",
+        "R53 fifteenth mission must reward once and safely return to hangar"):return
+    var zenith_reward: int = world.credits
+    world._complete_mission()
+    if not check(world.credits == zenith_reward,
+        "R53 successful rescue must never duplicate campaign payout"):return
+    print("NEBULA_R53_WORLD_POD_DAMAGE_RETRY_EXACT_PAYOUT_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)

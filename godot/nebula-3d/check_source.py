@@ -985,4 +985,40 @@ assert "FileAccess.open(" not in r52_controller
 require("docs/R52-REAL-STATION-BLACKOUT-QA.md",
     "NOT_PERFORMED", "95", "78", "14", "40", "15", "Android")
 
+# R53: actual moving survivor pod with 3 independent physical antenna holds.
+r53_controller = require(
+    "scripts/zenith_rescue_r53.gd",
+    "extends Node3D",
+    "R53_RealTriangulationAntenna_",
+    "R53_RealMovingZenithEscapePod",
+    "R53_RealManualExtractionDock",
+    "func configure(center: Vector3) -> void:",
+    "func is_escort_active() -> bool:",
+    "func take_damage(amount: float) -> void:",
+    "func step(delta: float, pilot: Vector3, pressing: bool,",
+    "SCAN_COUNT: int = 3",
+    "SCAN_HOLD: float = 1.6",
+    "RESCUE_TIME: float = 125.0",
+    "DOCK_HOLD: float = 2.4",
+    "input_armed = false",
+)
+assert 'ZenithRescueR53Script = preload("res://scripts/zenith_rescue_r53.gd")' in world
+assert '"type":"zenith_rescue"' in world
+assert "world.mission_index = 14" in smoke
+assert "NEBULA_R53_REAL_ANTENNA_MOVING_SURVIVOR_EXTRACTION_SUCCESS" in smoke
+assert "NEBULA_R53_WORLD_POD_DAMAGE_RETRY_EXACT_PAYOUT_SUCCESS" in smoke
+assert "nebula_r53_pod_raiders" in world
+assert "r53_zenith.take_damage(10.0)" in world
+assert "fleet_r15.defend_anchor = r53_zenith.rescue_pod" in world
+assert "_r53_active_raiders()" in world
+assert "_r53_clear_zenith()" in world
+assert "func _active_mission_goal() -> Vector3:" in world
+assert "R53 survivor pod must not move while pilot is outside escort radius" in smoke
+assert "R53 living enemy jammers must block physical extraction" in smoke
+assert "R53 lost survivor pod must abort without awarding CR or XP" in smoke
+assert "credits +=" not in r53_controller and "xp +=" not in r53_controller
+assert "FileAccess.open(" not in r53_controller
+require("docs/R53-ZENITH-SURVIVOR-RESCUE-QA.md",
+    "NOT_PERFORMED", "125", "132", "2,4", "16", "Android")
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
