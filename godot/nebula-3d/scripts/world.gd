@@ -261,6 +261,7 @@ func _r25_emit_browser_flight_state() -> void:
             state["r38_quality_mode"] = graphics_quality
             state["r38_auto_enabled"] = adaptive_r12.auto_enabled
             state["r38_mode_label"] = performance_lab_r11.r38_mode_button.text
+            state["r38_genuine_button_presses"] = performance_lab_r11.r38_touch_button_presses
             state["r38_mode_button_x"] = (
                 performance_lab_r11.r38_mode_button.global_position.x +
                 performance_lab_r11.r38_mode_button.size.x * 0.5)
