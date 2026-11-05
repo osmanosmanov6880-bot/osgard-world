@@ -227,7 +227,10 @@ test('Portal artwork is first-party and responsive without remote image dependen
 test('Portal remains accessible even when its optional picture cannot load', async ({ page }) => {
   await page.route('**/brand/osgard-portal-*.webp', route => route.abort())
   await page.goto('/')
-  await expect(page.locator('#world-title')).toBeVisible()
+  const hero = page.locator('.omega-portals-hero')
+  await expect(hero).toHaveClass(/portal-art-failed/)
+  await expect(hero.locator('#world-title')).toBeVisible()
+  await expect(hero.locator('.omega-portals-copy')).toHaveCSS('opacity', '1')
   await expect(page.locator('.omega-portals-live-cta')).toBeVisible()
   await expect(page.locator('.omega-portal-stage a')).toHaveCount(3)
   await expect(page.locator('.omega-cards .omega-card')).toHaveCount(3)
