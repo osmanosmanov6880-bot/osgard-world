@@ -912,6 +912,11 @@ r51_controller = require(
     "EXTRACTION_DEADLINE: float = 90.0",
     "COURIER_RANGE: float = 95.0",
     "PURSUIT_DEADLINE: float = 105.0",
+    "PURSUIT_TRAIL_SEGMENTS: int = 5",
+    "LEAD_MAX_DISTANCE: float = 32.0",
+    "func navigation_position(pilot_position: Vector3) -> Vector3:",
+    "func _update_pursuit_trail() -> void:",
+    "R51_ActualFutureSignalTrail_",
     "interference_count",
 )
 assert 'CourierInterceptR51Script = preload("res://scripts/courier_intercept_r51.gd")' in world
@@ -923,10 +928,18 @@ assert "R51 moving pursuit must spawn two actual jammer drone actors" in smoke
 assert "R51 real timer failure must preserve v1 progress and pay zero rewards" in smoke
 assert "R51 integrated courier escape must fail, show true reason and award nothing" in smoke
 assert "r38_genuine_button_presses" in world
+assert "cruise_button_events" in world and "cruise_button_visible" in world
+assert "actual clickable cruise switch engaged" in r25_browser
+assert "pressRealCruise(true" in r25_browser
+assert "cruise_button_events>before.cruise_button_events" in r25_browser
 assert "r38_touch_button_presses" in require("scripts/performance_lab_r11.gd", "r38_touch_button_presses")
 assert "nebula_r51_jammer" in world
 assert "_r51_active_interference()" in world
 assert "r51_courier.objective_position()" in world
+assert "r51_courier.navigation_position(ship.global_position)" in world
+assert "R51 world steering may lead courier, but physical beacon cannot be spoofed" in smoke
+assert "R51 pursuit must show all five actual in-world signal guide marks" in smoke
+assert "R51 moving courier and 3D trail must move" not in smoke or "courier and 3D trail must move" in smoke
 assert "r49_interact_held" in world
 assert "credits +=" not in r51_controller and "xp +=" not in r51_controller
 assert "FileAccess.open(" not in r51_controller
