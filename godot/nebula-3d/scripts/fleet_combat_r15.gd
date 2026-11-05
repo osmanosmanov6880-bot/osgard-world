@@ -47,6 +47,29 @@ const FOCUS_RANGE: float = 340.0
 var focus_target: Node3D
 var focus_changes: int = 0
 var focus_shots: int = 0
+## Reticle is a real world-space 3D object; laser hits must pass geometry.
+var focus_marker: MeshInstance3D
+var blocked_ally_shots: int = 0
+var missile_focus_launches: int = 0
+
+func _has_clear_laser_path(origin: Vector3, destination: Vector3) -> bool:
+    if origin.distance_squared_to(destination) < 0.01:
+        return false
+    var query := PhysicsRayQueryParameters3D.create(origin, destination, 1)
+    var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+    # Enemies in this game have no physics collider. Ray hits are solid
+    # buildings, ground and other actual world obstacles blocking a laser.
+    return hit.is_empty()
+
+func _refresh_focus_marker() -> void:
+    if not is_instance_valid(focus_marker):
+        return
+    focus_marker.visible = combat_active and command_mode == "attack" and (
+        _valid_focus(focus_target))
+    if focus_marker.visible:
+        focus_marker.global_position = focus_target.global_position + Vector3.UP * 4.5
+        focus_marker.rotate_y(0.015)
+
 
 func _valid_focus(candidate: Node3D) -> bool:
     return is_instance_valid(player_ship) and is_instance_valid(candidate) and (
@@ -127,6 +150,24 @@ func _command_enemy() -> Node3D:
 
 
 func _ready() -> void:
+    focus_marker = MeshInstance3D.new()
+    focus_marker.name = "R50_ActualEnemyFocusReticle"
+    var ring := TorusMesh.new()
+    ring.inner_radius = 4.5
+    ring.outer_radius = 5.0
+    ring.rings = 28
+    ring.ring_segments = 8
+    focus_marker.mesh = ring
+    var mat := StandardMaterial3D.new()
+    mat.albedo_color = Color(1.0, 0.67, 0.22)
+    mat.emission_enabled = true
+    mat.emission = Color(1.0, 0.46, 0.14)
+    mat.emission_energy_multiplier = 2.0
+    mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    focus_marker.material_override = mat
+    focus_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    focus_marker.visible = false
+    add_child(focus_marker)
     for i in MISSILE_POOL_SIZE:
         var rocket: Node3D = GuidedMissileR16Script.new()
         rocket.name = "R16_GuidedMissile_%02d" % i
@@ -194,6 +235,7 @@ func _process(delta: float) -> void:
     if not _valid_focus(focus_target):
         clear_focus()
     var opponent: Node3D = _command_enemy() if combat_active else null
+    _refresh_focus_marker()
     for i in helpers.size():
         var ally: Node3D = helpers[i]
         if not is_instance_valid(ally):continue
@@ -226,6 +268,10 @@ func _process(delta: float) -> void:
                 # Individual craft must physically reach weapons range.
                 if is_instance_valid(wingman) and wingman.global_position.distance_to(
                         opponent.global_position) <= 170.0:
+                    if not _has_clear_laser_path(wingman.global_position,
+                            opponent.global_position):
+                        blocked_ally_shots += 1
+                        continue
                     ally_fired.emit(wingman.global_position, opponent.global_position)
                     opponent.hit(5.5 if command_mode == "attack" else 4.3)
                     ally_hits_r49 += 1
@@ -252,7 +298,11 @@ func _nearest_hostile(distance: float) -> Node3D:
 func launch_missile() -> bool:
     if missiles <= 0 or cooldown > 0.0 or not is_instance_valid(player_ship):
         return false
-    var enemy: Node3D = _nearest_hostile(245.0)
+    # The pilot's actual squad target gets first missile priority, but only
+    # inside physical missile lock range; retain legacy nearest-enemy fallback.
+    var locked: bool = _valid_focus(focus_target) and (
+        player_ship.global_position.distance_to(focus_target.global_position) <= 245.0)
+    var enemy: Node3D = focus_target if locked else _nearest_hostile(245.0)
     if not is_instance_valid(enemy):
         return false
     var ready_rocket: Node3D
@@ -267,6 +317,8 @@ func launch_missile() -> bool:
                                   forward, enemy, missile_damage)):
         return false
     missiles -= 1
+    if locked:
+        missile_focus_launches += 1
     cooldown = 1.1
     missile_launched.emit()
     return true
