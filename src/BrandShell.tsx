@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import { BrandLockup } from './BrandMark'
 import { brandAreaForPath, brandBreadcrumbs, globalNavigationState } from './brandNavigation'
@@ -21,7 +21,13 @@ const globalLinks = [['OSGARD', '/'], ['Intelligence', '/intelligence'], ['Play'
 export function BrandShell({ theme, children }: { theme: ProductTheme; children: ReactNode }) {
   const [motion, setMotion] = useState(readMotion)
   const [quickOpen, setQuickOpen] = useState(false)
-  const closeQuickNav = () => setQuickOpen(false)
+  const quickNavTrigger = useRef<HTMLButtonElement>(null)
+  const closeQuickNav = () => {
+    setQuickOpen(false)
+    // Restoring focus after removing the modal is essential for keyboard and
+    // mobile screen-reader navigation. The rAF runs after the DOM commit.
+    requestAnimationFrame(() => quickNavTrigger.current?.focus())
+  }
   const [osaLocale, setOSALocale] = useState(readOSALocale)
   const [reduced, setReduced] = useState(false)
   const currentLocation = useSyncExternalStore(subscribeBrowserNavigation, getBrowserSnapshot, getServerSnapshot)
@@ -109,10 +115,10 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       <nav aria-label={englishChrome ? 'OSGARD products' : 'Продукты OSGARD'} className="brand-global-nav">
         {globalLinks.map(([name, href]) => <a key={href} href={href} aria-current={globalNavigationState(path, product, href)}>{name}</a>)}
       </nav>
-      <button type="button" className="brand-quick-trigger"
+      <button type="button" ref={quickNavTrigger} className="brand-quick-trigger"
         aria-expanded={quickOpen} aria-haspopup="dialog"
         aria-keyshortcuts="Control+K Meta+K"
-        aria-label={englishChrome ? 'Search OSGARD sections' : 'Поиск разделов OSGARD'}
+        aria-label={englishChrome ? 'Quick navigation across OSGARD sections' : 'Быстрый переход по разделам OSGARD'}
         title={englishChrome ? 'Search sections (Ctrl / Cmd + K)' : 'Поиск разделов (Ctrl / Cmd + K)'}
         onClick={() => setQuickOpen(true)}>
         <span className="brand-quick-symbol" aria-hidden="true">⌕</span>
