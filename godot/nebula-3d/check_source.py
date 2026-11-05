@@ -939,7 +939,7 @@ assert "r51_courier.objective_position()" in world
 assert "r51_courier.navigation_position(ship.global_position)" in world
 assert "R51 world steering may lead courier, but physical beacon cannot be spoofed" in smoke
 assert "R51 pursuit must show all five actual in-world signal guide marks" in smoke
-assert "R51 moving courier and 3D trail must move" not in smoke or "courier and 3D trail must move" in smoke
+assert "R51 courier and 3D trail must move" in smoke
 assert "r49_interact_held" in world
 assert "credits +=" not in r51_controller and "xp +=" not in r51_controller
 assert "FileAccess.open(" not in r51_controller
