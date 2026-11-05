@@ -33,6 +33,7 @@ const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
 const ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")
+const CourierShadowR51Script = preload("res://scripts/courier_shadow_r51.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -49,7 +50,8 @@ const MISSIONS = [
     {"title":"СЕРДЦЕ РАЗЛОМА","hint":"Доставь стабилизатор в Разлом: без него атака повторится и город не удержать.","position":Vector3(520,24,1010),"type":"reach","reward":2600},
     {"title":"ПОСЛЕДНИЙ СИГНАЛ","hint":"Останови командование Хелиос у Нексуса и предъяви доказательства заговора.","position":Vector3(1290,28,-780),"type":"combat","reward":4300},
     {"title":"ТЕНИ ПОРТА","hint":"Изучи три терминала Авроры. Удерживай T или кнопку ВВОД у каждого. Не стреляй.","position":Vector3(0,26,0),"type":"investigation","reward":3200},
-    {"title":"ЗАКРЫТЫЙ АРХИВ","hint":"Найди два ключа «Эхо», затем расшифруй архив. Удерживай ВВОД и защищай сервер от атак дронов.","position":Vector3(-500,32,670),"type":"archive","reward":3800}
+    {"title":"ЗАКРЫТЫЙ АРХИВ","hint":"Найди два ключа «Эхо», затем расшифруй архив. Удерживай ВВОД и защищай сервер от атак дронов.","position":Vector3(-500,32,670),"type":"archive","reward":3800},
+    {"title":"СЛЕД КУРАТОРА","hint":"Найди курьера, следуй за ним на дистанции 65–185 м, перехвати три сигнала кнопкой B и сопроводить до выхода. Нельзя стрелять.","position":Vector3(1250,52,-730),"type":"shadow","reward":4100}
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -67,11 +69,13 @@ var r48_escort_enemies_spawned: bool = false
 var r48_last_goal: Vector3 = Vector3.ZERO
 var r49_investigation
 var r50_archive
+var r51_shadow
 var r50_archive_wave_spawned: bool = false
 var r49_interact_held := false
 var r49_command_button: Button
 var r49_terminal_button: Button
 var r50_focus_button: Button
+var r51_capture_button: Button
 var r50_repair_button: Button
 var shot_flash: float = 0.0
 var hud_mission: Label
@@ -871,7 +875,7 @@ func _make_hud() -> void:
     hud_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     stack.add_child(hud_status)
     hud_controls = Label.new()
-    hud_controls.text = "WASD — ПОЛЁТ     Q/E — ВЫСОТА     Shift — ФОРСАЖ     Space — ОГОНЬ     R — РАКЕТА     H — АНГАР     F3 — ГРАФИКА"
+    hud_controls.text = "WASD — ПОЛЁТ     Q/E — ВЫСОТА     Shift — ФОРСАЖ     Space — ОГОНЬ     R — РАКЕТА     B — ПЕРЕХВАТ     H — АНГАР     F3 — ГРАФИКА"
     hud_controls.add_theme_font_override("font",r21_ui_font)
     hud_controls.add_theme_font_size_override("font_size",12)
     hud_controls.add_theme_color_override("font_color",Color(0.71,0.80,0.83))
@@ -994,7 +998,7 @@ func _process(delta: float) -> void:
             r25_telemetry_period = fmod(r25_telemetry_period, 0.20)
             _r25_emit_browser_flight_state()
     r21_launch_protection = maxf(0.0, r21_launch_protection - delta)
-    if not garage_open_r39 and world_pulse > 92.0 and mission_index > 1 and mission_index != 7 and mission_index != 10 and mission_index != 11 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
+    if not garage_open_r39 and world_pulse > 92.0 and mission_index > 1 and mission_index != 7 and mission_index != 10 and mission_index != 11 and mission_index != 12 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
         world_pulse = 0.0
         _spawn_pirate_ambush()
     _r16_update_beam_pool(delta)
@@ -1046,14 +1050,7 @@ func _process(delta: float) -> void:
     if is_instance_valid(r21_dashboard):
         r21_dashboard.show_objective = mission_index < MISSIONS.size()
         if r21_dashboard.show_objective:
-            r21_dashboard.objective = (
-                r50_archive.objective_position()
-                if is_instance_valid(r50_archive) else (
-                r49_investigation.objective_position()
-                if is_instance_valid(r49_investigation) else (
-                mission_objectives_r48.objective_position()
-                if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active
-                else MISSIONS[mission_index]["position"])))
+            r21_dashboard.objective = _current_mission_goal()
     if garage_open_r39:
         # The dock is a safe room, not a place for pirates to farm the player.
         ship.shield = fleet_r15.ship_shield_cap()
@@ -1081,14 +1078,7 @@ func _process(delta: float) -> void:
         radar.player_forward = -ship.global_transform.basis.z
         radar.has_objective = mission_index < MISSIONS.size()
         if radar.has_objective:
-            radar.objective = (
-                r50_archive.objective_position()
-                if is_instance_valid(r50_archive) else (
-                r49_investigation.objective_position()
-                if is_instance_valid(r49_investigation) else (
-                mission_objectives_r48.objective_position()
-                if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active
-                else MISSIONS[mission_index]["position"])))
+            radar.objective = _current_mission_goal()
         radar.targets.clear()
         for n in drones:
             if is_instance_valid(n) and n.hostile and n.global_position.distance_squared_to(ship.global_position) < 211600.0:
@@ -1098,11 +1088,37 @@ func _process(delta: float) -> void:
         world_timer=0.0
         _save_progress()
 
+func _current_mission_goal() -> Vector3:
+    if is_instance_valid(r51_shadow):
+        return r51_shadow.objective_position()
+    if is_instance_valid(r50_archive):
+        return r50_archive.objective_position()
+    if is_instance_valid(r49_investigation):
+        return r49_investigation.objective_position()
+    if is_instance_valid(mission_objectives_r48) and mission_objectives_r48.active:
+        return mission_objectives_r48.objective_position()
+    if mission_index < MISSIONS.size():
+        return MISSIONS[mission_index]["position"]
+    return ship.global_position if is_instance_valid(ship) else Vector3.ZERO
+
 func _mission_tick(dt: float) -> void:
     if garage_open_r39 or mission_index >= MISSIONS.size():
         return
     var mission: Dictionary = MISSIONS[mission_index]
     var target: Vector3 = mission["position"]
+    if is_instance_valid(r51_shadow):
+        var shadow_result: String = r51_shadow.step(dt, ship.global_position)
+        var shadow_goal: Vector3 = r51_shadow.objective_position()
+        if r48_last_goal.distance_to(shadow_goal) > 12.0:
+            r48_last_goal = shadow_goal
+            ship.set_navigation_target(shadow_goal)
+        if is_instance_valid(mission_beacon):
+            mission_beacon.global_position = shadow_goal
+        if shadow_result == "failed":
+            _r43_fail_sortie("Курьер заметил слежку или сигнал потерян. Повтори вылет, держи дистанцию 65–185 м и не стреляй.")
+        elif shadow_result == "success":
+            _complete_mission()
+        return
     if is_instance_valid(r50_archive):
         var archive_result: String = r50_archive.step(dt, ship.global_position,
             r49_interact_held or Input.is_key_pressed(KEY_T) or
@@ -1209,6 +1225,11 @@ func _r50_spawn_archive_threats() -> void:
         drones.append(drone)
     _show_notice("АРХИВ ПОД АТАКОЙ · ЗАЩИЩАЙ ЯДРО")
 
+func _r51_clear_shadow() -> void:
+    if is_instance_valid(r51_shadow):
+        r51_shadow.queue_free()
+        r51_shadow = null
+
 func _r50_clear_archive() -> void:
     r49_interact_held = false
     r50_archive_wave_spawned = false
@@ -1222,6 +1243,7 @@ func _start_mission() -> void:
     r48_escort_enemies_spawned = false
     _r49_clear_investigation()
     _r50_clear_archive()
+    _r51_clear_shadow()
     if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
@@ -1237,6 +1259,18 @@ func _start_mission() -> void:
         _show_notice("СЮЖЕТ ЗАВЕРШЁН · СВОБОДНЫЙ ПОЛЁТ")
         return
     var data: Dictionary = MISSIONS[mission_index]
+    if str(data["type"]) == "shadow":
+        r51_shadow = CourierShadowR51Script.new()
+        add_child(r51_shadow)
+        r51_shadow.configure(data["position"])
+        mission_started = true
+        r48_last_goal = r51_shadow.objective_position()
+        ship.set_navigation_target(r48_last_goal)
+        # Silent courier shadowing never triggers automated wingman combat.
+        if is_instance_valid(fleet_r15):
+            fleet_r15.combat_active = false
+            fleet_r15.set_command("follow")
+            fleet_r15.clear_focus()
     if str(data["type"]) == "archive":
         r50_archive = ArchiveBreachR50Script.new()
         add_child(r50_archive)
@@ -1267,12 +1301,7 @@ func _start_mission() -> void:
         ship.set_navigation_target(r48_last_goal)
     var beacon := Node3D.new()
     beacon.name = "MissionBeacon"
-    beacon.position = (r50_archive.objective_position()
-        if is_instance_valid(r50_archive) else (
-        r49_investigation.objective_position()
-        if is_instance_valid(r49_investigation) else (
-        mission_objectives_r48.objective_position()
-        if is_instance_valid(mission_objectives_r48) else data["position"])))
+    beacon.position = _current_mission_goal()
     var sphere := MeshInstance3D.new()
     var mesh := SphereMesh.new()
     mesh.radius=4.8
@@ -1327,6 +1356,7 @@ func _complete_mission() -> void:
     r43_pending_bounty = 0
     _r49_clear_investigation()
     _r50_clear_archive()
+    _r51_clear_shadow()
     if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
@@ -1368,6 +1398,7 @@ func _r43_fail_sortie(reason: String = "") -> void:
     r43_pending_bounty = 0
     _r49_clear_investigation()
     _r50_clear_archive()
+    _r51_clear_shadow()
     if is_instance_valid(fleet_r15): fleet_r15.defend_anchor = null
     if is_instance_valid(mission_objectives_r48):
         mission_objectives_r48.queue_free()
@@ -1407,7 +1438,7 @@ func _on_mission_drone_destroyed(drone: Node3D) -> void:
 func _on_drone_fire(from: Vector3, to: Vector3) -> void:
     if garage_open_r39 or not is_instance_valid(ship):return
     # The story's silent port investigation is not a random combat encounter.
-    if is_instance_valid(r49_investigation):
+    if is_instance_valid(r49_investigation) or is_instance_valid(r51_shadow):
         return
     _laser_effect_colored(from,to,Color(1.0,0.26,0.39))
     if is_instance_valid(r50_archive) and r50_archive.is_active_server() and (
@@ -1550,16 +1581,12 @@ func _update_hud() -> void:
         hud_status.text = "Исследуй шесть районов космического города.\n" + resource_line
     else:
         var m: Dictionary = MISSIONS[mission_index]
-        var goal: Vector3 = (r50_archive.objective_position()
-            if is_instance_valid(r50_archive) else (
-            r49_investigation.objective_position()
-            if is_instance_valid(r49_investigation) else (
-            mission_objectives_r48.objective_position()
-            if is_instance_valid(mission_objectives_r48) and
-                mission_objectives_r48.active else m["position"])))
+        var goal: Vector3 = _current_mission_goal()
         var d: int = roundi(ship.global_position.distance_to(goal))
         hud_mission.text = "%02d  ·  %s" % [mission_index + 1, m["title"]]
-        if is_instance_valid(r50_archive):
+        if is_instance_valid(r51_shadow):
+            hud_objective.text = "◇  " + r51_shadow.status_line()
+        elif is_instance_valid(r50_archive):
             hud_objective.text = "◇  " + r50_archive.status_line()
         elif is_instance_valid(r49_investigation):
             hud_objective.text = "◇  " + r49_investigation.status_line()
@@ -1572,6 +1599,7 @@ func _update_hud() -> void:
         hud_status.text = "%s  ·  %d м\n%s" % [m["hint"], d, resource_line]
         if is_instance_valid(r49_investigation): hud_status.text += "\n" + r49_investigation.status_line()
         if is_instance_valid(r50_archive): hud_status.text += "\n" + r50_archive.status_line()
+        if is_instance_valid(r51_shadow): hud_status.text += "\n" + r51_shadow.status_line()
 
 func _fit_hud() -> void:
     if not is_instance_valid(hud_panel):
@@ -1648,6 +1676,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
             _r49_cycle_command()
         elif event.keycode == KEY_V or event.physical_keycode == KEY_V:
             _r50_next_focus()
+        elif event.keycode == KEY_B or event.physical_keycode == KEY_B:
+            _r51_capture_evidence()
         elif event.keycode==KEY_F5:
             _save_progress()
             _show_notice("ИГРА СОХРАНЕНА")
@@ -2095,6 +2125,8 @@ func _r42_select_captain(id: String) -> void:
 func _r49_report_weapon_discharge() -> void:
     if is_instance_valid(r49_investigation):
         r49_investigation.report_weapon_discharge()
+    if is_instance_valid(r51_shadow):
+        r51_shadow.report_weapon_discharge()
 
 func _r49_make_buttons() -> void:
     r49_command_button = Button.new()
@@ -2125,6 +2157,14 @@ func _r49_make_buttons() -> void:
     r50_repair_button.add_theme_font_size_override("font_size", 14)
     r50_repair_button.pressed.connect(_r50_toggle_repair_goal)
     hud_canvas.add_child(r50_repair_button)
+    r51_capture_button = Button.new()
+    r51_capture_button.name = "R51_ActualRadioCapture"
+    r51_capture_button.focus_mode = Control.FOCUS_NONE
+    r51_capture_button.text = "ПЕРЕХВАТ · РАДИО"
+    r51_capture_button.add_theme_font_override("font", r21_ui_font)
+    r51_capture_button.add_theme_font_size_override("font_size", 15)
+    r51_capture_button.pressed.connect(_r51_capture_evidence)
+    hud_canvas.add_child(r51_capture_button)
     _r49_refresh_buttons()
 
 func _r49_hold_on() -> void:
@@ -2140,8 +2180,17 @@ func _r49_clear_investigation() -> void:
         r49_investigation.queue_free()
         r49_investigation = null
 
+func _r51_capture_evidence() -> void:
+    if garage_open_r39 or not is_instance_valid(r51_shadow):
+        return
+    if r51_shadow.request_capture(ship.global_position):
+        _show_notice(r51_shadow.last_event)
+    else:
+        _show_notice(r51_shadow.capture_feedback())
+    _r49_refresh_buttons()
+
 func _r50_next_focus() -> void:
-    if garage_open_r39 or is_instance_valid(r49_investigation) or (
+    if garage_open_r39 or is_instance_valid(r49_investigation) or is_instance_valid(r51_shadow) or (
             not is_instance_valid(fleet_r15)) or fleet_r15.helpers.is_empty():
         return
     fleet_r15.set_command("attack")
@@ -2174,7 +2223,7 @@ func _r49_order_label() -> String:
         _: return "СЛЕДОВАТЬ"
 
 func _r49_cycle_command() -> void:
-    if garage_open_r39 or is_instance_valid(r49_investigation) or not is_instance_valid(fleet_r15) or fleet_r15.helpers.is_empty():
+    if garage_open_r39 or is_instance_valid(r49_investigation) or is_instance_valid(r51_shadow) or not is_instance_valid(fleet_r15) or fleet_r15.helpers.is_empty():
         return
     var modes: Array = fleet_r15.SQUAD_COMMANDS
     fleet_r15.set_command(str(modes[(modes.find(fleet_r15.command_mode) + 1) % modes.size()]))
@@ -2183,7 +2232,7 @@ func _r49_cycle_command() -> void:
 
 func _r49_refresh_buttons() -> void:
     if is_instance_valid(r49_command_button):
-        r49_command_button.visible = not garage_open_r39 and is_instance_valid(fleet_r15) and not fleet_r15.helpers.is_empty()
+        r49_command_button.visible = not garage_open_r39 and not is_instance_valid(r51_shadow) and is_instance_valid(fleet_r15) and not fleet_r15.helpers.is_empty()
         r49_command_button.disabled = is_instance_valid(r49_investigation)
         r49_command_button.text = ("ВЕДОМЫЕ · ТИХИЙ РЕЖИМ"
             if is_instance_valid(r49_investigation) else
@@ -2195,9 +2244,14 @@ func _r49_refresh_buttons() -> void:
             if is_instance_valid(r50_archive) else "УДЕРЖИВАТЬ · ВВОД")
     if is_instance_valid(r50_focus_button):
         r50_focus_button.visible = not garage_open_r39 and (
-            not is_instance_valid(r49_investigation)) and is_instance_valid(fleet_r15) and (
+            not is_instance_valid(r49_investigation)) and (
+            not is_instance_valid(r51_shadow)) and is_instance_valid(fleet_r15) and (
             not fleet_r15.helpers.is_empty())
         r50_focus_button.text = "ПРИЦЕЛ · " + fleet_r15.focus_status()
+    if is_instance_valid(r51_capture_button):
+        r51_capture_button.visible = not garage_open_r39 and is_instance_valid(r51_shadow)
+        if is_instance_valid(r51_shadow):
+            r51_capture_button.text = ("РАДИО · ПЕРЕХВАТ %d/3" % (r51_shadow.stage + 1)) if r51_shadow.stage < 3 else "РАДИО · ДОКАЗАТЕЛЬСТВА 3/3"
     if is_instance_valid(r50_repair_button):
         r50_repair_button.visible = not garage_open_r39 and (
             is_instance_valid(r50_archive) and r50_archive.can_repair())
@@ -2219,6 +2273,8 @@ func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     r50_focus_button.size = Vector2(wide, 48.0)
     r50_repair_button.position = Vector2(left, top + 160.0)
     r50_repair_button.size = Vector2(wide, 44.0)
+    r51_capture_button.position = Vector2(left, top)
+    r51_capture_button.size = Vector2(wide, 52.0)
 
 func _r39_launch_sortie() -> void:
     if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
