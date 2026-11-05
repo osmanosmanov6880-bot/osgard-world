@@ -36,7 +36,11 @@ async function main() {
   if (!directory) {
     throw new Error('Usage: node scripts/nebula-public-release-parity.mjs <downloaded-directory>');
   }
-  const policy = JSON.parse(fs.readFileSync(POLICY_FILE, 'utf8'));
+  // PR review compares the live website with the already-approved master
+  // policy, never with a future release candidate that is not yet deployed.
+  // Production workflow_run always uses the current checked-out master pin.
+  const policyPath = process.argv[3] || POLICY_FILE;
+  const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
   await verifyPublicRelease(policy, directory);
 }
 
