@@ -1953,6 +1953,16 @@ func _run() -> void:
     courier_controller.configure(Vector3(1230.0, 29.0, -710.0))
     for scan in 8:
         courier_controller.step(0.25, courier_controller.start_position, true)
+    courier_controller.pursuit_remaining = 0.05
+    if not check(courier_controller.step(0.25,
+            Vector3(9000, 9000, 9000), false) == "failed" and
+        not courier_controller.completed_once and
+        courier_controller.last_event.contains("КУРЬЕР") and
+        courier_controller.captured_fragments == 1,
+        "R51 moving courier must escape after real pursuit deadline without fake reward"):return
+    courier_controller.configure(Vector3(1230.0, 29.0, -710.0))
+    for scan in 8:
+        courier_controller.step(0.25, courier_controller.start_position, true)
     for follow_tick in 19:
         courier_controller.step(0.25, courier_controller.objective_position(), false)
     courier_controller.extraction_remaining = 0.05
@@ -1985,6 +1995,18 @@ func _run() -> void:
     if not check(world.r51_courier.stage == 1 and
         world.r51_courier.courier.visible,
         "R51 actual T/touch hold must decode moving courier"):return
+    world.r51_courier.pursuit_remaining = 0.05
+    world._mission_tick(0.25)
+    if not check(world.garage_open_r39 and world.mission_index == 12 and
+        world.credits == courier_wallet and world.xp == courier_xp and
+        world.r41_last_debrief.get("status", "") == "failed" and
+        str(world.r41_last_debrief.get("reveal", "")).contains("КУРЬЕР"),
+        "R51 integrated courier escape must fail, show true reason and award nothing"):return
+    world._r39_launch_sortie()
+    world.ship.global_position = world.r51_courier.start_position
+    world.r49_interact_held = true
+    for scan in 8:
+        world._mission_tick(0.25)
     for follow_tick in 19:
         world.ship.global_position = world.r51_courier.objective_position()
         world._mission_tick(0.25)
