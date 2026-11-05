@@ -125,6 +125,13 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
         <span className="brand-quick-label">{englishChrome ? 'Search' : 'Поиск'}</span>
         <kbd aria-hidden="true">⌘K</kbd>
       </button>
+      {theme === 'play' && path === '/play' && <button type="button"
+        className="brand-motion brand-motion-mobile-play" aria-pressed={reduced || !motion}
+        disabled={reduced} aria-label={englishChrome ? 'Reduce motion' : 'Меньше движения'}
+        title={englishChrome ? 'Reduce motion' : 'Меньше движения'} onClick={toggleMotion}>
+        <span className="brand-motion-state" aria-hidden="true">{reduced || !motion ? '◌' : '◉'}</span>
+        <span className="brand-motion-mobile-copy">{englishChrome ? 'Reduce motion' : 'Меньше движения'}</span>
+      </button>}
     </header>
     <div className="brand-local-bar">
       <span>{product === 'world' ? (englishChrome ? (development ? 'OSGARD DEVELOPMENT / Digital studio' : 'OSGARD WORLD / Digital studio') : (development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия')) : product === 'intelligence' ? (osaLocale === 'en' ? 'OSA / Understand. Verify. Decide.' : 'OSA / Понять. Проверить. Решить.') : (osaLocale === 'en' ? 'OSGARD PLAY / Interactive worlds' : 'OSGARD PLAY / Игровые миры')}</span>
