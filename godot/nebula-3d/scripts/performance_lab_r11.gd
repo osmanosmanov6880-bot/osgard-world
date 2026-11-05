@@ -49,6 +49,8 @@ var r36_touch_start_sum_ms: float = 0.0
 var r36_touch_start_invalid: int = 0
 var r38_mode_button: Button
 var r38_auto_enabled: bool = false
+## Real presses from the Godot Button, not browser-side simulated quality calls.
+var r38_touch_button_presses: int = 0
 
 func _ready() -> void:
     layer = 7
@@ -93,26 +95,27 @@ func _ready() -> void:
     r36_start_button = Button.new()
     r36_start_button.text = "20 С"
     r36_start_button.name = "R36_StartReal20SecondBenchmark"
-    r36_start_button.custom_minimum_size = Vector2(46, 28)
+    r36_start_button.custom_minimum_size = Vector2(48, 44)
     r36_start_button.pressed.connect(start_benchmark)
     r36_command_row.add_child(r36_start_button)
     r36_export_button = Button.new()
     r36_export_button.text = "JSON"
     r36_export_button.name = "R36_SaveLocalReport"
-    r36_export_button.custom_minimum_size = Vector2(52, 28)
+    r36_export_button.custom_minimum_size = Vector2(52, 44)
     r36_export_button.pressed.connect(download_report)
     r36_command_row.add_child(r36_export_button)
     r38_mode_button = Button.new()
     r38_mode_button.name = "R38_MobileGraphicsProfile"
     r38_mode_button.text = "MAX"
     r38_mode_button.tooltip_text = "АВТО → MAX → HIGH → ECO → АВТО"
-    r38_mode_button.custom_minimum_size = Vector2(52, 28)
+    # 44 CSS/engine pixels is a usable minimum touch target on small phones.
+    r38_mode_button.custom_minimum_size = Vector2(56, 44)
     r38_mode_button.pressed.connect(_r38_request_quality_cycle)
     r36_command_row.add_child(r38_mode_button)
     r36_close_button = Button.new()
     r36_close_button.text = "×"
     r36_close_button.name = "R36_ClosePerformancePanel"
-    r36_close_button.custom_minimum_size = Vector2(30, 28)
+    r36_close_button.custom_minimum_size = Vector2(44, 44)
     r36_close_button.pressed.connect(_r36_close_mobile_panel)
     r36_command_row.add_child(r36_close_button)
     r36_launcher = Button.new()
@@ -162,7 +165,7 @@ func _r36_relayout() -> void:
     overlay.offset_right = overlay.offset_left + minf(
         164.0 if landscape else 300.0, usable_w - 16.0)
     overlay.offset_bottom = overlay.offset_top + (
-        152.0 if landscape else 130.0)
+        198.0 if landscape else 168.0)
     # R38: the short-landscape action grid begins ~240px from the left.
     # A wide 4-button row would cover CAMERA on a notched 568x320 phone.
     # Keep the panel narrow; move the mode button to its own row there.
@@ -246,8 +249,9 @@ func set_r38_auto_enabled(enabled: bool) -> void:
 
 
 func _r38_request_quality_cycle() -> void:
-    if benchmarking:
+    if benchmarking or not r36_mobile:
         return
+    r38_touch_button_presses += 1
     r38_quality_cycle_requested.emit()
 
 
