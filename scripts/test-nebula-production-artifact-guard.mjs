@@ -48,7 +48,7 @@ try{
   await assert.rejects(inspectProductionArtifact({
     ...r41,approval:{...r41.approval,web_export_commit_sha:r41.approval.native_source_commit_sha}
   },temp),/Modern owner override requires exact source/);
-  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50']){
+  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50','R51']){
     const owner={...r41,approved_variant:variant,
       release_status:variant+'_OWNER_DIRECTED_OVERRIDE',
       approval:{...r41.approval,
@@ -101,6 +101,34 @@ try{
   await assert.rejects(inspectProductionArtifact({
     ...r50,artifacts:{...expected,'index.pck':'0'.repeat(40)}
   },temp),/unapproved index.pck bytes/);
+  // R51 is an owner-directed software release, not physical-device
+  // certification. Refuse altered binaries, false attestations, bad ancestry.
+  const r51={...r41,approved_variant:'R51',
+    release_status:'R51_OWNER_DIRECTED_OVERRIDE'};
+  const r51Good=await inspectProductionArtifact(r51,temp);
+  assert.equal(r51Good.variant,'R51');
+  await assert.rejects(inspectProductionArtifact({
+    ...r51,release_status:'R51_HARDWARE_QA_APPROVED'
+  },temp),/Owner override must explicitly record authorization/);
+  await assert.rejects(inspectProductionArtifact({
+    ...r51,approval:{...r51.approval,physical_device_qa:'PASSED'}
+  },temp),/disclose missing physical-device QA/);
+  await assert.rejects(inspectProductionArtifact({
+    ...r51,approval:{...r51.approval,hardware_qa_certified:true}
+  },temp),/hardware QA explicitly false/);
+  await assert.rejects(inspectProductionArtifact({
+    ...r51,approval:{...r51.approval,verification_workflow_run_id:0}
+  },temp),/Modern owner override requires exact source/);
+  await assert.rejects(inspectProductionArtifact({
+    ...r51,approval:{...r51.approval,
+      native_source_commit_sha:r51.approval.web_export_commit_sha}
+  },temp),/Modern owner override requires exact source/);
+  await assert.rejects(inspectProductionArtifact({
+    ...r51,artifacts:{...expected,'index.pck':'0'.repeat(40)}
+  },temp),/unapproved index.pck bytes/);
+  await assert.rejects(inspectProductionArtifact({
+    ...r51,artifacts:{...expected,extra:'0'.repeat(40)}
+  },temp),/exactly four hashed game assets/);
   const unsupported={...stable,approved_variant:'R40',
     release_status:'R40_HARDWARE_QA_APPROVED',approval:{human_visual_approved:true}};
   await assert.rejects(inspectProductionArtifact(unsupported,temp),/requires explicit human-reviewed evidence/);
