@@ -38,6 +38,55 @@ async function checkpoint(name, condition) {
   log.checks.push({name,telemetry:v});
   return v;
 }
+// A successful DOM click alone is not a Godot click: use the actual Button
+// rectangle exported by the live engine, then require the real pressed event
+// counter AND the desired autopilot state. A retry is allowed only if the
+// Godot button never received a click; a rejected click fails visibly.
+async function pressRealCruise(desired, description) {
+  let last = null;
+  for (let attempt=1; attempt<=3; attempt++) {
+    const before=await snapshot();
+    if (!before?.cruise_button_visible ||
+        !Number.isFinite(before.cruise_button_x) ||
+        !Number.isFinite(before.cruise_button_y) ||
+        before.cruise_view_w<800 || before.cruise_view_h<400) {
+      throw new Error('Cruise UI is not visibly clickable: '+JSON.stringify(before));
+    }
+    const bounds=await page.evaluate(()=>{
+      const r=document.querySelector('#canvas')?.getBoundingClientRect();
+      return r?{x:r.x,y:r.y,w:r.width,h:r.height}:null;
+    });
+    if (!bounds || bounds.w<800 || bounds.h<400)
+      throw new Error('Cruise canvas geometry unavailable '+JSON.stringify(bounds));
+    const click={
+      x:bounds.x+before.cruise_button_x*bounds.w/before.cruise_view_w,
+      y:bounds.y+before.cruise_button_y*bounds.h/before.cruise_view_h
+    };
+    await page.mouse.move(click.x,click.y);
+    await page.mouse.down();
+    // SwiftShader can stall between a mouse down and the next UI frame;
+    // keep the real input pressed until a Godot frame has time to observe it.
+    await page.waitForTimeout(300);
+    await page.mouse.up();
+    try {
+      const delivered=await waitForTelemetry(
+        t=>t?.cruise_button_events>before.cruise_button_events,10000);
+      if (delivered.cruise!==desired)
+        throw new Error('Real Godot cruise click reached handler but state not '+
+          String(desired)+': '+JSON.stringify(delivered));
+      log.checks.push({name:description,attempt,click,
+        before_events:before.cruise_button_events,actual:delivered});
+      return delivered;
+    } catch (e) {
+      last={attempt,click,before,latest:await snapshot(),message:String(e.message)};
+      if ((last.latest?.cruise_button_events||0)>before.cruise_button_events)
+        throw new Error('Cruise click handler ran but autopilot rejected: '+JSON.stringify(last));
+      log.checks.push({name:description+' missed physical click diagnostic',...last});
+    }
+  }
+  throw new Error('Real cruise button did not receive three physical clicks: '+
+    JSON.stringify(last));
+}
 try {
   await page.goto('http://127.0.0.1:8765/games/remix/arena-v2/nebula-3d/?r25-browser=1',
     {waitUntil:'domcontentloaded',timeout:45000});
@@ -101,9 +150,8 @@ try {
   if(!bounds || bounds.width<=0 || bounds.height<=0)
     throw new Error('Game canvas was not interactable: '+JSON.stringify(bounds));
   const beforeCruise=await snapshot();
-  await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height-70);
-  await waitForTelemetry(s=>s && s.cruise === true,15000);
-  const start=await checkpoint('actual clickable cruise switch engaged',s=>s?.cruise===true);
+  const start=await pressRealCruise(true,
+    'actual clickable cruise switch engaged');
   await waitForTelemetry(s=>s && s.cruise &&
     Math.abs(s.heading-beforeCruise.heading)>0.05,35000);
   const steered=await checkpoint('real autopilot rotates ship toward off-axis mission',
@@ -112,9 +160,7 @@ try {
   const approached=await checkpoint('real ship approaches mission objective in world units',
     s=>s?.mission_distance < start.mission_distance-2.0 && s.flight_distance>moving.flight_distance);
   // Stop and verify that the user can cancel guided flight.
-  await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height-70);
-  await waitForTelemetry(s=>s && s.cruise===false,12000);
-  await checkpoint('cruise can be disengaged',s=>s?.cruise===false);
+  await pressRealCruise(false,'cruise can be disengaged');
   log.passed=true;
   log.summary={keyboard_metres:moving.flight_distance-t0.flight_distance,
     mission_closing_metres:start.mission_distance-approached.mission_distance,
