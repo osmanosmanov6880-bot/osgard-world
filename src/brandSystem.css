@@ -277,3 +277,32 @@ html[data-motion=off] :is(.world-case:hover img,.world-case:focus-visible img,.p
    secondary navigation chunk resolves; no fabricated placeholder links. */
 .brand-system .brand-footer-loading{min-height:290px;visibility:hidden;pointer-events:none}
 @media(max-width:760px){.brand-system .brand-footer-loading{min-height:520px}}
+
+
+/* Mobile OSGARD PLAY intentionally hides its dense secondary navigation.
+   Keep an explicit, accessible motion control in the compact top bar. */
+.brand-system .brand-header .brand-motion-mobile-play{display:none}
+@media(max-width:600px){
+  .theme-play.play-catalog-shell>.brand-header .brand-motion-mobile-play{
+    display:inline-flex;
+    order:2;
+    width:44px;
+    min-width:44px;
+    min-height:44px;
+    flex:0 0 44px;
+    justify-content:center;
+    align-items:center;
+    gap:0;
+    padding:6px;
+    margin-left:0;
+    font-size:0 !important;
+    line-height:1;
+    border-radius:10px;
+  }
+  .theme-play.play-catalog-shell>.brand-header .brand-motion-mobile-play .brand-motion-state{
+    font-size:20px;
+  }
+  .theme-play.play-catalog-shell>.brand-header .brand-motion-mobile-copy{
+    display:none;
+  }
+}
