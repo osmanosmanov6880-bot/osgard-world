@@ -1702,6 +1702,47 @@ func _run() -> void:
     tactics.clear_focus()
     if not check(tactics.focus_status() == "НЕТ ЦЕЛИ",
         "R50 released target must clear combat HUD state"):return
+    # Real focus ring follows the locked enemy; a real missile must obey
+    # the chosen focus even when the other hostile is physically closer.
+    tactics.set_command("attack")
+    tactics.focus_target = dummy_b
+    tactics._refresh_focus_marker()
+    if not check(tactics.focus_marker.visible and
+        tactics.focus_marker.global_position.distance_to(
+        dummy_b.global_position + Vector3.UP * 4.5) < 0.1,
+        "R50 target lock requires a real 3D reticle at the enemy location"):return
+    tactics.missiles = 1
+    tactics.cooldown = 0.0
+    if not check(tactics.launch_missile() and tactics.missile_focus_launches == 1 and
+        tactics.missile_pool[0].target == dummy_b and tactics.missiles == 0,
+        "R50 guided missile must prioritize focused enemy and consume one rocket"):return
+    tactics.missile_pool[0].deactivate()
+    tactics.clear_focus()
+    tactics._refresh_focus_marker()
+    if not check(not tactics.focus_marker.visible,
+        "R50 no lock reticle should be left after target release"):return
+
+    # Own craft weapons must not shoot through real solid city geometry.
+    var gun_from := Vector3(0.0, 4000.0, 0.0)
+    var gun_to := Vector3(0.0, 4000.0, 32.0)
+    if not check(tactics._has_clear_laser_path(gun_from, gun_to),
+        "R50 unobstructed sky shot must be possible"):return
+    var barrier := StaticBody3D.new()
+    var collision := CollisionShape3D.new()
+    var bulkhead := BoxShape3D.new()
+    bulkhead.size = Vector3(14.0, 24.0, 8.0)
+    collision.shape = bulkhead
+    barrier.add_child(collision)
+    world.add_child(barrier)
+    barrier.collision_layer = 1
+    barrier.global_position = Vector3(0.0, 4000.0, 16.0)
+    await physics_frame
+    if not check(not tactics._has_clear_laser_path(gun_from, gun_to),
+        "R50 solid world obstacle must actually block wingman laser path"):return
+    barrier.queue_free()
+    await physics_frame
+    if not check(tactics._has_clear_laser_path(gun_from, gun_to),
+        "R50 removing obstacle must restore line of sight"):return
     dummy_a.queue_free()
     dummy_b.queue_free()
     convoy_target.queue_free()
@@ -1730,8 +1771,31 @@ func _run() -> void:
     if not check(archive.combat_started and archive.is_active_server(),
         "R50 archive becomes vulnerable only after both keys"):return
     archive.take_damage(40.0)
-    if not check(archive.security_health == archive.SERVER_CAPACITY - 40.0,
-        "R50 real server must apply actual incoming damage"):return
+    if not check(archive.security_health == archive.SERVER_CAPACITY - 40.0 and
+        archive.repair_node.visible and archive.can_repair(),
+        "R50 server damage must activate the physically separate repair option"):return
+    var repair_place: Vector3 = archive.repair_point
+    if not check(archive.set_repair_navigation(true) and
+        archive.objective_position().distance_to(repair_place) < 0.01 and
+        not archive.can_interact(repair_place),
+        "R50 repair navigation must not pretend the repair cell is the server"):return
+    for wrong in 8:
+        archive.step(0.25, Vector3(2000, 2000, 2000), true)
+    if not check(archive.repair_hold_time <= 0.01,
+        "R50 repair cell cannot activate from a remote position"):return
+    for repair_tick in 8:
+        archive.step(0.25, repair_place, true)
+    if not check(archive.repair_used and archive.repair_events == 1 and
+        archive.security_health == archive.SERVER_CAPACITY and
+        archive.objective_position().distance_to(archive.points[2]) < 0.1 and
+        not archive.repair_node.visible,
+        "R50 held physical battery access must heal once then return navigation to server"):return
+    archive.take_damage(22.0)
+    for repeat in 10:
+        archive.step(0.25, repair_place, true)
+    if not check(archive.repair_events == 1 and
+        archive.security_health == archive.SERVER_CAPACITY - 22.0,
+        "R50 one-use repair must never refill repeatedly"):return
     var archive_server: Vector3 = archive.objective_position()
     archive.step(0.25, archive_server, true)
     archive.step(0.25, archive_server, true)
@@ -1776,13 +1840,30 @@ func _run() -> void:
         for tick in 8:
             world._mission_tick(0.25)
     if not check(world.r50_archive_wave_spawned and world.mission_enemies == 3 and
-        world.r50_archive.is_active_server(),
-        "R50 first two keys must trigger actual mission drone attacks"):return
+        world.r50_archive.is_active_server() and
+        world.fleet_r15.defend_anchor == world.r50_archive,
+        "R50 two keys must trigger drones and anchor wingmen to real server"):return
     var health_before: float = world.r50_archive.security_health
     var target_archive: Vector3 = world.r50_archive.global_position
     world._on_drone_fire(target_archive + Vector3(0, 5, 70), target_archive)
     if not check(world.r50_archive.security_health < health_before,
         "R50 archive damage must come from actual drone shot signal"):return
+    world._r49_refresh_buttons()
+    if not check(world.r50_repair_button.visible,
+        "R50 mobile repair button must appear once reactor is damaged"):return
+    world._r50_toggle_repair_goal()
+    if not check(world.r50_archive.focus_on_repair and
+        world.ship.navigation_target.distance_to(
+            world.r50_archive.repair_point) < 0.1,
+        "R50 touch repair navigation must lead to actual secondary cell"):return
+    world.ship.global_position = world.r50_archive.repair_point
+    for repair_tick in 8:
+        world._mission_tick(0.25)
+    if not check(world.r50_archive.repair_used and
+        world.r50_archive.security_health == world.r50_archive.SERVER_CAPACITY and
+        world.ship.navigation_target.distance_to(
+            world.r50_archive.points[2]) < 0.1,
+        "R50 integrated touch hold must truly repair once and reset autopilot"):return
     world.r50_archive.take_damage(1000.0)
     world._mission_tick(0.25)
     if not check(world.garage_open_r39 and world.mission_index == 11 and
