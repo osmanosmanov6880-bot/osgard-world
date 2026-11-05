@@ -1136,6 +1136,11 @@ func _run() -> void:
         touch_r21.button_centres["CRUISE"].y - touch_r21.base_radius * 0.8 and
         monitor_r11.r38_mode_button.get_parent() == monitor_r11.r36_command_row,
         "R38 compact portrait quality button overlaps start-flight control"):return
+    if not check(monitor_r11.r38_mode_button.custom_minimum_size.y >= 44.0 and
+        monitor_r11.r36_start_button.custom_minimum_size.y >= 44.0 and
+        monitor_r11.r36_export_button.custom_minimum_size.y >= 44.0 and
+        monitor_r11.r36_close_button.custom_minimum_size.y >= 44.0,
+        "R51 accessible phone quality and benchmark buttons must remain 44px"):return
     monitor_r11.configure_mobile(false, touch_r21,
         Vector4.ZERO, Vector2(1280, 720))
     adaptive_r12.set_auto(false)
