@@ -5,10 +5,12 @@ on:
     paths:
       - "godot/nebula-3d/**"
       - ".github/workflows/remix-nebula-3d.yml"
+      - "scripts/nebula-ci-pinned-godot-472.sh"
   pull_request:
     paths:
       - "godot/nebula-3d/**"
       - ".github/workflows/remix-nebula-3d.yml"
+      - "scripts/nebula-ci-pinned-godot-472.sh"
   workflow_dispatch:
 
 permissions:
@@ -44,14 +46,18 @@ jobs:
           test -s godot/nebula-3d/scripts/premium_architecture.gd
           python3 godot/nebula-3d/check_source.py
       - name: Install official Godot 4.7.2 and Web templates
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/nebula-godot "$HOME/.local/share/godot/export_templates/4.7.2.stable"
-          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip -o /tmp/nebula-godot/engine.zip
+          # The fetch script validates official published sizes AND SHA-256 for
+          # the exact engine/templates; never substitute an unknown mirror.
+          bash -n scripts/nebula-ci-pinned-godot-472.sh
+          bash scripts/nebula-ci-pinned-godot-472.sh
           unzip -q /tmp/nebula-godot/engine.zip -d /tmp/nebula-godot
           chmod +x /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64
           /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --version
-          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz -o /tmp/nebula-godot/templates.tpz
           mkdir -p /tmp/nebula-godot/unpacked
           unzip -q /tmp/nebula-godot/templates.tpz -d /tmp/nebula-godot/unpacked
           cp -a /tmp/nebula-godot/unpacked/templates/. "$HOME/.local/share/godot/export_templates/4.7.2.stable/"

@@ -847,4 +847,56 @@ assert "R44 real 3D aircraft stage exists on mobile" in r31_mobile
 assert "garage sortie button unlocks real flight" in r25_browser
 assert "mobile garage sortie touch unlocks flight" in r31_mobile
 
+# R50: enforce actual tactical target acquisition and a playable, destructible archive.
+r50_fleet = require(
+    "scripts/fleet_combat_r15.gd",
+    "func select_next_focus() -> bool:",
+    "func focus_status() -> String:",
+    "FOCUS_RANGE: float = 340.0",
+    "enemy.target != defend_anchor",
+    "R50_ActualEnemyFocusReticle",
+    "func _has_clear_laser_path(origin: Vector3, destination: Vector3) -> bool:",
+    "missile_focus_launches",
+    "blocked_ally_shots",
+)
+r50_archive = require(
+    "scripts/archive_breach_r50.gd",
+    "extends Node3D",
+    "func configure(location: Vector3) -> void:",
+    "func can_interact(pilot: Vector3) -> bool:",
+    "func take_damage(amount: float) -> void:",
+    "func is_active_server() -> bool:",
+    "func step(delta: float, pilot: Vector3, pressing: bool) -> String:",
+    "R50_DestructibleArchiveReactor",
+    "R50_OneUseEmergencyPowerCell",
+    "func can_repair_here(pilot: Vector3) -> bool:",
+    "func set_repair_navigation(enabled: bool) -> bool:",
+    "REPAIR_HOLD: float = 2.0",
+    "REPAIR_AMOUNT: float = 45.0",
+)
+assert 'ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")' in world
+assert '"title":"ЗАКРЫТЫЙ АРХИВ"' in world
+assert 'mission_index == 12' in smoke
+assert "NEBULA_R50_REAL_FOCUS_AND_CONVOY_THREAT_SUCCESS" in smoke
+assert "NEBULA_R50_KEYS_ENCRYPTED_SERVER_CONTROLLER_SUCCESS" in smoke
+assert "NEBULA_R50_INTEGRATED_ARCHIVE_AND_RETRY_SUCCESS" in smoke
+assert "_r50_spawn_archive_threats()" in world
+assert "r50_archive.take_damage(8.0)" in world
+assert "r50_archive.objective_position()" in world
+assert "r50_focus_button.pressed.connect(_r50_next_focus)" in world
+assert "r50_repair_button.pressed.connect(_r50_toggle_repair_goal)" in world
+assert "fleet_r15.defend_anchor = r50_archive" in world
+assert "R50 solid world obstacle must actually block wingman laser path" in smoke
+assert "R50 guided missile must prioritize focused enemy and consume one rocket" in smoke
+assert "R50 one-use repair must never refill repeatedly" in smoke
+assert "R50 integrated touch hold must truly repair once and reset autopilot" in smoke
+assert 'SAVE_PATH = "user://nebula_3d_save.json"' in world
+assert '"version": 1' in world or "'version': 1" in world or '"version":1' in world
+assert "credits +=" not in r50_archive and "xp +=" not in r50_archive
+assert "FileAccess.open(" not in r50_archive
+require(
+    "docs/R50-REAL-TARGET-ARCHIVE-QA.md",
+    "NOT_PERFORMED", "1–11", "160", "ВВОД", "V", "38",
+)
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
