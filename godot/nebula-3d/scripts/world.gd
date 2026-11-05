@@ -2390,10 +2390,12 @@ func _r49_make_buttons() -> void:
 
 func _r49_hold_on() -> void:
     r49_interact_held = not garage_open_r39 and (
-        is_instance_valid(r49_investigation) or is_instance_valid(r50_archive) or (
-        is_instance_valid(r51_courier) and r51_courier.stage != 1) or (
-        is_instance_valid(r52_station) and (
-            r52_station.stage < 2 or r52_station.can_repair())))
+        is_instance_valid(r49_investigation) or
+        is_instance_valid(r50_archive) or
+        (is_instance_valid(r51_courier) and r51_courier.stage != 1) or
+        (is_instance_valid(r52_station) and (
+            r52_station.stage < 2 or r52_station.can_repair())) or
+        (is_instance_valid(r53_zenith) and r53_zenith.stage != 1))
 
 func _r49_hold_off() -> void:
     r49_interact_held = false
@@ -2465,10 +2467,12 @@ func _r49_refresh_buttons() -> void:
             "ВЕДОМЫЕ · " + _r49_order_label())
     if is_instance_valid(r49_terminal_button):
         r49_terminal_button.visible = not garage_open_r39 and (
-            is_instance_valid(r49_investigation) or is_instance_valid(r50_archive) or (
-        is_instance_valid(r51_courier) and r51_courier.stage != 1) or (
-        is_instance_valid(r52_station) and (
-            r52_station.stage < 2 or r52_station.can_repair())))
+            is_instance_valid(r49_investigation) or
+            is_instance_valid(r50_archive) or
+            (is_instance_valid(r51_courier) and r51_courier.stage != 1) or
+            (is_instance_valid(r52_station) and (
+                r52_station.stage < 2 or r52_station.can_repair())) or
+            (is_instance_valid(r53_zenith) and r53_zenith.stage != 1))
         r49_terminal_button.text = ("ВВОД · РЕЛЕ" if (
             is_instance_valid(r52_station) and r52_station.stage < 2) else (
             "ВВОД · КОНДЕНСАТОР" if is_instance_valid(r52_station) else (
@@ -2477,6 +2481,9 @@ func _r49_refresh_buttons() -> void:
             "ВВОД · ПРИЁМНИК" if is_instance_valid(r51_courier) else (
             "УДЕРЖИВАТЬ · АРХИВ" if is_instance_valid(r50_archive)
             else "УДЕРЖИВАТЬ · ВВОД")))))
+        if is_instance_valid(r53_zenith):
+            r49_terminal_button.text = ("ВВОД · АНТЕННА" if r53_zenith.stage == 0
+                else "ВВОД · СПАСЕНИЕ")
     if is_instance_valid(r50_focus_button):
         r50_focus_button.visible = not garage_open_r39 and (
             not is_instance_valid(r49_investigation)) and is_instance_valid(fleet_r15) and (
@@ -2509,10 +2516,8 @@ func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     # R51 receiver/extraction uses the terminal button. Keep a 12px
     # gap before the focus button; stage-1 pursuit hides the terminal and
     # can use the compact layout. No overlapping interactive touch regions.
-    var terminal_visible: bool = is_instance_valid(r50_archive) or (
-        is_instance_valid(r51_courier) and r51_courier.stage != 1) or (
-        is_instance_valid(r52_station) and (
-            r52_station.stage < 2 or r52_station.can_repair()))
+    var terminal_visible: bool = is_instance_valid(r49_terminal_button) and (
+        r49_terminal_button.visible)
     r50_focus_button.position = Vector2(left, top + (
         108.0 if terminal_visible else 52.0))
     r50_focus_button.size = Vector2(wide, 48.0)
