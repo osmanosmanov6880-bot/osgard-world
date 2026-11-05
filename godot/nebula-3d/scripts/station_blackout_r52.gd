@@ -33,6 +33,7 @@ var reactor: Node3D
 var capacitor: Node3D
 var actual_damage_hits: int = 0
 var capacitor_events: int = 0
+var input_armed: bool = true
 
 func _glow(color: Color) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
@@ -99,6 +100,7 @@ func configure(center: Vector3) -> void:
     last_event = ""
     actual_damage_hits = 0
     capacitor_events = 0
+    input_armed = true
     relays.clear()
     relay_positions = [
         center + Vector3(-110.0, 13.0, 65.0),
@@ -171,14 +173,19 @@ func step(delta: float, pilot: Vector3, pressing: bool) -> String:
     if not active:
         return "inactive"
     var dt: float = clampf(delta, 0.0, 0.25)
+    if not pressing:
+        input_armed = true
     if stage < 2:
-        hold_time = hold_time + dt if can_hold(pilot) and pressing else (
+        hold_time = hold_time + dt if can_hold(pilot) and pressing and input_armed else (
             maxf(0.0, hold_time - 2.0 * dt))
         if hold_time < RELAY_HOLD:
             return "running"
         hold_time = 0.0
         relays[stage].visible = false
         stage += 1
+        # A held button at relay A cannot auto-switch relay B. The pilot
+        # must release and re-press for each independent physical station.
+        input_armed = false
         if stage < 2:
             relays[stage].visible = true
             last_event = "ПЕРВОЕ РЕЛЕ ЗАПУЩЕНО · НАЙДИ ВТОРОЕ"
@@ -195,7 +202,7 @@ func step(delta: float, pilot: Vector3, pressing: bool) -> String:
         last_event = ("ЭНЕРГИЯ СТАНЦИИ ИСЧЕРПАНА" if grid_health <= 0.0
             else "ВРЕМЯ СТАБИЛИЗАЦИИ ИСТЕКЛО")
         return "failed"
-    if can_repair() and pilot.distance_to(capacitor_position) <= CAPACITOR_RADIUS and pressing:
+    if can_repair() and pilot.distance_to(capacitor_position) <= CAPACITOR_RADIUS and pressing and input_armed:
         capacitor_hold += dt
         if capacitor_hold >= CAPACITOR_HOLD:
             grid_health = minf(GRID_MAX, grid_health + CAPACITOR_RECOVERY)
@@ -204,6 +211,7 @@ func step(delta: float, pilot: Vector3, pressing: bool) -> String:
             capacitor.visible = false
             capacitor_hold = 0.0
             capacitor_events += 1
+            input_armed = false
             last_event = "РЕЗЕРВНЫЙ ЭЛЕМЕНТ ПОДКЛЮЧЁН · +40 ЭНЕРГИИ"
             return "event"
     else:
