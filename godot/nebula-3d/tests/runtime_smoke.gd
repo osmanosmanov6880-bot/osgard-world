@@ -6,6 +6,8 @@ const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
+const ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")
+const FleetTacticsR50Script = preload("res://scripts/fleet_combat_r15.gd")
 const DroneR49TestScript = preload("res://scripts/drone.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
 ## validates persistent progression, shields, damage and the radar.
@@ -1543,9 +1545,11 @@ func _run() -> void:
         fleet_r49.set_command("follow") and
         fleet_r49.command_mode == "follow",
         "R49 defend and follow orders must be independently selectable"):return
-    if not check(world.MISSIONS.size() == 11 and
+    if not check(world.MISSIONS.size() == 12 and
         world.MISSIONS[10]["type"] == "investigation" and
-        world.MISSIONS[10]["reward"] == 3200,
+        world.MISSIONS[10]["reward"] == 3200 and
+        world.MISSIONS[11]["type"] == "archive" and
+        world.MISSIONS[11]["reward"] == 3800,
         "R49 must append mission 11 without renumbering the first 10"):return
     var investigation = PortInvestigationR49Script.new()
     world.add_child(investigation)
@@ -1657,5 +1661,154 @@ func _run() -> void:
     if not check(world.credits == after_case,
         "R49 mission 11 must reject double-award"):return
     print("NEBULA_R49_INTEGRATED_INVESTIGATION_SUCCESS")
+    # R50 tactical test uses a separate squad, never a free owned-wingman save.
+    var tactics := FleetTacticsR50Script.new()
+    world.add_child(tactics)
+    tactics.player_ship = world.ship
+    tactics.set_loadout("ship_scout", "weapon_basic", 0, ["wingman_escort"])
+    tactics.combat_active = true
+    var dummy_a = DroneR49TestScript.new()
+    var dummy_b = DroneR49TestScript.new()
+    dummy_a.hostile = true
+    dummy_b.hostile = true
+    dummy_a.target = world.ship
+    dummy_b.target = world.ship
+    world.add_child(dummy_a)
+    world.add_child(dummy_b)
+    dummy_a.global_position = world.ship.global_position + Vector3(15, 4, -82)
+    dummy_b.global_position = world.ship.global_position + Vector3(-16, 5, -95)
+    tactics.targets = [dummy_a, dummy_b]
+    if not check(tactics.helpers.size() == 1 and
+        tactics.select_next_focus() and tactics.focus_target == dummy_a and
+        tactics.set_command("attack") and tactics._command_enemy() == dummy_a,
+        "R50 owned squad must select the first real hostile and focus attack"):return
+    if not check(tactics.select_next_focus() and tactics.focus_target == dummy_b and
+        tactics.focus_changes == 2 and tactics.focus_status().contains("ЦЕЛЬ"),
+        "R50 focus must cycle among actual hostile actors"):return
+    dummy_b.hostile = false
+    if not check(tactics._command_enemy() == dummy_a and
+        not tactics._valid_focus(dummy_b),
+        "R50 destroyed enemy cannot be retained as active target"):return
+    var convoy_target := Node3D.new()
+    world.add_child(convoy_target)
+    convoy_target.global_position = world.ship.global_position + Vector3(0, 1, 65)
+    dummy_a.target = convoy_target
+    dummy_b.hostile = true
+    tactics.defend_anchor = convoy_target
+    tactics.set_command("defend")
+    if not check(tactics._command_enemy() == dummy_a,
+        "R50 defend order must prioritize genuine enemy that targets the convoy"):return
+    tactics.clear_focus()
+    if not check(tactics.focus_status() == "НЕТ ЦЕЛИ",
+        "R50 released target must clear combat HUD state"):return
+    dummy_a.queue_free()
+    dummy_b.queue_free()
+    convoy_target.queue_free()
+    tactics.queue_free()
+    print("NEBULA_R50_REAL_FOCUS_AND_CONVOY_THREAT_SUCCESS")
+
+    # R50 pure objective: no old-waypoint completion, manual hold, damage gate.
+    var archive: Node3D = ArchiveBreachR50Script.new()
+    world.add_child(archive)
+    archive.configure(Vector3(-500, 32, 670))
+    if not check(archive.nodes.size() == 3 and archive.stage == 0 and
+        archive.step(0.25, archive.anchor, true) == "running" and
+        archive.evidence.is_empty(),
+        "R50 archive waypoint alone must not unlock two real key stations"):return
+    var inactive_health: float = archive.security_health
+    archive.take_damage(35.0)
+    if not check(is_equal_approx(archive.security_health, inactive_health),
+        "R50 server cannot be damaged before the archive defense begins"):return
+    for key_index in 2:
+        var key_point: Vector3 = archive.objective_position()
+        for tick in 8:
+            archive.step(0.25, key_point, true)
+        if not check(archive.stage == key_index + 1 and
+            archive.evidence.size() == key_index + 1,
+            "R50 two separate real key probes must be completed in order"):return
+    if not check(archive.combat_started and archive.is_active_server(),
+        "R50 archive becomes vulnerable only after both keys"):return
+    archive.take_damage(40.0)
+    if not check(archive.security_health == archive.SERVER_CAPACITY - 40.0,
+        "R50 real server must apply actual incoming damage"):return
+    var archive_server: Vector3 = archive.objective_position()
+    archive.step(0.25, archive_server, true)
+    archive.step(0.25, archive_server, true)
+    archive.step(0.25, Vector3(2000, 0, 2000), false)
+    archive.step(0.25, Vector3(2000, 0, 2000), false)
+    if not check(archive.stage == 2 and archive.hold_time <= 0.01,
+        "R50 interrupted download may never finish remotely"):return
+    for sample in 21:
+        archive.step(0.25, archive_server, true)
+    if not check(archive.completed_once and not archive.active and
+        archive.stage == 3 and archive.evidence.size() == 3 and
+        archive.step(0.25, archive_server, true) == "inactive",
+        "R50 full server download must complete only once"):return
+    archive.configure(Vector3(-500, 32, 670))
+    for key_index in 2:
+        for tick in 8:
+            archive.step(0.25, archive.objective_position(), true)
+    archive.take_damage(archive.SERVER_CAPACITY)
+    if not check(archive.step(0.25, archive.objective_position(), true) == "failed" and
+        not archive.completed_once and archive.evidence.size() == 2,
+        "R50 destroyed archive must fail without completing the final transfer"):return
+    archive.queue_free()
+    print("NEBULA_R50_KEYS_ENCRYPTED_SERVER_CONTROLLER_SUCCESS")
+
+    # R50 integrated real campaign: wipe does not grant any credits or XP.
+    world.mission_index = 11
+    world._r39_refresh_garage()
+    var archive_wallet: int = world.credits
+    var archive_xp: int = world.xp
+    world._r39_launch_sortie()
+    if not check(is_instance_valid(world.r50_archive) and
+        world.MISSIONS[11]["title"] == "ЗАКРЫТЫЙ АРХИВ" and
+        world.r49_terminal_button.visible,
+        "R50 live mission must instantiate a visible interactive terminal"):return
+    world.ship.global_position = world.MISSIONS[11]["position"]
+    world._mission_tick(0.25)
+    if not check(world.mission_index == 11 and world.credits == archive_wallet,
+        "R50 old waypoint cannot grant mission 12 rewards"):return
+    for key_index in 2:
+        world.ship.global_position = world.r50_archive.objective_position()
+        world.r49_interact_held = true
+        for tick in 8:
+            world._mission_tick(0.25)
+    if not check(world.r50_archive_wave_spawned and world.mission_enemies == 3 and
+        world.r50_archive.is_active_server(),
+        "R50 first two keys must trigger actual mission drone attacks"):return
+    var health_before: float = world.r50_archive.security_health
+    var target_archive: Vector3 = world.r50_archive.global_position
+    world._on_drone_fire(target_archive + Vector3(0, 5, 70), target_archive)
+    if not check(world.r50_archive.security_health < health_before,
+        "R50 archive damage must come from actual drone shot signal"):return
+    world.r50_archive.take_damage(1000.0)
+    world._mission_tick(0.25)
+    if not check(world.garage_open_r39 and world.mission_index == 11 and
+        world.credits == archive_wallet and world.xp == archive_xp and
+        world.r43_pending_bounty == 0,
+        "R50 failed archive must preserve progress and prevent credit farming"):return
+    world._r39_launch_sortie()
+    for key_index in 2:
+        world.ship.global_position = world.r50_archive.objective_position()
+        world.r49_interact_held = true
+        for tick in 8:
+            world._mission_tick(0.25)
+    for actor in world.drones.duplicate():
+        if is_instance_valid(actor) and actor.is_in_group("nebula_mission_hostiles"):
+            actor.hit(10000.0)
+    world.ship.global_position = world.r50_archive.objective_position()
+    for tick in 21:
+        world._mission_tick(0.25)
+        if world.garage_open_r39: break
+    if not check(world.garage_open_r39 and world.mission_index == 12 and
+        world.credits > archive_wallet and world.xp > archive_xp and
+        world.r41_last_debrief.get("status", "") == "success",
+        "R50 archive must reward one real defended transfer and return to garage"):return
+    var archive_paid: int = world.credits
+    world._complete_mission()
+    if not check(world.credits == archive_paid,
+        "R50 archived campaign cannot duplicate the final reward"):return
+    print("NEBULA_R50_INTEGRATED_ARCHIVE_AND_RETRY_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
