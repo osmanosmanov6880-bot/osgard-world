@@ -164,8 +164,14 @@ func _r36_relayout() -> void:
     overlay.offset_top = top + 8.0
     overlay.offset_right = overlay.offset_left + minf(
         164.0 if landscape else 300.0, usable_w - 16.0)
+    # A 280x420 phone with 55px notch and 34px bottom inset has
+    # its real CRUISE button around y=229. A tall panel at y=231
+    # would physically overlap its touch zone. Compact the surrounding
+    # text area while retaining 44px action buttons; never hide CRUISE.
+    var very_compact_portrait: bool = not landscape and (
+        size.x <= 340.0 and size.y <= 520.0)
     overlay.offset_bottom = overlay.offset_top + (
-        198.0 if landscape else 168.0)
+        198.0 if landscape else 132.0 if very_compact_portrait else 168.0)
     # R38: the short-landscape action grid begins ~240px from the left.
     # A wide 4-button row would cover CAMERA on a notched 568x320 phone.
     # Keep the panel narrow; move the mode button to its own row there.
