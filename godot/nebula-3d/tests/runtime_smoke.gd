@@ -2242,6 +2242,10 @@ func _run() -> void:
             world.r52_station.capacitor_position) < 0.01,
         "R52 mobile reserve button must navigate to actual physical capacitor"):return
     world.ship.global_position = world.r52_station.capacitor_position
+    # A distinct capacitor requires a genuinely new touch after the relay:
+    # the first frame releases the previously used button.
+    world.r49_interact_held = false
+    world._mission_tick(0.25)
     world.r49_interact_held = true
     for reserve_tick in 8:
         world._mission_tick(0.25)
