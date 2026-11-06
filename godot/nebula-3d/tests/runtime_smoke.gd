@@ -1583,7 +1583,7 @@ func _run() -> void:
     # Only after the staged wreck finishes should the old R43 safe retry
     # transition happen. No provisional CR/XP while fragments move.
     world.ship.hull = 36.0
-    await get_tree().create_timer(0.22).timeout
+    await create_timer(0.22).timeout
     if not check(world.ship.damage_visual_r60.damage_band_r60 >= 2 and
         world.ship.damage_visual_r60.scorch_mesh_count() == 9,
         "R60 pilot must see real scorch and sparks based on actual hull damage"):return
@@ -1607,7 +1607,7 @@ func _run() -> void:
             "R60_PhysicalDebrisCollision") is CollisionShape3D and
         authentic_debris_r60.linear_velocity.length() > 1.0,
         "R60 crash pieces must have physical collider and actual velocity"):return
-    await get_tree().create_timer(world.R60_CRASH_HOLD_SEC + 0.24).timeout
+    await create_timer(world.R60_CRASH_HOLD_SEC + 0.24).timeout
     if not check(not world.r60_crash_pending and
         world.garage_open_r39 and world.ship.visible and
         world.ship.controls_locked and world.mission_index == retry_index and
@@ -3064,7 +3064,7 @@ func _run() -> void:
         not world.ship.visible and
         world.active_wreck_r60.actual_debris_count() == 9,
         "R60 free flight must physically disintegrate before charging recovery"):return
-    await get_tree().create_timer(world.R60_CRASH_HOLD_SEC + 0.24).timeout
+    await create_timer(world.R60_CRASH_HOLD_SEC + 0.24).timeout
     if not check(not world.r60_crash_pending and
         world.credits == maxi(0, freeflight_cr_before - 220) and
         world.ship.visible and world.ship.hull > 0.0 and
