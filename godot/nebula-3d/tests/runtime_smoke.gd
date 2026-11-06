@@ -8,6 +8,7 @@ const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd"
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
 const HangarLiveriesR59Script = preload("res://scripts/hangar_liveries_r59.gd")
+const ShipWreckR60Script = preload("res://scripts/ship_wreck_r60.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
@@ -1563,6 +1564,20 @@ func _run() -> void:
     if not check(world.r43_pending_bounty == 45 and
         world.credits == before_failure_credits,
         "R43 mission bounty must remain unbanked before successful completion"):return
+    # R60 regression: invalid colors must be rejected before creating real
+    # metallic debris; a valid livery color must be preserved unmodified.
+    var r60_valid_paint := Color(0.21, 0.41, 0.63, 0.83)
+    if not check(ShipWreckR60Script.safe_color(r60_valid_paint) ==
+        r60_valid_paint,
+        "R60 finite hull paint must be preserved exactly"):return
+    var r60_safe_paint := Color(0.35, 0.43, 0.48)
+    if not check(ShipWreckR60Script.safe_color(Color(INF, 0.4, 0.5)) ==
+        r60_safe_paint and
+        ShipWreckR60Script.safe_color(Color(0.2, NAN, 0.6)) ==
+        r60_safe_paint and
+        ShipWreckR60Script.safe_color(Color(0.2, 0.4, 0.5, INF)) ==
+        r60_safe_paint,
+        "R60 invalid RGBA must use a finite safe paint fallback"):return
     # R60 visible real crash: first frame leaves the cockpit at the true
     # impact, nine RigidBody3D parts physically fly through the city.
     # Only after the staged wreck finishes should the old R43 safe retry
