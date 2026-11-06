@@ -236,6 +236,14 @@ func _r25_emit_browser_flight_state() -> void:
         "mission_distance": snappedf(gap, 0.01),
         "cruise": ship.cruise_assist,
         "locked": ship.controls_locked,
+        # R61: an actual crash deliberately locks controls for 1.6 seconds
+        # BEFORE the real garage retry button exists. QA must wait for that
+        # transition rather than inventing a missing UI or bypassing defeat.
+        # Gameplay-only flags; no CR wallet or saved personal records exposed.
+        "garage_open": garage_open_r39,
+        "crash_hold_active": r60_crash_pending,
+        "crash_hold_remaining_ms": roundi(maxf(0.0, r60_crash_hold_sec) * 1000.0),
+        "sortie_logbook_active": r61_sortie_active,
         "input_mask": ship.browser_input_mask,
         "browser_window_ready": ship.browser_window != null,
         "window_mask": int(ship.browser_window.__nebulaPilotMask) if ship.browser_window != null else -1,
@@ -261,6 +269,9 @@ func _r25_emit_browser_flight_state() -> void:
             canvas_size = Vector2(r31_mobile_css_size)
         state["garage_sortie_x"] = sortie_rect.position.x + sortie_rect.size.x * 0.5
         state["garage_sortie_y"] = sortie_rect.position.y + sortie_rect.size.y * 0.5
+        state["garage_sortie_visible"] = (
+            garage_hub_r39.launch_button.is_visible_in_tree() and
+            not garage_hub_r39.launch_button.disabled)
         state["garage_view_w"] = canvas_size.x
         state["garage_view_h"] = canvas_size.y
         # R44: browser QA observes real viewport presence, not a static mockup.

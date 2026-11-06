@@ -18,3 +18,11 @@ R54 already implements game-credit captain training with independent ranks and a
 - Existing WebAssembly Chromium flight and 390×844 mobile touch regressions stay required.
 - Until PR acceptance and 4-blob SSH release + public HTTPS exact-byte parity, production remains R60.
 - Physical Android/iPhone QA: **NOT_PERFORMED**. No hosted SwiftShader capture is mislabeled as hardware quality evidence.
+
+## Native/Chromium R61 test findings and R60 recovery correction
+
+Latest native R61 parse, real game runtime smoke and WebAssembly export passed after the Kai history baseline correction. The WebAssembly Chromium PC flight also passed, but mobile Chromium CI exposed a real **test/game state handshake race** during device rotation: the physical R60 crash locks the ship during a 1.6-second rendered wreck hold (as intended), whereas the earlier R31 test immediately demanded an R43 garage retry button that cannot exist yet. The same snapshot showed Godot 320×480 touch geometry but stale CSS 844×390 from the prior orientation.
+
+The enhanced R61 branch now exposes only gameplay state flags (`garage_open`, `crash_hold_active`, remaining hold milliseconds, real retry-button visibility) via QA telemetry, waits for the *real* crash-to-garage transition, then dispatches an actual CDP finger tap to the visible Godot retry button. It also requires matching Godot/CSS portrait geometry before pressing GAS. It **does not** force a successful sortie, call game internals from JS, disable collision physics, mint credits, or waive real mobile browser gates. Failure to emerge from the crash hold or to expose a real garage button remains a hard test failure.
+
+Public R60 is unchanged. Hosted SwiftShader is software renderer only, physical phone GPU QA **NOT_PERFORMED**.

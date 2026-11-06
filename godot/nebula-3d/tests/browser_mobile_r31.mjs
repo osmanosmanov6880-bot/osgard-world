@@ -168,14 +168,40 @@ try {
   // Long software-GL touch suites can genuinely hit buildings: when this
   // happens, press the *real visible Godot sortie button* before continuing.
   const resumeAfterRealDefeat = async (stage) => {
-    const state = await snapshot();
+    let state = await snapshot();
     if (!state?.locked) return false;
-    if (!(state.garage_view_w > 0 && state.garage_view_h > 0 &&
-          state.garage_sortie_x > 0 && state.garage_sortie_y > 0)) {
-      throw new Error('R43 failure has no accessible garage retry button: ' +
-        JSON.stringify({stage,state}));
+    // R60 authentic wrecks require 1.6 seconds of *Godot simulation time*
+    // before the R43 garage UI appears. On hosted software rendering this
+    // can be several real seconds. Never treat a crash-hold frame as a
+    // missing retry button; require the real game to complete recovery.
+    const actualGarageReady = s => !!(s?.locked && s.garage_open === true &&
+      s.crash_hold_active === false && s.garage_sortie_visible === true &&
+      s.garage_view_w > 0 && s.garage_view_h > 0 &&
+      s.garage_sortie_x > 0 && s.garage_sortie_y > 0);
+    if (!actualGarageReady(state)) {
+      state = await expectTelemetry(
+        'R60 actual wreck hold settles to accessible real R43 garage retry at ' + stage,
+        s => s?.locked === false || actualGarageReady(s),
+        50000
+      );
+    }
+    // Free-flight crashes (outside the campaign) legitimately auto-recover.
+    // Only a genuine garage defeat needs a real button press.
+    if (!state.locked) return false;
+    if (!actualGarageReady(state)) {
+      throw new Error('R43 locked flight lacks genuine retry UI after wreck hold: ' +
+        JSON.stringify({stage, state}));
     }
     await send('touchEnd', []);
+    // After portrait/landscape rotation, wait for real CSS and Godot
+    // viewport agreement before tapping a physical GUI button.
+    const synced = await expectTelemetry(
+      'R43 retry geometry synchronized to current real CSS viewport',
+      s => actualGarageReady(s) &&
+        Math.abs((s.touch_css_w || 0) - s.garage_view_w) <= 2 &&
+        Math.abs((s.touch_css_h || 0) - s.garage_view_h) <= 2,
+      45000
+    );
     const css = await page.evaluate(() => {
       const r=document.querySelector('#canvas')?.getBoundingClientRect();
       return r ? {x:r.x,y:r.y,width:r.width,height:r.height} : null;
@@ -184,15 +210,23 @@ try {
       throw new Error('R43 retry has no visible canvas');
     const retry = {
       id: 19, force: 1,
-      x: css.x + state.garage_sortie_x * css.width/state.garage_view_w,
-      y: css.y + state.garage_sortie_y * css.height/state.garage_view_h
+      x: css.x + synced.garage_sortie_x * css.width/synced.garage_view_w,
+      y: css.y + synced.garage_sortie_y * css.height/synced.garage_view_h
     };
-    report.checks.push({label:'R43 physical defeat reached actual locked garage',
-      stage, telemetry:state, retry_position:retry});
+    if (!(retry.x >= css.x && retry.y >= css.y &&
+      retry.x <= css.x+css.width && retry.y <= css.y+css.height)) {
+      throw new Error('R43 real garage sortie button outside canvas: ' +
+        JSON.stringify({stage,synced,css,retry}));
+    }
+    report.checks.push({
+      label:'R60 physical crash hold completed; real R43 garage retry is visible',
+      stage, telemetry:synced, retry_position:retry
+    });
     await send('touchStart', [retry]);
     await send('touchEnd', []);
     await expectTelemetry('R43 actual touchscreen garage retry unlocks ship',
-      s => s?.locked===false && s.touch_count===0, 35000);
+      s => s?.locked===false && s.garage_open === false &&
+        s.touch_count===0 && s.crash_hold_active === false, 35000);
     await page.waitForTimeout(350);
     return true;
   };
@@ -271,6 +305,17 @@ try {
         s.touch_compact_portrait === true && s.touch_count === 0 &&
         s.touch_thrust_x > 0 && s.touch_thrust_y > 0,
       35000);
+    // A rotation can update the game's 3x3 hitboxes before Chromium applies
+    // its CSS viewport resize; an input at that moment hits old coordinates.
+    // Prove both actual viewports agree before sending a finger.
+    await expectTelemetry(
+      'compact portrait real CSS and Godot touch geometry synchronized',
+      s => s?.touch_view_w <= 322 && s.touch_view_h >= 478 &&
+        s.touch_compact_portrait === true && s.touch_count === 0 &&
+        Math.abs(s.touch_view_w - s.touch_css_w) <= 2 &&
+        Math.abs(s.touch_view_h - s.touch_css_h) <= 2,
+      45000
+    );
     const tinyRect = await page.evaluate(() => {
       const rect = document.querySelector('#canvas')?.getBoundingClientRect();
       return rect ? {x:rect.x,y:rect.y,width:rect.width,height:rect.height} : null;

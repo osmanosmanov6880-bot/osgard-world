@@ -1367,6 +1367,15 @@ assert 'PilotLogbookR61Script = preload(' in require(
     "scripts/garage_hub_r39.gd", "r61_logbook_status",
     "PilotLogbookR61Script.summary(")
 assert "NEBULA_R61_REAL_PILOT_FLIGHT_LOGBOOK_SAVE_NO_MINT_SUCCESS" in smoke
+assert '"crash_hold_active": r60_crash_pending' in world
+assert '"garage_open": garage_open_r39' in world
+assert 'state["garage_sortie_visible"]' in world
+mobile_r61 = require("tests/browser_mobile_r31.mjs",
+    "R60 actual wreck hold settles to accessible real R43 garage retry",
+    "compact portrait real CSS and Godot touch geometry synchronized",
+    "R43 actual touchscreen garage retry unlocks ship")
+assert "actualGarageReady(state)" in mobile_r61
+
 require("docs/R61-REAL-PILOT-LOGBOOK-QA.md",
     "R61", "R54", "CR", "Godot", "NOT_PERFORMED", "flight_distance")
 
