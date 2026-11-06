@@ -258,6 +258,11 @@ try {
     screenshots.maximum = await captureWithFallback(
       page, path.join(output, 'r11-' + tag + '-max.jpg'), errors);
     if (screenshots.maximum === 'inconclusive') {
+      console.error('NEBULA_R11_CAPTURE_FAILURE_DETAILS: ' + JSON.stringify({
+        viewport: tag, capture_status: screenshots.maximum,
+        canvas_width: detail.canvas_width, canvas_height: detail.canvas_height,
+        gpu_reported: detail.gpu_reported, errors
+      }));
       result.scenes.push({ viewport: tag, ...detail,
         screenshot_status: screenshots, browser_console_errors: errors });
       result.errors.push(...errors);
@@ -282,6 +287,12 @@ try {
   }
 } catch (e) {
   result.errors.push('FATAL: ' + String(e));
+  console.error('NEBULA_R11_CAPTURE_FAILURE_SUMMARY: ' + JSON.stringify({
+    error: String(e), scenes: result.scenes.map(scene => ({
+      viewport: scene.viewport, screenshot_status: scene.screenshot_status,
+      browser_console_errors: scene.browser_console_errors
+    })), errors: result.errors
+  }));
   throw e;
 } finally {
   result.finished_at = new Date().toISOString();
