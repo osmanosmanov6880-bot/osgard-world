@@ -4,6 +4,7 @@ const MaterialFabricR12Script = preload("res://scripts/material_fabric_r12.gd")
 const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
+const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
@@ -2415,6 +2416,110 @@ func _run() -> void:
     if not check(world.credits == grid_payout,
         "R52 finished mission cannot duplicate normal campaign reward"):return
     print("NEBULA_R52_REAL_REACTOR_COMBAT_RETRY_AND_REWARD_SUCCESS")
+    # R56: workbench modules are paid local upgrades on three independent
+    # real fleet bodies. Verify combat capacities, HUD and safe save semantics.
+    if not check(world.garage_open_r39 and
+        HangarWorkbenchR56Script.upgrade_cost("armor", 0) == 500 and
+        HangarWorkbenchR56Script.upgrade_cost("armor", 1) == 900 and
+        HangarWorkbenchR56Script.upgrade_cost("shield", 0) == 550 and
+        HangarWorkbenchR56Script.upgrade_cost("radar", 0) == 400 and
+        HangarWorkbenchR56Script.upgrade_cost("armor", 3) == 0 and
+        HangarWorkbenchR56Script.upgrade_cost("unknown", 0) == -1 and
+        is_equal_approx(HangarWorkbenchR56Script.hull_cap(100.0, 3), 160.0) and
+        is_equal_approx(HangarWorkbenchR56Script.shield_cap(100.0, 3), 175.0) and
+        is_equal_approx(HangarWorkbenchR56Script.radar_range(3), 760.0),
+        "R56 paid module costs and real max combat stat bonuses must agree"):return
+    var safe_roster_r56: Dictionary = HangarWorkbenchR56Script.safe_roster(
+        {"ship_scout":{"armor":999, "shield":-6, "radar":"fake",
+            "secret":100}, "ship_guardian":{"armor":2.5},
+            "rogue_ship":{"armor":3, "shield":3}})
+    if not check(safe_roster_r56["ship_scout"]["armor"] == 3 and
+        safe_roster_r56["ship_scout"]["shield"] == 0 and
+        safe_roster_r56["ship_scout"]["radar"] == 0 and
+        safe_roster_r56["ship_guardian"]["armor"] == 2 and
+        not safe_roster_r56.has("rogue_ship") and
+        not safe_roster_r56["ship_scout"].has("secret"),
+        "R56 must clamp saved module levels and reject unauthorized hulls"):return
+    world.hangar_modules_r56 = HangarWorkbenchR56Script.default_roster()
+    world.credits = 10000
+    world.equipped_r15 = "ship_scout"
+    world._r15_apply_loadout()
+    world.ship.hull = world.fleet_r15.ship_hull_cap() - 31.0
+    world.ship.shield = world.fleet_r15.ship_shield_cap() - 45.0
+    var shop_in_garage = world.garage_hub_r39
+    world._r39_refresh_garage()
+    shop_in_garage.section_buttons_r54["workshop"].pressed.emit()
+    if not check(shop_in_garage.active_section_r54 == "workshop" and
+        shop_in_garage.r56_workshop_panel.visible and
+        not shop_in_garage.ship_card_r54.visible and
+        shop_in_garage.r56_workshop_status.text.contains("РАДАР 460 М") and
+        shop_in_garage.r56_module_buttons.size() == 3,
+        "R56 workshop must be a separate readable page, not a hidden shop"):return
+    var scout_before_hull: float = world.ship.hull
+    var scout_before_shield: float = world.ship.shield
+    shop_in_garage.r56_module_buttons["armor"].pressed.emit()
+    if not check(world.credits == 9500 and
+        world.hangar_modules_r56["ship_scout"]["armor"] == 1 and
+        is_equal_approx(world.fleet_r15.ship_hull_cap(), 120.0) and
+        is_equal_approx(world.ship.hull, scout_before_hull + 20.0) and
+        shop_in_garage.r56_module_buttons["armor"].text.contains("900 CR"),
+        "R56 armor must debit 500 CR and add exactly 20 true hull capacity"):return
+    shop_in_garage.r56_module_buttons["shield"].pressed.emit()
+    if not check(world.credits == 8950 and
+        world.hangar_modules_r56["ship_scout"]["shield"] == 1 and
+        is_equal_approx(world.fleet_r15.ship_shield_cap(), 125.0) and
+        is_equal_approx(world.ship.shield, scout_before_shield + 25.0),
+        "R56 shield must debit 550 CR and alter actual combat protection"):return
+    shop_in_garage.r56_module_buttons["radar"].pressed.emit()
+    if not check(world.credits == 8550 and
+        world.hangar_modules_r56["ship_scout"]["radar"] == 1 and
+        is_equal_approx(world.fleet_r15.radar_range_r56(), 560.0) and
+        is_equal_approx(world.radar.range_meters, 560.0),
+        "R56 radar upgrade must debit 400 CR and change real in-flight radar"):return
+    world._r56_purchase_workbench_module("unknown")
+    if not check(world.credits == 8550,
+        "R56 unknown workbench SKU must never debit a wallet"):return
+    world._r15_buy_credit("ship_guardian")
+    if not check(world.credits == 4350 and
+        world.equipped_r15 == "ship_guardian" and
+        world.owned_r15.has("ship_guardian") and
+        is_equal_approx(world.fleet_r15.ship_hull_cap(), 160.0) and
+        is_equal_approx(world.fleet_r15.radar_range_r56(), 460.0),
+        "R56 modules from scout cannot leak into a newly bought Guardian"):return
+    world._r39_refresh_garage()
+    shop_in_garage.r56_module_buttons["armor"].pressed.emit()
+    if not check(world.credits == 3850 and
+        world.hangar_modules_r56["ship_guardian"]["armor"] == 1 and
+        is_equal_approx(world.fleet_r15.ship_hull_cap(), 180.0),
+        "R56 paid heavy Guardian gets separate real hull upgrade"):return
+    world._r45_select_owned_ship("ship_scout")
+    if not check(is_equal_approx(world.fleet_r15.ship_hull_cap(), 120.0) and
+        is_equal_approx(world.fleet_r15.ship_shield_cap(), 125.0) and
+        is_equal_approx(world.fleet_r15.radar_range_r56(), 560.0) and
+        world.hangar_modules_r56["ship_guardian"]["armor"] == 1,
+        "R56 switching between owned craft must recall distinct module loadouts"):return
+    world._save_progress()
+    var wallet_after_modules: int = world.credits
+    world.hangar_modules_r56 = HangarWorkbenchR56Script.default_roster()
+    world._load_progress()
+    world._r15_apply_loadout()
+    if not check(world.credits == wallet_after_modules and
+        world.hangar_modules_r56["ship_scout"]["armor"] == 1 and
+        world.hangar_modules_r56["ship_scout"]["shield"] == 1 and
+        world.hangar_modules_r56["ship_scout"]["radar"] == 1 and
+        world.hangar_modules_r56["ship_guardian"]["armor"] == 1 and
+        world.hangar_modules_r56["ship_interceptor"]["armor"] == 0 and
+        is_equal_approx(world.radar.range_meters, 560.0),
+        "R56 existing v1 save must preserve safe modules and actual radar"):return
+    # No equipment purchases or progression can be executed mid-sortie.
+    world.garage_hub_r39.visible = false
+    world._r56_purchase_workbench_module("radar")
+    if not check(world.credits == wallet_after_modules and
+        world.hangar_modules_r56["ship_scout"]["radar"] == 1,
+        "R56 module purchase needs visible and active home hangar"):return
+    world.garage_hub_r39.visible = true
+    world._r39_refresh_garage()
+    print("NEBULA_R56_WORKSHOP_REAL_ARMOR_SHIELD_RADAR_PERSISTENT_CREDITS_SUCCESS")
     # R54: spend CR on an actual engine upgrade, purchase training for a
     # specific captain and persist through the existing version-1 save.
     if not check(world.garage_open_r39 and
