@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R55",
-  "release_status": "R55_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R56",
+  "release_status": "R56_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "42af96d0fc091612673a33a61552f6c77093b4c4",
+    "index.html": "06af36b0a154163b74fcfd48446931af498971c0",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "8b7a90fc77bdad35b0f603c6bfc1a4f1cb0cf93a"
+    "index.pck": "ce9a499468b8b920d451979ca29d1ed8349819ef"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,9 +15,9 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-06",
-    "verification_workflow_run_id": 42136761126,
-    "native_source_commit_sha": "58c71e7a1ac5dae9a2fd99c8af8197ca55cf6a53",
-    "web_export_commit_sha": "bc464eeb154ec8429a54350e2a61e1cf1952c8e3"
+    "verification_workflow_run_id": 42138745704,
+    "native_source_commit_sha": "6b4e44146ebf98e0f82ee3dea85d65bb04200625",
+    "web_export_commit_sha": "5c3596f3379fb1710d5d862f48a7ca50c5623246"
   },
-  "notes": "R55 exact trusted native Godot 4.7.2 three independently sculpted NX hulls release. Source PR #756 latest head 5711fc72cd5247066397cf3ce1406d22efdc2ffa 6/6 success, merged 58c71e7a1ac5dae9a2fd99c8af8197ca55cf6a53. Trusted native export run #42136761126 SUCCESS built bc464eeb154ec8429a54350e2a61e1cf1952c8e3 with source merge as direct only parent. Exactly 4 Git blob SHA-1 hashes pinned; binaries not rewritten. Includes accepted R54 Aurora Hangar and actual R55 original volumetric NX08/NX12/NX21 airframes with 1/2/4 engines, in-game and dock preview, original 14 missions. R53 mission15 and R56 modular workshop are not authorized. R54 public HTTPS 4/4 success run #42136580837 is rollback until R55 SSH deploy and independent HTTPS parity 4/4. Physical Android/iPhone hardware GPU/FPS/endurance NOT_PERFORMED; hardware_qa_certified=false."
+  "notes": "R56 source PR #758 head 2cc5c31636cb74ab509f9def62944d3feb32440d passed 6/6 GitHub checks, merged as 6b4e44146ebf98e0f82ee3dea85d65bb04200625. Official Godot 4.7.2 native Web export run #42138745704 SUCCESS produced 5c3596f3379fb1710d5d862f48a7ca50c5623246 as direct child of accepted merge. Four exact Git blob SHA1 files pinned; no binary patching. R56 real per-owned-hull armor/shield/radar 3D meshwork and paid saved 0-3 ranks, live combat hull/shield caps, physical waypoint radar range, four-tab Aurora shop and pilot academy. R57 repeatable contracts and R53 mission 15 are NOT included. R55 last independently confirmed public HTTPS 4/4 #42139241911 is rollback until R56 new post-deployment independent HTTPS parity 4/4. Physical Android/iPhone, actual GPU FPS and endurance QA NOT_PERFORMED; hardware_qa_certified=false."
 }
