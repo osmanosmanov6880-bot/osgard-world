@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R59",
-  "release_status": "R59_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R60",
+  "release_status": "R60_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "f2cea6c6fa2591505728b127c60bf1b6e01e783d",
+    "index.html": "0b46ddef49aebcf49a8bc9f0cc72eaa53d656ee2",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "6ae3427b7fa75fe933eef5155deccb7d746bbf69"
+    "index.pck": "cce6546ad402b04140b10e529845c9ed9da5a4c5"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,10 +15,10 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-06",
-    "verification_workflow_run_id": 42218366293,
-    "native_source_commit_sha": "a9b345a5571a57de71eff8e6b59bc047da5cf7d6",
-    "web_export_commit_sha": "3ee4bc1b8fd6ced97bce6ad38289821858cb71b9",
-    "source_pr_head_sha": "2b3dfb07095ba17c5d5bc219437c46c1fa57acfc"
+    "verification_workflow_run_id": 42221692070,
+    "native_source_commit_sha": "5a218c3a21f1ecf58e3365861f0edf14abdc3bd0",
+    "web_export_commit_sha": "e4996cba72f7817dd6b41666d45c9bd2455c7cab",
+    "source_pr_head_sha": "7ab51f490cef0e21b70c10ffa6bdc941f522226d"
   },
-  "notes": "R59 SOFTWARE-ONLY OWNER-DIRECTED RELEASE CANDIDATE; NOT PUBLIC UNTIL RELEASE PR MERGE, STRICT SSH PUBLISH AND INDEPENDENT 4/4 HTTPS PARITY. Source PR #763 six successful checks, merged as a9b345a5571a57de71eff8e6b59bc047da5cf7d6. Godot 4.7.2 native validation / Web export run #42218366293 SUCCESS produced direct sole-child 3ee4bc1b8fd6ced97bce6ad38289821858cb71b9, with four unchanged original Git-object blobs pinned here. New R59 physical 3D metallic hull liveries and garage cosmetics; index.html and index.pck differ from public R58, index.js and index.wasm are byte-identical. R58 previous public HTTPS 4/4 parity run #42218250171 SUCCESS remains rollback. Independent R25 browser flight and R11 SwiftShader visual QA pending at candidate creation; SwiftShader failure and missing physical phone hardware QA must never be counted as successes. Physical Android/iPhone QA NOT_PERFORMED; hardware_qa_certified=false; wallet remains local user://. Do not promote R60 before public 4/4 R59 parity."
+  "notes": "R60 software-only trusted 4-blob candidate, NOT LIVE until explicit release PR approval, successful isolated SSH publish and public exact-byte 4/4 HTTPS parity. Source PR #765 latest head 7ab51f490cef0e21b70c10ffa6bdc941f522226d passed six required source CI checks, including native real Godot 4.7.2, WebAssembly Chromium flight/mobile, economy boundaries. Merged as 5a218c3a21f1ecf58e3365861f0edf14abdc3bd0; post-merge native/export run #42221692070 wrote direct single-child e4996cba72f7817dd6b41666d45c9bd2455c7cab. Original 4 export blob SHA-1 pins were fetched from GitHub Git tree, no binary mutation. R60 adds nine genuine RigidBody3D physical fragments and crash hold, visual hull damage, no bounty during wreck/garage, recovery without double CR/XP, 220 CR free-flight repair. index.html/pck changed from R59; JS/WASM identical. Previous R59 public 4/4 HTTPS parity run #42221558386 SUCCESS is rollback. R11 independent hosted SwiftShader screenshot remains NOT VERIFIED, do not imply rendered 720p or AAA quality. Physical Android/iPhone QA NOT_PERFORMED, hardware_qa_certified=false; CR wallet persists locally and is not a real-money ledger. R25 independent browser QA result, if canceled or skipped, is not a success claim; source PR real Chromium/mobile accepted for owner-directed software-only release."
 }
