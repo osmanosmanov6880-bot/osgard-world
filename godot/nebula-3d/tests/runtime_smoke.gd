@@ -3175,6 +3175,12 @@ func _run() -> void:
     world.mission_index = world.MISSIONS.size()
     world._r39_refresh_garage()
     world._r39_launch_sortie()
+    var r61_free_pilot: String = world.selected_captain_r42
+    var r61_free_history: Dictionary = (
+        world.pilot_logbook_r61[r61_free_pilot] as Dictionary).duplicate(true)
+    if not check(world.r61_sortie_active and
+        world.r61_sortie_pilot_id == r61_free_pilot,
+        "R61 free-flight logbook starts only on real unlocked launch"):return
     var freeflight_cr_before: int = world.credits
     var freeflight_xp_before: int = world.xp
     var freeflight_crashes_before: int = world.r60_crash_count
@@ -3222,7 +3228,13 @@ func _run() -> void:
         world.xp == freeflight_xp_before and
         world.ship.visible and world.ship.hull > 0.0 and
         not world.garage_open_r39 and not world.r57_patrol.active and
-        world.r60_crash_count == freeflight_crashes_before + 1)
+        world.r60_crash_count == freeflight_crashes_before + 1 and
+        world.r61_sortie_active and
+        world.r61_sortie_pilot_id == r61_free_pilot and
+        int(world.pilot_logbook_r61[r61_free_pilot]["flights"]) ==
+            int(r61_free_history["flights"]) + 1 and
+        int(world.pilot_logbook_r61[r61_free_pilot]["failures"]) ==
+            int(r61_free_history["failures"]) + 1)
     if not r60_recovered_cleanly:
         print("NEBULA_R60_FREEFLIGHT_RECOVERY_FAILURE_DETAILS: " +
             JSON.stringify({
@@ -3253,6 +3265,39 @@ func _run() -> void:
     if not check(world.credits == r60_normal_flight_cr_before + 45 and
         world.xp == freeflight_xp_before and not world.r60_crash_pending,
         "R60 recovery must restore legitimate normal-flight CR payouts"):return
+    # A second real free-flight catastrophe must earn a second FAILED
+    # record, never a second reward. This catches auto-repair loops whose
+    # logbook remained disarmed after the first legitimate crash.
+    var r61_second_wallet: int = world.credits
+    world.ship.shield = 0.0
+    world.ship.hull = 0.0
+    await process_frame
+    await process_frame
+    if not check(world.r60_crash_pending and
+        not world.r61_sortie_active and
+        int(world.pilot_logbook_r61[r61_free_pilot]["failures"]) ==
+            int(r61_free_history["failures"]) + 2 and
+        world.credits == r61_second_wallet and
+        world.xp == freeflight_xp_before,
+        "R61 a second real wreck must close exactly one newly armed pilot flight"):return
+    var r61_second_crash_started_ms: int = Time.get_ticks_msec()
+    var r61_second_crash_frames: int = 0
+    while (world.r60_crash_pending and
+            Time.get_ticks_msec() - r61_second_crash_started_ms < 4000 and
+            r61_second_crash_frames < 450):
+        await process_frame
+        r61_second_crash_frames += 1
+    if not check(not world.r60_crash_pending and
+        world.r61_sortie_active and
+        world.r61_sortie_pilot_id == r61_free_pilot and
+        int(world.pilot_logbook_r61[r61_free_pilot]["flights"]) ==
+            int(r61_free_history["flights"]) + 2 and
+        int(world.pilot_logbook_r61[r61_free_pilot]["successes"]) ==
+            int(r61_free_history["successes"]) and
+        world.credits == maxi(0, r61_second_wallet - 220) and
+        world.xp == freeflight_xp_before,
+        "R61 second real free-flight recovery must rearm pilot stats with exact CR fee"):return
+    print("NEBULA_R61_FREEFLIGHT_REARM_TWO_REAL_CRASHES_NO_DOUBLE_REWARD_SUCCESS")
     print("NEBULA_R60_REAL_PHYSICS_9_SHARDS_WRECK_HOLD_DAMAGE_AND_RECOVERY_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)

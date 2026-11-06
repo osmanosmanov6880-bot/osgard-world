@@ -1367,6 +1367,8 @@ assert 'PilotLogbookR61Script = preload(' in require(
     "scripts/garage_hub_r39.gd", "r61_logbook_status",
     "PilotLogbookR61Script.summary(")
 assert "NEBULA_R61_REAL_PILOT_FLIGHT_LOGBOOK_SAVE_NO_MINT_SUCCESS" in smoke
+assert "NEBULA_R61_FREEFLIGHT_REARM_TWO_REAL_CRASHES_NO_DOUBLE_REWARD_SUCCESS" in smoke
+assert '        _r61_begin_sortie()\n        _save_progress()' in world
 assert '"crash_hold_active": r60_crash_pending' in world
 assert '"garage_open": garage_open_r39' in world
 assert 'state["garage_sortie_visible"]' in world

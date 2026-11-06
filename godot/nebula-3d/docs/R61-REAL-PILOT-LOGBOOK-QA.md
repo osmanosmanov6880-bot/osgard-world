@@ -26,3 +26,9 @@ Latest native R61 parse, real game runtime smoke and WebAssembly export passed a
 The enhanced R61 branch now exposes only gameplay state flags (`garage_open`, `crash_hold_active`, remaining hold milliseconds, real retry-button visibility) via QA telemetry, waits for the *real* crash-to-garage transition, then dispatches an actual CDP finger tap to the visible Godot retry button. It also requires matching Godot/CSS portrait geometry before pressing GAS. It **does not** force a successful sortie, call game internals from JS, disable collision physics, mint credits, or waive real mobile browser gates. Failure to emerge from the crash hold or to expose a real garage button remains a hard test failure.
 
 Public R60 is unchanged. Hosted SwiftShader is software renderer only, physical phone GPU QA **NOT_PERFORMED**.
+
+## R61 auto-repair repeated flight fix
+
+After the R60 real physical crash, free-flight mode repairs the ship without returning it to the garage. R61 must **start a new flight record only after real hull recovery and controls unlock**, otherwise the first crash is recorded and all later crashes silently disappear from the pilot logbook. The new `_r61_begin_sortie()` call is restricted to the free-flight repair branch after the exact 220 CR fee and never invokes a mission success handler. Existing XP/CR economy and R43/R57 garage retry remain unchanged.
+
+An additional Godot native regression now destroys the actual craft **twice**, waits for real 1.6-second debris holds, verifies two failures are recorded exactly once, two separate 220 CR repair fees, **zero XP mint**, and the next free-flight logbook is armed. No synthetic wallet or record increment.

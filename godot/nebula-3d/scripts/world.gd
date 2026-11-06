@@ -1634,6 +1634,11 @@ func _r60_finish_actual_crash() -> void:
         ship.hull = fleet_r15.ship_hull_cap()
         credits = maxi(0, credits - 220)
         ship.controls_locked = false
+        # R61: a free-flight crash genuinely ends the old pilot sortie.
+        # The repaired craft is immediately flown again with no garage
+        # button, so arm the next independent flight after real recovery.
+        # Without this, only the very first free-flight crash is recorded.
+        _r61_begin_sortie()
         _save_progress()
         _show_notice("СВОБОДНЫЙ ПОЛЁТ · АВАРИЯ · ВОССТАНОВЛЕНИЕ −220 CR")
 
