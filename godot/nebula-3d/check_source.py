@@ -1174,6 +1174,12 @@ assert "r57_contract_counts = PatrolContractsR57Script.safe_finish_counts(" in w
 assert "r57_patrol.active and mission_index >= MISSIONS.size()" in world
 assert "R57_ActualContractBeacon" in world
 assert "R57_Genuine3DPhysicalBeacon" in world
+# A real physical sortie can crash just after a mobile flight sample.
+# The FPS button must stay above CanvasLayer 30 in garage and return to
+# normal flight layer on departure, not be hidden behind a visible dock.
+assert "performance_lab_r11.layer = 31" in world
+assert "performance_lab_r11.layer = 7" in world
+assert "NEBULA_R57_DOCK_PERF_CANVASLAYER_REAL_TOUCH_ACCESS_SUCCESS" in smoke
 assert "R57_RealPostCampaignContractBoard" in garage
 assert "contract_selected_r57.emit(contract_id)" in garage
 assert "r57_contract_panel.visible = operations" in garage
