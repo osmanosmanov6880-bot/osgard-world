@@ -1243,4 +1243,50 @@ require(
     "1,50", "14", "Godot", "WebAssembly", "HTTPS 4/4",
 )
 
+# R59: all paint transactions must debit local CR once and bind the exact
+# metallic materials and real 3D trim to the individually owned hull.
+r59_catalog = require(
+    "scripts/hangar_liveries_r59.gd",
+    "extends RefCounted",
+    'STYLE_IDS: Array[String] = ["factory", "cobalt", "ember", "obsidian"]',
+    'COSTS: Dictionary = {',
+    "func default_owned() -> Dictionary:",
+    "func safe_owned(raw: Variant) -> Dictionary:",
+    "func safe_equipped(raw: Variant, owned: Dictionary) -> Dictionary:",
+    "func palette(style: String) -> Dictionary:",
+    "func catalog() -> Array[Dictionary]:",
+)
+assert "credits +=" not in r59_catalog and "FileAccess.open(" not in r59_catalog
+r59_airframes = require(
+    "scripts/fleet_airframes_r55.gd",
+    "func set_livery_r59(style: String) -> void:",
+    "R59_PhysicalPaintTrim_",
+    "R59_PurchasedAccent_",
+    "R59_ActualMetalStripe_",
+    "R59_PurchasedTopSpineAccent",
+    "func livery_geometry_count_r59() -> int:",
+    'surface.albedo_color = palette[color_map[slot]]',
+)
+assert "set_livery_r59(livery_style_r59)" in r59_airframes
+assert "set_modules_r56(armor_rank_r56, shield_rank_r56, radar_rank_r56)" in r59_airframes
+assert "set_livery_r59(style_id)" in world or "ship.set_livery_r59(str(livery_equipped_r59.get(" in world
+assert "livery_owned_r59 = HangarLiveriesR59Script.safe_owned(" in world
+assert "livery_equipped_r59 = HangarLiveriesR59Script.safe_equipped(" in world
+assert "garage_hub_r39.livery_requested_r59.connect(_r59_choose_livery)" in world
+assert "func _r59_choose_livery(style_id: String) -> void:" in world
+assert "credits -= price" in world
+assert '"livery_owned_r59":livery_owned_r59' in world
+assert '"livery_equipped_r59":livery_equipped_r59' in world
+assert "R59_AuroraActual3DMetallicLiveryStudio" in garage
+assert "livery_requested_r59.emit(style_id)" in garage
+assert "ship_preview_r44.set_livery_r59(" in garage
+assert "world.ship.primary_airframe_r55.livery_geometry_count_r59() == 13" in smoke
+assert "world.livery_equipped_r59[\"ship_guardian\"] == \"obsidian\"" in smoke
+assert "NEBULA_R59_TRUE_3D_PAINT_CR_PURCHASE_HULL_BOUND_AND_V1_SAVE_SUCCESS" in smoke
+require(
+    "docs/R59-REAL-METALLIC-3D-LIVERIES-QA.md",
+    "NOT_PERFORMED", "680 CR", "1080 CR", "1650 CR",
+    "13", "NX-08", "NX-12", "NX-21", "Godot", "HTTPS 4/4",
+)
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
