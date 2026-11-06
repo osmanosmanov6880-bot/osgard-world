@@ -782,6 +782,11 @@ func _r21_rescue_blocked_spawn() -> void:
     r21_spawn_relocations += 1
 
 func _r21_toggle_hangar() -> void:
+    if r57_patrol.active:
+        # A running timed contract must not open a shop overlay that locks
+        # live flight controls while the route timer continues.
+        _show_notice("КОНТРАКТ В ПОЛЁТЕ · МАГАЗИН ПОСЛЕ ВОЗВРАЩЕНИЯ")
+        return
     if garage_open_r39:
         _r39_open_shop()
         return
