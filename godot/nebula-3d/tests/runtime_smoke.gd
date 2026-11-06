@@ -2479,16 +2479,23 @@ func _run() -> void:
     world._r56_purchase_workbench_module("unknown")
     if not check(world.credits == 8550,
         "R56 unknown workbench SKU must never debit a wallet"):return
+    # Earlier R15 regression may already have bought NX-21; existing owners
+    # must never be charged twice. New owners pay exactly the catalog cost.
+    var guardian_was_owned: bool = world.owned_r15.has("ship_guardian") or (
+        int(world.premium_r15.get("ship_guardian", 0)) > 0)
+    var guardian_expected_wallet: int = 8550 - (
+        0 if guardian_was_owned else 4200)
     world._r15_buy_credit("ship_guardian")
-    if not check(world.credits == 4350 and
+    if not check(world.credits == guardian_expected_wallet and
         world.equipped_r15 == "ship_guardian" and
-        world.owned_r15.has("ship_guardian") and
+        (world.owned_r15.has("ship_guardian") or (
+            int(world.premium_r15.get("ship_guardian", 0)) > 0)) and
         is_equal_approx(world.fleet_r15.ship_hull_cap(), 160.0) and
         is_equal_approx(world.fleet_r15.radar_range_r56(), 460.0),
-        "R56 modules from scout cannot leak into a newly bought Guardian"):return
+        "R56 modules from scout cannot leak to paid or previously owned Guardian"):return
     world._r39_refresh_garage()
     shop_in_garage.r56_module_buttons["armor"].pressed.emit()
-    if not check(world.credits == 3850 and
+    if not check(world.credits == guardian_expected_wallet - 500 and
         world.hangar_modules_r56["ship_guardian"]["armor"] == 1 and
         is_equal_approx(world.fleet_r15.ship_hull_cap(), 180.0),
         "R56 paid heavy Guardian gets separate real hull upgrade"):return
