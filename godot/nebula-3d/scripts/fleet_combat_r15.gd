@@ -1,5 +1,6 @@
 extends Node3D
 const GuidedMissileR16Script = preload("res://scripts/guided_missile_r16.gd")
+const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 ## R46: one source of truth for actual flight turn rate and damage capacities.
 ## Numbers here are also displayed by the garage comparison UI.
 const SHIP_PROFILES = {
@@ -19,6 +20,7 @@ signal ally_fired(origin: Vector3, endpoint: Vector3)
 ## R49: only a real successful missile launch emits this gameplay event.
 signal missile_launched
 var active_ship: String = "ship_scout"
+var workbench_r56: Dictionary = HangarWorkbenchR56Script.default_roster()
 var active_weapon: String = "weapon_basic"
 var missiles: int = 0
 var helpers: Array[Node3D] = []
@@ -220,6 +222,15 @@ func set_loadout(ship_id: String, weapon_id: String, rockets: int,
     if is_instance_valid(player_ship):
         _apply_ship_stats()
 
+func set_workbench_r56(roster: Dictionary) -> void:
+    # The modules are local game-credit purchases, never account entitlements.
+    # Re-validate saved data even if the caller already validated it.
+    workbench_r56 = HangarWorkbenchR56Script.safe_roster(roster)
+
+func radar_range_r56() -> float:
+    return HangarWorkbenchR56Script.radar_range(
+        HangarWorkbenchR56Script.rank_of(workbench_r56, active_ship, "radar"))
+
 func _apply_ship_stats() -> void:
     if not is_instance_valid(player_ship):return
     player_ship.turn_speed = float(hull_profile(active_ship)["turn_speed"])
@@ -327,7 +338,11 @@ func weapon_damage() -> float:
     return 10.5 if active_weapon == "weapon_plasma" else 7.2 if active_weapon == "weapon_pulse" else 4.0
 
 func ship_hull_cap() -> float:
-    return float(hull_profile(active_ship)["hull"])
+    return HangarWorkbenchR56Script.hull_cap(
+        float(hull_profile(active_ship)["hull"]),
+        HangarWorkbenchR56Script.rank_of(workbench_r56, active_ship, "armor"))
 
 func ship_shield_cap() -> float:
-    return float(hull_profile(active_ship)["shield"])
+    return HangarWorkbenchR56Script.shield_cap(
+        float(hull_profile(active_ship)["shield"]),
+        HangarWorkbenchR56Script.rank_of(workbench_r56, active_ship, "shield"))

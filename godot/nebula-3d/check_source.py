@@ -1084,4 +1084,65 @@ require(
     "NX-08", "NX-12", "NX-21", "WebGL", "NOT_PERFORMED", "R54",
 )
 
+# R56: real owned-hull modules and exact paid wallet on existing save.
+r56_workbench = require(
+    "scripts/hangar_workbench_r56.gd",
+    "extends RefCounted",
+    'SHIP_IDS: Array[String] = ["ship_scout", "ship_interceptor", "ship_guardian"]',
+    'MODULES: Array[String] = ["armor", "shield", "radar"]',
+    "MAX_RANK: int = 3",
+    "func safe_roster(raw: Variant) -> Dictionary:",
+    "func upgrade_cost(module_id: String, current_rank: int) -> int:",
+    "func hull_cap(base_cap: float, armor_rank: int) -> float:",
+    "func shield_cap(base_cap: float, shield_rank: int) -> float:",
+    "func radar_range(radar_rank: int) -> float:",
+    "COST_BASE: Dictionary =",
+)
+assert "HangarWorkbenchR56Script = preload(" in world
+assert "HangarWorkbenchR56Script = preload(" in require("scripts/fleet_combat_r15.gd",
+    "func set_workbench_r56(roster: Dictionary) -> void:",
+    "func radar_range_r56() -> float:",
+    "HangarWorkbenchR56Script.hull_cap(",
+    "HangarWorkbenchR56Script.shield_cap(")
+assert "garage_hub_r39.module_requested_r56.connect(_r56_purchase_workbench_module)" in world
+assert 'hangar_modules_r56 = HangarWorkbenchR56Script.safe_roster(raw.get(' in world
+assert '"hangar_modules_r56":hangar_modules_r56' in world
+assert "radar.range_meters = fleet_r15.radar_range_r56()" in world
+assert 'func _r56_purchase_workbench_module(module_id: String) -> void:' in world
+assert "ship.hull = minf(ship.hull + HangarWorkbenchR56Script.HULL_GAIN_PER_RANK" in world
+assert "ship.shield = minf(ship.shield + HangarWorkbenchR56Script.SHIELD_GAIN_PER_RANK" in world
+assert "R56_ActualShipModuleWorkbench" in garage
+assert "module_requested_r56.emit(module_id)" in garage
+assert 'for tab_id in ["fleet", "workshop", "crew", "operations"]:' in garage
+assert "NEBULA_R56_WORKSHOP_REAL_ARMOR_SHIELD_RADAR_PERSISTENT_CREDITS_SUCCESS" in smoke
+assert "R56 radar upgrade must debit 400 CR" in smoke
+assert "R56 paid heavy Guardian gets separate real hull upgrade" in smoke
+assert "R56 module purchase needs visible and active home hangar" in smoke
+assert "FileAccess.open(" not in r56_workbench
+assert "credits +=" not in r56_workbench
+require(
+    "docs/R56-MODULAR-WORKBENCH-QA.md",
+    "NOT_PERFORMED", "500 CR", "550 CR", "400 CR",
+    "WebAssembly", "HTTPS 4/4", "safe_roster",
+)
+
+# R56 installed modules must be visible REAL 3D armor/emitter/antenna parts
+# on the same independently sculpted hull in flight and AURORA garage.
+r56_visual = require(
+    "scripts/fleet_airframes_r55.gd",
+    "func set_modules_r56(armor_rank: int, shield_rank: int,",
+    "R56_ActualPurchasedEquipmentGeometry",
+    "R56_ActualShieldEmitter_L%d_",
+    "R56_RealRadarArray_L%d",
+    "R56_ArmorPlate_L%d_",
+    "func module_geometry_count_r56() -> int:",
+)
+assert "ship.set_workbench_modules_r56(" in world
+assert "set_workbench_modules_r56(" in require("scripts/ship.gd",
+    "func set_workbench_modules_r56(armor: int, shield_rank: int,")
+assert "ship_preview_r44.set_workbench_modules_r56(" in garage
+assert "world.ship.primary_airframe_r55.module_geometry_count_r56() >= 4" in smoke
+assert "R56_ActualShieldEmitter_*" in smoke
+assert "R56_RealRadarArray_L1" in smoke
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")

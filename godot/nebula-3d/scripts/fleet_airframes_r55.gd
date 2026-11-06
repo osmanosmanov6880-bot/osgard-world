@@ -16,6 +16,10 @@ var length_m: float = 12.4
 var engine_count: int = 1
 var visual_signature: String = ""
 var last_throttle: float = 0.0
+var module_visual_r56: Node3D
+var armor_rank_r56: int = 0
+var shield_rank_r56: int = 0
+var radar_rank_r56: int = 0
 
 func _ready() -> void:
     set_hull(selected_hull)
@@ -343,7 +347,76 @@ func set_hull(id: String) -> void:
         "ship_guardian":
             _build_guardian(titanium, armor, dark, light, glass, amber)
     _refresh_lod()
+    set_modules_r56(armor_rank_r56, shield_rank_r56, radar_rank_r56)
     set_throttle(last_throttle, false)
+
+func _module_box(label: String, size: Vector3, at: Vector3,
+        material: Material, tilt: Vector3 = Vector3.ZERO) -> MeshInstance3D:
+    var shape := BoxMesh.new()
+    shape.size = size
+    var mesh := MeshInstance3D.new()
+    mesh.name = label
+    mesh.mesh = shape
+    mesh.material_override = material
+    mesh.position = at
+    mesh.rotation_degrees = tilt
+    module_visual_r56.add_child(mesh)
+    return mesh
+
+func set_modules_r56(armor_rank: int, shield_rank: int,
+        radar_rank: int) -> void:
+    armor_rank_r56 = clampi(armor_rank, 0, 3)
+    shield_rank_r56 = clampi(shield_rank, 0, 3)
+    radar_rank_r56 = clampi(radar_rank, 0, 3)
+    if not is_instance_valid(active_body):
+        return
+    if is_instance_valid(module_visual_r56):
+        module_visual_r56.free()
+    module_visual_r56 = Node3D.new()
+    module_visual_r56.name = "R56_ActualPurchasedEquipmentGeometry"
+    active_body.add_child(module_visual_r56)
+    var carbon := _paint(Color(0.09, 0.15, 0.19), 0.34, 0.82)
+    var metal := _paint(Color(0.47, 0.57, 0.61), 0.31, 0.89)
+    var emitter := _paint(Color(0.17, 0.83, 0.96), 0.19, 0.28, 2.5)
+    var scale_width: float = half_span_m / 5.6
+    for rank_index in armor_rank_r56:
+        var offset: float = float(rank_index)
+        var z: float = -0.7 + offset * 1.8
+        for side in [-1.0, 1.0]:
+            _module_box("R56_ArmorPlate_L%d_%s" % [
+                rank_index + 1, str(side)], Vector3(0.85, 0.13, 2.0),
+                Vector3(side * 1.75 * scale_width, 0.66, z),
+                carbon, Vector3(0, side * 8.0, side * 3.0))
+            _module_box("R56_ArmorRivet_L%d_%s" % [
+                rank_index + 1, str(side)], Vector3(0.28, 0.08, 0.25),
+                Vector3(side * 1.73 * scale_width, 0.76, z - 0.50),
+                metal)
+    for rank_index in shield_rank_r56:
+        for side in [-1.0, 1.0]:
+            var x: float = side * (
+                2.15 + float(rank_index) * 1.12) * scale_width
+            _module_box("R56_ActualShieldEmitter_L%d_%s" % [
+                rank_index + 1, str(side)],
+                Vector3(0.33, 0.16, 1.50),
+                Vector3(x, 0.40, 1.08), emitter)
+            _module_box("R56_ShieldGeneratorArmor_L%d_%s" % [
+                rank_index + 1, str(side)],
+                Vector3(0.53, 0.20, 1.62),
+                Vector3(x, 0.26, 1.08), carbon)
+    for rank_index in radar_rank_r56:
+        var z: float = -4.1 + float(rank_index) * 0.82
+        _module_box("R56_RealRadarArray_L%d" % (rank_index + 1),
+            Vector3(0.49 + float(rank_index) * 0.12, 0.23, 0.65),
+            Vector3(0, 1.26, z), emitter)
+        _module_box("R56_SensorAntenna_L%d" % (rank_index + 1),
+            Vector3(0.12, 0.58 + float(rank_index) * 0.25, 0.12),
+            Vector3(0, 1.63 + float(rank_index) * 0.12, z),
+            metal)
+
+func module_geometry_count_r56() -> int:
+    if not is_instance_valid(module_visual_r56):
+        return 0
+    return module_visual_r56.find_children("*", "MeshInstance3D", true, false).size()
 
 func set_throttle(amount: float, afterburner: bool) -> void:
     last_throttle = clampf(amount, 0.0, 1.0)
