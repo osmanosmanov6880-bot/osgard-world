@@ -2462,19 +2462,28 @@ func _run() -> void:
         world.hangar_modules_r56["ship_scout"]["armor"] == 1 and
         is_equal_approx(world.fleet_r15.ship_hull_cap(), 120.0) and
         is_equal_approx(world.ship.hull, scout_before_hull + 20.0) and
-        shop_in_garage.r56_module_buttons["armor"].text.contains("900 CR"),
+        shop_in_garage.r56_module_buttons["armor"].text.contains("900 CR") and
+        world.ship.primary_airframe_r55.armor_rank_r56 == 1 and
+        world.ship.primary_airframe_r55.module_geometry_count_r56() >= 4 and
+        shop_in_garage.ship_preview_r44.primary_airframe_r55.armor_rank_r56 == 1,
         "R56 armor must debit 500 CR and add exactly 20 true hull capacity"):return
     shop_in_garage.r56_module_buttons["shield"].pressed.emit()
     if not check(world.credits == 8950 and
         world.hangar_modules_r56["ship_scout"]["shield"] == 1 and
         is_equal_approx(world.fleet_r15.ship_shield_cap(), 125.0) and
-        is_equal_approx(world.ship.shield, scout_before_shield + 25.0),
+        is_equal_approx(world.ship.shield, scout_before_shield + 25.0) and
+        world.ship.primary_airframe_r55.module_visual_r56.find_children(
+            "R56_ActualShieldEmitter_*", "MeshInstance3D", true, false).size() == 2,
         "R56 shield must debit 550 CR and alter actual combat protection"):return
     shop_in_garage.r56_module_buttons["radar"].pressed.emit()
     if not check(world.credits == 8550 and
         world.hangar_modules_r56["ship_scout"]["radar"] == 1 and
         is_equal_approx(world.fleet_r15.radar_range_r56(), 560.0) and
-        is_equal_approx(world.radar.range_meters, 560.0),
+        is_equal_approx(world.radar.range_meters, 560.0) and
+        world.ship.primary_airframe_r55.radar_rank_r56 == 1 and
+        world.ship.primary_airframe_r55.module_visual_r56.get_node_or_null(
+            "R56_RealRadarArray_L1") is MeshInstance3D and
+        shop_in_garage.ship_preview_r44.primary_airframe_r55.radar_rank_r56 == 1,
         "R56 radar upgrade must debit 400 CR and change real in-flight radar"):return
     world._r56_purchase_workbench_module("unknown")
     if not check(world.credits == 8550,
@@ -2491,13 +2500,16 @@ func _run() -> void:
         (world.owned_r15.has("ship_guardian") or (
             int(world.premium_r15.get("ship_guardian", 0)) > 0)) and
         is_equal_approx(world.fleet_r15.ship_hull_cap(), 160.0) and
-        is_equal_approx(world.fleet_r15.radar_range_r56(), 460.0),
+        is_equal_approx(world.fleet_r15.radar_range_r56(), 460.0) and
+        world.ship.primary_airframe_r55.module_geometry_count_r56() == 0,
         "R56 modules from scout cannot leak to paid or previously owned Guardian"):return
     world._r39_refresh_garage()
     shop_in_garage.r56_module_buttons["armor"].pressed.emit()
     if not check(world.credits == guardian_expected_wallet - 500 and
         world.hangar_modules_r56["ship_guardian"]["armor"] == 1 and
-        is_equal_approx(world.fleet_r15.ship_hull_cap(), 180.0),
+        is_equal_approx(world.fleet_r15.ship_hull_cap(), 180.0) and
+        world.ship.primary_airframe_r55.armor_rank_r56 == 1 and
+        world.ship.primary_airframe_r55.shield_rank_r56 == 0,
         "R56 paid heavy Guardian gets separate real hull upgrade"):return
     world._r45_select_owned_ship("ship_scout")
     if not check(is_equal_approx(world.fleet_r15.ship_hull_cap(), 120.0) and
