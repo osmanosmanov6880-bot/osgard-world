@@ -1999,6 +1999,11 @@ func _r16_hangar_closed() -> void:
 func _r15_apply_loadout() -> void:
     fleet_r15.set_loadout(equipped_r15, weapon_r15, rockets_r15, wingmen_r15)
     fleet_r15.set_workbench_r56(hangar_modules_r56)
+    if is_instance_valid(ship):
+        ship.set_workbench_modules_r56(
+            HangarWorkbenchR56Script.rank_of(hangar_modules_r56, equipped_r15, "armor"),
+            HangarWorkbenchR56Script.rank_of(hangar_modules_r56, equipped_r15, "shield"),
+            HangarWorkbenchR56Script.rank_of(hangar_modules_r56, equipped_r15, "radar"))
     if is_instance_valid(radar):
         radar.range_meters = fleet_r15.radar_range_r56()
         radar.queue_redraw()
