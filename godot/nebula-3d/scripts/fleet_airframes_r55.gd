@@ -3,6 +3,7 @@ extends Node3D
 ## Each hull replaces the imported NX-08 silhouette, not just a paint or wing kit.
 ## Common R15 ownership, damage and movement rules remain untouched.
 const VALID_HULLS := ["ship_scout", "ship_interceptor", "ship_guardian"]
+const HangarLiveriesR59Script = preload("res://scripts/hangar_liveries_r59.gd")
 const RING_SEGMENTS: int = 14
 
 var selected_hull: String = "ship_scout"
@@ -20,6 +21,9 @@ var module_visual_r56: Node3D
 var armor_rank_r56: int = 0
 var shield_rank_r56: int = 0
 var radar_rank_r56: int = 0
+var livery_style_r59: String = "factory"
+var livery_materials_r59: Dictionary = {}
+var livery_trim_r59: Node3D
 
 func _ready() -> void:
     set_hull(selected_hull)
@@ -339,6 +343,9 @@ func set_hull(id: String) -> void:
     var light := _paint(Color(0.20, 0.75, 0.93), 0.22, 0.28, 2.0)
     var glass := _paint(Color(0.046, 0.18, 0.27), 0.09, 0.67)
     var amber := _paint(Color(0.97, 0.49, 0.17), 0.23, 0.20, 1.6)
+    livery_materials_r59 = {
+        "body":titanium, "armor":armor, "dark":dark,
+        "light":light, "glass":glass, "amber":amber}
     match selected_hull:
         "ship_scout":
             _build_scout(titanium, armor, dark, light, glass)
@@ -348,7 +355,78 @@ func set_hull(id: String) -> void:
             _build_guardian(titanium, armor, dark, light, glass, amber)
     _refresh_lod()
     set_modules_r56(armor_rank_r56, shield_rank_r56, radar_rank_r56)
+    set_livery_r59(livery_style_r59)
     set_throttle(last_throttle, false)
+
+func _livery_detail_r59(label: String, size3d: Vector3,
+        pos: Vector3, mat: Material, roll_deg: float = 0.0) -> void:
+    if not is_instance_valid(livery_trim_r59):
+        return
+    var geometry := BoxMesh.new()
+    geometry.size = size3d
+    var detail := MeshInstance3D.new()
+    detail.name = label
+    detail.mesh = geometry
+    detail.position = pos
+    detail.rotation_degrees = Vector3(0.0, 0.0, roll_deg)
+    detail.material_override = mat
+    livery_trim_r59.add_child(detail)
+
+func set_livery_r59(style: String) -> void:
+    livery_style_r59 = (
+        style if HangarLiveriesR59Script.valid_style(style) else "factory")
+    if not is_instance_valid(active_body) or livery_materials_r59.is_empty():
+        return
+    var palette: Dictionary = HangarLiveriesR59Script.palette(
+        livery_style_r59)
+    var color_map: Dictionary = {
+        "body":"body", "armor":"armor", "dark":"dark",
+        "light":"accent", "glass":"glass"}
+    for slot in color_map:
+        var surface: StandardMaterial3D = livery_materials_r59.get(slot) as StandardMaterial3D
+        if not is_instance_valid(surface):
+            continue
+        surface.albedo_color = palette[color_map[slot]]
+        if slot == "body":
+            surface.roughness = float(palette["roughness"])
+        if slot == "light" and surface.emission_enabled:
+            surface.emission = palette["accent"]
+    # Existing individual physical ship geometries and paid R56 equipment
+    # stay intact: paint changes their REAL materials, not a texture screenshot.
+    if is_instance_valid(livery_trim_r59):
+        livery_trim_r59.free()
+    livery_trim_r59 = Node3D.new()
+    livery_trim_r59.name = "R59_PhysicalPaintTrim_" + livery_style_r59
+    active_body.add_child(livery_trim_r59)
+    if livery_style_r59 == "factory":
+        return
+    var accent_mat := _paint(palette["accent"], 0.24, 0.67, 1.4)
+    var outline_mat := _paint(palette["body"], 0.20, 0.90)
+    # Each purchased style carries actual visible 3D strips with real
+    # depth and highlights, placed on top of native wing/cockpit surfaces.
+    var ratio: float = half_span_m / 5.6
+    for side in [-1.0, 1.0]:
+        for section in range(3):
+            var x: float = side * (1.65 + float(section) * 1.14) * ratio
+            var z: float = -0.28 + float(section) * 0.78
+            _livery_detail_r59(
+                "R59_PurchasedAccent_%s_%d" % [str(side), section + 1],
+                Vector3(0.14, 0.055, 1.46),
+                Vector3(x, -0.11, z), accent_mat, side * 8.0)
+            _livery_detail_r59(
+                "R59_ActualMetalStripe_%s_%d" % [str(side), section + 1],
+                Vector3(0.27, 0.045, 1.50),
+                Vector3(x + side * 0.16, -0.12, z), outline_mat,
+                side * 8.0)
+    # The upper centerline gives the chosen livery a clear silhouette even
+    # while the wing underside is occluded in the cinematic hangar camera.
+    _livery_detail_r59("R59_PurchasedTopSpineAccent",
+        Vector3(0.13, 0.07, 4.9), Vector3(0, 0.83, -1.7), accent_mat)
+
+func livery_geometry_count_r59() -> int:
+    if not is_instance_valid(livery_trim_r59):
+        return 0
+    return livery_trim_r59.get_child_count()
 
 func _module_box(label: String, size: Vector3, at: Vector3,
         material: Material, tilt: Vector3 = Vector3.ZERO) -> MeshInstance3D:
