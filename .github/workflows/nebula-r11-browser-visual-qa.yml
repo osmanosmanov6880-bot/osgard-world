@@ -19,9 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      # Manual QA must test the branch selected in the Actions UI, not master.
+      # Automated downstream QA still tests the merged master release.
       - uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || 'master' }}
+      - name: Record exact tested source revision
+        run: |
+          echo "NEBULA_R11_TESTED_REF=$(git rev-parse --abbrev-ref HEAD)"
+          echo "NEBULA_R11_TESTED_COMMIT=$(git rev-parse HEAD)"
       - name: Install headless Chromium and Playwright
         run: |
           set -euo pipefail
