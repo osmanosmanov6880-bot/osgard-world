@@ -2,6 +2,8 @@
 // Git-graph provenance gate for R58. Read real Git objects, not PR prose.
 // This is NOT a substitute for a successful public HTTPS 4/4 parity check.
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const RELEASE_PATH='public/games/remix/arena-v2/nebula-3d';
@@ -63,7 +65,7 @@ function realLookup(){
     }
   };
 }
-if(process.argv[1]?.endsWith('nebula-release-lineage-guard.mjs')){
+if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   try{
     const policy=JSON.parse(fs.readFileSync('.github/nebula-production-allowlist.json','utf8'));
     const r=validateR58Lineage(policy,realLookup());
