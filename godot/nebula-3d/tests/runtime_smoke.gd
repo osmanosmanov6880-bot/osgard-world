@@ -1589,6 +1589,9 @@ func _run() -> void:
         "R60 pilot must see real scorch and sparks based on actual hull damage"):return
     var r60_destroyed_position: Vector3 = world.ship.global_position
     world.ship.take_damage(10000.0)
+    # SceneTree.process_frame fires before Node._process. The second signal
+    # ensures the world crash state actually processed one rendered tick.
+    await process_frame
     await process_frame
     # Failure evidence: expose the exact crash-state invariant instead of
     # hiding nine independent checks behind a single generic assertion.
@@ -3091,6 +3094,8 @@ func _run() -> void:
     world.ship.shield = 0.0
     world.ship.hull = 0.0
     world.ship.velocity = Vector3(16.0, 1.0, -27.0)
+    # The first process_frame is pre-update; wait for an actual world tick.
+    await process_frame
     await process_frame
     if not check(world.r60_crash_pending and
         world.r60_crash_count == freeflight_crashes_before + 1 and
