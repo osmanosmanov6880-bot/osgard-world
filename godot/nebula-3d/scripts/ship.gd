@@ -129,6 +129,10 @@ func set_workbench_modules_r56(armor: int, shield_rank: int,
     if is_instance_valid(primary_airframe_r55):
         primary_airframe_r55.set_modules_r56(armor, shield_rank, radar_rank)
 
+func set_livery_r59(style_id: String) -> void:
+    if is_instance_valid(primary_airframe_r55):
+        primary_airframe_r55.set_livery_r59(style_id)
+
 func set_touch_controls(steering: Vector2, throttle: float, vertical: float,
         boosting: bool, firing: bool) -> void:
     touch_enabled = true
