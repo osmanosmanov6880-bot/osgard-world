@@ -33,6 +33,7 @@ const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const HangarLiveriesR59Script = preload("res://scripts/hangar_liveries_r59.gd")
+const ShipWreckR60Script = preload("res://scripts/ship_wreck_r60.gd")
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
@@ -165,6 +166,13 @@ var pilot_training_r54: Dictionary = {"ada":0, "kai":0, "leya":0}
 var hangar_modules_r56: Dictionary = HangarWorkbenchR56Script.default_roster()
 var livery_owned_r59: Dictionary = HangarLiveriesR59Script.default_owned()
 var livery_equipped_r59: Dictionary = HangarLiveriesR59Script.default_equipped()
+const R60_CRASH_HOLD_SEC: float = 1.6
+var active_wreck_r60: Node3D
+var r60_crash_pending: bool = false
+var r60_crash_hold_sec: float = 0.0
+var r60_crash_was_contract: bool = false
+var r60_crash_count: int = 0
+var r60_last_impact: Vector3 = Vector3.ZERO
 var r57_selected_contract: String = ""
 var r57_contract_counts: Dictionary = PatrolContractsR57Script.safe_finish_counts({})
 var r57_patrol = PatrolContractsR57Script.new()
@@ -1085,14 +1093,15 @@ func _process(delta: float) -> void:
         65.0 + minf(6.0, speed * 0.060) + reveal,
         1.0 - exp((-7.0 if reveal > 0.0 else -1.8) * delta))
     r47_launch_camera_time = maxf(0.0, r47_launch_camera_time - delta)
-    # A destroyed player should get an explicit failed sortie, never a hidden
-    # teleport and lost 220 CR while the mission keeps running.
-    if not garage_open_r39 and ship.hull <= 0.0 and (
-            mission_index < MISSIONS.size() or r57_patrol.active):
-        if r57_patrol.active and mission_index >= MISSIONS.size():
-            _r57_end_patrol(false, "КОРАБЛЬ ПОТЕРЯН · КОНТРАКТ БЕЗ НАГРАДЫ")
-            return
-        _r43_fail_sortie()
+    # R60: the player actually sees a physical wreck for 1.6 seconds
+    # at the exact crash point. No ghost intact craft or immediate teleport.
+    if r60_crash_pending:
+        r60_crash_hold_sec = maxf(0.0, r60_crash_hold_sec - delta)
+        if r60_crash_hold_sec <= 0.0:
+            _r60_finish_actual_crash()
+        return
+    if not garage_open_r39 and ship.hull <= 0.0:
+        _r60_begin_actual_crash()
         return
     _mission_tick(delta)
     if is_instance_valid(r21_dashboard):
@@ -1104,12 +1113,9 @@ func _process(delta: float) -> void:
         ship.shield = fleet_r15.ship_shield_cap()
         ship.hull = fleet_r15.ship_hull_cap()
     elif ship.hull <= 0.0:
-        ship.global_position = r21_safe_spawn
-        ship.velocity = Vector3.ZERO
-        ship.shield = fleet_r15.ship_shield_cap()
-        ship.hull = fleet_r15.ship_hull_cap()
-        credits = maxi(0,credits-220)
-        _show_notice("КОРАБЛЬ ВОССТАНОВЛЕН · -220 CR")
+        # Normally handled by the R60 crash state before mission ticking.
+        # This branch is retained defensively against an external revival.
+        _r60_begin_actual_crash()
     elif ship.global_position.distance_to(Vector3(0,19,78))<70:
         ship.shield = minf(fleet_r15.ship_shield_cap(),ship.shield+12.0*delta)
         ship.hull = minf(fleet_r15.ship_hull_cap(),ship.hull+4.0*delta)
@@ -1554,6 +1560,59 @@ func _complete_mission() -> void:
     _r39_create_garage_hub()
     _show_notice("МИССИЯ ВЫПОЛНЕНА · +%d CR · +%d XP" % [awarded_credits, awarded_xp])
 
+func _r60_begin_actual_crash() -> void:
+    if r60_crash_pending or garage_open_r39 or ship.hull > 0.0:
+        return
+    r60_crash_pending = true
+    r60_crash_hold_sec = R60_CRASH_HOLD_SEC
+    r60_crash_was_contract = r57_patrol.active and (
+        mission_index >= MISSIONS.size())
+    r60_last_impact = ShipWreckR60Script.safe_origin(ship.global_position)
+    if is_instance_valid(active_wreck_r60):
+        active_wreck_r60.queue_free()
+        active_wreck_r60 = null
+    var visible_paint: String = str(livery_equipped_r59.get(
+        equipped_r15, "factory"))
+    var color: Color = HangarLiveriesR59Script.palette(
+        visible_paint).get("body", Color(0.40, 0.47, 0.52))
+    var wreck := ShipWreckR60Script.new()
+    wreck.name = "R60_AuthenticPlayerAircraftCrash"
+    add_child(wreck)
+    if wreck.spawn_crash(ship.global_position, ship.velocity,
+            equipped_r15, color):
+        active_wreck_r60 = wreck
+        r60_crash_count += 1
+    else:
+        wreck.queue_free()
+    # Hide only the intact craft, not the city or the physical wreck.
+    # Preserve the camera position for a visible 1.6-second crash sequence.
+    ship.visible = false
+    ship.controls_locked = true
+    ship.velocity = Vector3.ZERO
+    ship.set_cruise_assist(false)
+    ship.clear_navigation_target()
+    _show_notice("КРИТИЧЕСКИЙ УРОН · ФИЗИЧЕСКАЯ АВАРИЯ · ЭВАКУАЦИЯ")
+
+func _r60_finish_actual_crash() -> void:
+    if not r60_crash_pending:
+        return
+    r60_crash_pending = false
+    r60_crash_hold_sec = 0.0
+    ship.visible = true
+    if r60_crash_was_contract:
+        _r57_end_patrol(false, "КОРАБЛЬ УНИЧТОЖЕН · КОНТРАКТ БЕЗ НАГРАДЫ")
+    elif mission_index < MISSIONS.size():
+        _r43_fail_sortie("КОРАБЛЬ РАЗРУШЕН · ЭВАКУАЦИЯ · ПОВТОРИТЬ МИССИЮ")
+    else:
+        ship.global_position = r21_safe_spawn
+        ship.velocity = Vector3.ZERO
+        ship.shield = fleet_r15.ship_shield_cap()
+        ship.hull = fleet_r15.ship_hull_cap()
+        credits = maxi(0, credits - 220)
+        ship.controls_locked = false
+        _save_progress()
+        _show_notice("СВОБОДНЫЙ ПОЛЁТ · АВАРИЯ · ВОССТАНОВЛЕНИЕ −220 CR")
+
 func _r43_fail_sortie(reason: String = "") -> void:
     if garage_open_r39 or mission_index >= MISSIONS.size():
         return
@@ -1601,6 +1660,11 @@ func _r43_fail_sortie(reason: String = "") -> void:
 
 func _on_drone_destroyed(drone: Node3D) -> void:
     drones.erase(drone)
+    # A wreck is a failure state, not a chance to bank kills from wingmen
+    # while the player is unable to fly. The garage is equally non-combat.
+    # Preserve ordinary mid-flight payouts and existing mission escrow.
+    if r60_crash_pending or garage_open_r39:
+        return
     if drone.is_in_group("nebula_mission_hostiles"):
         r43_pending_bounty += 45
     else:
@@ -2038,6 +2102,8 @@ func _r16_hangar_closed() -> void:
 func _r15_apply_loadout() -> void:
     fleet_r15.set_loadout(equipped_r15, weapon_r15, rockets_r15, wingmen_r15)
     fleet_r15.set_workbench_r56(hangar_modules_r56)
+    if is_instance_valid(ship):
+        ship.hull_cap_r60 = fleet_r15.ship_hull_cap()
     livery_equipped_r59 = HangarLiveriesR59Script.safe_equipped(
         livery_equipped_r59, livery_owned_r59)
     if is_instance_valid(ship):
@@ -2240,6 +2306,7 @@ func _r39_create_garage_hub() -> void:
     garage_hub_r39.ship_selected_r45.connect(_r45_select_owned_ship)
     garage_hub_r39.wingman_toggled_r47.connect(_r47_toggle_owned_wingman)
     garage_open_r39 = true
+    ship.visible = true
     r47_launch_camera_time = 0.0
     if is_instance_valid(fleet_r15):
         fleet_r15.combat_active = false

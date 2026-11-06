@@ -8,6 +8,7 @@ const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd"
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
 const HangarLiveriesR59Script = preload("res://scripts/hangar_liveries_r59.gd")
+const ShipWreckR60Script = preload("res://scripts/ship_wreck_r60.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
@@ -1563,13 +1564,94 @@ func _run() -> void:
     if not check(world.r43_pending_bounty == 45 and
         world.credits == before_failure_credits,
         "R43 mission bounty must remain unbanked before successful completion"):return
+    # R60 regression: invalid colors must be rejected before creating real
+    # metallic debris; a valid livery color must be preserved unmodified.
+    var r60_valid_paint := Color(0.21, 0.41, 0.63, 0.83)
+    if not check(ShipWreckR60Script.safe_color(r60_valid_paint) ==
+        r60_valid_paint,
+        "R60 finite hull paint must be preserved exactly"):return
+    var r60_safe_paint := Color(0.35, 0.43, 0.48)
+    if not check(ShipWreckR60Script.safe_color(Color(INF, 0.4, 0.5)) ==
+        r60_safe_paint and
+        ShipWreckR60Script.safe_color(Color(0.2, NAN, 0.6)) ==
+        r60_safe_paint and
+        ShipWreckR60Script.safe_color(Color(0.2, 0.4, 0.5, INF)) ==
+        r60_safe_paint,
+        "R60 invalid RGBA must use a finite safe paint fallback"):return
+    # R60 visible real crash: first frame leaves the cockpit at the true
+    # impact, nine RigidBody3D parts physically fly through the city.
+    # Only after the staged wreck finishes should the old R43 safe retry
+    # transition happen. No provisional CR/XP while fragments move.
+    world.ship.hull = 36.0
+    await create_timer(0.22).timeout
+    if not check(world.ship.damage_visual_r60.damage_band_r60 >= 2 and
+        world.ship.damage_visual_r60.scorch_mesh_count() == 9,
+        "R60 pilot must see real scorch and sparks based on actual hull damage"):return
+    var r60_destroyed_position: Vector3 = world.ship.global_position
     world.ship.take_damage(10000.0)
+    # SceneTree.process_frame fires before Node._process. The second signal
+    # ensures the world crash state actually processed one rendered tick.
     await process_frame
-    if not check(world.garage_open_r39 and world.ship.controls_locked and
-        world.mission_index == retry_index and
+    await process_frame
+    # Failure evidence: expose the exact crash-state invariant instead of
+    # hiding nine independent checks behind a single generic assertion.
+    var r60_wreck_exists: bool = is_instance_valid(world.active_wreck_r60)
+    var r60_wreck_count: int = (
+        world.active_wreck_r60.actual_debris_count() if
+        r60_wreck_exists else -1)
+    var r60_wreck_origin_error: float = (
+        world.active_wreck_r60.last_actual_impact.distance_to(
+            r60_destroyed_position) if r60_wreck_exists else -1.0)
+    var r60_flash_exists: bool = (
+        world.active_wreck_r60.get_node_or_null(
+            "R60_Genuine3DCrashFlash") is MeshInstance3D if
+        r60_wreck_exists else false)
+    if not (world.r60_crash_pending and not world.garage_open_r39 and
+            not world.ship.visible and world.ship.controls_locked and
+            world.credits == before_failure_credits and
+            r60_wreck_exists and r60_wreck_count == 9 and
+            r60_wreck_origin_error < 0.1 and r60_flash_exists and
+            world.r60_crash_count >= 1):
+        print("NEBULA_R60_CRASH_FAILURE_DETAILS: " + JSON.stringify({
+            "pending":world.r60_crash_pending,
+            "garage_open":world.garage_open_r39,
+            "ship_visible":world.ship.visible,
+            "controls_locked":world.ship.controls_locked,
+            "hull":world.ship.hull,
+            "credits":world.credits,
+            "credits_expected":before_failure_credits,
+            "wreck_exists":r60_wreck_exists,
+            "debris_count":r60_wreck_count,
+            "origin_error_m":r60_wreck_origin_error,
+            "flash_exists":r60_flash_exists,
+            "crash_count":world.r60_crash_count,
+            "equipped_ship":world.equipped_r15
+        }))
+    if not check(world.r60_crash_pending and not world.garage_open_r39 and
+        not world.ship.visible and world.ship.controls_locked and
         world.credits == before_failure_credits and
-        world.r43_pending_bounty == 0,
-        "R43 crash must return to garage without progress or currency exploit"):return
+        is_instance_valid(world.active_wreck_r60) and
+        world.active_wreck_r60.actual_debris_count() == 9 and
+        world.active_wreck_r60.last_actual_impact.distance_to(
+            r60_destroyed_position) < 0.1 and
+        world.active_wreck_r60.get_node_or_null(
+            "R60_Genuine3DCrashFlash") is MeshInstance3D and
+        world.r60_crash_count >= 1,
+        "R60 destroyed player must form visible 9-body authentic 3D wreck before teleport"):return
+    var authentic_debris_r60 = world.active_wreck_r60.debris[0]
+    if not check(authentic_debris_r60 is RigidBody3D and
+        authentic_debris_r60.get_node_or_null(
+            "R60_PhysicalDebrisCollision") is CollisionShape3D and
+        authentic_debris_r60.linear_velocity.length() > 1.0,
+        "R60 crash pieces must have physical collider and actual velocity"):return
+    await create_timer(world.R60_CRASH_HOLD_SEC + 0.24).timeout
+    if not check(not world.r60_crash_pending and
+        world.garage_open_r39 and world.ship.visible and
+        world.ship.controls_locked and world.mission_index == retry_index and
+        world.credits == before_failure_credits and
+        world.r43_pending_bounty == 0 and
+        is_instance_valid(world.active_wreck_r60),
+        "R60 visible crash must eventually return to safe R43 dock without free CR"):return
     if not check(world.ship.hull >= 90.0 and world.ship.shield >= 90.0 and
         world.garage_hub_r39.debrief_label.visible and
         world.garage_hub_r39.debrief_label.text.contains("ВЫЛЕТ НЕ УДАЛСЯ"),
@@ -1580,11 +1662,24 @@ func _run() -> void:
     world._on_drone_fire(world.ship.global_position, world.ship.global_position)
     if not check(is_equal_approx(world.ship.shield, garage_shield),
         "R43 garage must protect the player from ambient enemy weapons"):return
+    # A parked captain cannot earn combat credits via late drone signals.
+    var r60_dock_cr_before: int = world.credits
+    var r60_dock_dummy := Node3D.new()
+    world.add_child(r60_dock_dummy)
+    world._on_drone_destroyed(r60_dock_dummy)
+    r60_dock_dummy.queue_free()
+    if not check(world.credits == r60_dock_cr_before,
+        "R60 dock must not mint CR from late drone death callbacks"):return
+    var r60_real_crashes_before_dock: int = world.r60_crash_count
     world.ship.hull = 0.0
+    # SceneTree.process_frame precedes Node._process; allow one real dock
+    # update before asserting the parked aircraft is repaired without a crash.
+    await process_frame
     await process_frame
     if not check(world.ship.hull >= 90.0 and
-        world.credits == before_failure_credits and world.garage_open_r39,
-        "R43 parked ship must be repaired without a hidden 220-CR penalty"):return
+        world.credits == before_failure_credits and world.garage_open_r39 and
+        world.r60_crash_count == r60_real_crashes_before_dock,
+        "R43 parked ship must be repaired without a second phantom R60 crash"):return
     world._save_progress()
     var fail_save := FileAccess.open(world.SAVE_PATH, FileAccess.READ)
     if not check(fail_save != null, "R43 failed sortie save missing"):return
@@ -2998,5 +3093,91 @@ func _run() -> void:
         "R59 hidden or in-flight cosmetic purchase must never mint access"):return
     world.garage_hub_r39.visible = true
     print("NEBULA_R59_TRUE_3D_PAINT_CR_PURCHASE_HULL_BOUND_AND_V1_SAVE_SUCCESS")
+    # R60 free-flight crash preserves the earlier, explicitly disclosed
+    # 220-CR recovery rule; it must be a physically visible accident, not a
+    # hidden instant loss. No contract or mission is allowed to pay.
+    world.r57_selected_contract = ""
+    world.mission_index = world.MISSIONS.size()
+    world._r39_refresh_garage()
+    world._r39_launch_sortie()
+    var freeflight_cr_before: int = world.credits
+    var freeflight_xp_before: int = world.xp
+    var freeflight_crashes_before: int = world.r60_crash_count
+    world.ship.shield = 0.0
+    world.ship.hull = 0.0
+    world.ship.velocity = Vector3(16.0, 1.0, -27.0)
+    # The first process_frame is pre-update; wait for an actual world tick.
+    await process_frame
+    await process_frame
+    if not check(world.r60_crash_pending and
+        world.r60_crash_count == freeflight_crashes_before + 1 and
+        world.credits == freeflight_cr_before and
+        not world.ship.visible and
+        world.active_wreck_r60.actual_debris_count() == 9,
+        "R60 free flight must physically disintegrate before charging recovery"):return
+    # No CR or provisional mission bounty can be minted while the wreck
+    # disables pilot controls, even if wingmen finish off existing enemies.
+    var r60_escrow_before: int = world.r43_pending_bounty
+    var r60_ambient_kill := Node3D.new()
+    world.add_child(r60_ambient_kill)
+    world._on_drone_destroyed(r60_ambient_kill)
+    r60_ambient_kill.queue_free()
+    var r60_mission_kill := Node3D.new()
+    world.add_child(r60_mission_kill)
+    r60_mission_kill.add_to_group("nebula_mission_hostiles")
+    world._on_drone_destroyed(r60_mission_kill)
+    r60_mission_kill.queue_free()
+    if not check(world.credits == freeflight_cr_before and
+        world.xp == freeflight_xp_before and
+        world.r43_pending_bounty == r60_escrow_before,
+        "R60 wreck must block both ambient CR and unbanked mission bounty"):return
+    # Wait for the actual crash-state transition instead of assuming the
+    # SceneTree timer and Node._process callbacks share a frame boundary.
+    # A bounded timeout still fails when the game gets stuck in the wreck.
+    var r60_recovery_started_ms: int = Time.get_ticks_msec()
+    var r60_recovery_frames: int = 0
+    while (world.r60_crash_pending and
+            Time.get_ticks_msec() - r60_recovery_started_ms < 4000 and
+            r60_recovery_frames < 450):
+        await process_frame
+        r60_recovery_frames += 1
+    var r60_recovered_cleanly: bool = (
+        not world.r60_crash_pending and
+        world.credits == maxi(0, freeflight_cr_before - 220) and
+        world.xp == freeflight_xp_before and
+        world.ship.visible and world.ship.hull > 0.0 and
+        not world.garage_open_r39 and not world.r57_patrol.active and
+        world.r60_crash_count == freeflight_crashes_before + 1)
+    if not r60_recovered_cleanly:
+        print("NEBULA_R60_FREEFLIGHT_RECOVERY_FAILURE_DETAILS: " +
+            JSON.stringify({
+                "elapsed_ms": Time.get_ticks_msec() - r60_recovery_started_ms,
+                "process_frames": r60_recovery_frames,
+                "pending": world.r60_crash_pending,
+                "hold_remaining": world.r60_crash_hold_sec,
+                "wallet_cr": world.credits,
+                "expected_cr": maxi(0, freeflight_cr_before - 220),
+                "wallet_xp": world.xp,
+                "expected_xp": freeflight_xp_before,
+                "visible": world.ship.visible,
+                "hull": world.ship.hull,
+                "garage_open": world.garage_open_r39,
+                "patrol_active": world.r57_patrol.active,
+                "crashes": world.r60_crash_count,
+                "expected_crashes": freeflight_crashes_before + 1
+            }))
+    if not check(r60_recovered_cleanly,
+        "R60 post-wreck recovery must preserve exact free-flight fee, no CR mint"):return
+    # The payout lock must end with the crash; healthy free flight still
+    # earns its original 45 CR for an actually destroyed ambient drone.
+    var r60_normal_flight_cr_before: int = world.credits
+    var r60_normal_kill := Node3D.new()
+    world.add_child(r60_normal_kill)
+    world._on_drone_destroyed(r60_normal_kill)
+    r60_normal_kill.queue_free()
+    if not check(world.credits == r60_normal_flight_cr_before + 45 and
+        world.xp == freeflight_xp_before and not world.r60_crash_pending,
+        "R60 recovery must restore legitimate normal-flight CR payouts"):return
+    print("NEBULA_R60_REAL_PHYSICS_9_SHARDS_WRECK_HOLD_DAMAGE_AND_RECOVERY_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)

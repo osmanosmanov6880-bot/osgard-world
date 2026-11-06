@@ -4,6 +4,7 @@ extends CharacterBody3D
 const ShipVisualR5Script = preload("res://scripts/ship_visual_r5.gd")
 const HullVariantsR45Script = preload("res://scripts/hull_variants_r45.gd")
 const FleetAirframesR55Script = preload("res://scripts/fleet_airframes_r55.gd")
+const ShipDamageFXR60Script = preload("res://scripts/ship_damage_fx_r60.gd")
 
 signal fired(origin: Vector3, direction: Vector3)
 
@@ -22,6 +23,7 @@ var shield: float = 100.0
 var damage_multiplier: float = 1.0
 var thrust_multiplier: float = 1.0
 var hull: float = 100.0
+var hull_cap_r60: float = 100.0
 var boost: float = 100.0
 var engine_rank: int = 0
 var weapon_rank: int = 0
@@ -30,6 +32,7 @@ var cooldown: float = 0.0
 var visual: Node3D
 var hull_kit_r45: Node3D
 var primary_airframe_r55: Node3D
+var damage_visual_r60: Node3D
 var engine_flames: Array[MeshInstance3D] = []
 var glow_time: float = 0.0
 var controls_locked: bool = false
@@ -107,6 +110,9 @@ func _ready() -> void:
         OS.has_feature("mobile") or get_viewport().get_visible_rect().size.x < 680.0)
     model.visible = false
     hull_kit_r45.visible = false
+    damage_visual_r60 = ShipDamageFXR60Script.new()
+    visual.add_child(damage_visual_r60)
+    damage_visual_r60.follow_real_ship(self)
     if OS.has_feature("web"):
         browser_window = JavaScriptBridge.get_interface("window")
     # The R8 wing span is large, but collision uses a conservative swept
