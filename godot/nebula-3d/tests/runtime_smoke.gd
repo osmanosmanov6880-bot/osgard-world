@@ -7,6 +7,7 @@ const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
+const HangarLiveriesR59Script = preload("res://scripts/hangar_liveries_r59.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
@@ -2892,5 +2893,94 @@ func _run() -> void:
     if not check(world.r58_risk_tier == 0,
         "R58 saved elite risk with no earned completions must be downgraded"):return
     print("NEBULA_R58_REAL_HARDER_FLIGHTS_ONE_TIME_REWARDS_AND_SAFE_SAVE_SUCCESS")
+    # R59 3D paint studio: original materials and bought physical metal
+    # strips are rendered in both independent Godot viewer and flight body.
+    var safe_paints_r59: Dictionary = HangarLiveriesR59Script.safe_owned({
+        "ship_scout":["factory","cobalt","cobalt","not_a_style"],
+        "ship_guardian":["obsidian",900], "bad_hull":["cobalt"]})
+    var equipped_paints_r59: Dictionary = HangarLiveriesR59Script.safe_equipped(
+        {"ship_scout":"cobalt","ship_interceptor":"ember",
+            "ship_guardian":"obsidian"}, safe_paints_r59)
+    if not check(HangarLiveriesR59Script.catalog().size() == 4 and
+        HangarLiveriesR59Script.price("cobalt") == 680 and
+        HangarLiveriesR59Script.price("ember") == 1080 and
+        HangarLiveriesR59Script.price("obsidian") == 1650 and
+        HangarLiveriesR59Script.price("fake") == -1 and
+        safe_paints_r59["ship_scout"].size() == 2 and
+        not safe_paints_r59.has("bad_hull") and
+        equipped_paints_r59["ship_scout"] == "cobalt" and
+        equipped_paints_r59["ship_interceptor"] == "factory" and
+        equipped_paints_r59["ship_guardian"] == "obsidian",
+        "R59 per-hull inventory must reject fake styles and unowned selections"):return
+    world.credits = 6200
+    world.equipped_r15 = "ship_scout"
+    world.livery_owned_r59 = HangarLiveriesR59Script.default_owned()
+    world.livery_equipped_r59 = HangarLiveriesR59Script.default_equipped()
+    world._r15_apply_loadout()
+    world._r39_refresh_garage()
+    world.garage_hub_r39.section_buttons_r54["fleet"].pressed.emit()
+    var livery_hub_r59 = world.garage_hub_r39
+    if not check(livery_hub_r59.r59_paint_panel.visible and
+        livery_hub_r59.r59_paint_buttons.size() == 4 and
+        livery_hub_r59.r59_paint_buttons["factory"].disabled and
+        not livery_hub_r59.r59_paint_buttons["cobalt"].disabled and
+        world.ship.primary_airframe_r55.livery_style_r59 == "factory" and
+        world.ship.primary_airframe_r55.livery_geometry_count_r59() == 0,
+        "R59 must initially show real free factory metal and purchasable styles"):return
+    livery_hub_r59.r59_paint_buttons["cobalt"].pressed.emit()
+    if not check(world.credits == 5520 and
+        world.livery_owned_r59["ship_scout"].has("cobalt") and
+        world.livery_equipped_r59["ship_scout"] == "cobalt" and
+        world.livery_equipped_r59["ship_guardian"] == "factory" and
+        world.ship.primary_airframe_r55.livery_style_r59 == "cobalt" and
+        world.ship.primary_airframe_r55.livery_geometry_count_r59() == 13 and
+        livery_hub_r59.ship_preview_r44.primary_airframe_r55.livery_style_r59 == "cobalt" and
+        livery_hub_r59.ship_preview_r44.primary_airframe_r55.livery_geometry_count_r59() == 13 and
+        livery_hub_r59.r59_paint_buttons["cobalt"].text.contains("УСТАНОВЛЕНО"),
+        "R59 first purchase must debit exactly 680 CR and make 13 REAL 3D trims in flight and hangar"):return
+    var actual_cobalt_r59: StandardMaterial3D = world.ship.primary_airframe_r55.livery_materials_r59["body"]
+    if not check(actual_cobalt_r59.albedo_color.is_equal_approx(
+        HangarLiveriesR59Script.palette("cobalt")["body"]),
+        "R59 credit-paid metallic paint must change real Godot material color"):return
+    world._r59_choose_livery("cobalt")
+    world._r59_choose_livery("invalid_palette")
+    if not check(world.credits == 5520 and
+        world.livery_owned_r59["ship_scout"].size() == 2,
+        "R59 repaints cannot charge twice or accept unknown SKU"):return
+    if not check(world.owned_r15.has("ship_guardian"),
+        "R59 ownership test needs NX-21 genuinely bought in earlier R15 scenario"):return
+    world._r45_select_owned_ship("ship_guardian")
+    world._r39_refresh_garage()
+    if not check(world.livery_equipped_r59["ship_guardian"] == "factory" and
+        world.ship.primary_airframe_r55.livery_geometry_count_r59() == 0 and
+        world.livery_equipped_r59["ship_scout"] == "cobalt",
+        "R59 style paid for NX-08 must NOT leak into NX-21"):return
+    world.garage_hub_r39.r59_paint_buttons["obsidian"].pressed.emit()
+    if not check(world.credits == 3870 and
+        world.livery_owned_r59["ship_guardian"].has("obsidian") and
+        world.livery_equipped_r59["ship_guardian"] == "obsidian" and
+        world.ship.primary_airframe_r55.livery_style_r59 == "obsidian" and
+        world.ship.primary_airframe_r55.livery_geometry_count_r59() == 13 and
+        world.garage_hub_r39.ship_preview_r44.primary_airframe_r55.livery_style_r59 == "obsidian",
+        "R59 expensive NX-21 monolith livery must have independent ownership and true 3D graphics"):return
+    world._save_progress()
+    world.livery_owned_r59 = HangarLiveriesR59Script.default_owned()
+    world.livery_equipped_r59 = HangarLiveriesR59Script.default_equipped()
+    world._load_progress()
+    world._r15_apply_loadout()
+    if not check(world.livery_equipped_r59["ship_scout"] == "cobalt" and
+        world.livery_equipped_r59["ship_guardian"] == "obsidian" and
+        world.livery_owned_r59["ship_scout"].has("cobalt") and
+        world.livery_owned_r59["ship_guardian"].has("obsidian") and
+        world.credits == 3870 and
+        world.ship.primary_airframe_r55.livery_style_r59 == "obsidian",
+        "R59 existing v1 save must restore exact paid hull paint and no double debit"):return
+    world.garage_hub_r39.visible = false
+    world._r59_choose_livery("ember")
+    if not check(world.credits == 3870 and
+        not world.livery_owned_r59["ship_guardian"].has("ember"),
+        "R59 hidden or in-flight cosmetic purchase must never mint access"):return
+    world.garage_hub_r39.visible = true
+    print("NEBULA_R59_TRUE_3D_PAINT_CR_PURCHASE_HULL_BOUND_AND_V1_SAVE_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
