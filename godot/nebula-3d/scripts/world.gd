@@ -2239,8 +2239,11 @@ func _r39_create_garage_hub() -> void:
         # previously the whole CanvasLayer disappeared after garage return,
         # leaving a real finger tap on the measured FPS button inert.
         # This is also useful to players testing garage GPU cost. The
-        # higher-layer profiler sits outside the dock's sortie hit target.
+        # GarageHub is CanvasLayer 30, so merely keeping the profiler
+        # visible leaves its real Button behind a blocking 3D dock canvas.
+        # Put the independent FPS layer on top only while docked.
         performance_lab_r11.visible = true
+        performance_lab_r11.layer = 31
     _r39_refresh_garage()
 
 func _r39_open_shop() -> void:
@@ -2714,6 +2717,7 @@ func _r39_launch_sortie() -> void:
     if is_instance_valid(r21_dashboard):
         r21_dashboard.visible = true
     if is_instance_valid(performance_lab_r11):
+        performance_lab_r11.layer = 7
         performance_lab_r11.visible = true
     r23_cruise_button.text = "▶  АВТОПИЛОТ К ЦЕЛИ"
     _start_mission()
