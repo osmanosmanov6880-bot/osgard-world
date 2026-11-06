@@ -1563,13 +1563,43 @@ func _run() -> void:
     if not check(world.r43_pending_bounty == 45 and
         world.credits == before_failure_credits,
         "R43 mission bounty must remain unbanked before successful completion"):return
+    # R60 visible real crash: first frame leaves the cockpit at the true
+    # impact, nine RigidBody3D parts physically fly through the city.
+    # Only after the staged wreck finishes should the old R43 safe retry
+    # transition happen. No provisional CR/XP while fragments move.
+    world.ship.hull = 36.0
+    await get_tree().create_timer(0.22).timeout
+    if not check(world.ship.damage_visual_r60.damage_band_r60 >= 2 and
+        world.ship.damage_visual_r60.scorch_mesh_count() == 9,
+        "R60 pilot must see real scorch and sparks based on actual hull damage"):return
+    var r60_destroyed_position: Vector3 = world.ship.global_position
     world.ship.take_damage(10000.0)
     await process_frame
-    if not check(world.garage_open_r39 and world.ship.controls_locked and
-        world.mission_index == retry_index and
+    if not check(world.r60_crash_pending and not world.garage_open_r39 and
+        not world.ship.visible and world.ship.controls_locked and
         world.credits == before_failure_credits and
-        world.r43_pending_bounty == 0,
-        "R43 crash must return to garage without progress or currency exploit"):return
+        is_instance_valid(world.active_wreck_r60) and
+        world.active_wreck_r60.actual_debris_count() == 9 and
+        world.active_wreck_r60.last_actual_impact.distance_to(
+            r60_destroyed_position) < 0.1 and
+        world.active_wreck_r60.get_node_or_null(
+            "R60_Genuine3DCrashFlash") is MeshInstance3D and
+        world.r60_crash_count >= 1,
+        "R60 destroyed player must form visible 9-body authentic 3D wreck before teleport"):return
+    var authentic_debris_r60 = world.active_wreck_r60.debris[0]
+    if not check(authentic_debris_r60 is RigidBody3D and
+        authentic_debris_r60.get_node_or_null(
+            "R60_PhysicalDebrisCollision") is CollisionShape3D and
+        authentic_debris_r60.linear_velocity.length() > 1.0,
+        "R60 crash pieces must have physical collider and actual velocity"):return
+    await get_tree().create_timer(world.R60_CRASH_HOLD_SEC + 0.24).timeout
+    if not check(not world.r60_crash_pending and
+        world.garage_open_r39 and world.ship.visible and
+        world.ship.controls_locked and world.mission_index == retry_index and
+        world.credits == before_failure_credits and
+        world.r43_pending_bounty == 0 and
+        is_instance_valid(world.active_wreck_r60),
+        "R60 visible crash must eventually return to safe R43 dock without free CR"):return
     if not check(world.ship.hull >= 90.0 and world.ship.shield >= 90.0 and
         world.garage_hub_r39.debrief_label.visible and
         world.garage_hub_r39.debrief_label.text.contains("ВЫЛЕТ НЕ УДАЛСЯ"),
@@ -1580,11 +1610,13 @@ func _run() -> void:
     world._on_drone_fire(world.ship.global_position, world.ship.global_position)
     if not check(is_equal_approx(world.ship.shield, garage_shield),
         "R43 garage must protect the player from ambient enemy weapons"):return
+    var r60_real_crashes_before_dock: int = world.r60_crash_count
     world.ship.hull = 0.0
     await process_frame
     if not check(world.ship.hull >= 90.0 and
-        world.credits == before_failure_credits and world.garage_open_r39,
-        "R43 parked ship must be repaired without a hidden 220-CR penalty"):return
+        world.credits == before_failure_credits and world.garage_open_r39 and
+        world.r60_crash_count == r60_real_crashes_before_dock,
+        "R43 parked ship must be repaired without a second phantom R60 crash"):return
     world._save_progress()
     var fail_save := FileAccess.open(world.SAVE_PATH, FileAccess.READ)
     if not check(fail_save != null, "R43 failed sortie save missing"):return
@@ -2998,5 +3030,31 @@ func _run() -> void:
         "R59 hidden or in-flight cosmetic purchase must never mint access"):return
     world.garage_hub_r39.visible = true
     print("NEBULA_R59_TRUE_3D_PAINT_CR_PURCHASE_HULL_BOUND_AND_V1_SAVE_SUCCESS")
+    # R60 free-flight crash preserves the earlier, explicitly disclosed
+    # 220-CR recovery rule; it must be a physically visible accident, not a
+    # hidden instant loss. No contract or mission is allowed to pay.
+    world.r57_selected_contract = ""
+    world.mission_index = world.MISSIONS.size()
+    world._r39_refresh_garage()
+    world._r39_launch_sortie()
+    var freeflight_cr_before: int = world.credits
+    var freeflight_crashes_before: int = world.r60_crash_count
+    world.ship.shield = 0.0
+    world.ship.hull = 0.0
+    world.ship.velocity = Vector3(16.0, 1.0, -27.0)
+    await process_frame
+    if not check(world.r60_crash_pending and
+        world.r60_crash_count == freeflight_crashes_before + 1 and
+        world.credits == freeflight_cr_before and
+        not world.ship.visible and
+        world.active_wreck_r60.actual_debris_count() == 9,
+        "R60 free flight must physically disintegrate before charging recovery"):return
+    await get_tree().create_timer(world.R60_CRASH_HOLD_SEC + 0.24).timeout
+    if not check(not world.r60_crash_pending and
+        world.credits == maxi(0, freeflight_cr_before - 220) and
+        world.ship.visible and world.ship.hull > 0.0 and
+        not world.garage_open_r39 and not world.r57_patrol.active,
+        "R60 post-wreck recovery must preserve exact free-flight fee, no CR mint"):return
+    print("NEBULA_R60_REAL_PHYSICS_9_SHARDS_WRECK_HOLD_DAMAGE_AND_RECOVERY_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
