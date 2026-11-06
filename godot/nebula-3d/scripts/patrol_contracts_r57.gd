@@ -48,6 +48,9 @@ var checkpoint_hold: float = 0.0
 var elapsed_seconds: float = 0.0
 var finished: bool = false
 var last_result: String = "idle"
+var route_points_r58: Array[Vector3] = []
+var limit_seconds_r58: float = 0.0
+var risk_tier_r58: int = 0
 
 static func valid_contract(id: String) -> bool:
     return CONTRACT_IDS.has(id)
@@ -103,20 +106,58 @@ func begin(id: String) -> bool:
     elapsed_seconds = 0.0
     finished = false
     last_result = "active"
+    route_points_r58.clear()
+    var base: Array = CATALOG[id]["route"]
+    for coordinate in base:
+        route_points_r58.append(coordinate as Vector3)
+    limit_seconds_r58 = float(CATALOG[id]["limit_sec"])
+    risk_tier_r58 = 0
     return true
+
+func configure_challenge_r58(points: Array[Vector3],
+        time_seconds: float, tier: int) -> bool:
+    # A route's additional difficulty must be genuine physical waypoints.
+    # It may only be bound before the first real physics frame.
+    if not active or tier < 0 or tier > 2 or (
+            elapsed_seconds > 0.0 or checkpoint_index != 0):
+        return false
+    var base: Array = CATALOG[active_id]["route"]
+    if points.size() != base.size() + tier:
+        return false
+    for i in base.size():
+        if points[i].distance_to(base[i] as Vector3) > 0.01:
+            return false
+    if tier >= 1 and points[base.size()].distance_to(
+            base[base.size() - 2] as Vector3) > 0.01:
+        return false
+    if tier >= 2 and points[base.size() + 1].distance_to(
+            base[base.size() - 3] as Vector3) > 0.01:
+        return false
+    var ratios: Array[float] = [1.0, 0.85, 0.70]
+    var expected: float = float(CATALOG[active_id]["limit_sec"]) * ratios[tier]
+    if not is_finite(time_seconds) or absf(expected - time_seconds) > 0.02:
+        return false
+    route_points_r58.clear()
+    for point in points:
+        route_points_r58.append(point)
+    risk_tier_r58 = tier
+    limit_seconds_r58 = time_seconds
+    return true
+
+func route_size_r58() -> int:
+    return route_points_r58.size() if active or finished else 0
 
 func objective_position() -> Vector3:
     if not active or not valid_contract(active_id):
         return Vector3.ZERO
-    var route: Array = CATALOG[active_id]["route"]
-    if checkpoint_index < 0 or checkpoint_index >= route.size():
+    if checkpoint_index < 0 or checkpoint_index >= route_points_r58.size():
         return Vector3.ZERO
-    return route[checkpoint_index]
+    return route_points_r58[checkpoint_index]
 
 func seconds_remaining() -> float:
     if not active or not valid_contract(active_id):
         return 0.0
-    return maxf(0.0, float(CATALOG[active_id]["limit_sec"]) - elapsed_seconds)
+    return maxf(0.0, limit_seconds_r58 - elapsed_seconds)
 
 func tick(raw_dt: float, ship_position: Vector3) -> String:
     if not active or not valid_contract(active_id):
@@ -125,7 +166,7 @@ func tick(raw_dt: float, ship_position: Vector3) -> String:
     if dt <= 0.0:
         return "active"
     elapsed_seconds += dt
-    if elapsed_seconds >= float(CATALOG[active_id]["limit_sec"]):
+    if elapsed_seconds >= limit_seconds_r58:
         active = false
         last_result = "failed"
         return "failed"
@@ -139,7 +180,7 @@ func tick(raw_dt: float, ship_position: Vector3) -> String:
         return "active"
     checkpoint_hold = 0.0
     checkpoint_index += 1
-    if checkpoint_index >= checkpoint_count(active_id):
+    if checkpoint_index >= route_points_r58.size():
         active = false
         finished = true
         last_result = "success"
