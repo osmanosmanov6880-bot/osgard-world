@@ -1590,6 +1590,40 @@ func _run() -> void:
     var r60_destroyed_position: Vector3 = world.ship.global_position
     world.ship.take_damage(10000.0)
     await process_frame
+    # Failure evidence: expose the exact crash-state invariant instead of
+    # hiding nine independent checks behind a single generic assertion.
+    var r60_wreck_exists: bool = is_instance_valid(world.active_wreck_r60)
+    var r60_wreck_count: int = (
+        world.active_wreck_r60.actual_debris_count() if
+        r60_wreck_exists else -1)
+    var r60_wreck_origin_error: float = (
+        world.active_wreck_r60.last_actual_impact.distance_to(
+            r60_destroyed_position) if r60_wreck_exists else -1.0)
+    var r60_flash_exists: bool = (
+        world.active_wreck_r60.get_node_or_null(
+            "R60_Genuine3DCrashFlash") is MeshInstance3D if
+        r60_wreck_exists else false)
+    if not (world.r60_crash_pending and not world.garage_open_r39 and
+            not world.ship.visible and world.ship.controls_locked and
+            world.credits == before_failure_credits and
+            r60_wreck_exists and r60_wreck_count == 9 and
+            r60_wreck_origin_error < 0.1 and r60_flash_exists and
+            world.r60_crash_count >= 1):
+        print("NEBULA_R60_CRASH_FAILURE_DETAILS: " + JSON.stringify({
+            "pending":world.r60_crash_pending,
+            "garage_open":world.garage_open_r39,
+            "ship_visible":world.ship.visible,
+            "controls_locked":world.ship.controls_locked,
+            "hull":world.ship.hull,
+            "credits":world.credits,
+            "credits_expected":before_failure_credits,
+            "wreck_exists":r60_wreck_exists,
+            "debris_count":r60_wreck_count,
+            "origin_error_m":r60_wreck_origin_error,
+            "flash_exists":r60_flash_exists,
+            "crash_count":world.r60_crash_count,
+            "equipped_ship":world.equipped_r15
+        }))
     if not check(world.r60_crash_pending and not world.garage_open_r39 and
         not world.ship.visible and world.ship.controls_locked and
         world.credits == before_failure_credits and
