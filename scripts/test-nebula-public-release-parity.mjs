@@ -55,6 +55,12 @@ try {
     /unapproved index.wasm bytes/);
 
   makePolicy('R49');
+
+  // R54 accepts only exact pinned byte payloads and owner disclosure.
+  const localR54=makePolicy('R54');
+  const matchedR54=await verifyPublicRelease(localR54,directory);
+  assert.equal(matchedR54.variant,'R54');
+  makePolicy('R49');
   await assert.rejects(verifyPublicRelease({...good, approved_variant:'R53'},directory),
     /unexpected approved build/);
 
