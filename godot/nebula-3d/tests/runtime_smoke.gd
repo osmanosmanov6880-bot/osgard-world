@@ -2947,6 +2947,22 @@ func _run() -> void:
     if not check(world.credits == 5520 and
         world.livery_owned_r59["ship_scout"].size() == 2,
         "R59 repaints cannot charge twice or accept unknown SKU"):return
+    # Insufficient wallet funds must never unlock or equip cosmetic armor.
+    # A factory repaint and re-equipping an already paid cobalt livery are free.
+    world.credits = 300
+    world._r59_choose_livery("ember")
+    if not check(world.credits == 300 and
+        not world.livery_owned_r59["ship_scout"].has("ember") and
+        world.livery_equipped_r59["ship_scout"] == "cobalt",
+        "R59 1080 CR style must be rejected when the CR wallet is insufficient"):return
+    world._r59_choose_livery("factory")
+    world._r59_choose_livery("cobalt")
+    if not check(world.credits == 300 and
+        world.livery_equipped_r59["ship_scout"] == "cobalt" and
+        world.ship.primary_airframe_r55.livery_geometry_count_r59() == 13,
+        "R59 factory and previously purchased paint re-equips must be free"):return
+    world.credits = 5520
+    world._r39_refresh_garage()
     if not check(world.owned_r15.has("ship_guardian"),
         "R59 ownership test needs NX-21 genuinely bought in earlier R15 scenario"):return
     world._r45_select_owned_ship("ship_guardian")
