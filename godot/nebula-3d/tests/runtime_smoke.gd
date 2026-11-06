@@ -2760,11 +2760,16 @@ func _run() -> void:
         r61_pilot_record["seconds"] == 85 and
         world.credits == r61_credits_before and world.xp == r61_xp_before,
         "R61 must count real failure/distance once, with zero CR/XP mint"):return
+    # Earlier R42/R54 smoke scenarios may already have completed real Kai
+    # sorties. Preserve his exact history rather than assuming a fresh pilot.
+    var r61_kai_history_before: Dictionary = (
+        world.pilot_logbook_r61["kai"] as Dictionary).duplicate(true)
     world._save_progress()
     world.pilot_logbook_r61 = PilotLogbookR61Script.safe_roster({})
     world._load_progress()
     if not (world.pilot_logbook_r61["ada"]["flights"] == 1 and
-            world.pilot_logbook_r61["kai"]["flights"] == 0 and
+            world.pilot_logbook_r61["kai"]["flights"] == r61_kai_history_before["flights"] and
+            world.pilot_logbook_r61["kai"]["successes"] == r61_kai_history_before["successes"] and
             world.credits == r61_credits_before):
         var r61_saved_raw: String = FileAccess.get_file_as_string(world.SAVE_PATH)
         print("NEBULA_R61_SAVE_ROUNDTRIP_DETAILS: " + JSON.stringify({
@@ -2775,7 +2780,9 @@ func _run() -> void:
             "save_bytes": r61_saved_raw.length()
         }))
     if not check(world.pilot_logbook_r61["ada"]["flights"] == 1 and
-        world.pilot_logbook_r61["kai"]["flights"] == 0 and
+        world.pilot_logbook_r61["kai"]["flights"] == r61_kai_history_before["flights"] and
+        world.pilot_logbook_r61["kai"]["successes"] == r61_kai_history_before["successes"] and
+        world.pilot_logbook_r61["kai"]["distance_m"] == r61_kai_history_before["distance_m"] and
         world.credits == r61_credits_before,
         "R61 legacy version-1 saves must retain independent real pilot records"):return
     world.ship.flight_distance = r61_flown_before
@@ -2795,10 +2802,13 @@ func _run() -> void:
         "R61 must sanitize forged logbooks without granting credentials"):return
     var r61_roster_after_success: Dictionary = PilotLogbookR61Script.record(
         world.pilot_logbook_r61, "kai", "success", 2200.0, 130.0)
-    if not check(r61_roster_after_success["kai"]["flights"] == 1 and
-        r61_roster_after_success["kai"]["successes"] == 1 and
+    if not check(r61_roster_after_success["kai"]["flights"] ==
+        int(r61_kai_history_before["flights"]) + 1 and
+        r61_roster_after_success["kai"]["successes"] ==
+        int(r61_kai_history_before["successes"]) + 1 and
         r61_roster_after_success["ada"]["flights"] == 1 and
-        world.pilot_logbook_r61["kai"]["flights"] == 0 and
+        world.pilot_logbook_r61["kai"]["flights"] ==
+        r61_kai_history_before["flights"] and
         PilotLogbookR61Script.qualification(
             r61_roster_after_success["kai"]) == "ПОДГОТОВЛЕН",
         "R61 genuine success must award only earned captain experience"):return
