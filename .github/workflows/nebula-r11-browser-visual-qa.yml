@@ -28,6 +28,9 @@ jobs:
         run: |
           echo "NEBULA_R11_TESTED_REF=$(git rev-parse --abbrev-ref HEAD)"
           echo "NEBULA_R11_TESTED_COMMIT=$(git rev-parse HEAD)"
+          game=public/games/remix/arena-v2/nebula-3d
+          echo "NEBULA_R11_TESTED_COMMITTED_PCK_BLOB=$(git hash-object "$game/index.pck")"
+          echo "NEBULA_R11_SOURCE_SCOPE=committed Web export; unbuilt PR game-source changes are not validated by this manual workflow"
       - name: Install headless Chromium and Playwright
         run: |
           set -euo pipefail
