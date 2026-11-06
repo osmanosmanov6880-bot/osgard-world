@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R58",
-  "release_status": "R58_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R59",
+  "release_status": "R59_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "7fc62f5ec765f32916783cde6e1f44d9a9a2851c",
+    "index.html": "f2cea6c6fa2591505728b127c60bf1b6e01e783d",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "03181634177b0ee2a9a719cb8dc061018b0698fa"
+    "index.pck": "6ae3427b7fa75fe933eef5155deccb7d746bbf69"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,10 +15,10 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-06",
-    "verification_workflow_run_id": 42181630680,
-    "native_source_commit_sha": "7cd605966387b20dedc16c247ebc907a75139283",
-    "web_export_commit_sha": "9a1234655a6edc349a753d08246c89d9a11f16e1",
-    "source_pr_head_sha": "a8940a165a3ebc05e85b0538441a56c0b4c19cc4"
+    "verification_workflow_run_id": 42218366293,
+    "native_source_commit_sha": "a9b345a5571a57de71eff8e6b59bc047da5cf7d6",
+    "web_export_commit_sha": "3ee4bc1b8fd6ced97bce6ad38289821858cb71b9",
+    "source_pr_head_sha": "2b3dfb07095ba17c5d5bc219437c46c1fa57acfc"
   },
-  "notes": "PROPOSED R58 4-blob owner-directed release, NOT LIVE UNTIL APPROVAL, MERGE, SUCCESSFUL SSH DEPLOY AND INDEPENDENT HTTPS PARITY. Source PR #762 head a8940a165a3ebc05e85b0538441a56c0b4c19cc4 completed six source checks then merged 7cd605966387b20dedc16c247ebc907a75139283. Native Godot 4.7.2 post-merge export run #42181630680 SUCCESS created exact sole-child export commit 9a1234655a6edc349a753d08246c89d9a11f16e1; R25 real public WebAssembly flight run #42181762186 SUCCESS. Exact original four Git blob SHA-1 pins from the exported commit tree, no binary rewrite. Changes: index.html and index.pck versus R57; index.js and index.wasm are byte-identical to R57. Includes earned career reputation, three risk tiers, extra genuine checkpoint nodes, shorter timed contracts, and bounded success-only CR/XP. Public R57 4/4 HTTPS parity run #42150893844 SUCCESS is rollback reference. R58 independent hosted SwiftShader R11 720p visual capture run #42181762157 FAILED/INCONCLUSIVE; no genuine visual frame certificate or 4K/AAA/hardware FPS claim. Physical Android/iPhone device QA NOT_PERFORMED, hardware_qa_certified=false; CR remains local user:// currency. Do not merge R59/R60 until separately accepted; no auto-release assumption from these metadata."
+  "notes": "R59 SOFTWARE-ONLY OWNER-DIRECTED RELEASE CANDIDATE; NOT PUBLIC UNTIL RELEASE PR MERGE, STRICT SSH PUBLISH AND INDEPENDENT 4/4 HTTPS PARITY. Source PR #763 six successful checks, merged as a9b345a5571a57de71eff8e6b59bc047da5cf7d6. Godot 4.7.2 native validation / Web export run #42218366293 SUCCESS produced direct sole-child 3ee4bc1b8fd6ced97bce6ad38289821858cb71b9, with four unchanged original Git-object blobs pinned here. New R59 physical 3D metallic hull liveries and garage cosmetics; index.html and index.pck differ from public R58, index.js and index.wasm are byte-identical. R58 previous public HTTPS 4/4 parity run #42218250171 SUCCESS remains rollback. Independent R25 browser flight and R11 SwiftShader visual QA pending at candidate creation; SwiftShader failure and missing physical phone hardware QA must never be counted as successes. Physical Android/iPhone QA NOT_PERFORMED; hardware_qa_certified=false; wallet remains local user://. Do not promote R60 before public 4/4 R59 parity."
 }

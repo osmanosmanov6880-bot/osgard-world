@@ -1,33 +1,40 @@
 #!/usr/bin/env node
-// Negative/unit tests exercise tampered ancestry, unknown blobs and fake phone QA.
-// Real Git-object acceptance is separately executed by the lineage gate.
+// Synthetic negative cases for R58/R59 lineage and hardware evidence.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateR58Lineage } from './nebula-release-lineage-guard.mjs';
-const original=JSON.parse(fs.readFileSync('.github/nebula-production-allowlist.json','utf8'));
-assert.equal(original.approved_variant,'R58');
-const source=original.approval.native_source_commit_sha;
-const exported=original.approval.web_export_commit_sha;
-const prHead=original.approval.source_pr_head_sha;
-const pins={...original.artifacts};
-const mock={
- parents(sha){return sha===exported?[source]:sha===source?['b'.repeat(40),prHead]:[];},
- ancestor(sha){return sha===exported;},
- blob(_sha,filename){return pins[filename.split('/').at(-1)]||'';}
-};
-assert.equal(validateR58Lineage(original,mock).status,
- 'VERIFIED_R58_EXACT_PARENT_AND_FOUR_GIT_BLOBS');
-const reject=(policy,lookup=mock,match=/NEBULA_R58_LINEAGE_HELD/)=>
- assert.throws(()=>validateR58Lineage(policy,lookup),match);
-reject({...original,release_status:'R58_HARDWARE_QA_APPROVED'});
-reject({...original,approval:{...original.approval,hardware_qa_certified:true}});
-reject({...original,approval:{...original.approval,physical_device_qa:'PASSED'}});
-reject({...original,approval:{...original.approval,source_pr_head_sha:'0'.repeat(40)}});
-reject({...original,approval:{...original.approval,web_export_commit_sha:source}});
-reject({...original,approval:{...original.approval,verification_workflow_run_id:0}});
-reject({...original,artifacts:{...original.artifacts,'index.pck':'f'.repeat(40)}});
-reject({...original,artifacts:{...original.artifacts,'index.extra':'f'.repeat(40)}});
-reject(original,{...mock,parents(sha){return sha===exported?['c'.repeat(40)]:mock.parents(sha);}});
-reject(original,{...mock,parents(sha){return sha===source?['b'.repeat(40),'c'.repeat(40)]:mock.parents(sha);}});
-reject(original,{...mock,ancestor(){return false;}});
-console.log('NEBULA_R58_LINEAGE_NEGATIVE_QA_SUCCESS actual_hardware_qa=NOT_PERFORMED');
+import { validateTrustedLineage,validateR58Lineage } from './nebula-release-lineage-guard.mjs';
+const base=JSON.parse(fs.readFileSync('.github/nebula-production-allowlist.json','utf8'));
+assert.equal(base.approved_variant,'R59');
+for(const variant of ['R58','R59']){
+ const policy={...base,approved_variant:variant,
+   release_status:variant+'_OWNER_DIRECTED_OVERRIDE'};
+ const source=policy.approval.native_source_commit_sha;
+ const exported=policy.approval.web_export_commit_sha;
+ const prHead=policy.approval.source_pr_head_sha;
+ const pins=policy.artifacts;
+ const mock={
+  parents(sha){return sha===exported?[source]:sha===source?['b'.repeat(40),prHead]:[];},
+  ancestor(sha){return sha===exported;},
+  blob(_sha,filename){return pins[filename.split('/').at(-1)]||'';}
+ };
+ const good='VERIFIED_'+variant+'_EXACT_PARENT_AND_FOUR_GIT_BLOBS';
+ assert.equal(validateTrustedLineage(policy,mock).status,good);
+ if(variant==='R58') assert.equal(validateR58Lineage(policy,mock).status,good);
+ const reject=(candidate,lookup=mock)=>
+   assert.throws(()=>validateTrustedLineage(candidate,lookup),/NEBULA_TRUSTED_LINEAGE_HELD/);
+ reject({...policy,schema:'MADE_UP_SCHEMA'});
+ reject({...policy,release_status:variant+'_HARDWARE_QA_APPROVED'});
+ reject({...policy,approval:{...policy.approval,hardware_qa_certified:true}});
+ reject({...policy,approval:{...policy.approval,physical_device_qa:'PASSED'}});
+ reject({...policy,approval:{...policy.approval,source_pr_head_sha:'0'.repeat(40)}});
+ reject({...policy,approval:{...policy.approval,web_export_commit_sha:source}});
+ reject({...policy,approval:{...policy.approval,verification_workflow_run_id:0}});
+ reject({...policy,artifacts:{...policy.artifacts,'index.pck':'f'.repeat(40)}});
+ reject({...policy,artifacts:{...policy.artifacts,'index.extra':'f'.repeat(40)}});
+ reject(policy,{...mock,parents(sha){return sha===exported?['c'.repeat(40)]:mock.parents(sha);}});
+ reject(policy,{...mock,parents(sha){return sha===source?['b'.repeat(40),'c'.repeat(40)]:mock.parents(sha);}});
+ reject(policy,{...mock,ancestor(){return false;}});
+ reject(policy,{...mock,blob(sha,name){return name.endsWith('index.pck')?'f'.repeat(40):mock.blob(sha,name);}});
+}
+assert.equal(validateTrustedLineage({...base,approved_variant:'R60'},{ }).status,'NOT_TRUSTED_RELEASE');
+console.log('NEBULA_TRUSTED_LINEAGE_NEGATIVE_QA_SUCCESS variants=R58,R59 bad_provenance_rejected=true physical_devices=0');

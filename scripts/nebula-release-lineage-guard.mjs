@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Git-graph provenance gate for R58. Read real Git objects, not PR prose.
+// Git-graph provenance gate for R58 and R59. Read real Git objects, not PR prose.
 // This is NOT a substitute for a successful public HTTPS 4/4 parity check.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,13 +9,14 @@ import { execFileSync, spawnSync } from 'node:child_process';
 const RELEASE_PATH='public/games/remix/arena-v2/nebula-3d';
 const REQUIRED=['index.html','index.js','index.pck','index.wasm'];
 const VALID_SHA=/^[a-f0-9]{40}$/;
-const fail=(message)=>{throw new Error('NEBULA_R58_LINEAGE_HELD: '+message);};
+const fail=(message)=>{throw new Error('NEBULA_TRUSTED_LINEAGE_HELD: '+message);};
 const eq=(a,b)=>a===b;
-export function validateR58Lineage(policy,lookup) {
-  if(policy?.approved_variant!=='R58') return {status:'NOT_R58'};
+export function validateTrustedLineage(policy,lookup) {
+  const variant=policy?.approved_variant;
+  if(!['R58','R59'].includes(variant)) return {status:'NOT_TRUSTED_RELEASE'};
   const a=policy?.approval||{};
   if(policy?.schema!=='NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1' ||
-    policy.release_status!=='R58_OWNER_DIRECTED_OVERRIDE' ||
+    policy.release_status!==variant+'_OWNER_DIRECTED_OVERRIDE' ||
     a.physical_device_qa!=='NOT_PERFORMED' ||
     a.hardware_qa_certified!==false ||
     !Number.isSafeInteger(a.verification_workflow_run_id) ||
@@ -30,7 +31,7 @@ export function validateR58Lineage(policy,lookup) {
     fail('export must be an exact sole-child of verified source merge');
   const sourceParents=lookup.parents(source);
   if(sourceParents.length!==2||!sourceParents.includes(prHead))
-    fail('source must be a merge of the verified R58 PR head');
+    fail('source must be a merge of the verified source PR head');
   if(!lookup.ancestor(exportSha))fail('export is not an ancestor of candidate HEAD');
   const pins=policy.artifacts||{};
   if(Object.keys(pins).sort().join(',')!==REQUIRED.slice().sort().join(','))
@@ -41,8 +42,8 @@ export function validateR58Lineage(policy,lookup) {
     const real=lookup.blob(exportSha,RELEASE_PATH+'/'+name);
     if(!eq(real,expected))fail('export Git object mismatch for '+name);
   }
-  return {status:'VERIFIED_R58_EXACT_PARENT_AND_FOUR_GIT_BLOBS',
-    source,export_sha:exportSha,source_pr_head:prHead,run_id:a.verification_workflow_run_id};
+  return {status:'VERIFIED_'+variant+'_EXACT_PARENT_AND_FOUR_GIT_BLOBS',
+    variant,source,export_sha:exportSha,source_pr_head:prHead,run_id:a.verification_workflow_run_id};
 }
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
 function realLookup(){
@@ -68,7 +69,10 @@ function realLookup(){
 if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   try{
     const policy=JSON.parse(fs.readFileSync('.github/nebula-production-allowlist.json','utf8'));
-    const r=validateR58Lineage(policy,realLookup());
+    const r=validateTrustedLineage(policy,realLookup());
     console.log('NEBULA_RELEASE_LINEAGE_GATE '+JSON.stringify(r));
   }catch(e){console.error(String(e));process.exitCode=1;}
 }
+
+// Keep the R58 JS export for existing callers; the implementation is shared.
+export const validateR58Lineage=validateTrustedLineage;
