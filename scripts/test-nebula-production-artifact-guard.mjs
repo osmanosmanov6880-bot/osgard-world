@@ -48,7 +48,7 @@ try{
   await assert.rejects(inspectProductionArtifact({
     ...r41,approval:{...r41.approval,web_export_commit_sha:r41.approval.native_source_commit_sha}
   },temp),/Modern owner override requires exact source/);
-  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50','R51','R52']){
+  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50','R51','R52','R54']){
     const owner={...r41,approved_variant:variant,
       release_status:variant+'_OWNER_DIRECTED_OVERRIDE',
       approval:{...r41.approval,
@@ -145,6 +145,24 @@ try{
     {...r52,artifacts:{...expected,'index.html':'0'.repeat(40)}},
     {...r52,artifacts:{...expected,'index.pck':'0'.repeat(40)}},
     {...r52,artifacts:{...expected,extra:'0'.repeat(40)}}
+  ]) {
+    await assert.rejects(inspectProductionArtifact(malicious,temp),
+      /Owner override|Modern owner override|hardware QA explicitly false|unapproved index|exactly four hashed/);
+  }
+
+  const r54={...r41,approved_variant:'R54',release_status:'R54_OWNER_DIRECTED_OVERRIDE'};
+  const r54Good=await inspectProductionArtifact(r54,temp);
+  assert.equal(r54Good.variant,'R54');
+  assert.equal(r54Good.status,'OWNER_DIRECTED_OVERRIDE_BYTES_MATCH');
+  for(const malicious of [
+    {...r54,release_status:'R54_HARDWARE_QA_APPROVED'},
+    {...r54,approval:{...r54.approval,physical_device_qa:'PASSED'}},
+    {...r54,approval:{...r54.approval,hardware_qa_certified:true}},
+    {...r54,approval:{...r54.approval,verification_workflow_run_id:0}},
+    {...r54,approval:{...r54.approval,web_export_commit_sha:r54.approval.native_source_commit_sha}},
+    {...r54,artifacts:{...expected,'index.html':'0'.repeat(40)}},
+    {...r54,artifacts:{...expected,'index.pck':'0'.repeat(40)}},
+    {...r54,artifacts:{...expected,extra:'0'.repeat(40)}}
   ]) {
     await assert.rejects(inspectProductionArtifact(malicious,temp),
       /Owner override|Modern owner override|hardware QA explicitly false|unapproved index|exactly four hashed/);

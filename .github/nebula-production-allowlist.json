@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R52",
-  "release_status": "R52_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R54",
+  "release_status": "R54_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "e8e85953828e5cd6b0863dbd0992d884984a778b",
+    "index.html": "ee6804a81ac646b6462f43b1e2d4334ca7650179",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "5b4fa39135e0e3c49887b211e363c61e2f7e39c9"
+    "index.pck": "3c51bb39082f40d7be53b3d97a91c326e2e9b654"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,9 +15,9 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-06",
-    "verification_workflow_run_id": 42125187203,
-    "native_source_commit_sha": "5ce998551a5563da06e35908805b6a81ee417426",
-    "web_export_commit_sha": "9ede9cbb52f5fc43aea4d2dccc737e8936d018b2"
+    "verification_workflow_run_id": 42134411859,
+    "native_source_commit_sha": "baf64cf87e3c6af61c25c30cf2dc90f8d8306c4a",
+    "web_export_commit_sha": "24b162aca6af7afa5b2da10e854b3a171efae0e2"
   },
-  "notes": "R52 owner-directed exact Godot 4.7.2 export with 14 genuine campaign missions. Source PR #752 head fdd042ba9ffce4ddd836768a2764257d9721eb96 passed six checks and merged as 5ce998551a5563da06e35908805b6a81ee417426; native trusted export run #42125187203 SUCCESS, export 9ede9cbb52f5fc43aea4d2dccc737e8936d018b2 has that merge as sole parent. Mission #14: two real separately held physical relays, destructible reactor with three hostile drone actors, 95-second energy defense, 14-second stabilization, one-use +40 repair, no rewards for defeat, physical mobile controls tested only via emulation. All four exact Git blob SHA-1 pinned without rewriting binary data. R51 is the last independently HTTPS 4/4 verified and remains rollback until R52 deployment plus fresh 4/4 public HTTPS parity. Physical Android/iPhone, actual GPU/FPS and endurance QA NOT_PERFORMED; hardware_qa_certified=false."
+  "notes": "R54 Aurora Hangar Zero original source PR #755 passed all 6/6 latest-head checks, source merged as baf64cf87e3c6af61c25c30cf2dc90f8d8306c4a. Official Godot 4.7.2 trusted Web export #42134411859 SUCCESS created 24b162aca6af7afa5b2da10e854b3a171efae0e2 as direct sole child of source merge. Exactly 4 Git blob hashes pinned, no binary rewriting. New enclosed physical Aurora 3D hangar, better camera/MSAA, permanently visible CR/XP plus legitimate local shop, engine/weapon upgrading, 3 pilot credit-paid training ranks and real stats, safe v1 saves, existing fourteen story missions unchanged. R53 and R55 not approved in this release. R52 public HTTPS 4/4 verified by run #42132943973, rollback until R54 SSH plus independent public HTTPS 4/4. Android/iPhone real physical-device, actual GPU FPS and endurance QA NOT_PERFORMED, hardware_qa_certified=false."
 }
