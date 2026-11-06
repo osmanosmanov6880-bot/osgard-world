@@ -2390,7 +2390,7 @@ func _r57_start_patrol() -> void:
     mission_started = true
     var beacon := Node3D.new()
     beacon.name = "R57_ActualContractBeacon"
-    beacon.global_position = r57_patrol.objective_position()
+    beacon.position = r57_patrol.objective_position()
     var mesh := SphereMesh.new()
     mesh.radius = 4.2
     mesh.height = 8.4
@@ -2437,7 +2437,13 @@ func _r57_end_patrol(success: bool, message: String) -> void:
     if verified:
         r57_reward_committed = true
         var id: String = r57_patrol.active_id
-        var earned_cr: int = PatrolContractsR57Script.reward_credits(id)
+        var base_cr: int = PatrolContractsR57Script.reward_credits(id)
+        # The previously paid logistics academy remains useful in the
+        # post-campaign career, but only after a verified successful flight.
+        var earned_cr: int = base_cr + PilotAcademyR54Script.credit_bonus(
+            base_cr, selected_captain_r42,
+            PilotAcademyR54Script.rank(pilot_training_r54.get(
+                selected_captain_r42, 0)))
         var earned_xp: int = PatrolContractsR57Script.reward_xp(id)
         credits += earned_cr
         xp += earned_xp
