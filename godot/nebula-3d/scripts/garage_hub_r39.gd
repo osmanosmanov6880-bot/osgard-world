@@ -8,6 +8,7 @@ signal upgrade_requested_r54(slot: int)
 signal training_requested_r54
 signal module_requested_r56(module_id: String)
 signal contract_selected_r57(contract_id: String)
+signal risk_selected_r58(tier: int)
 signal captain_selected(captain_id: String)
 signal ship_selected_r45(ship_id: String)
 signal wingman_toggled_r47(wingman_id: String)
@@ -74,6 +75,8 @@ var r57_contract_description: Label
 var r57_contract_result: Label
 var r57_contract_count_label: Label
 var r57_free_flight_button: Button
+var r58_reputation_label: Label
+var r58_risk_buttons: Dictionary = {}
 var footer_r54: HBoxContainer
 
 const BG := Color(0.018, 0.035, 0.058, 0.96)
@@ -423,6 +426,21 @@ func _build() -> void:
     r57_contract_description = _label(contract_stack,
         "Выбирай настоящий рейс. Награда только после всех точек.", 12, CYAN)
     r57_contract_result = _label(contract_stack, "", 12, GOLD)
+    r58_reputation_label = _label(contract_stack,
+        "РЕПУТАЦИЯ · НОВИЧОК · 0 РЕЙСОВ", 13, CYAN)
+    _label(contract_stack, "РИСК И НАГРАДА · ВЫБЕРИ КЛАСС РЕЙСА", 11, GOLD)
+    var risk_row := HBoxContainer.new()
+    risk_row.name = "R58_RealRiskTierSelector"
+    risk_row.add_theme_constant_override("separation", 6)
+    contract_stack.add_child(risk_row)
+    for tier in range(3):
+        var risk_button := _r54_credit_action(risk_row,
+            "R58_RiskTier_%d" % tier, ["ОБЫЧН.", "УСКОР.", "АС"][tier])
+        risk_button.add_theme_font_size_override("font_size", 10)
+        risk_button.custom_minimum_size.y = 44
+        risk_button.tooltip_text = "Открывается после реальных контрактов"
+        risk_button.pressed.connect(_r58_request_risk.bind(tier))
+        r58_risk_buttons[tier] = risk_button
     r57_free_flight_button = _r54_credit_action(contract_stack,
         "R57_ChooseFreeFlight", "БЕЗ ЗАДАНИЯ · СВОБОДНЫЙ ПОЛЁТ")
     r57_free_flight_button.pressed.connect(
@@ -507,6 +525,12 @@ func _r54_zoom_button(parent: Control, button_name: String, glyph: String,
 func _r54_zoom_preview(direction: int) -> void:
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.zoom_r54(direction)
+
+func _r58_request_risk(tier: int) -> void:
+    if tier >= 0 and tier <= 2 and active_section_r54 == "operations" and (
+            is_instance_valid(r57_contract_panel) and
+            r57_contract_panel.visible):
+        risk_selected_r58.emit(tier)
 
 func _r57_request_contract(contract_id: String) -> void:
     if active_section_r54 == "operations" and (
@@ -787,6 +811,8 @@ func refresh(data: Dictionary) -> void:
         (data.get("missions", []) as Array).size())
     var route_selected: String = str(data.get("r57_selected_contract", ""))
     var route_catalog: Array = data.get("r57_contract_catalog", [])
+    var career: Dictionary = data.get("r58_career_status", {})
+    var selected_risk: int = clampi(int(data.get("r58_risk_tier", 0)), 0, 2)
     var route_totals: Dictionary = data.get("r57_contract_counts", {})
     if is_instance_valid(r57_contract_panel):
         r57_contract_panel.visible = finished_campaign and (
@@ -798,6 +824,26 @@ func refresh(data: Dictionary) -> void:
             "Выбери маршрут. Пройди все физические маяки за отведённое "
             + "время: награда не начисляется при выборе или провале.")
         r57_contract_result.text = str(data.get("r57_last_report", ""))
+        if is_instance_valid(r58_reputation_label):
+            var next_at: int = int(career.get("next_at", 0))
+            r58_reputation_label.text = (
+                "РЕПУТАЦИЯ · %s · %d РЕЙСОВ · %s" % [
+                str(career.get("title", "НОВИЧОК")),
+                int(career.get("completed", 0)),
+                ("ДО СЛЕД. РАНГА %d" % int(career.get("remaining", 0))
+                 if next_at > 0 else "ВЫСШИЙ РАНГ")])
+        var unlocked_risk: int = clampi(
+            int(career.get("max_risk", 0)), 0, 2)
+        for risk in range(3):
+            var risk_choice: Button = r58_risk_buttons[risk]
+            risk_choice.text = ("%s%s" % [
+                "✓ " if selected_risk == risk else "",
+                ["ОБЫЧН.", "УСКОР.", "АС"][risk]])
+            risk_choice.disabled = risk > unlocked_risk
+            risk_choice.tooltip_text = (
+                "Открыто. Дополнительные физические маяки и меньше времени."
+                if risk <= unlocked_risk else
+                ("Нужно %d успешных рейсов" % [3, 9][risk - 1]))
         r57_free_flight_button.text = (
             ("✓  " if route_selected.is_empty() else "")
             + "СВОБОДНЫЙ ПОЛЁТ · БЕЗ НАГРАДЫ")
@@ -829,8 +875,10 @@ func refresh(data: Dictionary) -> void:
             status_label.text = "Сюжет пройден — можно исследовать город без задания."
         else:
             mission_label.text = "КОНТРАКТ · %s" % route_selected.to_upper()
-            mission_detail.text = "Контрольные точки и реальные сроки рейса."
-            launch_button.text = "▶  НА КОНТРАКТ"
+            mission_detail.text = "Сложность %s · точки и срок изменяются." % [
+                "СТАНДАРТ", "УСКОРЕННЫЙ", "ЭЛИТНЫЙ"][selected_risk]
+            launch_button.text = "▶  НА КОНТРАКТ" if selected_risk == 0 else (
+                "▶  РЕЙС С РИСКОМ")
             status_label.text = "На каждом маяке удерживай позицию 1,5 секунды."
     else:
         var mission: Dictionary = missions[mission_index]

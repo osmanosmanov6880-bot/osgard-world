@@ -1194,4 +1194,53 @@ require(
     "Godot", "WebAssembly", "HTTPS 4/4",
 )
 
+# R58: career status unlocks earned strictly from R57 verified route counts.
+# Higher risk must really modify route physics, time and paid CR/XP.
+r58_rank = require(
+    "scripts/career_prestige_r58.gd",
+    "extends RefCounted",
+    "RANK_THRESHOLDS: Array[int] = [0, 3, 9, 24]",
+    "MAX_TIER: int = 2",
+    "CREDIT_MULTIPLIERS: Array[float] = [1.0, 1.35, 1.75]",
+    "XP_MULTIPLIERS: Array[float] = [1.0, 1.30, 1.65]",
+    "TIME_MULTIPLIERS: Array[float] = [1.0, 0.85, 0.70]",
+    "func safe_selected_tier(raw_risk: Variant, counts: Variant) -> int:",
+    "func challenge_route(route_id: String,",
+    "func available_seconds(route_id: String, tier: int) -> float:",
+    "func earned_credits(route_id: String, tier: int) -> int:",
+    "func earned_xp(route_id: String, tier: int) -> int:",
+    "func offer_catalog(raw_counts: Variant,",
+)
+assert "credits +=" not in r58_rank and "FileAccess.open(" not in r58_rank
+assert "func configure_challenge_r58(points: Array[Vector3]," in r57_patrol
+assert "func route_size_r58() -> int:" in r57_patrol
+assert "elapsed_seconds > 0.0 or checkpoint_index != 0" in r57_patrol
+assert "route_points_r58[checkpoint_index]" in r57_patrol
+assert "elapsed_seconds >= limit_seconds_r58" in r57_patrol
+assert 'const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")' in world
+assert "garage_hub_r39.risk_selected_r58.connect(_r58_select_risk_tier)" in world
+assert "func _r58_select_risk_tier(tier: int) -> void:" in world
+assert "CareerPrestigeR58Script.unlocked(tier, r57_contract_counts)" in world
+assert "r57_patrol.configure_challenge_r58(" in world
+assert "CareerPrestigeR58Script.challenge_route(" in world
+assert "CareerPrestigeR58Script.earned_credits(" in world
+assert "CareerPrestigeR58Script.earned_xp(" in world
+assert "r57_patrol.route_size_r58()" in world
+assert '"r58_risk_tier":r58_risk_tier' in world
+assert "CareerPrestigeR58Script.safe_selected_tier(" in world
+assert "R58_RealRiskTierSelector" in garage
+assert "risk_selected_r58.emit(tier)" in garage
+assert "r58_reputation_label.text = (" in garage
+assert "risk_choice.disabled = risk > unlocked_risk" in garage
+assert "NEBULA_R58_EARNED_RANK_RISK_BOUNDED_PAY_AND_REAL_ROUTE_QA_SUCCESS" in smoke
+assert "NEBULA_R58_REAL_HARDER_FLIGHTS_ONE_TIME_REWARDS_AND_SAFE_SAVE_SUCCESS" in smoke
+assert "R58 illegal elite risk must not change a wallet" in smoke
+assert "R58 duplicate elite payout cannot replay" in smoke
+assert "R58 old v1 save must safely restore earned high-risk rights" in smoke
+require(
+    "docs/R58-CAREER-PRESTIGE-REAL-RISK-QA.md",
+    "NOT_PERFORMED", "380", "513", "665", "24",
+    "1,50", "14", "Godot", "WebAssembly", "HTTPS 4/4",
+)
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
