@@ -1290,4 +1290,61 @@ require(
     "13", "NX-08", "NX-12", "NX-21", "Godot", "HTTPS 4/4",
 )
 
+# R60: pilot aircraft must visibly SHATTER at the actual collision point
+# into physical colliding RigidBody3D parts before the R43 retry garage.
+r60_wreck = require(
+    "scripts/ship_wreck_r60.gd",
+    "extends Node3D",
+    "DEBRIS_COUNT: int = 9",
+    "LIFETIME_SEC: float = 13.0",
+    "func spawn_crash(at: Vector3, movement: Vector3,",
+    "RigidBody3D.new()",
+    "R60_PhysicalCrashDebris_",
+    "CollisionShape3D.new()",
+    "part.linear_velocity = source_velocity * 0.22 + kick",
+    "R60_Genuine3DCrashFlash",
+    "func actual_debris_count() -> int:",
+    "debris.clear()" if False else "count_physics_frames += 1",
+)
+assert "credits +=" not in r60_wreck and "FileAccess.open(" not in r60_wreck
+r60_damage = require(
+    "scripts/ship_damage_fx_r60.gd",
+    "extends Node3D",
+    "SOOT_COUNT: int = 4",
+    "SPARK_COUNT: int = 3",
+    "SMOKE_COUNT: int = 2",
+    "func follow_real_ship(ship: Node3D) -> void:",
+    'followed_ship.get("hull")',
+    'followed_ship.get("hull_cap_r60")',
+    "R60_PhysicalHullScorch_",
+    "R60_ActualDamageArc_",
+    "R60_RealScorchedEngineFume_",
+)
+assert "credits +=" not in r60_damage
+assert "ShipWreckR60Script = preload(" in world
+assert "ShipDamageFXR60Script = preload(" in require("scripts/ship.gd",
+    "damage_visual_r60 = ShipDamageFXR60Script.new()",
+    "damage_visual_r60.follow_real_ship(self)")
+assert "ship.hull_cap_r60 = fleet_r15.ship_hull_cap()" in world
+assert "R60_CRASH_HOLD_SEC: float = 1.6" in world
+assert "func _r60_begin_actual_crash() -> void:" in world
+assert "func _r60_finish_actual_crash() -> void:" in world
+assert "ship.visible = false" in world
+assert "r60_crash_pending" in world
+assert "wreck.spawn_crash(ship.global_position, ship.velocity," in world
+assert "if r60_crash_hold_sec <= 0.0:" in world
+assert "_r60_finish_actual_crash()" in world
+assert "_r57_end_patrol(false," in world
+assert '_r43_fail_sortie("КОРАБЛЬ РАЗРУШЕН' in world
+assert "credits = maxi(0, credits - 220)" in world
+assert "NEBULA_R60_REAL_PHYSICS_9_SHARDS_WRECK_HOLD_DAMAGE_AND_RECOVERY_SUCCESS" in smoke
+assert "R60 destroyed player must form visible 9-body authentic 3D wreck" in smoke
+assert "R60 pilot must see real scorch and sparks" in smoke
+assert "R60 post-wreck recovery must preserve exact free-flight fee" in smoke
+require(
+    "docs/R60-AUTHENTIC-AIRCRAFT-CRASH-QA.md",
+    "NOT_PERFORMED", "1,6", "9", "RigidBody3D",
+    "13", "220", "Godot", "WebAssembly", "HTTPS 4/4",
+)
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
