@@ -5,6 +5,7 @@ const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
+const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
@@ -2539,6 +2540,50 @@ func _run() -> void:
     world.garage_hub_r39.visible = true
     world._r39_refresh_garage()
     print("NEBULA_R56_WORKSHOP_REAL_ARMOR_SHIELD_RADAR_PERSISTENT_CREDITS_SUCCESS")
+    # R57: pure route contract requires a real ship position at EVERY
+    # individual beacon for 1.5 seconds; accepting never pays currency.
+    var patrol_unit = PatrolContractsR57Script.new()
+    if not check(PatrolContractsR57Script.catalog().size() == 3 and
+        PatrolContractsR57Script.safe_selection("hacked") == "" and
+        PatrolContractsR57Script.reward_credits("aurora") == 380 and
+        PatrolContractsR57Script.reward_xp("neon") == 160 and
+        PatrolContractsR57Script.checkpoint_count("rift") == 4 and
+        not patrol_unit.begin("invalid") and patrol_unit.begin("aurora") and
+        not patrol_unit.begin("neon"),
+        "R57 contract board must offer exactly three valid repeatable routes"):return
+    var untouched: String = patrol_unit.tick(0.25, Vector3.ZERO)
+    if not check(untouched == "active" and
+        patrol_unit.checkpoint_index == 0 and not patrol_unit.finished,
+        "R57 selecting a contract without flying cannot complete any waypoint"):return
+    for waypoint_index in PatrolContractsR57Script.checkpoint_count("aurora"):
+        var target: Vector3 = patrol_unit.objective_position()
+        for hold_index in 5:
+            patrol_unit.tick(0.25, target)
+        if not check(patrol_unit.checkpoint_index == waypoint_index,
+            "R57 must require full 1.5 seconds at each 3D checkpoint"):return
+        var result: String = patrol_unit.tick(0.25, target)
+        if waypoint_index < 2 and not check(result == "checkpoint" and
+            patrol_unit.checkpoint_index == waypoint_index + 1,
+            "R57 partial route must advance navigation but never mark success"):return
+        if waypoint_index == 2 and not check(result == "success" and
+            patrol_unit.finished and not patrol_unit.active,
+            "R57 only the final genuine waypoint can finish a timed contract"):return
+    if not check(patrol_unit.tick(0.25, Vector3.ZERO) == "idle" and
+        not patrol_unit.begin("untrusted"),
+        "R57 completed sortie must not reopen reward or accept unknown IDs"):return
+    var counts_safe: Dictionary = PatrolContractsR57Script.safe_finish_counts({
+        "aurora": 999999999, "neon": -3, "rift":"free", "spoof":9})
+    if not check(counts_safe["aurora"] == 99999 and
+        counts_safe["neon"] == 0 and counts_safe["rift"] == 0 and
+        not counts_safe.has("spoof"),
+        "R57 v1 save must reject fake contract IDs/counts and clamp limits"):return
+    if not check(patrol_unit.begin("neon"), "R57 contract replay must be selectable"):return
+    patrol_unit.elapsed_seconds = 659.90
+    var expired_result: String = patrol_unit.tick(0.25, Vector3.ZERO)
+    if not check(expired_result == "failed" and not patrol_unit.active and
+        not patrol_unit.finished and patrol_unit.last_result == "failed",
+        "R57 time limit must fail unfinished route without any payout"):return
+    print("NEBULA_R57_REAL_3D_WAYPOINTS_HOLD_TIMEOUT_AND_SAFE_COUNTS_SUCCESS")
     # R54: spend CR on an actual engine upgrade, purchase training for a
     # specific captain and persist through the existing version-1 save.
     if not check(world.garage_open_r39 and
@@ -2593,5 +2638,77 @@ func _run() -> void:
         "R54 launch and training alone must never award campaign credits"):return
     # This runtime scenario exits immediately; do not certify hardware QA.
     print("NEBULA_R54_ACADEMY_REAL_SHIP_STATS_SAVE_AND_CREDITS_SUCCESS")
+    # R57 integrated career loop after story completion: the real hub button
+    # arms a route; launch enables real 3D navigation; only the final
+    # waypoint transitions back to the garage with exact once-paid credits.
+    world._r39_create_garage_hub()
+    world.credits = 1000
+    world.xp = 0
+    world.r57_selected_contract = ""
+    world.r57_contract_counts = PatrolContractsR57Script.safe_finish_counts({})
+    world._r39_refresh_garage()
+    var contract_hub = world.garage_hub_r39
+    contract_hub.section_buttons_r54["operations"].pressed.emit()
+    if not check(contract_hub.r57_contract_panel.visible and
+        contract_hub.r57_contract_buttons.size() == 3 and
+        world.mission_index == world.MISSIONS.size(),
+        "R57 contract board must appear ONLY after the real story"):return
+    contract_hub.r57_contract_buttons["aurora"].pressed.emit()
+    if not check(world.r57_selected_contract == "aurora" and
+        world.credits == 1000 and world.xp == 0 and
+        contract_hub.launch_button.text.contains("КОНТРАКТ"),
+        "R57 choosing a contract must only arm the job, not mint rewards"):return
+    contract_hub.launch_button.pressed.emit()
+    if not check(world.r57_patrol.active and not world.garage_open_r39 and
+        is_instance_valid(world.mission_beacon) and
+        world.mission_beacon.get_node_or_null("R57_Genuine3DPhysicalBeacon") is MeshInstance3D and
+        world.ship.navigation_target.distance_to(
+            world.r57_patrol.objective_position()) < 0.01,
+        "R57 sortie must create actual 3D beacon and flight navigation"):return
+    world._r57_patrol_tick(0.25)
+    if not check(world.credits == 1000 and world.xp == 0 and
+        world.r57_patrol.checkpoint_index == 0,
+        "R57 no immediate credit or XP for merely launching"):return
+    for point_index in PatrolContractsR57Script.checkpoint_count("aurora"):
+        var active_goal: Vector3 = world.r57_patrol.objective_position()
+        world.ship.global_position = active_goal
+        for hover_index in 6:
+            world._r57_patrol_tick(0.25)
+        if point_index < 2 and not check(world.credits == 1000 and
+            not world.garage_open_r39 and
+            world.r57_patrol.checkpoint_index == point_index + 1 and
+            world.ship.navigation_target.distance_to(
+                world.r57_patrol.objective_position()) < 0.01,
+            "R57 partial real routes cannot pay out or skip the next goal"):return
+    if not check(world.credits == 1380 and world.xp == 90 and
+        world.r57_contract_counts["aurora"] == 1 and
+        world.mission_index == world.MISSIONS.size() and
+        world.garage_open_r39 and
+        world.r57_last_report.contains("+380 CR") and
+        not world.r57_patrol.active,
+        "R57 finishing all three beacons must pay one bounded CR/XP reward"):return
+    world._r57_end_patrol(true, "")
+    if not check(world.credits == 1380 and
+        world.r57_contract_counts["aurora"] == 1,
+        "R57 duplicate reward trigger after returning to dock must be rejected"):return
+    world.garage_hub_r39.section_buttons_r54["operations"].pressed.emit()
+    world.garage_hub_r39.r57_contract_buttons["neon"].pressed.emit()
+    world.garage_hub_r39.launch_button.pressed.emit()
+    world.r57_patrol.elapsed_seconds = 659.90
+    world._r57_patrol_tick(0.25)
+    if not check(world.garage_open_r39 and world.credits == 1380 and
+        world.xp == 90 and world.r57_contract_counts["neon"] == 0 and
+        world.r57_last_report.contains("БЕЗ НАГРАДЫ"),
+        "R57 timed-out route must safely return home without a bounty"):return
+    world._save_progress()
+    world.r57_selected_contract = ""
+    world.r57_contract_counts = PatrolContractsR57Script.safe_finish_counts({})
+    world._load_progress()
+    if not check(world.r57_selected_contract == "neon" and
+        world.r57_contract_counts["aurora"] == 1 and
+        world.r57_contract_counts["neon"] == 0 and
+        world.credits == 1380 and world.xp == 90,
+        "R57 old v1 save must persist real contract selection/achievements and wallet"):return
+    print("NEBULA_R57_REAL_REPEATABLE_PAYOUT_FAILURE_AND_CAREER_SAVE_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
