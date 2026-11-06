@@ -1039,4 +1039,49 @@ require(
     "Godot", "Chromium", "4K/8K",
 )
 
+# R55: independent original sculpted mesh bodies for all three owned fleet types.
+r55_fleet = require(
+    "scripts/fleet_airframes_r55.gd",
+    "extends Node3D",
+    "func _loft(",
+    "func _airfoil(",
+    "func set_hull(id: String) -> void:",
+    "func set_throttle(amount: float, afterburner: bool) -> void:",
+    "R55_NX08_TrueNarrowFuselage",
+    "R55_NX12_TrueWedgeRacerFuselage",
+    "R55_NX21_TrueBroadArmoredCitadelHull",
+    "R55_NX12_PairedThrust_",
+    "R55_NX21_QuadDrive_",
+    "R55_True"
+)
+assert "ship_scout" in r55_fleet and "ship_interceptor" in r55_fleet
+assert "ship_guardian" in r55_fleet
+assert "RING_SEGMENTS: int = 14" in r55_fleet
+assert "get_parent()" in smoke and "NEBULA_R55_THREE_DISTINCT_3D_CORES_AND_REACTIVE_THRUSTERS_SUCCESS" in smoke
+assert "r55_flight.thruster_plumes[0].scale.y > 1.5" in smoke
+assert "wing_spans[0] < wing_spans[1]" in smoke
+assert "engine_counts == [1,2,4]" in smoke
+assert "r55_flight.primary_airframe_r55" not in smoke
+r55_ship = require(
+    "scripts/ship.gd",
+    'const FleetAirframesR55Script = preload("res://scripts/fleet_airframes_r55.gd")',
+    "primary_airframe_r55 = FleetAirframesR55Script.new()",
+    "model.visible = false",
+    "hull_kit_r45.visible = false",
+    "primary_airframe_r55.set_hull(id)",
+    "primary_airframe_r55.set_throttle(thruster_power, afterburner)"
+)
+r55_preview = require(
+    "scripts/hangar_ship_preview_r44.gd",
+    'const FleetAirframesR55Script = preload("res://scripts/fleet_airframes_r55.gd")',
+    "primary_airframe_r55.set_hull(selected_hull)",
+    "real_airframe.visible = false",
+    "distinct_hull_r45.visible = false",
+)
+assert "credits +=" not in r55_fleet and "FileAccess.open(" not in r55_fleet
+require(
+    "docs/R55-THREE-DISTINCT-AIRFRAMES-QA.md",
+    "NX-08", "NX-12", "NX-21", "WebGL", "NOT_PERFORMED", "R54",
+)
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
