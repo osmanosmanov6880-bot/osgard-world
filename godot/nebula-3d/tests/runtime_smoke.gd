@@ -2763,6 +2763,17 @@ func _run() -> void:
     world._save_progress()
     world.pilot_logbook_r61 = PilotLogbookR61Script.safe_roster({})
     world._load_progress()
+    if not (world.pilot_logbook_r61["ada"]["flights"] == 1 and
+            world.pilot_logbook_r61["kai"]["flights"] == 0 and
+            world.credits == r61_credits_before):
+        var r61_saved_raw: String = FileAccess.get_file_as_string(world.SAVE_PATH)
+        print("NEBULA_R61_SAVE_ROUNDTRIP_DETAILS: " + JSON.stringify({
+            "ada": world.pilot_logbook_r61["ada"],
+            "kai": world.pilot_logbook_r61["kai"],
+            "credits": world.credits, "expected_cr": r61_credits_before,
+            "save_contains_logbook": r61_saved_raw.contains("pilot_logbook_r61"),
+            "save_bytes": r61_saved_raw.length()
+        }))
     if not check(world.pilot_logbook_r61["ada"]["flights"] == 1 and
         world.pilot_logbook_r61["kai"]["flights"] == 0 and
         world.credits == r61_credits_before,
