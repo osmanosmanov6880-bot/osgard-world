@@ -3093,6 +3093,7 @@ func _run() -> void:
     world._r39_refresh_garage()
     world._r39_launch_sortie()
     var freeflight_cr_before: int = world.credits
+    var freeflight_xp_before: int = world.xp
     var freeflight_crashes_before: int = world.r60_crash_count
     world.ship.shield = 0.0
     world.ship.hull = 0.0
@@ -3106,11 +3107,58 @@ func _run() -> void:
         not world.ship.visible and
         world.active_wreck_r60.actual_debris_count() == 9,
         "R60 free flight must physically disintegrate before charging recovery"):return
-    await create_timer(world.R60_CRASH_HOLD_SEC + 0.24).timeout
-    if not check(not world.r60_crash_pending and
+    # No CR or provisional mission bounty can be minted while the wreck
+    # disables pilot controls, even if wingmen finish off existing enemies.
+    var r60_escrow_before: int = world.r43_pending_bounty
+    var r60_ambient_kill := Node3D.new()
+    world.add_child(r60_ambient_kill)
+    world._on_drone_destroyed(r60_ambient_kill)
+    r60_ambient_kill.queue_free()
+    var r60_mission_kill := Node3D.new()
+    world.add_child(r60_mission_kill)
+    r60_mission_kill.add_to_group("nebula_mission_hostiles")
+    world._on_drone_destroyed(r60_mission_kill)
+    r60_mission_kill.queue_free()
+    if not check(world.credits == freeflight_cr_before and
+        world.xp == freeflight_xp_before and
+        world.r43_pending_bounty == r60_escrow_before,
+        "R60 wreck must block both ambient CR and unbanked mission bounty"):return
+    # Wait for the actual crash-state transition instead of assuming the
+    # SceneTree timer and Node._process callbacks share a frame boundary.
+    # A bounded timeout still fails when the game gets stuck in the wreck.
+    var r60_recovery_started_ms: int = Time.get_ticks_msec()
+    var r60_recovery_frames: int = 0
+    while (world.r60_crash_pending and
+            Time.get_ticks_msec() - r60_recovery_started_ms < 4000 and
+            r60_recovery_frames < 450):
+        await process_frame
+        r60_recovery_frames += 1
+    var r60_recovered_cleanly: bool = (
+        not world.r60_crash_pending and
         world.credits == maxi(0, freeflight_cr_before - 220) and
+        world.xp == freeflight_xp_before and
         world.ship.visible and world.ship.hull > 0.0 and
-        not world.garage_open_r39 and not world.r57_patrol.active,
+        not world.garage_open_r39 and not world.r57_patrol.active and
+        world.r60_crash_count == freeflight_crashes_before + 1)
+    if not r60_recovered_cleanly:
+        print("NEBULA_R60_FREEFLIGHT_RECOVERY_FAILURE_DETAILS: " +
+            JSON.stringify({
+                "elapsed_ms": Time.get_ticks_msec() - r60_recovery_started_ms,
+                "process_frames": r60_recovery_frames,
+                "pending": world.r60_crash_pending,
+                "hold_remaining": world.r60_crash_hold_sec,
+                "wallet_cr": world.credits,
+                "expected_cr": maxi(0, freeflight_cr_before - 220),
+                "wallet_xp": world.xp,
+                "expected_xp": freeflight_xp_before,
+                "visible": world.ship.visible,
+                "hull": world.ship.hull,
+                "garage_open": world.garage_open_r39,
+                "patrol_active": world.r57_patrol.active,
+                "crashes": world.r60_crash_count,
+                "expected_crashes": freeflight_crashes_before + 1
+            }))
+    if not check(r60_recovered_cleanly,
         "R60 post-wreck recovery must preserve exact free-flight fee, no CR mint"):return
     print("NEBULA_R60_REAL_PHYSICS_9_SHARDS_WRECK_HOLD_DAMAGE_AND_RECOVERY_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
