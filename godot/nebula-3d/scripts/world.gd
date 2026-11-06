@@ -32,6 +32,7 @@ const CampaignStoryR41Script = preload("res://scripts/campaign_story_r41.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
+const HangarLiveriesR59Script = preload("res://scripts/hangar_liveries_r59.gd")
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
@@ -162,6 +163,8 @@ var r41_last_debrief: Dictionary = {}
 var selected_captain_r42: String = "ada"
 var pilot_training_r54: Dictionary = {"ada":0, "kai":0, "leya":0}
 var hangar_modules_r56: Dictionary = HangarWorkbenchR56Script.default_roster()
+var livery_owned_r59: Dictionary = HangarLiveriesR59Script.default_owned()
+var livery_equipped_r59: Dictionary = HangarLiveriesR59Script.default_equipped()
 var r57_selected_contract: String = ""
 var r57_contract_counts: Dictionary = PatrolContractsR57Script.safe_finish_counts({})
 var r57_patrol = PatrolContractsR57Script.new()
@@ -2035,7 +2038,11 @@ func _r16_hangar_closed() -> void:
 func _r15_apply_loadout() -> void:
     fleet_r15.set_loadout(equipped_r15, weapon_r15, rockets_r15, wingmen_r15)
     fleet_r15.set_workbench_r56(hangar_modules_r56)
+    livery_equipped_r59 = HangarLiveriesR59Script.safe_equipped(
+        livery_equipped_r59, livery_owned_r59)
     if is_instance_valid(ship):
+        ship.set_livery_r59(str(livery_equipped_r59.get(
+            equipped_r15, "factory")))
         ship.set_workbench_modules_r56(
             HangarWorkbenchR56Script.rank_of(hangar_modules_r56, equipped_r15, "armor"),
             HangarWorkbenchR56Script.rank_of(hangar_modules_r56, equipped_r15, "shield"),
@@ -2151,7 +2158,7 @@ func _safe_float(value: Variant, fallback: float) -> float:
 func _save_progress() -> void:
     var file:=FileAccess.open(SAVE_PATH,FileAccess.WRITE)
     if file==null:return
-    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"hangar_modules_r56":hangar_modules_r56,"r57_selected_contract":r57_selected_contract,"r57_contract_counts":r57_contract_counts,"r58_risk_tier":r58_risk_tier}))
+    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"hangar_modules_r56":hangar_modules_r56,"r57_selected_contract":r57_selected_contract,"r57_contract_counts":r57_contract_counts,"r58_risk_tier":r58_risk_tier,"livery_owned_r59":livery_owned_r59,"livery_equipped_r59":livery_equipped_r59}))
     file.close()
 
 func _load_progress() -> void:
@@ -2167,7 +2174,12 @@ func _load_progress() -> void:
     var saved_captain: String = str(raw.get("captain_r42", "ada"))
     selected_captain_r42 = saved_captain if CaptainRosterR42Script.valid_id(saved_captain) else "ada"
     pilot_training_r54 = PilotAcademyR54Script.safe_roster(raw.get("pilot_training_r54", {}))
-    hangar_modules_r56 = HangarWorkbenchR56Script.safe_roster(raw.get("hangar_modules_r56", {}))
+    hangar_modules_r56 = HangarWorkbenchR56Script.safe_roster(
+        raw.get("hangar_modules_r56", {}))
+    livery_owned_r59 = HangarLiveriesR59Script.safe_owned(
+        raw.get("livery_owned_r59", {}))
+    livery_equipped_r59 = HangarLiveriesR59Script.safe_equipped(
+        raw.get("livery_equipped_r59", {}), livery_owned_r59)
     r57_selected_contract = PatrolContractsR57Script.safe_selection(
         raw.get("r57_selected_contract", ""))
     r57_contract_counts = PatrolContractsR57Script.safe_finish_counts(
@@ -2221,6 +2233,7 @@ func _r39_create_garage_hub() -> void:
     garage_hub_r39.upgrade_requested_r54.connect(_upgrade_docked)
     garage_hub_r39.training_requested_r54.connect(_r54_train_selected_captain)
     garage_hub_r39.module_requested_r56.connect(_r56_purchase_workbench_module)
+    garage_hub_r39.livery_requested_r59.connect(_r59_choose_livery)
     garage_hub_r39.contract_selected_r57.connect(_r57_select_contract)
     garage_hub_r39.risk_selected_r58.connect(_r58_select_risk_tier)
     garage_hub_r39.captain_selected.connect(_r42_select_captain)
@@ -2274,6 +2287,9 @@ func _r39_refresh_garage() -> void:
         "engine_rank_r54": ship.engine_rank,
         "weapon_rank_r54": ship.weapon_rank,
         "hangar_modules_r56": hangar_modules_r56.duplicate(true),
+        "livery_owned_r59": livery_owned_r59.duplicate(true),
+        "livery_equipped_r59": livery_equipped_r59.duplicate(true),
+        "livery_catalog_r59": HangarLiveriesR59Script.catalog(),
         "hull_cap_r56": fleet_r15.ship_hull_cap(),
         "shield_cap_r56": fleet_r15.ship_shield_cap(),
         "radar_range_r56": fleet_r15.radar_range_r56(),
@@ -2349,6 +2365,37 @@ func _r45_select_owned_ship(id: String) -> void:
     _save_progress()
     _r39_refresh_garage()
     _show_notice("КОРАБЛЬ ГОТОВ К ВЫЛЕТУ · " + id)
+
+func _r59_choose_livery(style_id: String) -> void:
+    # A repeat click on a purchased cosmetic only equips it; CR is debited
+    # once and only while the real owned hull sits in the visible hangar.
+    if not garage_open_r39 or not is_instance_valid(garage_hub_r39) or (
+            not garage_hub_r39.visible) or not (
+            HangarLiveriesR59Script.valid_style(style_id)):
+        return
+    var ship_id: String = equipped_r15
+    if not HangarLiveriesR59Script.valid_ship(ship_id) or (
+            ship_id != "ship_scout" and not owned_r15.has(ship_id) and
+            int(premium_r15.get(ship_id, 0)) <= 0):
+        _show_notice("ОКРАСКА · СНАЧАЛА ПРИОБРЕТИ КОРАБЛЬ")
+        return
+    if not HangarLiveriesR59Script.owns(
+            livery_owned_r59, ship_id, style_id):
+        var price: int = HangarLiveriesR59Script.price(style_id)
+        if price <= 0 or credits < price:
+            _show_notice("ОКРАСКА · НУЖНО %d CR" % price)
+            return
+        # Single ledger debit: no half-paid styles or cloned purchases.
+        credits -= price
+        var acquired: Array = livery_owned_r59[ship_id]
+        acquired.append(style_id)
+        livery_owned_r59[ship_id] = acquired
+    livery_equipped_r59[ship_id] = style_id
+    _r15_apply_loadout()
+    _save_progress()
+    _r39_refresh_garage()
+    _show_notice("AURORA PAINT · %s · ГОТОВО" % str(
+        HangarLiveriesR59Script.TITLES[style_id]))
 
 func _r56_purchase_workbench_module(module_id: String) -> void:
     # Paid local CR transaction only, never premium receipts or free upgrades.
