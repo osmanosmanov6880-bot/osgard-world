@@ -985,4 +985,58 @@ assert "FileAccess.open(" not in r52_controller
 require("docs/R52-REAL-STATION-BLACKOUT-QA.md",
     "NOT_PERFORMED", "95", "78", "14", "40", "15", "Android")
 
+# R54: a REAL enclosed 3D stage, no misleading 2D showroom cards.
+r54_hangar = require(
+    "scripts/hangar_environment_r54.gd",
+    "extends Node3D",
+    "R54_AuroraEnclosedIndustrialHangar",
+    "R54_Real72mHangarDeck",
+    "R54_RealRearHangarWall",
+    "R54_ArmoredDoorLeaf_",
+    "R54_TravellingInspectionCrane",
+    "R54_RealHangarServiceVehicle_",
+    "R54_ActualShadowCastingInspectionSpot",
+    "func set_quality_tier(tier: int) -> void:",
+)
+assert 'AuroraHangarZeroR54Script = preload("res://scripts/hangar_environment_r54.gd")' in r44_preview
+assert "hangar_set_r54 = AuroraHangarZeroR54Script.new()" in r44_preview
+assert "preview_viewport.msaa_3d = Viewport.MSAA_4X" in r44_preview
+assert "stretch_shrink = 1" in r44_preview
+assert "preview_viewport.size = Vector2i(640, 350)" not in r44_preview
+assert "func zoom_r54(direction: int) -> void:" in r44_preview
+assert "func _r54_fit_quality() -> void:" in r44_preview
+r54_academy = require(
+    "scripts/pilot_academy_r54.gd",
+    "extends RefCounted",
+    "MAX_RANK: int = 3",
+    "TRAINING_COSTS: Array[int] = [650, 1100, 1800]",
+    "func damage_multiplier(",
+    "func thrust_multiplier(",
+    "func credit_bonus(",
+    "func safe_roster(",
+)
+assert "R54_AlwaysVisibleRealCreditHangarShop" in garage
+assert "R54_AlwaysAvailableHubSections" in garage
+assert "R54_CreditBasedCaptainAcademy" in garage
+assert "upgrade_requested_r54.emit(0)" in garage
+assert "training_requested_r54.emit()" in garage
+assert "garage_hub_r39.training_requested_r54.connect(_r54_train_selected_captain)" in world
+assert "garage_hub_r39.upgrade_requested_r54.connect(_upgrade_docked)" in world
+assert '"pilot_training_r54":pilot_training_r54' in world
+assert "PilotAcademyR54Script.safe_roster(raw.get(" in world
+assert "PilotAcademyR54Script.credit_bonus(" in world
+assert "PilotAcademyR54Script.damage_multiplier(" in world
+assert "PilotAcademyR54Script.thrust_multiplier(" in world
+assert "NEBULA_R54_REAL_HANGAR_LAYOUT_WALLET_AND_SHOP_SUCCESS" in smoke
+assert "NEBULA_R54_ACADEMY_REAL_SHIP_STATS_SAVE_AND_CREDITS_SUCCESS" in smoke
+assert "R54 version-1 local save must preserve credit wallet" in smoke
+assert "R54 actual departure must apply paid Ada training" in smoke
+assert "R54 training must debit 650 CR" in smoke
+assert "credits +=" not in r54_academy and "FileAccess.open(" not in r54_academy
+require(
+    "docs/R54-AURORA-HANGAR-ZERO-QA.md",
+    "NOT_PERFORMED", "1700 CR", "4200 CR", "650/1100/1800 CR",
+    "Godot", "Chromium", "4K/8K",
+)
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
