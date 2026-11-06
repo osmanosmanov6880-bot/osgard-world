@@ -7,6 +7,7 @@ signal shop_requested
 signal upgrade_requested_r54(slot: int)
 signal training_requested_r54
 signal module_requested_r56(module_id: String)
+signal livery_requested_r59(style_id: String)
 signal contract_selected_r57(contract_id: String)
 signal risk_selected_r58(tier: int)
 signal captain_selected(captain_id: String)
@@ -66,6 +67,9 @@ var academy_status_r54: Label
 var academy_train_button_r54: Button
 var engine_upgrade_r54: Button
 var weapon_upgrade_r54: Button
+var r59_paint_panel: PanelContainer
+var r59_paint_status: Label
+var r59_paint_buttons: Dictionary = {}
 var r56_workshop_panel: PanelContainer
 var r56_workshop_status: Label
 var r56_module_buttons: Dictionary = {}
@@ -307,6 +311,27 @@ func _build() -> void:
     comparison_detail_r46.name = "R46_RealShipStatistics"
     comparison_detail_r46.visible = false
 
+    # R59: a genuine credit-paid 3D livery bay within FLEET, not a fifth
+    # tab that breaks the tiny 320px mobile navigation strip.
+    r59_paint_panel = PanelContainer.new()
+    r59_paint_panel.name = "R59_AuroraActual3DMetallicLiveryStudio"
+    r59_paint_panel.add_theme_stylebox_override("panel",
+        _panel_style(Color(0.022,0.052,0.077,0.98), GOLD))
+    column.add_child(r59_paint_panel)
+    var paint_stack := VBoxContainer.new()
+    paint_stack.add_theme_constant_override("separation", 7)
+    r59_paint_panel.add_child(paint_stack)
+    _label(paint_stack, "AURORA · АТЕЛЬЕ КОРПУСОВ", 13, GOLD)
+    r59_paint_status = _label(paint_stack,
+        "ЗАВОДСКОЙ ТИТАН · НА АКТИВНОМ КОРАБЛЕ", 12, CYAN)
+    _label(paint_stack, "МЕТАЛЛ · СВЕТ · ФИЗИЧЕСКИЕ РЕЙКИ", 11, MUTED)
+    for style_id in ["factory", "cobalt", "ember", "obsidian"]:
+        var paint_button := _r54_credit_action(paint_stack,
+            "R59_Paint_" + style_id, style_id.to_upper())
+        paint_button.custom_minimum_size.y = 48
+        paint_button.pressed.connect(_r59_request_livery.bind(style_id))
+        r59_paint_buttons[style_id] = paint_button
+
     # R56: a focused module workbench, not a second shop or fake purchase.
     r56_workshop_panel = PanelContainer.new()
     r56_workshop_panel.name = "R56_ActualShipModuleWorkbench"
@@ -538,6 +563,12 @@ func _r57_request_contract(contract_id: String) -> void:
             r57_contract_panel.visible):
         contract_selected_r57.emit(contract_id)
 
+func _r59_request_livery(style_id: String) -> void:
+    if active_section_r54 == "fleet" and r59_paint_buttons.has(
+            style_id) and is_instance_valid(r59_paint_panel) and (
+            r59_paint_panel.visible):
+        livery_requested_r59.emit(style_id)
+
 func _r56_request_module(module_id: String) -> void:
     if r56_module_buttons.has(module_id) and active_section_r54 == "workshop":
         module_requested_r56.emit(module_id)
@@ -552,6 +583,8 @@ func _r54_select_section(section_id: String) -> void:
     var operations: bool = section_id == "operations"
     if is_instance_valid(ship_card_r54):
         ship_card_r54.visible = fleet
+    if is_instance_valid(r59_paint_panel):
+        r59_paint_panel.visible = fleet
     if is_instance_valid(r56_workshop_panel):
         r56_workshop_panel.visible = workshop
     if is_instance_valid(captain_card_r54):
@@ -691,6 +724,41 @@ func refresh(data: Dictionary) -> void:
         button.tooltip_text = ("Максимальная модернизация" if rank >= 3 else
             ("Нужно %s CR" % _format_number(cost) if credits < cost else
             "Установить за игровые кредиты, изменения сохраняются"))
+    # R59 actual per-owned-ship paint. The same material palette and
+    # physical 3D trims must appear in both hangar viewer and flight.
+    var livery_ship: String = str(data.get("ship", "ship_scout"))
+    var paints_owned: Dictionary = data.get("livery_owned_r59", {})
+    var paints_selected: Dictionary = data.get("livery_equipped_r59", {})
+    var current_paint: String = str(paints_selected.get(livery_ship, "factory"))
+    var current_paint_owned: Variant = paints_owned.get(livery_ship, ["factory"])
+    var paint_inventory: Array = (
+        current_paint_owned if typeof(current_paint_owned) == TYPE_ARRAY else
+        ["factory"])
+    if is_instance_valid(r59_paint_status):
+        r59_paint_status.text = "АКТИВНАЯ ОКРАСКА · %s" % str({
+            "factory":"ЗАВОДСКОЙ ТИТАН",
+            "cobalt":"ПОЛЯРНЫЙ КОБАЛЬТ",
+            "ember":"ПЛАМЯ РАЗЛОМА",
+            "obsidian":"ЧЁРНЫЙ МОНОЛИТ"}.get(current_paint, "ЗАВОДСКОЙ ТИТАН"))
+    for choice in data.get("livery_catalog_r59", []):
+        if typeof(choice) != TYPE_DICTIONARY:
+            continue
+        var style_id: String = str(choice.get("id", ""))
+        if not r59_paint_buttons.has(style_id):
+            continue
+        var button: Button = r59_paint_buttons[style_id]
+        var owned_style: bool = paint_inventory.has(style_id)
+        var active_style: bool = current_paint == style_id
+        var cost: int = int(choice.get("credits", 0))
+        button.text = ("%s · %s" % [str(choice.get("title", "ОКРАСКА")),
+            "УСТАНОВЛЕНО" if active_style else
+            ("ПРИМЕНИТЬ" if owned_style else (
+                "%s CR" % _format_number(cost)))])
+        button.disabled = active_style or (not owned_style and credits < cost)
+        button.tooltip_text = str(choice.get("description", ""))
+        var shade: Dictionary = choice.get("palette", {})
+        button.add_theme_color_override("font_color",
+            shade.get("accent", CYAN))
     captain_label.text = "КАПИТАН · УРОВЕНЬ %d" % level
     progression_label.text = "%d / 500 XP до следующего уровня" % xp_next
     var selected_id: String = str(data.get("captain_id", "ada"))
@@ -753,6 +821,10 @@ func refresh(data: Dictionary) -> void:
         int(equipment.get("engine_rank", 0))]
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.set_ship_type(ship_id)
+        var livery_selected_for_preview: Dictionary = data.get(
+            "livery_equipped_r59", {})
+        ship_preview_r44.set_livery_r59(str(
+            livery_selected_for_preview.get(ship_id, "factory")))
         var owned_module_sets: Dictionary = data.get("hangar_modules_r56", {})
         var active_modules: Variant = owned_module_sets.get(ship_id, {})
         var configured: Dictionary = (
