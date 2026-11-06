@@ -251,6 +251,28 @@ try {
       };
     });
     const tag = vp.width + 'x' + vp.height;
+    // Write boot evidence BEFORE slow software-GPU readbacks: even a later
+    // renderer deadlock must leave actionable data in the uploaded artifact.
+    const bootEvidence = {
+      viewport: tag, recorded_at: new Date().toISOString(),
+      url, elapsed_since_navigation_ms: Date.now() - started,
+      browser: await browser.version(),
+      canvas: detail,
+      pilot_telemetry: await page.evaluate(() => {
+        const t = window.__nebulaPilotTelemetry || {};
+        return { ready: t.ready === true, samples: Number(t.samples || 0),
+          locked: !!t.locked, quality: t.quality || '',
+          browser_window_ready: !!t.browser_window_ready };
+      }),
+      capture_requirements: {
+        minimum_real_jpeg_bytes: 12000,
+        accepts_synthetic_image: false,
+        hosted_swiftshader_not_hardware_fps: true
+      }
+    };
+    fs.writeFileSync(path.join(output, 'r11-' + tag + '-boot.json'),
+      JSON.stringify(bootEvidence, null, 2));
+    console.log('NEBULA_R11_PRECAPTURE_EVIDENCE: ' + JSON.stringify(bootEvidence));
     if (!detail.webgl_available || detail.canvas_width < 300 || detail.canvas_height < 200) {
       throw new Error('Browser failed to initialize a usable WebGL canvas at ' + tag);
     }
@@ -258,6 +280,12 @@ try {
     screenshots.maximum = await captureWithFallback(
       page, path.join(output, 'r11-' + tag + '-max.jpg'), errors);
     if (screenshots.maximum === 'inconclusive') {
+      fs.writeFileSync(path.join(output, 'r11-' + tag + '-capture-failure.json'),
+        JSON.stringify({
+          viewport: tag, failed_at: new Date().toISOString(),
+          tested_url: url, boot_evidence: bootEvidence,
+          captures_attempted: errors, real_visual_frame_confirmed: false
+        }, null, 2));
       console.error('NEBULA_R11_CAPTURE_FAILURE_DETAILS: ' + JSON.stringify({
         viewport: tag, capture_status: screenshots.maximum,
         canvas_width: detail.canvas_width, canvas_height: detail.canvas_height,
