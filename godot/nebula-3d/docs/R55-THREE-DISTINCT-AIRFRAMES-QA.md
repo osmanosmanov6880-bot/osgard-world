@@ -21,7 +21,7 @@
 
 ## Границы выпуска
 
-Приёмка: Godot 4.7.2 editor parse, native `tests/runtime_smoke.gd`, WebAssembly export, реальный браузерный полёт Chromium, мобильная сенсорная эмуляция, frontend, launcher, security. Все 6/6 checks на последнем SHA обязательны перед merge. Далее отдельный доверенный Web-экспорт, pinned SHA каждого `index.html`, `index.js`, `index.wasm`, `index.pck`, релизный PR с rollback и публичная HTTPS parity 4/4.
+Приёмка: WebGL Compatibility, Godot 4.7.2 editor parse, native `tests/runtime_smoke.gd`, WebAssembly export, реальный браузерный полёт Chromium, мобильная сенсорная эмуляция, frontend, launcher, security. Все 6/6 checks на последнем SHA обязательны перед merge. Далее отдельный доверенный Web-экспорт, pinned SHA каждого `index.html`, `index.js`, `index.wasm`, `index.pck`, релизный PR с rollback и публичная HTTPS parity 4/4.
 
 **Это шаг к качественной игре, но не готовый фотореализм.** Нет созданных в Blender кинематографических low/high-poly ретопологических ассетов, 4K PBR-карт, полноценных NPC и обкатки реального мобильного GPU. Сложное освещение и огромное количество мешей в Godot Compatibility требуют измеренной оптимизации на устройствах, прежде чем обещать FPS.
 
