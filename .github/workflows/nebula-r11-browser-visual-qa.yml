@@ -49,6 +49,41 @@ jobs:
           trap 'kill $server_pid || true' EXIT
           sleep 2
           node godot/nebula-3d/tests/browser_smoke_r11.mjs
+      - name: Summarize actual visual capture state (never fabricate pass)
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const root = 'r11-browser-qa';
+          const reportFile = path.join(root, 'report.json');
+          const files = fs.existsSync(root) ? fs.readdirSync(root) : [];
+          const report = fs.existsSync(reportFile) ?
+            JSON.parse(fs.readFileSync(reportFile, 'utf8')) : null;
+          const photoFiles = files.filter(name => /^r11-.*\.jpg$/.test(name));
+          const bootFiles = files.filter(name => /^r11-.*-boot\.json$/.test(name));
+          const failures = files.filter(name => /^r11-.*-capture-failure\.json$/.test(name));
+          const evidence = photoFiles.length > 0 && report?.scenes?.some(
+            scene => scene.screenshot_status?.maximum !== 'inconclusive');
+          const summary = [
+            '### NEBULA R11 — hosted software renderer evidence',
+            '',
+            '- Real rendered JPEG(s): ' + photoFiles.length,
+            '- Pre-capture browser/GL telemetry JSON(s): ' + bootFiles.length,
+            '- Explicit capture failure JSON(s): ' + failures.length,
+            '- Confirmed visual screenshot: ' + (evidence ? 'YES' : 'NO'),
+            '- Hardware GPU/phone QA: **NOT PERFORMED**',
+            '- Raw files: see uploaded `nebula-r11-chromium-swiftshader-visual-qa` artifact',
+            '',
+            'A browser test with gameplay telemetry alone is **not** proof of pixels.'
+          ].join('\n') + '\n';
+          if (process.env.GITHUB_STEP_SUMMARY)
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          console.log('NEBULA_R11_VISUAL_EVIDENCE: ' + JSON.stringify({
+            real_jpeg_count: photoFiles.length, boot_count: bootFiles.length,
+            failed_capture_count: failures.length, real_frame_confirmed: !!evidence
+          }));
+          NODE
       - name: Publish screenshots and hosted-renderer report
         if: always()
         uses: actions/upload-artifact@v4
