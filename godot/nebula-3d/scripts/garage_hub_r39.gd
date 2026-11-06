@@ -6,6 +6,7 @@ signal sortie_requested
 signal shop_requested
 signal upgrade_requested_r54(slot: int)
 signal training_requested_r54
+signal module_requested_r56(module_id: String)
 signal captain_selected(captain_id: String)
 signal ship_selected_r45(ship_id: String)
 signal wingman_toggled_r47(wingman_id: String)
@@ -63,6 +64,9 @@ var academy_status_r54: Label
 var academy_train_button_r54: Button
 var engine_upgrade_r54: Button
 var weapon_upgrade_r54: Button
+var r56_workshop_panel: PanelContainer
+var r56_workshop_status: Label
+var r56_module_buttons: Dictionary = {}
 var footer_r54: HBoxContainer
 
 const BG := Color(0.018, 0.035, 0.058, 0.96)
@@ -202,11 +206,11 @@ func _build() -> void:
     nav.name = "R54_AlwaysAvailableHubSections"
     nav.add_theme_constant_override("separation", 6)
     content_root.add_child(nav)
-    for tab_id in ["fleet", "crew", "operations"]:
+    for tab_id in ["fleet", "workshop", "crew", "operations"]:
         var tab := Button.new()
         tab.name = "R54_Tab_" + tab_id
-        tab.text = {"fleet":"ФЛОТ", "crew":"ПИЛОТЫ",
-            "operations":"МИССИИ"}[tab_id]
+        tab.text = {"fleet":"ФЛОТ", "workshop":"МОДУЛИ",
+            "crew":"ПИЛОТЫ", "operations":"МИССИИ"}[tab_id]
         tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         tab.custom_minimum_size = Vector2(76, 42)
         tab.focus_mode = Control.FOCUS_ALL
@@ -272,7 +276,7 @@ func _build() -> void:
     var upgrade_tools := HBoxContainer.new()
     upgrade_tools.name = "R54_DockedEngineAndWeaponWorkbench"
     upgrade_tools.add_theme_constant_override("separation", 6)
-    ship_stack.add_child(upgrade_tools)
+    # R56: two classic upgrades move to the dedicated workshop section.
     engine_upgrade_r54 = _r54_credit_action(upgrade_tools,
         "R54_EngineUpgrade", "ДВИГАТЕЛЬ · 600 CR")
     weapon_upgrade_r54 = _r54_credit_action(upgrade_tools,
@@ -292,6 +296,30 @@ func _build() -> void:
     comparison_detail_r46 = _label(ship_stack, "", 12, MUTED)
     comparison_detail_r46.name = "R46_RealShipStatistics"
     comparison_detail_r46.visible = false
+
+    # R56: a focused module workbench, not a second shop or fake purchase.
+    r56_workshop_panel = PanelContainer.new()
+    r56_workshop_panel.name = "R56_ActualShipModuleWorkbench"
+    r56_workshop_panel.add_theme_stylebox_override("panel",
+        _panel_style(Color(0.025, 0.057, 0.085, 0.98), LINE))
+    column.add_child(r56_workshop_panel)
+    var workbench_stack := VBoxContainer.new()
+    workbench_stack.add_theme_constant_override("separation", 10)
+    r56_workshop_panel.add_child(workbench_stack)
+    _label(workbench_stack, "AURORA · МАСТЕРСКАЯ ФЛОТА", 13, GOLD)
+    _label(workbench_stack, "ОБОРУДОВАНИЕ АКТИВНОГО КОРАБЛЯ", 12, CYAN)
+    r56_workshop_status = _label(workbench_stack,
+        "КОРПУС 100 / ЩИТ 100 / РАДАР 460 М", 13, MUTED)
+    _label(workbench_stack, "БАЗОВЫЕ СИСТЕМЫ · ДО 4 УРОВНЯ", 12, CYAN)
+    workbench_stack.add_child(upgrade_tools)
+    _label(workbench_stack, "ПЕРСОНАЛЬНЫЕ МОДУЛИ · ДО 3 УРОВНЯ", 12, GOLD)
+    for module_id in ["armor", "shield", "radar"]:
+        var module_button := _r54_credit_action(workbench_stack,
+            "R56_Install_" + module_id, "УСТАНОВИТЬ · " + module_id)
+        module_button.tooltip_text = "Покупка за игровые кредиты"
+        module_button.pressed.connect(
+            _r56_request_module.bind(module_id))
+        r56_module_buttons[module_id] = module_button
 
     var captain_card := PanelContainer.new()
     captain_card.name = "R39_CaptainCard"
@@ -448,15 +476,22 @@ func _r54_zoom_preview(direction: int) -> void:
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.zoom_r54(direction)
 
+func _r56_request_module(module_id: String) -> void:
+    if r56_module_buttons.has(module_id) and active_section_r54 == "workshop":
+        module_requested_r56.emit(module_id)
+
 func _r54_select_section(section_id: String) -> void:
     if not section_buttons_r54.has(section_id):
         return
     active_section_r54 = section_id
     var fleet: bool = section_id == "fleet"
+    var workshop: bool = section_id == "workshop"
     var crew: bool = section_id == "crew"
     var operations: bool = section_id == "operations"
     if is_instance_valid(ship_card_r54):
         ship_card_r54.visible = fleet
+    if is_instance_valid(r56_workshop_panel):
+        r56_workshop_panel.visible = workshop
     if is_instance_valid(captain_card_r54):
         captain_card_r54.visible = crew
     if is_instance_valid(academy_panel_r54):
@@ -553,6 +588,39 @@ func refresh(data: Dictionary) -> void:
         academy_train_button_r54.text = ("ОБУЧЕНИЕ ЗАВЕРШЕНО" if trained >= 3
             else "ОБУЧИТЬ · %s CR" % _format_number(training_cost))
         academy_train_button_r54.disabled = trained >= 3
+    # Module costs and installed bonuses are bound to the real owned hull.
+    var module_hull: String = str(data.get("ship", "ship_scout"))
+    var module_roster: Dictionary = data.get("hangar_modules_r56", {})
+    var module_data: Variant = module_roster.get(module_hull, {})
+    var module_levels: Dictionary = (
+        module_data if typeof(module_data) == TYPE_DICTIONARY else {})
+    if is_instance_valid(r56_workshop_status):
+        var ship_title: String = str({
+            "ship_scout":"NX-08", "ship_interceptor":"NX-12",
+            "ship_guardian":"NX-21"}.get(module_hull, "NX"))
+        r56_workshop_status.text = (
+            "%s · КОРПУС %d · ЩИТ %d · РАДАР %d М" % [
+            ship_title, roundi(float(data.get("hull_cap_r56", 100))),
+            roundi(float(data.get("shield_cap_r56", 100))),
+            roundi(float(data.get("radar_range_r56", 460)))])
+    var module_titles: Dictionary = {
+        "armor":"БРОНЯ · +20 КОРПУС",
+        "shield":"ГЕНЕРАТОР ЩИТА · +25 ЕД.",
+        "radar":"СЕНСОРЫ · +100 М"}
+    var base_price: Dictionary = {"armor":500, "shield":550, "radar":400}
+    var price_step: Dictionary = {"armor":400, "shield":450, "radar":320}
+    for module_id in ["armor", "shield", "radar"]:
+        var button: Button = r56_module_buttons[module_id]
+        var rank: int = clampi(int(module_levels.get(module_id, 0)), 0, 3)
+        var cost: int = int(base_price[module_id]) + int(price_step[module_id]) * rank
+        button.text = ("%s · РАНГ %d/3 · МАКСИМУМ" % [
+            module_titles[module_id], rank] if rank >= 3 else
+            "%s · РАНГ %d/3 → %d/3 · %s CR" % [
+            module_titles[module_id], rank, rank + 1, _format_number(cost)])
+        button.disabled = rank >= 3
+        button.tooltip_text = ("Максимальная модернизация" if rank >= 3 else
+            ("Нужно %s CR" % _format_number(cost) if credits < cost else
+            "Установить за игровые кредиты, изменения сохраняются"))
     captain_label.text = "КАПИТАН · УРОВЕНЬ %d" % level
     progression_label.text = "%d / 500 XP до следующего уровня" % xp_next
     var selected_id: String = str(data.get("captain_id", "ada"))
