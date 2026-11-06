@@ -1052,7 +1052,7 @@ r55_fleet = require(
     "R55_NX21_TrueBroadArmoredCitadelHull",
     "R55_NX12_PairedThrust_",
     "R55_NX21_QuadDrive_",
-    "R55_True"
+    "visual_signature"
 )
 assert "ship_scout" in r55_fleet and "ship_interceptor" in r55_fleet
 assert "ship_guardian" in r55_fleet
