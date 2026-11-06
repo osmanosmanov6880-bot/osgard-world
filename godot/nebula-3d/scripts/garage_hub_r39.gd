@@ -683,6 +683,14 @@ func refresh(data: Dictionary) -> void:
         int(equipment.get("engine_rank", 0))]
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.set_ship_type(ship_id)
+        var owned_module_sets: Dictionary = data.get("hangar_modules_r56", {})
+        var active_modules: Variant = owned_module_sets.get(ship_id, {})
+        var configured: Dictionary = (
+            active_modules if typeof(active_modules) == TYPE_DICTIONARY else {})
+        ship_preview_r44.set_workbench_modules_r56(
+            clampi(int(configured.get("armor", 0)), 0, 3),
+            clampi(int(configured.get("shield", 0)), 0, 3),
+            clampi(int(configured.get("radar", 0)), 0, 3))
     if is_instance_valid(preview_title_r44):
         preview_title_r44.text = "AURORA  /  BAY ZERO  /  " + str(ship_names.get(ship_id,
             "NX-08  /  РАЗВЕДЧИК"))
