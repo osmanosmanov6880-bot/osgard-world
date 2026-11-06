@@ -2234,7 +2234,13 @@ func _r39_create_garage_hub() -> void:
     if is_instance_valid(r21_dashboard):
         r21_dashboard.visible = false
     if is_instance_valid(performance_lab_r11):
-        performance_lab_r11.visible = false
+        # R57: keep the on-screen FPS/quality controls usable in the garage.
+        # An actual ship can be destroyed between mobile QA frame samples;
+        # previously the whole CanvasLayer disappeared after garage return,
+        # leaving a real finger tap on the measured FPS button inert.
+        # This is also useful to players testing garage GPU cost. The
+        # higher-layer profiler sits outside the dock's sortie hit target.
+        performance_lab_r11.visible = true
     _r39_refresh_garage()
 
 func _r39_open_shop() -> void:
