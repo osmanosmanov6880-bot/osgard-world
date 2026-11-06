@@ -72,6 +72,7 @@ var r57_contract_panel: PanelContainer
 var r57_contract_buttons: Dictionary = {}
 var r57_contract_description: Label
 var r57_contract_result: Label
+var r57_contract_count_label: Label
 var r57_free_flight_button: Button
 var footer_r54: HBoxContainer
 
@@ -417,7 +418,8 @@ func _build() -> void:
     contract_stack.add_theme_constant_override("separation", 8)
     r57_contract_panel.add_child(contract_stack)
     _label(contract_stack, "КАРЬЕРА ПИЛОТА · КОНТРАКТЫ АВРОРЫ", 13, GOLD)
-    _label(contract_stack, "14 СЮЖЕТНЫХ ОПЕРАЦИЙ ПРОЙДЕНЫ", 12, MUTED)
+    r57_contract_count_label = _label(contract_stack,
+        "СЮЖЕТ ПРОЙДЕН · КОНТРАКТЫ ОТКРЫТЫ", 12, MUTED)
     r57_contract_description = _label(contract_stack,
         "Выбирай настоящий рейс. Награда только после всех точек.", 12, CYAN)
     r57_contract_result = _label(contract_stack, "", 12, GOLD)
@@ -602,7 +604,10 @@ func refresh(data: Dictionary) -> void:
     var xp := int(data.get("xp", 0))
     var level := 1 + int(floor(float(xp) / 500.0))
     var xp_next := xp % 500
-    resource_label.text = "%s CR    •    %s XP" % [_format_number(credits), _format_number(xp)]
+    var compact_wallet: bool = get_viewport().get_visible_rect().size.x < 580.0
+    resource_label.text = (
+        "%s CR" % _format_number(credits) if compact_wallet else
+        "%s CR    •    %s XP" % [_format_number(credits), _format_number(xp)])
     if is_instance_valid(engine_upgrade_r54):
         var engine_rank: int = clampi(int(data.get("engine_rank_r54", 0)), 0, 4)
         engine_upgrade_r54.text = ("ДВИГАТЕЛЬ · MAX" if engine_rank >= 4
@@ -786,6 +791,9 @@ func refresh(data: Dictionary) -> void:
     if is_instance_valid(r57_contract_panel):
         r57_contract_panel.visible = finished_campaign and (
             active_section_r54 == "operations")
+        r57_contract_count_label.text = (
+            "ПРОЙДЕНО %d СЮЖЕТНЫХ МИССИЙ · ДОСТУПНЫ КОНТРАКТЫ" %
+            (data.get("missions", []) as Array).size())
         r57_contract_description.text = (
             "Выбери маршрут. Пройди все физические маяки за отведённое "
             + "время: награда не начисляется при выборе или провале.")
@@ -850,6 +858,19 @@ func _layout_hub() -> void:
         return
     var view := get_viewport().get_visible_rect().size
     var compact: bool = view.x < 580.0
+    # Preserve all four primary sections on narrow portrait screens;
+    # avoid the nav strip horizontally clipping the last tab.
+    for key in section_buttons_r54:
+        var nav_button: Button = section_buttons_r54[key]
+        nav_button.custom_minimum_size = Vector2(48 if compact else 76, 42)
+        nav_button.add_theme_font_size_override("font_size",
+            10 if compact else 12)
+        nav_button.text = str({
+            "fleet":"ФЛОТ", "workshop":"МОД." if compact else "МОДУЛИ",
+            "crew":"ПИЛОТЫ", "operations":"МИССИИ"}.get(key, key))
+    if is_instance_valid(resource_label):
+        resource_label.add_theme_font_size_override(
+            "font_size", 12 if compact else 16)
     var landscape: bool = view.x >= 740.0 and view.x > view.y * 1.28
     var short_view: bool = view.y < 560.0
     var margin: float = 10.0 if compact else (12.0 if view.x < 980.0 else 30.0)
