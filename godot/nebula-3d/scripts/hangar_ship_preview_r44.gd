@@ -194,6 +194,8 @@ func _r54_fit_quality() -> void:
         Viewport.MSAA_2X if compact else Viewport.MSAA_4X)
     if is_instance_valid(hangar_set_r54):
         hangar_set_r54.set_quality_tier(1 if compact else 0)
+    if is_instance_valid(primary_airframe_r55):
+        primary_airframe_r55.set_low_detail(compact)
 
 func zoom_r54(direction: int) -> void:
     camera_distance_r54 = clampf(
