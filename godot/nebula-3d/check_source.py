@@ -1105,7 +1105,8 @@ assert "HangarWorkbenchR56Script = preload(" in require("scripts/fleet_combat_r1
     "HangarWorkbenchR56Script.hull_cap(",
     "HangarWorkbenchR56Script.shield_cap(")
 assert "garage_hub_r39.module_requested_r56.connect(_r56_purchase_workbench_module)" in world
-assert 'hangar_modules_r56 = HangarWorkbenchR56Script.safe_roster(raw.get(' in world
+assert ('hangar_modules_r56 = HangarWorkbenchR56Script.safe_roster(' in world and
+    'raw.get("hangar_modules_r56", {}))' in world)
 assert '"hangar_modules_r56":hangar_modules_r56' in world
 assert "radar.range_meters = fleet_r15.radar_range_r56()" in world
 assert 'func _r56_purchase_workbench_module(module_id: String) -> void:' in world
