@@ -152,6 +152,77 @@ func _run() -> void:
         "R45 garage selection must never bypass launch lock"):return
     print("NEBULA_R45_DISTINCT_HULLS_SUCCESS scout=%d interceptor=%d guardian=%d" %
         [scout_parts, interceptor_parts, guardian_parts])
+    # R55: three genuinely distinct sculpted fuselages. The imported NX08
+    # legacy template must NOT be the active mesh for NX12/NX21, either in
+    # isolated garage inspection or real physics-driven flight.
+    var r55_gallery = r44_view.primary_airframe_r55
+    var r55_flight = world.ship.primary_airframe_r55
+    if not check(is_instance_valid(r55_gallery) and
+        is_instance_valid(r55_flight) and
+        not r44_view.real_airframe.visible and
+        not r44_view.distinct_hull_r45.visible and
+        r55_gallery.core_mesh.mesh is ArrayMesh and
+        r55_flight.core_mesh.mesh is ArrayMesh and
+        r55_gallery.active_body.visible and
+        r55_flight.active_body.visible and
+        not world.ship.visual.get_node("HighDetailInterceptorR5").visible and
+        not world.ship.hull_kit_r45.visible,
+        "R55 must replace both old shared core airframes without deleting rollback data"):return
+    var r55_core_meshes: Array[Mesh] = []
+    var signatures: Array[String] = []
+    var wing_spans: Array[float] = []
+    var engine_counts: Array[int] = []
+    var hull_choices: Array[String] = ["ship_scout","ship_interceptor","ship_guardian"]
+    var prior_credits: int = world.credits
+    var prior_ship: String = world.equipped_r15
+    for hull_id in hull_choices:
+        r44_view.set_ship_type(hull_id)
+        world.ship.set_hull_variant(hull_id)
+        if not check(r55_gallery.selected_hull == hull_id and
+            r55_flight.selected_hull == hull_id and
+            r55_gallery.real_parts.size() > 10 and
+            r55_flight.real_parts.size() > 10 and
+            r55_gallery.core_mesh.mesh is ArrayMesh and
+            r55_flight.core_mesh.mesh is ArrayMesh and
+            r55_gallery.core_mesh.get_parent() == r55_gallery.active_body,
+            "R55 every hull must create actual multi-surface 3D parts"):return
+        var real_mesh: Mesh = r55_gallery.core_mesh.mesh
+        var mesh_arrays: Array = real_mesh.surface_get_arrays(0)
+        var vertex_buffer: PackedVector3Array = mesh_arrays[Mesh.ARRAY_VERTEX]
+        if not check(vertex_buffer.size() > 130 and
+            r55_gallery.visual_signature == r55_flight.visual_signature and
+            r55_gallery.thruster_plumes.size() == r55_gallery.engine_count and
+            r55_flight.thruster_plumes.size() == r55_flight.engine_count,
+            "R55 unique hull must be a triangulated volume with correct engine count"):return
+        signatures.append(r55_gallery.visual_signature)
+        wing_spans.append(r55_gallery.half_span_m)
+        engine_counts.append(r55_gallery.engine_count)
+        r55_core_meshes.append(real_mesh)
+        r55_flight.set_throttle(0.80, true)
+        if not check(r55_flight.thruster_plumes[0].visible and
+            r55_flight.thruster_plumes[0].scale.y > 1.5,
+            "R55 real ship must have throttle-reactive engine light geometry"):return
+    if not check(signatures.size() == 3 and
+        signatures[0] != signatures[1] and signatures[1] != signatures[2] and
+        signatures[0] != signatures[2] and
+        wing_spans[0] < wing_spans[1] and wing_spans[1] < wing_spans[2] and
+        engine_counts == [1,2,4] and
+        r55_core_meshes[0] != r55_core_meshes[1] and
+        r55_core_meshes[1] != r55_core_meshes[2] and
+        world.credits == prior_credits and world.equipped_r15 == prior_ship,
+        "R55 bodies, aerodynamic silhouettes and engines must differ without free purchases"):return
+    r55_gallery.set_low_detail(true)
+    if not check(not r55_gallery.detail_parts[0].visible and
+        r55_gallery.core_mesh.visible,
+        "R55 touch detail tier may hide only tiny service parts, never wing meshes"):return
+    r55_gallery.set_low_detail(false)
+    r44_view.set_ship_type("ship_scout")
+    world.ship.set_hull_variant("ship_scout")
+    if not check(r55_gallery.selected_hull == "ship_scout" and
+        r55_flight.selected_hull == "ship_scout" and
+        world.garage_open_r39 and world.ship.controls_locked,
+        "R55 switching among full airframes must keep safe garage flight lock"):return
+    print("NEBULA_R55_THREE_DISTINCT_3D_CORES_AND_REACTIVE_THRUSTERS_SUCCESS")
     # R46: the comparison must read the SAME fleet limits used by actual
     # combat, without inventing health, shields or premium ownership.
     var real_scout: Dictionary = FleetCombatR15Script.hull_profile("ship_scout")

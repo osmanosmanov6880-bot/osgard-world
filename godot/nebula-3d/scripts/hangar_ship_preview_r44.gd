@@ -4,6 +4,7 @@ extends SubViewportContainer
 ## Isolated camera/world: inspecting never moves or unlocks the flight ship.
 const NXHeroScene = preload("res://assets/models/nx08_interceptor_r8.gltf")
 const HullVariantsR45Script = preload("res://scripts/hull_variants_r45.gd")
+const FleetAirframesR55Script = preload("res://scripts/fleet_airframes_r55.gd")
 const FormationBaysR47Script = preload("res://scripts/formation_bays_r47.gd")
 const AuroraHangarZeroR54Script = preload("res://scripts/hangar_environment_r54.gd")
 
@@ -15,6 +16,7 @@ var preview_viewport: SubViewport
 var ship_pivot: Node3D
 var real_airframe: Node3D
 var distinct_hull_r45: Node3D
+var primary_airframe_r55: Node3D
 var formation_bays_r47: Node3D
 var inspection_camera: Camera3D
 var hangar_set_r54: Node3D
@@ -135,6 +137,12 @@ func _make_real_viewport() -> void:
     distinct_hull_r45.name = "R45_VisibleFleetVariant"
     ship_pivot.add_child(distinct_hull_r45)
     distinct_hull_r45.set_hull(selected_hull)
+    primary_airframe_r55 = FleetAirframesR55Script.new()
+    primary_airframe_r55.name = "R55_RealIndependentlySculptedShipViewer"
+    ship_pivot.add_child(primary_airframe_r55)
+    primary_airframe_r55.set_hull(selected_hull)
+    real_airframe.visible = false
+    distinct_hull_r45.visible = false
     ship_pivot.rotation.y = orbit_angle
 
     var key_light := DirectionalLight3D.new()
@@ -186,6 +194,8 @@ func _r54_fit_quality() -> void:
         Viewport.MSAA_2X if compact else Viewport.MSAA_4X)
     if is_instance_valid(hangar_set_r54):
         hangar_set_r54.set_quality_tier(1 if compact else 0)
+    if is_instance_valid(primary_airframe_r55):
+        primary_airframe_r55.set_low_detail(compact)
 
 func zoom_r54(direction: int) -> void:
     camera_distance_r54 = clampf(
@@ -206,12 +216,13 @@ func _process(delta: float) -> void:
     ship_pivot.position.y = 0.11 * sin(elapsed * 0.83)
 
 func set_ship_type(id: String) -> void:
-    # All three existing R15 game variants share the same primary NX mesh.
-    # Do not pretend that buying a different loadout also provides a
-    # separately modeled airframe that does not yet exist.
+    # R55 draws three independent core meshes, matching actual flight craft.
+    # Existing imported NX08 mesh remains intact for safe rollback.
     selected_hull = id if VALID_HULLS.has(id) else "ship_scout"
     if is_instance_valid(distinct_hull_r45):
         distinct_hull_r45.set_hull(selected_hull)
+    if is_instance_valid(primary_airframe_r55):
+        primary_airframe_r55.set_hull(selected_hull)
 
 func set_wingmen_r47(ids: Array) -> void:
     if is_instance_valid(formation_bays_r47):
