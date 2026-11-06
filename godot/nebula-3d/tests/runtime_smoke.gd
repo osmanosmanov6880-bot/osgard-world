@@ -2546,6 +2546,7 @@ func _run() -> void:
     if not check(PatrolContractsR57Script.catalog().size() == 3 and
         PatrolContractsR57Script.safe_selection("hacked") == "" and
         PatrolContractsR57Script.reward_credits("aurora") == 380 and
+        PilotAcademyR54Script.credit_bonus(380, "leya", 3) == 46 and
         PatrolContractsR57Script.reward_xp("neon") == 160 and
         PatrolContractsR57Script.checkpoint_count("rift") == 4 and
         not patrol_unit.begin("invalid") and patrol_unit.begin("aurora") and
@@ -2665,6 +2666,10 @@ func _run() -> void:
         world.ship.navigation_target.distance_to(
             world.r57_patrol.objective_position()) < 0.01,
         "R57 sortie must create actual 3D beacon and flight navigation"):return
+    world._r21_toggle_hangar()
+    if not check(not world.store_r15.visible and
+        not world.ship.controls_locked and world.r57_patrol.active,
+        "R57 in-flight timed contract must prevent shop locking controls"):return
     world._r57_patrol_tick(0.25)
     if not check(world.credits == 1000 and world.xp == 0 and
         world.r57_patrol.checkpoint_index == 0,
@@ -2709,6 +2714,23 @@ func _run() -> void:
         world.r57_contract_counts["neon"] == 0 and
         world.credits == 1380 and world.xp == 90,
         "R57 old v1 save must persist real contract selection/achievements and wallet"):return
+    # Logistics academy must remain valuable after story completion:
+    # previously trained Leya receives exactly 12% additional earned CR.
+    world.selected_captain_r42 = "leya"
+    world.pilot_training_r54["leya"] = 3
+    world.garage_hub_r39.section_buttons_r54["operations"].pressed.emit()
+    world.garage_hub_r39.r57_contract_buttons["aurora"].pressed.emit()
+    world.garage_hub_r39.launch_button.pressed.emit()
+    for route_index in PatrolContractsR57Script.checkpoint_count("aurora"):
+        world.ship.global_position = world.r57_patrol.objective_position()
+        for dwell_index in 6:
+            world._r57_patrol_tick(0.25)
+    if not check(world.garage_open_r39 and world.credits == 1806 and
+        world.xp == 180 and world.r57_contract_counts["aurora"] == 2 and
+        world.r57_last_report.contains("+426 CR") and
+        world.mission_index == world.MISSIONS.size(),
+        "R57 genuine career flight must include previously purchased Leya bonus once"):return
+    print("NEBULA_R57_TRAINED_LOGISTICS_PILOT_REAL_CONTRACT_BONUS_SUCCESS")
     print("NEBULA_R57_REAL_REPEATABLE_PAYOUT_FAILURE_AND_CAREER_SAVE_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
