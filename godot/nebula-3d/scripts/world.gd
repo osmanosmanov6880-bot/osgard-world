@@ -1660,6 +1660,11 @@ func _r43_fail_sortie(reason: String = "") -> void:
 
 func _on_drone_destroyed(drone: Node3D) -> void:
     drones.erase(drone)
+    # A wreck is a failure state, not a chance to bank kills from wingmen
+    # while the player is unable to fly. The garage is equally non-combat.
+    # Preserve ordinary mid-flight payouts and existing mission escrow.
+    if r60_crash_pending or garage_open_r39:
+        return
     if drone.is_in_group("nebula_mission_hostiles"):
         r43_pending_bounty += 45
     else:
