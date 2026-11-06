@@ -31,6 +31,7 @@ const GarageHubR39Script = preload("res://scripts/garage_hub_r39.gd")
 const CampaignStoryR41Script = preload("res://scripts/campaign_story_r41.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
+const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const HangarLiveriesR59Script = preload("res://scripts/hangar_liveries_r59.gd")
 const ShipWreckR60Script = preload("res://scripts/ship_wreck_r60.gd")
@@ -163,6 +164,11 @@ var garage_open_r39: bool = false
 var r41_last_debrief: Dictionary = {}
 var selected_captain_r42: String = "ada"
 var pilot_training_r54: Dictionary = {"ada":0, "kai":0, "leya":0}
+var pilot_logbook_r61: Dictionary = PilotLogbookR61Script.safe_roster({})
+var r61_sortie_active: bool = false
+var r61_sortie_pilot_id: String = ""
+var r61_sortie_start_distance: float = 0.0
+var r61_sortie_seconds: float = 0.0
 var hangar_modules_r56: Dictionary = HangarWorkbenchR56Script.default_roster()
 var livery_owned_r59: Dictionary = HangarLiveriesR59Script.default_owned()
 var livery_equipped_r59: Dictionary = HangarLiveriesR59Script.default_equipped()
@@ -1030,6 +1036,10 @@ func _process(delta: float) -> void:
     if not is_instance_valid(ship): return
     world_timer += delta
     world_pulse += delta
+    # Only live, unlocked flight adds clock time; dock and physical wreck do not.
+    if r61_sortie_active and not garage_open_r39 and not r60_crash_pending and (
+            not ship.controls_locked):
+        r61_sortie_seconds = minf(36000.0, r61_sortie_seconds + maxf(0.0, delta))
     if r31_touch_web:
         r31_mobile_poll_clock += delta
         if r31_mobile_poll_clock >= 1.0:
@@ -1511,6 +1521,7 @@ func _complete_mission() -> void:
     # another combat encounter or leave the player trapped in open flight.
     if garage_open_r39 or mission_index >= MISSIONS.size():
         return
+    _r61_finish_sortie("success")
     var completed_index := mission_index
     var data: Dictionary = MISSIONS[completed_index]
     var awarded_credits: int = CaptainRosterR42Script.reward(int(data["reward"]), selected_captain_r42) + r43_pending_bounty
@@ -1563,6 +1574,8 @@ func _complete_mission() -> void:
 func _r60_begin_actual_crash() -> void:
     if r60_crash_pending or garage_open_r39 or ship.hull > 0.0:
         return
+    # Record the single real lost flight before crash-hold/debris animation.
+    _r61_finish_sortie("failed")
     r60_crash_pending = true
     r60_crash_hold_sec = R60_CRASH_HOLD_SEC
     r60_crash_was_contract = r57_patrol.active and (
@@ -1616,6 +1629,7 @@ func _r60_finish_actual_crash() -> void:
 func _r43_fail_sortie(reason: String = "") -> void:
     if garage_open_r39 or mission_index >= MISSIONS.size():
         return
+    _r61_finish_sortie("failed")
     # Mission stays available for retry. Unbanked enemy bounties are discarded,
     # so destroying enemies and crashing cannot be exploited for free credits.
     r41_last_debrief = {
@@ -2224,7 +2238,7 @@ func _safe_float(value: Variant, fallback: float) -> float:
 func _save_progress() -> void:
     var file:=FileAccess.open(SAVE_PATH,FileAccess.WRITE)
     if file==null:return
-    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"hangar_modules_r56":hangar_modules_r56,"r57_selected_contract":r57_selected_contract,"r57_contract_counts":r57_contract_counts,"r58_risk_tier":r58_risk_tier,"livery_owned_r59":livery_owned_r59,"livery_equipped_r59":livery_equipped_r59}))
+    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"pilot_logbook_r61":pilot_logbook_r61,"hangar_modules_r56":hangar_modules_r56,"r57_selected_contract":r57_selected_contract,"r57_contract_counts":r57_contract_counts,"r58_risk_tier":r58_risk_tier,"livery_owned_r59":livery_owned_r59,"livery_equipped_r59":livery_equipped_r59}))
     file.close()
 
 func _load_progress() -> void:
@@ -2240,6 +2254,7 @@ func _load_progress() -> void:
     var saved_captain: String = str(raw.get("captain_r42", "ada"))
     selected_captain_r42 = saved_captain if CaptainRosterR42Script.valid_id(saved_captain) else "ada"
     pilot_training_r54 = PilotAcademyR54Script.safe_roster(raw.get("pilot_training_r54", {}))
+    pilot_logbook_r61 = PilotLogbookR61Script.safe_roster(raw.get("pilot_logbook_r61", {}))
     hangar_modules_r56 = HangarWorkbenchR56Script.safe_roster(
         raw.get("hangar_modules_r56", {}))
     livery_owned_r59 = HangarLiveriesR59Script.safe_owned(
@@ -2351,6 +2366,7 @@ func _r39_refresh_garage() -> void:
         "captain_id": selected_captain_r42,
         "captain_info": CaptainRosterR42Script.info(selected_captain_r42),
         "pilot_training_r54": pilot_training_r54.duplicate(true),
+        "pilot_logbook_r61": pilot_logbook_r61.duplicate(true),
         "engine_rank_r54": ship.engine_rank,
         "weapon_rank_r54": ship.weapon_rank,
         "hangar_modules_r56": hangar_modules_r56.duplicate(true),
@@ -2599,6 +2615,7 @@ func _r57_end_patrol(success: bool, message: String) -> void:
     # visited. Bank rewards once, before any dock transition can repeat.
     var verified: bool = success and r57_patrol.finished and (
         r57_patrol.last_result == "success")
+    _r61_finish_sortie("success" if verified else "failed")
     if verified:
         r57_reward_committed = true
         var id: String = r57_patrol.active_id
@@ -2840,6 +2857,27 @@ func _r49_layout_buttons(rect: Vector2, safe: Vector4) -> void:
     r50_repair_button.position = Vector2(left, top + 160.0)
     r50_repair_button.size = Vector2(wide, 44.0)
 
+func _r61_begin_sortie() -> void:
+    if r61_sortie_active or garage_open_r39 or ship.controls_locked:
+        return
+    r61_sortie_active = true
+    r61_sortie_pilot_id = selected_captain_r42
+    r61_sortie_start_distance = ship.flight_distance
+    r61_sortie_seconds = 0.0
+
+func _r61_finish_sortie(outcome: String) -> void:
+    # One real launch -> at most one immutable record. Never mint CR/XP.
+    if not r61_sortie_active:
+        return
+    r61_sortie_active = false
+    pilot_logbook_r61 = PilotLogbookR61Script.record(
+        pilot_logbook_r61, r61_sortie_pilot_id, outcome,
+        maxf(0.0, ship.flight_distance - r61_sortie_start_distance),
+        r61_sortie_seconds)
+    r61_sortie_pilot_id = ""
+    r61_sortie_start_distance = ship.flight_distance
+    r61_sortie_seconds = 0.0
+
 func _r39_launch_sortie() -> void:
     if not garage_open_r39 or not is_instance_valid(garage_hub_r39):
         return
@@ -2875,5 +2913,7 @@ func _r39_launch_sortie() -> void:
         performance_lab_r11.visible = true
     r23_cruise_button.text = "▶  АВТОПИЛОТ К ЦЕЛИ"
     _start_mission()
+    if not garage_open_r39 and not ship.controls_locked:
+        _r61_begin_sortie()
     _r49_refresh_buttons()
     _show_notice("ВЫЛЕТ · " + (str(MISSIONS[mission_index]["title"]) if mission_index < MISSIONS.size() else "СВОБОДНЫЙ ПОЛЁТ"))

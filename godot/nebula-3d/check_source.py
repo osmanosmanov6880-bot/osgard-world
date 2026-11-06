@@ -1347,4 +1347,27 @@ require(
     "13", "220", "Godot", "WebAssembly", "HTTPS 4/4",
 )
 
+r61_logbook = require(
+    "scripts/pilot_logbook_r61.gd",
+    "extends RefCounted",
+    "static func safe_roster(",
+    "static func record(",
+    "static func qualification(",
+    "static func summary(",
+    "MAX_SORTIE_SECONDS",
+)
+assert "credits +=" not in r61_logbook
+assert "FileAccess.open(" not in r61_logbook
+assert 'PilotLogbookR61Script = preload(' in world
+assert '"pilot_logbook_r61":pilot_logbook_r61' in world
+assert 'PilotLogbookR61Script.safe_roster(raw.get("pilot_logbook_r61", {}))' in world
+assert 'func _r61_begin_sortie() -> void:' in world
+assert 'func _r61_finish_sortie(outcome: String) -> void:' in world
+assert 'PilotLogbookR61Script = preload(' in require(
+    "scripts/garage_hub_r39.gd", "r61_logbook_status",
+    "PilotLogbookR61Script.summary(")
+assert "NEBULA_R61_REAL_PILOT_FLIGHT_LOGBOOK_SAVE_NO_MINT_SUCCESS" in smoke
+require("docs/R61-REAL-PILOT-LOGBOOK-QA.md",
+    "R61", "R54", "CR", "Godot", "NOT_PERFORMED", "flight_distance")
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")

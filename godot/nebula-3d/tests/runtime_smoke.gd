@@ -4,6 +4,7 @@ const MaterialFabricR12Script = preload("res://scripts/material_fabric_r12.gd")
 const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
+const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
@@ -2738,6 +2739,59 @@ func _run() -> void:
         is_equal_approx(world.ship.damage_multiplier, 0.87) and
         world.ship.engine_rank == 1,
         "R54 actual departure must apply paid Ada training to combat damage"):return
+    # R61: a real launched pilot earns exactly one record per sortie.
+    # The local wallet/XP is unchanged; records are independently persisted.
+    if not check(world.r61_sortie_active and
+        world.r61_sortie_pilot_id == "ada",
+        "R61 must start a real pilot flight record only when unlocked"):return
+    var r61_flown_before: float = world.ship.flight_distance
+    var r61_credits_before: int = world.credits
+    var r61_xp_before: int = world.xp
+    world.ship.flight_distance += 1875.0
+    world.r61_sortie_seconds = 85.0
+    world._r61_finish_sortie("failed")
+    world._r61_finish_sortie("failed")
+    var r61_pilot_record: Dictionary = world.pilot_logbook_r61["ada"]
+    if not check(not world.r61_sortie_active and
+        r61_pilot_record["flights"] == 1 and
+        r61_pilot_record["failures"] == 1 and
+        r61_pilot_record["successes"] == 0 and
+        r61_pilot_record["distance_m"] == 1875 and
+        r61_pilot_record["seconds"] == 85 and
+        world.credits == r61_credits_before and world.xp == r61_xp_before,
+        "R61 must count real failure/distance once, with zero CR/XP mint"):return
+    world._save_progress()
+    world.pilot_logbook_r61 = PilotLogbookR61Script.safe_roster({})
+    world._load_progress()
+    if not check(world.pilot_logbook_r61["ada"]["flights"] == 1 and
+        world.pilot_logbook_r61["kai"]["flights"] == 0 and
+        world.credits == r61_credits_before,
+        "R61 legacy version-1 saves must retain independent real pilot records"):return
+    world.ship.flight_distance = r61_flown_before
+    var r61_invalid: Dictionary = PilotLogbookR61Script.safe_roster({
+        "ada":{"flights":4,"successes":100,"failures":100,
+            "distance_m":-12,"seconds":INF,"unknown":"premium"},
+        "kai":{"flights":2,"successes":1,"distance_m":2400},
+        "hacker":{"flights":99999}})
+    if not check(r61_invalid["ada"]["successes"] == 4 and
+        r61_invalid["ada"]["failures"] == 0 and
+        r61_invalid["ada"]["distance_m"] == 0 and
+        r61_invalid["ada"]["seconds"] == 0 and
+        not r61_invalid["ada"].has("unknown") and
+        not r61_invalid.has("hacker") and
+        PilotLogbookR61Script.qualification(
+            r61_invalid["kai"]) == "ПОДГОТОВЛЕН",
+        "R61 must sanitize forged logbooks without granting credentials"):return
+    var r61_roster_after_success: Dictionary = PilotLogbookR61Script.record(
+        world.pilot_logbook_r61, "kai", "success", 2200.0, 130.0)
+    if not check(r61_roster_after_success["kai"]["flights"] == 1 and
+        r61_roster_after_success["kai"]["successes"] == 1 and
+        r61_roster_after_success["ada"]["flights"] == 1 and
+        world.pilot_logbook_r61["kai"]["flights"] == 0 and
+        PilotLogbookR61Script.qualification(
+            r61_roster_after_success["kai"]) == "ПОДГОТОВЛЕН",
+        "R61 genuine success must award only earned captain experience"):return
+    print("NEBULA_R61_REAL_PILOT_FLIGHT_LOGBOOK_SAVE_NO_MINT_SUCCESS")
     var wallet_before_no_reward: int = world.credits
     world._complete_mission()
     if not check(world.credits == wallet_before_no_reward,
