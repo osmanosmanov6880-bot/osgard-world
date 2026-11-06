@@ -33,3 +33,7 @@
 5. Until the deploy and public parity pass, publicly verified release remains R57; do not promote R59/R60.
 
 **Important:** this candidate includes a proposed owner-directed software-only risk override. It is not a hardware/visual quality certification; the actual production authorization is the separately reviewed and merged release PR.
+
+## Enforced Git-graph verification
+
+The identity-gate workflow uses eight commits of checkout history and runs `scripts/nebula-release-lineage-guard.mjs`. It checks that `9a123465` is a **single-parent** direct child of source merge `7cd60596`, source merge has the verified PR head `a8940a16` as a parent, the export commit is in current release branch history, and the four Git tree blobs match the exact policy pins. Separate negative tests reject malformed parents, spoofed blobs, false device-QA attestations and extra assets. This verifies repository object lineage, **not** the independently failed hosted SwiftShader visual screenshot.
