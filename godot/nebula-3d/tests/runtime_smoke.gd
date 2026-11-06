@@ -1664,6 +1664,9 @@ func _run() -> void:
         "R43 garage must protect the player from ambient enemy weapons"):return
     var r60_real_crashes_before_dock: int = world.r60_crash_count
     world.ship.hull = 0.0
+    # SceneTree.process_frame precedes Node._process; allow one real dock
+    # update before asserting the parked aircraft is repaired without a crash.
+    await process_frame
     await process_frame
     if not check(world.ship.hull >= 90.0 and
         world.credits == before_failure_credits and world.garage_open_r39 and
