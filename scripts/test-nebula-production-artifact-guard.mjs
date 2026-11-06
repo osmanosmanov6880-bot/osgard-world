@@ -48,7 +48,7 @@ try{
   await assert.rejects(inspectProductionArtifact({
     ...r41,approval:{...r41.approval,web_export_commit_sha:r41.approval.native_source_commit_sha}
   },temp),/Modern owner override requires exact source/);
-  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50','R51','R52','R54','R55']){
+  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50','R51','R52','R54','R55','R56']){
     const owner={...r41,approved_variant:variant,
       release_status:variant+'_OWNER_DIRECTED_OVERRIDE',
       approval:{...r41.approval,
@@ -181,6 +181,26 @@ try{
     {...r55,artifacts:{...expected,'index.html':'0'.repeat(40)}},
     {...r55,artifacts:{...expected,'index.pck':'0'.repeat(40)}},
     {...r55,artifacts:{...expected,extra:'0'.repeat(40)}},
+  ]) {
+    await assert.rejects(inspectProductionArtifact(malicious,temp),
+      /Owner override|Modern owner override|hardware QA explicitly false|unapproved index|exactly four hashed/);
+  }
+
+  // R56 exact synthetic pin: prove fake phone results, hash drift, and
+  // copied commit provenance never become a production entitlement.
+  const r56={...r41,approved_variant:'R56',release_status:'R56_OWNER_DIRECTED_OVERRIDE'};
+  const r56Match=await inspectProductionArtifact(r56,temp);
+  assert.equal(r56Match.variant,'R56');
+  assert.equal(r56Match.status,'OWNER_DIRECTED_OVERRIDE_BYTES_MATCH');
+  for(const malicious of [
+    {...r56,release_status:'R56_HARDWARE_QA_APPROVED'},
+    {...r56,approval:{...r56.approval,physical_device_qa:'PASSED'}},
+    {...r56,approval:{...r56.approval,hardware_qa_certified:true}},
+    {...r56,approval:{...r56.approval,verification_workflow_run_id:0}},
+    {...r56,approval:{...r56.approval,web_export_commit_sha:r56.approval.native_source_commit_sha}},
+    {...r56,artifacts:{...expected,'index.html':'0'.repeat(40)}},
+    {...r56,artifacts:{...expected,'index.pck':'0'.repeat(40)}},
+    {...r56,artifacts:{...expected,extra:'0'.repeat(40)}},
   ]) {
     await assert.rejects(inspectProductionArtifact(malicious,temp),
       /Owner override|Modern owner override|hardware QA explicitly false|unapproved index|exactly four hashed/);

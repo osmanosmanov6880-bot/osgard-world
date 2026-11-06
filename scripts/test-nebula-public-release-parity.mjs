@@ -66,6 +66,11 @@ try {
   const matchR55=await verifyPublicRelease(localR55,directory);
   assert.equal(matchR55.variant,'R55');
   makePolicy('R49');
+
+  const localR56=makePolicy('R56');
+  const matchR56=await verifyPublicRelease(localR56,directory);
+  assert.equal(matchR56.variant,'R56');
+  makePolicy('R49');
   await assert.rejects(verifyPublicRelease({...good, approved_variant:'R53'},directory),
     /unexpected approved build/);
 
