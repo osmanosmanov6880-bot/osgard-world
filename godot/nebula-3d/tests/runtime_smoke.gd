@@ -43,6 +43,14 @@ func _run() -> void:
         is_instance_valid(world.garage_hub_r39) and
         world.garage_hub_r39.launch_button.text == "▶  ВЫЛЕТЕТЬ",
         "R39 campaign must open in a locked garage hub with an explicit sortie button"):return
+    # R57: a real mobile FPS button must remain touchable even when a
+    # physical crash returns to the garage. GarageHub is CanvasLayer 30,
+    # so a visible profiler on layer 7 would still be occluded by its UI.
+    if not check(is_instance_valid(world.performance_lab_r11) and
+        world.performance_lab_r11.visible and
+        world.performance_lab_r11.layer > world.garage_hub_r39.layer and
+        world.performance_lab_r11.layer == 31,
+        "R57 garage FPS layer must be above the dock's actual touch surface"):return
     if not check(world.garage_hub_r39.captain_label.text == "КАПИТАН · УРОВЕНЬ 1" and
         world.garage_hub_r39.resource_label.text.contains("950 CR"),
         "R39 captain level and campaign credits are not shown from live progression"):return
@@ -2660,6 +2668,9 @@ func _run() -> void:
         contract_hub.launch_button.text.contains("КОНТРАКТ"),
         "R57 choosing a contract must only arm the job, not mint rewards"):return
     contract_hub.launch_button.pressed.emit()
+    if not check(world.performance_lab_r11.layer == 7 and
+        world.performance_lab_r11.visible,
+        "R57 profiler must return to normal flight CanvasLayer after launching"):return
     if not check(world.r57_patrol.active and not world.garage_open_r39 and
         is_instance_valid(world.mission_beacon) and
         world.mission_beacon.get_node_or_null("R57_Genuine3DPhysicalBeacon") is MeshInstance3D and
@@ -2730,6 +2741,10 @@ func _run() -> void:
         world.r57_last_report.contains("+426 CR") and
         world.mission_index == world.MISSIONS.size(),
         "R57 genuine career flight must include previously purchased Leya bonus once"):return
+    if not check(world.performance_lab_r11.layer == 31 and
+        world.performance_lab_r11.visible and world.garage_open_r39,
+        "R57 after paid contract, FPS button must remain above the safe dock"):return
+    print("NEBULA_R57_DOCK_PERF_CANVASLAYER_REAL_TOUCH_ACCESS_SUCCESS")
     print("NEBULA_R57_TRAINED_LOGISTICS_PILOT_REAL_CONTRACT_BONUS_SUCCESS")
     print("NEBULA_R57_REAL_REPEATABLE_PAYOUT_FAILURE_AND_CAREER_SAVE_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
