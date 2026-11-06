@@ -103,6 +103,8 @@ func _ready() -> void:
     primary_airframe_r55 = FleetAirframesR55Script.new()
     primary_airframe_r55.name = "R55_TrueActiveFlightAirframe"
     visual.add_child(primary_airframe_r55)
+    primary_airframe_r55.set_low_detail(
+        OS.has_feature("mobile") or get_viewport().get_visible_rect().size.x < 680.0)
     model.visible = false
     hull_kit_r45.visible = false
     if OS.has_feature("web"):
