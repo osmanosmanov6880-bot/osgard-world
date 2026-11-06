@@ -34,6 +34,15 @@ static func safe_velocity(candidate: Vector3) -> Vector3:
     return candidate.limit_length(MAX_INHERITED_VELOCITY) if (
         candidate.is_finite()) else Vector3.ZERO
 
+static func safe_color(candidate: Color) -> Color:
+    # Color.is_finite() does not exist in Godot 4.7.2.
+    if (is_nan(candidate.r) or is_inf(candidate.r) or
+            is_nan(candidate.g) or is_inf(candidate.g) or
+            is_nan(candidate.b) or is_inf(candidate.b) or
+            is_nan(candidate.a) or is_inf(candidate.a)):
+        return Color(0.35, 0.43, 0.48)
+    return candidate
+
 func spawn_crash(at: Vector3, movement: Vector3,
         hull_id: String, metal_color: Color) -> bool:
     if not valid_ship(hull_id) or not at.is_finite():
@@ -45,15 +54,8 @@ func spawn_crash(at: Vector3, movement: Vector3,
     global_position = last_actual_impact
     age = 0.0
     var source_velocity: Vector3 = safe_velocity(movement)
-    # Godot Color has no is_finite() method. Validate each RGBA scalar
-    # before using an untrusted paint value in debris materials.
-    var valid_color: bool = not (
-        is_nan(metal_color.r) or is_inf(metal_color.r) or
-        is_nan(metal_color.g) or is_inf(metal_color.g) or
-        is_nan(metal_color.b) or is_inf(metal_color.b) or
-        is_nan(metal_color.a) or is_inf(metal_color.a))
-    var surface_color: Color = metal_color if valid_color else (
-        Color(0.35, 0.43, 0.48))
+    # Preserve legitimate paint colors while rejecting non-finite RGBA.
+    var surface_color: Color = safe_color(metal_color)
     # Nine independent colliding physics objects, all placed within a few
     # meters of the *real* crash. The city stays collision layer 1; the
     # player cannot die again from this VFX (debris collision_layer = 0).
