@@ -7,6 +7,7 @@ signal shop_requested
 signal upgrade_requested_r54(slot: int)
 signal training_requested_r54
 signal module_requested_r56(module_id: String)
+signal contract_selected_r57(contract_id: String)
 signal captain_selected(captain_id: String)
 signal ship_selected_r45(ship_id: String)
 signal wingman_toggled_r47(wingman_id: String)
@@ -67,6 +68,12 @@ var weapon_upgrade_r54: Button
 var r56_workshop_panel: PanelContainer
 var r56_workshop_status: Label
 var r56_module_buttons: Dictionary = {}
+var r57_contract_panel: PanelContainer
+var r57_contract_buttons: Dictionary = {}
+var r57_contract_description: Label
+var r57_contract_result: Label
+var r57_contract_count_label: Label
+var r57_free_flight_button: Button
 var footer_r54: HBoxContainer
 
 const BG := Color(0.018, 0.035, 0.058, 0.96)
@@ -402,6 +409,31 @@ func _build() -> void:
     mission_label = _label(mission_stack, "01  ·  ПЕРВЫЙ ПОЛЁТ", 17, Color(0.97,0.96,0.91))
     mission_detail = _label(mission_stack, "Достигни навигационного маяка и защити Аврору.", 12, MUTED)
 
+    r57_contract_panel = PanelContainer.new()
+    r57_contract_panel.name = "R57_RealPostCampaignContractBoard"
+    r57_contract_panel.add_theme_stylebox_override("panel",
+        _panel_style(Color(0.025, 0.055, 0.075, 0.98), GOLD))
+    column.add_child(r57_contract_panel)
+    var contract_stack := VBoxContainer.new()
+    contract_stack.add_theme_constant_override("separation", 8)
+    r57_contract_panel.add_child(contract_stack)
+    _label(contract_stack, "КАРЬЕРА ПИЛОТА · КОНТРАКТЫ АВРОРЫ", 13, GOLD)
+    r57_contract_count_label = _label(contract_stack,
+        "СЮЖЕТ ПРОЙДЕН · КОНТРАКТЫ ОТКРЫТЫ", 12, MUTED)
+    r57_contract_description = _label(contract_stack,
+        "Выбирай настоящий рейс. Награда только после всех точек.", 12, CYAN)
+    r57_contract_result = _label(contract_stack, "", 12, GOLD)
+    r57_free_flight_button = _r54_credit_action(contract_stack,
+        "R57_ChooseFreeFlight", "БЕЗ ЗАДАНИЯ · СВОБОДНЫЙ ПОЛЁТ")
+    r57_free_flight_button.pressed.connect(
+        _r57_request_contract.bind(""))
+    for route_id in ["aurora","neon","rift"]:
+        var route_button := _r54_credit_action(contract_stack,
+            "R57_SelectPatrol_" + route_id, "ПАТРУЛЬ · " + route_id)
+        route_button.custom_minimum_size.y = 53
+        route_button.pressed.connect(_r57_request_contract.bind(route_id))
+        r57_contract_buttons[route_id] = route_button
+
     status_label = _label(column, "Задача простая: следуй за маркером. Бой начнётся позже по сюжету.", 11, MUTED)
 
     var footer := HBoxContainer.new()
@@ -476,6 +508,12 @@ func _r54_zoom_preview(direction: int) -> void:
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.zoom_r54(direction)
 
+func _r57_request_contract(contract_id: String) -> void:
+    if active_section_r54 == "operations" and (
+            is_instance_valid(r57_contract_panel) and
+            r57_contract_panel.visible):
+        contract_selected_r57.emit(contract_id)
+
 func _r56_request_module(module_id: String) -> void:
     if r56_module_buttons.has(module_id) and active_section_r54 == "workshop":
         module_requested_r56.emit(module_id)
@@ -506,6 +544,11 @@ func _r54_select_section(section_id: String) -> void:
         introductory_section_r54.visible = operations
     if is_instance_valid(mission_card_r54):
         mission_card_r54.visible = operations
+    if is_instance_valid(r57_contract_panel):
+        var m: Array = profile.get("missions", [])
+        r57_contract_panel.visible = operations and (
+            int(profile.get("mission_index", 0)) >= m.size() and
+            not m.is_empty())
     if is_instance_valid(status_label):
         status_label.visible = operations
     for key in section_buttons_r54:
@@ -561,7 +604,10 @@ func refresh(data: Dictionary) -> void:
     var xp := int(data.get("xp", 0))
     var level := 1 + int(floor(float(xp) / 500.0))
     var xp_next := xp % 500
-    resource_label.text = "%s CR    •    %s XP" % [_format_number(credits), _format_number(xp)]
+    var compact_wallet: bool = get_viewport().get_visible_rect().size.x < 580.0
+    resource_label.text = (
+        "%s CR" % _format_number(credits) if compact_wallet else
+        "%s CR    •    %s XP" % [_format_number(credits), _format_number(xp)])
     if is_instance_valid(engine_upgrade_r54):
         var engine_rank: int = clampi(int(data.get("engine_rank_r54", 0)), 0, 4)
         engine_upgrade_r54.text = ("ДВИГАТЕЛЬ · MAX" if engine_rank >= 4
@@ -736,14 +782,56 @@ func refresh(data: Dictionary) -> void:
         debrief_label.text = "ВЫЛЕТ НЕ УДАЛСЯ · НАГРАДА 0 CR / 0 XP\n" + str(last_result.get("reveal", "Повтори миссию после ремонта."))
     elif completed_sortie:
         debrief_label.text = "ПОСЛЕДНИЙ ВЫЛЕТ: +%d CR  /  +%d XP\n%s" % [int(last_result.get("credits", 0)), int(last_result.get("xp", 0)), str(last_result.get("reveal", ""))]
+    # R57 contract board is enabled only when the real campaign is finished.
+    var finished_campaign: bool = int(data.get("mission_index", 0)) >= (
+        (data.get("missions", []) as Array).size())
+    var route_selected: String = str(data.get("r57_selected_contract", ""))
+    var route_catalog: Array = data.get("r57_contract_catalog", [])
+    var route_totals: Dictionary = data.get("r57_contract_counts", {})
+    if is_instance_valid(r57_contract_panel):
+        r57_contract_panel.visible = finished_campaign and (
+            active_section_r54 == "operations")
+        r57_contract_count_label.text = (
+            "ПРОЙДЕНО %d СЮЖЕТНЫХ МИССИЙ · ДОСТУПНЫ КОНТРАКТЫ" %
+            (data.get("missions", []) as Array).size())
+        r57_contract_description.text = (
+            "Выбери маршрут. Пройди все физические маяки за отведённое "
+            + "время: награда не начисляется при выборе или провале.")
+        r57_contract_result.text = str(data.get("r57_last_report", ""))
+        r57_free_flight_button.text = (
+            ("✓  " if route_selected.is_empty() else "")
+            + "СВОБОДНЫЙ ПОЛЁТ · БЕЗ НАГРАДЫ")
+        for item in route_catalog:
+            if typeof(item) != TYPE_DICTIONARY:
+                continue
+            var route_id: String = str(item.get("id", ""))
+            if not r57_contract_buttons.has(route_id):
+                continue
+            var choose: Button = r57_contract_buttons[route_id]
+            choose.text = ("%s%s · %d МАЯКА · %d CR / %d XP\n"
+                + "ЛИМИТ %d МИН · ВЫПОЛНЕНО %d РАЗ") % [
+                "✓  " if route_selected == route_id else "",
+                str(item.get("title", "КОНТРАКТ")),
+                int(item.get("checkpoints", 0)),
+                int(item.get("credits", 0)),
+                int(item.get("xp", 0)),
+                ceili(float(item.get("duration_sec", 0.0)) / 60.0),
+                int(route_totals.get(route_id, 0))]
+            choose.tooltip_text = str(item.get("description", ""))
+
     var mission_index := int(data.get("mission_index", 0))
     var missions: Array = data.get("missions", [])
     if mission_index >= missions.size():
-        mission_label.text = "СВОБОДНЫЙ ПОЛЁТ"
-        mission_detail.text = "Кампания завершена. Исследуй шесть районов."
-        launch_button.text = "▶  СВОБОДНЫЙ ПОЛЁТ"
-        status_label.text = "Сюжет пройден — теперь город открыт для исследования."
-        mission_detail.text = str(story.get("objective", "Кампания завершена"))
+        if route_selected.is_empty():
+            mission_label.text = "СВОБОДНЫЙ ПОЛЁТ"
+            mission_detail.text = "Кампания завершена. Исследуй шесть районов."
+            launch_button.text = "▶  СВОБОДНЫЙ ПОЛЁТ"
+            status_label.text = "Сюжет пройден — можно исследовать город без задания."
+        else:
+            mission_label.text = "КОНТРАКТ · %s" % route_selected.to_upper()
+            mission_detail.text = "Контрольные точки и реальные сроки рейса."
+            launch_button.text = "▶  НА КОНТРАКТ"
+            status_label.text = "На каждом маяке удерживай позицию 1,5 секунды."
     else:
         var mission: Dictionary = missions[mission_index]
         mission_label.text = "%02d  ·  %s" % [mission_index + 1, str(mission.get("title", "ЗАДАНИЕ"))]
@@ -770,6 +858,19 @@ func _layout_hub() -> void:
         return
     var view := get_viewport().get_visible_rect().size
     var compact: bool = view.x < 580.0
+    # Preserve all four primary sections on narrow portrait screens;
+    # avoid the nav strip horizontally clipping the last tab.
+    for key in section_buttons_r54:
+        var nav_button: Button = section_buttons_r54[key]
+        nav_button.custom_minimum_size = Vector2(48 if compact else 76, 42)
+        nav_button.add_theme_font_size_override("font_size",
+            10 if compact else 12)
+        nav_button.text = str({
+            "fleet":"ФЛОТ", "workshop":"МОД." if compact else "МОДУЛИ",
+            "crew":"ПИЛОТЫ", "operations":"МИССИИ"}.get(key, key))
+    if is_instance_valid(resource_label):
+        resource_label.add_theme_font_size_override(
+            "font_size", 12 if compact else 16)
     var landscape: bool = view.x >= 740.0 and view.x > view.y * 1.28
     var short_view: bool = view.y < 560.0
     var margin: float = 10.0 if compact else (12.0 if view.x < 980.0 else 30.0)

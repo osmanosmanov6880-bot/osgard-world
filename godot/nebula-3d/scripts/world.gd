@@ -32,6 +32,7 @@ const CampaignStoryR41Script = preload("res://scripts/campaign_story_r41.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
+const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
 const ArchiveBreachR50Script = preload("res://scripts/archive_breach_r50.gd")
@@ -160,6 +161,11 @@ var r41_last_debrief: Dictionary = {}
 var selected_captain_r42: String = "ada"
 var pilot_training_r54: Dictionary = {"ada":0, "kai":0, "leya":0}
 var hangar_modules_r56: Dictionary = HangarWorkbenchR56Script.default_roster()
+var r57_selected_contract: String = ""
+var r57_contract_counts: Dictionary = PatrolContractsR57Script.safe_finish_counts({})
+var r57_patrol = PatrolContractsR57Script.new()
+var r57_reward_committed: bool = false
+var r57_last_report: String = ""
 var r43_pending_bounty: int = 0
 var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
@@ -776,6 +782,11 @@ func _r21_rescue_blocked_spawn() -> void:
     r21_spawn_relocations += 1
 
 func _r21_toggle_hangar() -> void:
+    if r57_patrol.active:
+        # A running timed contract must not open a shop overlay that locks
+        # live flight controls while the route timer continues.
+        _show_notice("КОНТРАКТ В ПОЛЁТЕ · МАГАЗИН ПОСЛЕ ВОЗВРАЩЕНИЯ")
+        return
     if garage_open_r39:
         _r39_open_shop()
         return
@@ -1071,12 +1082,16 @@ func _process(delta: float) -> void:
     r47_launch_camera_time = maxf(0.0, r47_launch_camera_time - delta)
     # A destroyed player should get an explicit failed sortie, never a hidden
     # teleport and lost 220 CR while the mission keeps running.
-    if not garage_open_r39 and ship.hull <= 0.0 and mission_index < MISSIONS.size():
+    if not garage_open_r39 and ship.hull <= 0.0 and (
+            mission_index < MISSIONS.size() or r57_patrol.active):
+        if r57_patrol.active and mission_index >= MISSIONS.size():
+            _r57_end_patrol(false, "КОРАБЛЬ ПОТЕРЯН · КОНТРАКТ БЕЗ НАГРАДЫ")
+            return
         _r43_fail_sortie()
         return
     _mission_tick(delta)
     if is_instance_valid(r21_dashboard):
-        r21_dashboard.show_objective = mission_index < MISSIONS.size()
+        r21_dashboard.show_objective = mission_index < MISSIONS.size() or r57_patrol.active
         if r21_dashboard.show_objective:
             r21_dashboard.objective = _active_mission_goal()
     if garage_open_r39:
@@ -1104,7 +1119,7 @@ func _process(delta: float) -> void:
         r16_radar_clock = fmod(r16_radar_clock, R16_RADAR_PERIOD)
         radar.player_position = ship.global_position
         radar.player_forward = -ship.global_transform.basis.z
-        radar.has_objective = mission_index < MISSIONS.size()
+        radar.has_objective = mission_index < MISSIONS.size() or r57_patrol.active
         if radar.has_objective:
             radar.objective = _active_mission_goal()
         radar.targets.clear()
@@ -1117,7 +1132,10 @@ func _process(delta: float) -> void:
         _save_progress()
 
 func _mission_tick(dt: float) -> void:
-    if garage_open_r39 or mission_index >= MISSIONS.size():
+    if garage_open_r39:
+        return
+    if mission_index >= MISSIONS.size():
+        _r57_patrol_tick(dt)
         return
     var mission: Dictionary = MISSIONS[mission_index]
     var target: Vector3 = mission["position"]
@@ -1356,6 +1374,8 @@ func _r52_clear_station() -> void:
         r52_station = null
 
 func _active_mission_goal() -> Vector3:
+    if r57_patrol.active and mission_index >= MISSIONS.size():
+        return r57_patrol.objective_position()
     # Single physical objective for radar, HUD and waypoint beacon across
     # all staged mission types; predictive cruise steering is separate.
     if is_instance_valid(r52_station):
@@ -1392,7 +1412,11 @@ func _start_mission() -> void:
     mission_enemies = 0
     if is_instance_valid(mission_beacon):mission_beacon.queue_free()
     if mission_index>=MISSIONS.size():
-        _show_notice("СЮЖЕТ ЗАВЕРШЁН · СВОБОДНЫЙ ПОЛЁТ")
+        if not r57_selected_contract.is_empty() and (
+                PatrolContractsR57Script.valid_contract(r57_selected_contract)):
+            _r57_start_patrol()
+        else:
+            _show_notice("СЮЖЕТ ЗАВЕРШЁН · СВОБОДНЫЙ ПОЛЁТ")
         return
     var data: Dictionary = MISSIONS[mission_index]
     if str(data["type"]) == "blackout":
@@ -1727,9 +1751,19 @@ func _update_hud() -> void:
     if is_instance_valid(r23_cruise_button):
         r23_cruise_button.text = "■  ВЫКЛ. АВТОПИЛОТ" if ship.cruise_assist else "▶  АВТОПИЛОТ К ЦЕЛИ"
     if mission_index >= MISSIONS.size():
-        hud_mission.text = "НЕБУЛА  /  СВОБОДНЫЙ ПОЛЁТ"
-        hud_objective.text = "МИССИИ ВЫПОЛНЕНЫ"
-        hud_status.text = "Исследуй шесть районов космического города.\n" + resource_line
+        if r57_patrol.active:
+            var current: int = r57_patrol.checkpoint_index + 1
+            var total: int = PatrolContractsR57Script.checkpoint_count(
+                r57_patrol.active_id)
+            hud_mission.text = "КОНТРАКТ · %s" % str(
+                PatrolContractsR57Script.CATALOG[r57_patrol.active_id]["name"])
+            hud_objective.text = "МАЯК %d/%d · %d С ОСТАЛОСЬ" % [
+                current, total, ceili(r57_patrol.seconds_remaining())]
+            hud_status.text = "Достигни синего маркера и удерживай позицию 1,5 с.\n" + resource_line
+        else:
+            hud_mission.text = "НЕБУЛА  /  СВОБОДНЫЙ ПОЛЁТ"
+            hud_objective.text = "МИССИИ ВЫПОЛНЕНЫ"
+            hud_status.text = "Исследуй шесть районов космического города.\n" + resource_line
     else:
         var m: Dictionary = MISSIONS[mission_index]
         var goal: Vector3 = _active_mission_goal()
@@ -2115,7 +2149,7 @@ func _safe_float(value: Variant, fallback: float) -> float:
 func _save_progress() -> void:
     var file:=FileAccess.open(SAVE_PATH,FileAccess.WRITE)
     if file==null:return
-    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"hangar_modules_r56":hangar_modules_r56}))
+    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"hangar_modules_r56":hangar_modules_r56,"r57_selected_contract":r57_selected_contract,"r57_contract_counts":r57_contract_counts}))
     file.close()
 
 func _load_progress() -> void:
@@ -2132,6 +2166,10 @@ func _load_progress() -> void:
     selected_captain_r42 = saved_captain if CaptainRosterR42Script.valid_id(saved_captain) else "ada"
     pilot_training_r54 = PilotAcademyR54Script.safe_roster(raw.get("pilot_training_r54", {}))
     hangar_modules_r56 = HangarWorkbenchR56Script.safe_roster(raw.get("hangar_modules_r56", {}))
+    r57_selected_contract = PatrolContractsR57Script.safe_selection(
+        raw.get("r57_selected_contract", ""))
+    r57_contract_counts = PatrolContractsR57Script.safe_finish_counts(
+        raw.get("r57_contract_counts", {}))
     # Optional additive save field; original v1 save and premium ownership remain intact.
     var stored_result: Variant = raw.get("r41_last_debrief", {})
     if typeof(stored_result) == TYPE_DICTIONARY:
@@ -2179,6 +2217,7 @@ func _r39_create_garage_hub() -> void:
     garage_hub_r39.upgrade_requested_r54.connect(_upgrade_docked)
     garage_hub_r39.training_requested_r54.connect(_r54_train_selected_captain)
     garage_hub_r39.module_requested_r56.connect(_r56_purchase_workbench_module)
+    garage_hub_r39.contract_selected_r57.connect(_r57_select_contract)
     garage_hub_r39.captain_selected.connect(_r42_select_captain)
     garage_hub_r39.ship_selected_r45.connect(_r45_select_owned_ship)
     garage_hub_r39.wingman_toggled_r47.connect(_r47_toggle_owned_wingman)
@@ -2195,7 +2234,16 @@ func _r39_create_garage_hub() -> void:
     if is_instance_valid(r21_dashboard):
         r21_dashboard.visible = false
     if is_instance_valid(performance_lab_r11):
-        performance_lab_r11.visible = false
+        # R57: keep the on-screen FPS/quality controls usable in the garage.
+        # An actual ship can be destroyed between mobile QA frame samples;
+        # previously the whole CanvasLayer disappeared after garage return,
+        # leaving a real finger tap on the measured FPS button inert.
+        # This is also useful to players testing garage GPU cost. The
+        # GarageHub is CanvasLayer 30, so merely keeping the profiler
+        # visible leaves its real Button behind a blocking 3D dock canvas.
+        # Put the independent FPS layer on top only while docked.
+        performance_lab_r11.visible = true
+        performance_lab_r11.layer = 31
     _r39_refresh_garage()
 
 func _r39_open_shop() -> void:
@@ -2224,6 +2272,10 @@ func _r39_refresh_garage() -> void:
         "hull_cap_r56": fleet_r15.ship_hull_cap(),
         "shield_cap_r56": fleet_r15.ship_shield_cap(),
         "radar_range_r56": fleet_r15.radar_range_r56(),
+        "r57_selected_contract": r57_selected_contract,
+        "r57_contract_counts": r57_contract_counts.duplicate(true),
+        "r57_contract_catalog": PatrolContractsR57Script.catalog(),
+        "r57_last_report": r57_last_report,
         "ship_profiles": {
             "ship_scout": FleetCombatR15Script.hull_profile("ship_scout"),
             "ship_interceptor": FleetCombatR15Script.hull_profile("ship_interceptor"),
@@ -2329,6 +2381,112 @@ func _r56_purchase_workbench_module(module_id: String) -> void:
     _r39_refresh_garage()
     _show_notice("МАСТЕРСКАЯ · %s · −%d CR" % [
         HangarWorkbenchR56Script.module_label(module_id), cost])
+
+func _r57_select_contract(id: String) -> void:
+    # Contracts are a real post-campaign progression loop, not a shortcut
+    # that lets unfinished missions or invisible UI mint currency.
+    if not garage_open_r39 or not is_instance_valid(garage_hub_r39) or (
+            not garage_hub_r39.visible) or mission_index < MISSIONS.size():
+        return
+    if id != "" and not PatrolContractsR57Script.valid_contract(id):
+        return
+    r57_selected_contract = id
+    _save_progress()
+    _r39_refresh_garage()
+    _show_notice("МАРШРУТ ВЫБРАН · ВЫЛЕТЕТЬ ДЛЯ НАЧАЛА" if (
+        not id.is_empty()) else "СВОБОДНЫЙ ПОЛЁТ ВЫБРАН")
+
+func _r57_start_patrol() -> void:
+    if mission_index < MISSIONS.size() or garage_open_r39 or (
+            not r57_patrol.begin(r57_selected_contract)):
+        return
+    r57_reward_committed = false
+    mission_started = true
+    var beacon := Node3D.new()
+    beacon.name = "R57_ActualContractBeacon"
+    beacon.position = r57_patrol.objective_position()
+    var mesh := SphereMesh.new()
+    mesh.radius = 4.2
+    mesh.height = 8.4
+    var body := MeshInstance3D.new()
+    body.name = "R57_Genuine3DPhysicalBeacon"
+    body.mesh = mesh
+    body.material_override = _mat(Color(0.30, 0.88, 1.0), 0.8)
+    beacon.add_child(body)
+    var light := OmniLight3D.new()
+    light.omni_range = 40.0
+    light.light_energy = 0.48
+    light.light_color = Color(0.20, 0.75, 1.0)
+    beacon.add_child(light)
+    add_child(beacon)
+    mission_beacon = beacon
+    ship.set_navigation_target(r57_patrol.objective_position())
+    _show_notice("КОНТРАКТ НАЧАЛСЯ · %d КОНТРОЛЬНЫХ ТОЧЕК" % [
+        PatrolContractsR57Script.checkpoint_count(r57_patrol.active_id)])
+
+func _r57_patrol_tick(dt: float) -> void:
+    if not r57_patrol.active or garage_open_r39:
+        return
+    var outcome: String = r57_patrol.tick(dt, ship.global_position)
+    if outcome == "checkpoint":
+        var goal: Vector3 = r57_patrol.objective_position()
+        ship.set_navigation_target(goal)
+        if is_instance_valid(mission_beacon):
+            mission_beacon.global_position = goal
+        _show_notice("МАЯК ПРОЙДЕН · %d/%d" % [
+            r57_patrol.checkpoint_index,
+            PatrolContractsR57Script.checkpoint_count(r57_patrol.active_id)])
+    elif outcome == "success":
+        _r57_end_patrol(true, "")
+    elif outcome == "failed":
+        _r57_end_patrol(false, "ВРЕМЯ ИСТЕКЛО · КОНТРАКТ БЕЗ НАГРАДЫ")
+
+func _r57_end_patrol(success: bool, message: String) -> void:
+    if garage_open_r39 or r57_reward_committed:
+        return
+    # The route engine marks success ONLY after every true 3D checkpoint was
+    # visited. Bank rewards once, before any dock transition can repeat.
+    var verified: bool = success and r57_patrol.finished and (
+        r57_patrol.last_result == "success")
+    if verified:
+        r57_reward_committed = true
+        var id: String = r57_patrol.active_id
+        var base_cr: int = PatrolContractsR57Script.reward_credits(id)
+        # The previously paid logistics academy remains useful in the
+        # post-campaign career, but only after a verified successful flight.
+        var earned_cr: int = base_cr + PilotAcademyR54Script.credit_bonus(
+            base_cr, selected_captain_r42,
+            PilotAcademyR54Script.rank(pilot_training_r54.get(
+                selected_captain_r42, 0)))
+        var earned_xp: int = PatrolContractsR57Script.reward_xp(id)
+        credits += earned_cr
+        xp += earned_xp
+        r57_contract_counts[id] = mini(99999, int(
+            r57_contract_counts.get(id, 0)) + 1)
+        r57_last_report = "КОНТРАКТ ВЫПОЛНЕН · +%d CR / +%d XP" % [
+            earned_cr, earned_xp]
+    else:
+        r57_reward_committed = true
+        r57_last_report = message if not message.is_empty() else (
+            "КОНТРАКТ НЕ ВЫПОЛНЕН · НАГРАДА 0 CR")
+    r57_patrol.abandon()
+    mission_started = false
+    r43_pending_bounty = 0
+    if is_instance_valid(mission_beacon):
+        mission_beacon.queue_free()
+        mission_beacon = null
+    ship.set_cruise_assist(false)
+    ship.clear_navigation_target()
+    ship.velocity = Vector3.ZERO
+    ship.global_position = R21_LAUNCH_CANDIDATES[0]
+    _r21_rescue_blocked_spawn()
+    if is_instance_valid(fleet_r15):
+        fleet_r15.combat_active = false
+    ship.hull = fleet_r15.ship_hull_cap()
+    ship.shield = fleet_r15.ship_shield_cap()
+    _save_progress()
+    _r39_create_garage_hub()
+    _show_notice(r57_last_report)
 
 func _r54_train_selected_captain() -> void:
     # Garage-only purchase, signed entirely in the same local CR ledger as
@@ -2559,6 +2717,7 @@ func _r39_launch_sortie() -> void:
     if is_instance_valid(r21_dashboard):
         r21_dashboard.visible = true
     if is_instance_valid(performance_lab_r11):
+        performance_lab_r11.layer = 7
         performance_lab_r11.visible = true
     r23_cruise_button.text = "▶  АВТОПИЛОТ К ЦЕЛИ"
     _start_mission()
