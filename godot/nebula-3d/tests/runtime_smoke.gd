@@ -1662,6 +1662,14 @@ func _run() -> void:
     world._on_drone_fire(world.ship.global_position, world.ship.global_position)
     if not check(is_equal_approx(world.ship.shield, garage_shield),
         "R43 garage must protect the player from ambient enemy weapons"):return
+    # A parked captain cannot earn combat credits via late drone signals.
+    var r60_dock_cr_before: int = world.credits
+    var r60_dock_dummy := Node3D.new()
+    world.add_child(r60_dock_dummy)
+    world._on_drone_destroyed(r60_dock_dummy)
+    r60_dock_dummy.queue_free()
+    if not check(world.credits == r60_dock_cr_before,
+        "R60 dock must not mint CR from late drone death callbacks"):return
     var r60_real_crashes_before_dock: int = world.r60_crash_count
     world.ship.hull = 0.0
     # SceneTree.process_frame precedes Node._process; allow one real dock
@@ -3160,6 +3168,16 @@ func _run() -> void:
             }))
     if not check(r60_recovered_cleanly,
         "R60 post-wreck recovery must preserve exact free-flight fee, no CR mint"):return
+    # The payout lock must end with the crash; healthy free flight still
+    # earns its original 45 CR for an actually destroyed ambient drone.
+    var r60_normal_flight_cr_before: int = world.credits
+    var r60_normal_kill := Node3D.new()
+    world.add_child(r60_normal_kill)
+    world._on_drone_destroyed(r60_normal_kill)
+    r60_normal_kill.queue_free()
+    if not check(world.credits == r60_normal_flight_cr_before + 45 and
+        world.xp == freeflight_xp_before and not world.r60_crash_pending,
+        "R60 recovery must restore legitimate normal-flight CR payouts"):return
     print("NEBULA_R60_REAL_PHYSICS_9_SHARDS_WRECK_HOLD_DAMAGE_AND_RECOVERY_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
