@@ -1145,4 +1145,47 @@ assert "world.ship.primary_airframe_r55.module_geometry_count_r56() >= 4" in smo
 assert "R56_ActualShieldEmitter_*" in smoke
 assert "R56_RealRadarArray_L1" in smoke
 
+# R57: repeatable post-campaign sorties must be real-time, physical and paid
+# only on verified completion (not upon accepting, failing or save load).
+r57_patrol = require(
+    "scripts/patrol_contracts_r57.gd",
+    "extends RefCounted",
+    'CONTRACT_IDS: Array[String] = ["aurora","neon","rift"]',
+    "CHECKPOINT_RADIUS_M: float = 54.0",
+    "CHECKPOINT_HOLD_SEC: float = 1.50",
+    "func begin(id: String) -> bool:",
+    "func tick(raw_dt: float, ship_position: Vector3) -> String:",
+    "func objective_position() -> Vector3:",
+    "func safe_finish_counts(candidate: Variant) -> Dictionary:",
+    'return "success"',
+    'return "failed"',
+)
+assert "credits +=" not in r57_patrol
+assert "FileAccess.open(" not in r57_patrol
+assert 'const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")' in world
+assert "garage_hub_r39.contract_selected_r57.connect(_r57_select_contract)" in world
+assert "func _r57_patrol_tick(dt: float) -> void:" in world
+assert "func _r57_end_patrol(success: bool, message: String) -> void:" in world
+assert "if verified:" in world and "r57_reward_committed = true" in world
+assert "r57_patrol.tick(dt, ship.global_position)" in world
+assert "r57_patrol.objective_position()" in world
+assert '"r57_selected_contract":r57_selected_contract' in world
+assert "r57_contract_counts = PatrolContractsR57Script.safe_finish_counts(" in world
+assert "r57_patrol.active and mission_index >= MISSIONS.size()" in world
+assert "R57_ActualContractBeacon" in world
+assert "R57_Genuine3DPhysicalBeacon" in world
+assert "R57_RealPostCampaignContractBoard" in garage
+assert "contract_selected_r57.emit(contract_id)" in garage
+assert "r57_contract_panel.visible = operations" in garage
+assert "R57_ChooseFreeFlight" in garage
+assert "NEBULA_R57_REAL_3D_WAYPOINTS_HOLD_TIMEOUT_AND_SAFE_COUNTS_SUCCESS" in smoke
+assert "NEBULA_R57_REAL_REPEATABLE_PAYOUT_FAILURE_AND_CAREER_SAVE_SUCCESS" in smoke
+assert "R57 duplicate reward trigger after returning to dock" in smoke
+assert "R57 timed-out route must safely return home without a bounty" in smoke
+require(
+    "docs/R57-PATROL-CAREER-QA.md",
+    "NOT_PERFORMED", "14", "380", "650", "980",
+    "Godot", "WebAssembly", "HTTPS 4/4",
+)
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
