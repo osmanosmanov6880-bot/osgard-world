@@ -6,6 +6,7 @@ const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
+const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const MissionObjectivesR48Script = preload("res://scripts/mission_objectives_r48.gd")
 const PortInvestigationR49Script = preload("res://scripts/port_investigation_r49.gd")
@@ -2647,6 +2648,56 @@ func _run() -> void:
         "R54 launch and training alone must never award campaign credits"):return
     # This runtime scenario exits immediately; do not certify hardware QA.
     print("NEBULA_R54_ACADEMY_REAL_SHIP_STATS_SAVE_AND_CREDITS_SUCCESS")
+    # R58: earned reputation is derived from saved verified route counts,
+    # not from XP, premium ownership, or a button that fabricates a rank.
+    var rookie: Dictionary = CareerPrestigeR58Script.status({})
+    var navigator: Dictionary = CareerPrestigeR58Script.status({"aurora":3})
+    var ace: Dictionary = CareerPrestigeR58Script.status({"aurora":4, "neon":5})
+    var legend: Dictionary = CareerPrestigeR58Script.status({"aurora":12,"neon":9,"rift":3})
+    if not check(rookie["rank"] == 0 and rookie["max_risk"] == 0 and
+        rookie["remaining"] == 3 and navigator["rank"] == 1 and
+        navigator["max_risk"] == 1 and navigator["remaining"] == 6 and
+        ace["rank"] == 2 and ace["max_risk"] == 2 and ace["remaining"] == 15 and
+        legend["rank"] == 3 and legend["max_risk"] == 2 and
+        legend["next_at"] == 0 and
+        CareerPrestigeR58Script.total_completions(
+            {"aurora":99999999, "neon":"free", "spoof":999}) == 99999,
+        "R58 rank must be earned from validated completed-route counts"):return
+    if not check(CareerPrestigeR58Script.safe_selected_tier("2", ace) == 0 and
+        CareerPrestigeR58Script.safe_selected_tier(2, {"aurora":3}) == 0 and
+        CareerPrestigeR58Script.safe_selected_tier(1, {"aurora":3}) == 1 and
+        CareerPrestigeR58Script.safe_selected_tier(2, {"aurora":9}) == 2 and
+        not CareerPrestigeR58Script.unlocked(2, {"aurora":3}) and
+        CareerPrestigeR58Script.earned_credits("aurora", 0) == 380 and
+        CareerPrestigeR58Script.earned_credits("aurora", 1) == 513 and
+        CareerPrestigeR58Script.earned_credits("rift", 2) == 1715 and
+        CareerPrestigeR58Script.earned_xp("neon", 2) == 264 and
+        is_equal_approx(CareerPrestigeR58Script.available_seconds(
+            "aurora", 1), 357.0),
+        "R58 risk ranks must be locked and pay only bounded catalog rewards"):return
+    var real_elite_points: Array[Vector3] = CareerPrestigeR58Script.challenge_route(
+        "aurora", 2)
+    if not check(real_elite_points.size() == 5 and
+        real_elite_points[3].distance_to(
+            real_elite_points[1]) < 0.01 and
+        real_elite_points[4].distance_to(
+            real_elite_points[0]) < 0.01,
+        "R58 elite contract must add two genuine return-leg 3D waypoints"):return
+    var accelerated_patrol = PatrolContractsR57Script.new()
+    if not check(accelerated_patrol.begin("aurora") and
+        not accelerated_patrol.configure_challenge_r58(
+            real_elite_points, 357.0, 1) and
+        accelerated_patrol.configure_challenge_r58(
+            CareerPrestigeR58Script.challenge_route("aurora", 1),
+            357.0, 1) and
+        accelerated_patrol.route_size_r58() == 4 and
+        is_equal_approx(accelerated_patrol.seconds_remaining(), 357.0),
+        "R58 physical route engine must reject tampered extra points and timer"):return
+    accelerated_patrol.tick(0.25, Vector3.ZERO)
+    if not check(not accelerated_patrol.configure_challenge_r58(
+        real_elite_points, 294.0, 2),
+        "R58 live timed flight must reject changing tier mid-sortie"):return
+    print("NEBULA_R58_EARNED_RANK_RISK_BOUNDED_PAY_AND_REAL_ROUTE_QA_SUCCESS")
     # R57 integrated career loop after story completion: the real hub button
     # arms a route; launch enables real 3D navigation; only the final
     # waypoint transitions back to the garage with exact once-paid credits.
@@ -2655,6 +2706,7 @@ func _run() -> void:
     world.xp = 0
     world.r57_selected_contract = ""
     world.r57_contract_counts = PatrolContractsR57Script.safe_finish_counts({})
+    world.r58_risk_tier = 0
     world._r39_refresh_garage()
     var contract_hub = world.garage_hub_r39
     contract_hub.section_buttons_r54["operations"].pressed.emit()
@@ -2747,5 +2799,98 @@ func _run() -> void:
     print("NEBULA_R57_DOCK_PERF_CANVASLAYER_REAL_TOUCH_ACCESS_SUCCESS")
     print("NEBULA_R57_TRAINED_LOGISTICS_PILOT_REAL_CONTRACT_BONUS_SUCCESS")
     print("NEBULA_R57_REAL_REPEATABLE_PAYOUT_FAILURE_AND_CAREER_SAVE_SUCCESS")
+    # R58 integrated reputation/tier game loop after R57 base regressions.
+    # The user must complete three genuine contracts to unlock risk 1,
+    # then nine to unlock risk 2. UI and world independently enforce this.
+    world.selected_captain_r42 = "ada"
+    world.r57_contract_counts = PatrolContractsR57Script.safe_finish_counts(
+        {"aurora":3})
+    world.r58_risk_tier = 0
+    world.credits = 2000
+    world.xp = 500
+    world._r39_refresh_garage()
+    var advanced_hub = world.garage_hub_r39
+    advanced_hub.section_buttons_r54["operations"].pressed.emit()
+    if not check(advanced_hub.r58_risk_buttons.size() == 3 and
+        not advanced_hub.r58_risk_buttons[1].disabled and
+        advanced_hub.r58_risk_buttons[2].disabled and
+        advanced_hub.r58_reputation_label.text.contains("ШТУРМАН"),
+        "R58 live garage must unlock acceleration only after three real routes"):return
+    world._r58_select_risk_tier(2)
+    if not check(world.r58_risk_tier == 0 and world.credits == 2000,
+        "R58 illegal elite risk must not change a wallet or selected tier"):return
+    advanced_hub.r58_risk_buttons[1].pressed.emit()
+    if not check(world.r58_risk_tier == 1 and
+        advanced_hub.r57_contract_buttons["aurora"].text.contains("513 CR") and
+        advanced_hub.r57_contract_buttons["aurora"].text.contains("4 МАЯКА"),
+        "R58 selected risk must update actual 3D contract offer and payment"):return
+    advanced_hub.r57_contract_buttons["aurora"].pressed.emit()
+    advanced_hub.launch_button.pressed.emit()
+    if not check(world.r57_patrol.active and not world.garage_open_r39 and
+        world.r57_patrol.risk_tier_r58 == 1 and
+        world.r57_patrol.route_size_r58() == 4 and
+        is_equal_approx(world.r57_patrol.seconds_remaining(), 357.0) and
+        world.credits == 2000,
+        "R58 risk-1 flight must use real extra waypoint without advance pay"):return
+    for real_point in range(4):
+        world.ship.global_position = world.r57_patrol.objective_position()
+        for hold_frame in range(6):
+            world._r57_patrol_tick(0.25)
+        if real_point < 3 and not check(
+                world.credits == 2000 and not world.garage_open_r39,
+                "R58 intermediate elite return-leg waypoint must never pay"):return
+    if not check(world.garage_open_r39 and world.credits == 2513 and
+        world.xp == 617 and world.r57_contract_counts["aurora"] == 4 and
+        world.r57_last_report.contains("+513 CR") and
+        world.r57_last_report.contains("+117 XP"),
+        "R58 risk-1 physical route must pay exact earned CR and XP once"):return
+    world._r57_end_patrol(true, "")
+    if not check(world.credits == 2513 and
+        world.r57_contract_counts["aurora"] == 4,
+        "R58 duplicate elite payout cannot replay after dock return"):return
+    world.r57_contract_counts = PatrolContractsR57Script.safe_finish_counts(
+        {"aurora":9})
+    world._r39_refresh_garage()
+    world.garage_hub_r39.section_buttons_r54["operations"].pressed.emit()
+    var elite_hub = world.garage_hub_r39
+    if not check(not elite_hub.r58_risk_buttons[2].disabled and
+        elite_hub.r58_reputation_label.text.contains("АС"),
+        "R58 elite challenge must unlock only after nine completed sorties"):return
+    elite_hub.r58_risk_buttons[2].pressed.emit()
+    elite_hub.r57_contract_buttons["rift"].pressed.emit()
+    if not check(world.r58_risk_tier == 2 and
+        elite_hub.r57_contract_buttons["rift"].text.contains("1715 CR") and
+        elite_hub.r57_contract_buttons["rift"].text.contains("6 МАЯКА"),
+        "R58 elite offer must show additional physical route and right credit"):return
+    elite_hub.launch_button.pressed.emit()
+    if not check(world.r57_patrol.risk_tier_r58 == 2 and
+        world.r57_patrol.route_size_r58() == 6 and
+        is_equal_approx(world.r57_patrol.seconds_remaining(), 700.0),
+        "R58 high-risk real flight needs six beacons and genuine shorter timer"):return
+    for elite_point in range(6):
+        world.ship.global_position = world.r57_patrol.objective_position()
+        for hover_frame in range(6):
+            world._r57_patrol_tick(0.25)
+    if not check(world.garage_open_r39 and world.credits == 4228 and
+        world.xp == 1046 and world.r57_contract_counts["rift"] == 1 and
+        world.r57_last_report.contains("+1715 CR") and
+        world.r57_last_report.contains("+429 XP"),
+        "R58 ace risk must award 1715 CR/429 XP only after six real points"):return
+    world._save_progress()
+    world.r58_risk_tier = 0
+    world.r57_contract_counts = PatrolContractsR57Script.safe_finish_counts({})
+    world._load_progress()
+    if not check(world.r58_risk_tier == 2 and
+        world.r57_contract_counts["aurora"] == 9 and
+        world.r57_contract_counts["rift"] == 1 and
+        world.credits == 4228 and world.xp == 1046,
+        "R58 old v1 save must safely restore earned high-risk rights and wallet"):return
+    world.r58_risk_tier = 2
+    world.r57_contract_counts = PatrolContractsR57Script.safe_finish_counts({})
+    world._save_progress()
+    world._load_progress()
+    if not check(world.r58_risk_tier == 0,
+        "R58 saved elite risk with no earned completions must be downgraded"):return
+    print("NEBULA_R58_REAL_HARDER_FLIGHTS_ONE_TIME_REWARDS_AND_SAFE_SAVE_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
