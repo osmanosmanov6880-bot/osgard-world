@@ -3,6 +3,7 @@ extends CharacterBody3D
 ## instant speed clamp. Keeps player progression and the R5-R14 hero model.
 const ShipVisualR5Script = preload("res://scripts/ship_visual_r5.gd")
 const HullVariantsR45Script = preload("res://scripts/hull_variants_r45.gd")
+const FleetAirframesR55Script = preload("res://scripts/fleet_airframes_r55.gd")
 
 signal fired(origin: Vector3, direction: Vector3)
 
@@ -28,6 +29,7 @@ var turn_speed: float = 1.9
 var cooldown: float = 0.0
 var visual: Node3D
 var hull_kit_r45: Node3D
+var primary_airframe_r55: Node3D
 var engine_flames: Array[MeshInstance3D] = []
 var glow_time: float = 0.0
 var controls_locked: bool = false
@@ -97,6 +99,12 @@ func _ready() -> void:
     hull_kit_r45 = HullVariantsR45Script.new()
     hull_kit_r45.name = "R45_ActualFlightHullKit"
     visual.add_child(hull_kit_r45)
+    # R55: replace shared NX-08 silhouette in actual flight, preserving legacy.
+    primary_airframe_r55 = FleetAirframesR55Script.new()
+    primary_airframe_r55.name = "R55_TrueActiveFlightAirframe"
+    visual.add_child(primary_airframe_r55)
+    model.visible = false
+    hull_kit_r45.visible = false
     if OS.has_feature("web"):
         browser_window = JavaScriptBridge.get_interface("window")
     # The R8 wing span is large, but collision uses a conservative swept
@@ -111,6 +119,8 @@ func _ready() -> void:
 func set_hull_variant(id: String) -> void:
     if is_instance_valid(hull_kit_r45):
         hull_kit_r45.set_hull(id)
+    if is_instance_valid(primary_airframe_r55):
+        primary_airframe_r55.set_hull(id)
 
 func set_touch_controls(steering: Vector2, throttle: float, vertical: float,
         boosting: bool, firing: bool) -> void:
@@ -244,6 +254,8 @@ func _physics_process(delta: float) -> void:
     velocity -= lateral_velocity * (1.0 - exp(-2.2 * delta))
     velocity = velocity.limit_length(AFTERBURNER_SPEED if afterburner else NORMAL_SPEED)
     thruster_power = absf(throttle) * (1.0 if afterburner else 0.55)
+    if is_instance_valid(primary_airframe_r55):
+        primary_airframe_r55.set_throttle(thruster_power, afterburner)
     boost = clampf(boost + (-23.0 if afterburner else 16.0) * delta, 0.0, 100.0)
     cooldown = maxf(0.0, cooldown - delta)
     if (
