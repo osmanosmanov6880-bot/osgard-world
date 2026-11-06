@@ -48,7 +48,7 @@ try{
   await assert.rejects(inspectProductionArtifact({
     ...r41,approval:{...r41.approval,web_export_commit_sha:r41.approval.native_source_commit_sha}
   },temp),/Modern owner override requires exact source/);
-  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50','R51','R52','R54','R55','R56']){
+  for(const variant of ['R42','R43','R44','R45','R46','R47','R48','R49','R50','R51','R52','R54','R55','R56','R57']){
     const owner={...r41,approved_variant:variant,
       release_status:variant+'_OWNER_DIRECTED_OVERRIDE',
       approval:{...r41.approval,
@@ -201,6 +201,24 @@ try{
     {...r56,artifacts:{...expected,'index.html':'0'.repeat(40)}},
     {...r56,artifacts:{...expected,'index.pck':'0'.repeat(40)}},
     {...r56,artifacts:{...expected,extra:'0'.repeat(40)}},
+  ]) {
+    await assert.rejects(inspectProductionArtifact(malicious,temp),
+      /Owner override|Modern owner override|hardware QA explicitly false|unapproved index|exactly four hashed/);
+  }
+
+  const r57={...r41,approved_variant:'R57',release_status:'R57_OWNER_DIRECTED_OVERRIDE'};
+  const r57Good=await inspectProductionArtifact(r57,temp);
+  assert.equal(r57Good.variant,'R57');
+  assert.equal(r57Good.status,'OWNER_DIRECTED_OVERRIDE_BYTES_MATCH');
+  for(const malicious of [
+    {...r57,release_status:'R57_HARDWARE_QA_APPROVED'},
+    {...r57,approval:{...r57.approval,physical_device_qa:'PASSED'}},
+    {...r57,approval:{...r57.approval,hardware_qa_certified:true}},
+    {...r57,approval:{...r57.approval,verification_workflow_run_id:0}},
+    {...r57,approval:{...r57.approval,web_export_commit_sha:r57.approval.native_source_commit_sha}},
+    {...r57,artifacts:{...expected,'index.html':'0'.repeat(40)}},
+    {...r57,artifacts:{...expected,'index.pck':'0'.repeat(40)}},
+    {...r57,artifacts:{...expected,extra:'0'.repeat(40)}},
   ]) {
     await assert.rejects(inspectProductionArtifact(malicious,temp),
       /Owner override|Modern owner override|hardware QA explicitly false|unapproved index|exactly four hashed/);

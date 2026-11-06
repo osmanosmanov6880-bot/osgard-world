@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R56",
-  "release_status": "R56_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R57",
+  "release_status": "R57_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "06af36b0a154163b74fcfd48446931af498971c0",
+    "index.html": "5e08cd5fcca8c8dd391dd0ce9d16c02f71815223",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "ce9a499468b8b920d451979ca29d1ed8349819ef"
+    "index.pck": "cf424f5fe8e614a03788ab06761db9faebc88769"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,9 +15,9 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-06",
-    "verification_workflow_run_id": 42138745704,
-    "native_source_commit_sha": "6b4e44146ebf98e0f82ee3dea85d65bb04200625",
-    "web_export_commit_sha": "5c3596f3379fb1710d5d862f48a7ca50c5623246"
+    "verification_workflow_run_id": 42144702178,
+    "native_source_commit_sha": "2493f542b156053d59f1c0fc8c5abd19f8eda54f",
+    "web_export_commit_sha": "a680a0df4bc5a6c7416c9bfe14b0c2553a6ea8f0"
   },
-  "notes": "R56 source PR #758 head 2cc5c31636cb74ab509f9def62944d3feb32440d passed 6/6 GitHub checks, merged as 6b4e44146ebf98e0f82ee3dea85d65bb04200625. Official Godot 4.7.2 native Web export run #42138745704 SUCCESS produced 5c3596f3379fb1710d5d862f48a7ca50c5623246 as direct child of accepted merge. Four exact Git blob SHA1 files pinned; no binary patching. R56 real per-owned-hull armor/shield/radar 3D meshwork and paid saved 0-3 ranks, live combat hull/shield caps, physical waypoint radar range, four-tab Aurora shop and pilot academy. R57 repeatable contracts and R53 mission 15 are NOT included. R55 last independently confirmed public HTTPS 4/4 #42139241911 is rollback until R56 new post-deployment independent HTTPS parity 4/4. Physical Android/iPhone, actual GPU FPS and endurance QA NOT_PERFORMED; hardware_qa_certified=false."
+  "notes": "R57 post-story real career repeatable patrols source PR #760 head c4417e40294694fc160a46e5cd135bd48eb4b91e passed 6/6 latest-head checks including real mobile Chromium and native Godot/WebAssembly, merged 2493f542b156053d59f1c0fc8c5abd19f8eda54f. Trusted Godot 4.7.2 Web export #42144702178 SUCCESS produced a680a0df4bc5a6c7416c9bfe14b0c2553a6ea8f0 as direct sole child of accepted R57 merge. Four exact Git blob SHA-1 pins, no rewriting. Includes accepted R54 hangar, R55 independent hulls, R56 paid 3D armor/shield/radar and new R57 3-repeatable 3/4/4 physical checkpoint jobs with 1.5s hold, timed failure, exactly-once 380/650/980 CR + XP and post-campaign hub/UI plus real mobile FPS touch layer fix. R58 risk tiers and R59 livery studio plus R53 mission 15 NOT in this release. R56 public independent HTTPS exact 4/4 success #42144517701 stays rollback until R57 separate deploy and HTTPS 4/4. Physical Android/iPhone hardware QA NOT_PERFORMED; hardware_qa_certified=false. Local user:// wallet not server-backed."
 }
