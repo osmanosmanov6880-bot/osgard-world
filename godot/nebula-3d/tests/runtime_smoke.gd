@@ -2651,12 +2651,12 @@ func _run() -> void:
     # R58: earned reputation is derived from saved verified route counts,
     # not from XP, premium ownership, or a button that fabricates a rank.
     var rookie: Dictionary = CareerPrestigeR58Script.status({})
-    var navigator: Dictionary = CareerPrestigeR58Script.status({"aurora":3})
+    var ranked_navigator_r58: Dictionary = CareerPrestigeR58Script.status({"aurora":3})
     var ace: Dictionary = CareerPrestigeR58Script.status({"aurora":4, "neon":5})
     var legend: Dictionary = CareerPrestigeR58Script.status({"aurora":12,"neon":9,"rift":3})
     if not check(rookie["rank"] == 0 and rookie["max_risk"] == 0 and
-        rookie["remaining"] == 3 and navigator["rank"] == 1 and
-        navigator["max_risk"] == 1 and navigator["remaining"] == 6 and
+        rookie["remaining"] == 3 and ranked_navigator_r58["rank"] == 1 and
+        ranked_navigator_r58["max_risk"] == 1 and ranked_navigator_r58["remaining"] == 6 and
         ace["rank"] == 2 and ace["max_risk"] == 2 and ace["remaining"] == 15 and
         legend["rank"] == 3 and legend["max_risk"] == 2 and
         legend["next_at"] == 0 and
