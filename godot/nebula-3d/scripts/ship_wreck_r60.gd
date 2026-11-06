@@ -45,8 +45,15 @@ func spawn_crash(at: Vector3, movement: Vector3,
     global_position = last_actual_impact
     age = 0.0
     var source_velocity: Vector3 = safe_velocity(movement)
-    var surface_color: Color = metal_color if (
-        metal_color.is_finite()) else Color(0.35, 0.43, 0.48)
+    # Godot Color has no is_finite() method. Validate each RGBA scalar
+    # before using an untrusted paint value in debris materials.
+    var valid_color: bool = not (
+        is_nan(metal_color.r) or is_inf(metal_color.r) or
+        is_nan(metal_color.g) or is_inf(metal_color.g) or
+        is_nan(metal_color.b) or is_inf(metal_color.b) or
+        is_nan(metal_color.a) or is_inf(metal_color.a))
+    var surface_color: Color = metal_color if valid_color else (
+        Color(0.35, 0.43, 0.48))
     # Nine independent colliding physics objects, all placed within a few
     # meters of the *real* crash. The city stays collision layer 1; the
     # player cannot die again from this VFX (debris collision_layer = 0).
