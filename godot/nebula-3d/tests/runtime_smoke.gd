@@ -4,6 +4,7 @@ const MaterialFabricR12Script = preload("res://scripts/material_fabric_r12.gd")
 const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
+const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
@@ -2738,6 +2739,80 @@ func _run() -> void:
         is_equal_approx(world.ship.damage_multiplier, 0.87) and
         world.ship.engine_rank == 1,
         "R54 actual departure must apply paid Ada training to combat damage"):return
+    # R61: a real launched pilot earns exactly one record per sortie.
+    # The local wallet/XP is unchanged; records are independently persisted.
+    if not check(world.r61_sortie_active and
+        world.r61_sortie_pilot_id == "ada",
+        "R61 must start a real pilot flight record only when unlocked"):return
+    var r61_flown_before: float = world.ship.flight_distance
+    var r61_credits_before: int = world.credits
+    var r61_xp_before: int = world.xp
+    world.ship.flight_distance += 1875.0
+    world.r61_sortie_seconds = 85.0
+    world._r61_finish_sortie("failed")
+    world._r61_finish_sortie("failed")
+    var r61_pilot_record: Dictionary = world.pilot_logbook_r61["ada"]
+    if not check(not world.r61_sortie_active and
+        r61_pilot_record["flights"] == 1 and
+        r61_pilot_record["failures"] == 1 and
+        r61_pilot_record["successes"] == 0 and
+        r61_pilot_record["distance_m"] == 1875 and
+        r61_pilot_record["seconds"] == 85 and
+        world.credits == r61_credits_before and world.xp == r61_xp_before,
+        "R61 must count real failure/distance once, with zero CR/XP mint"):return
+    # Earlier R42/R54 smoke scenarios may already have completed real Kai
+    # sorties. Preserve his exact history rather than assuming a fresh pilot.
+    var r61_kai_history_before: Dictionary = (
+        world.pilot_logbook_r61["kai"] as Dictionary).duplicate(true)
+    world._save_progress()
+    world.pilot_logbook_r61 = PilotLogbookR61Script.safe_roster({})
+    world._load_progress()
+    if not (world.pilot_logbook_r61["ada"]["flights"] == 1 and
+            world.pilot_logbook_r61["kai"]["flights"] == r61_kai_history_before["flights"] and
+            world.pilot_logbook_r61["kai"]["successes"] == r61_kai_history_before["successes"] and
+            world.credits == r61_credits_before):
+        var r61_saved_raw: String = FileAccess.get_file_as_string(world.SAVE_PATH)
+        print("NEBULA_R61_SAVE_ROUNDTRIP_DETAILS: " + JSON.stringify({
+            "ada": world.pilot_logbook_r61["ada"],
+            "kai": world.pilot_logbook_r61["kai"],
+            "credits": world.credits, "expected_cr": r61_credits_before,
+            "save_contains_logbook": r61_saved_raw.contains("pilot_logbook_r61"),
+            "save_bytes": r61_saved_raw.length()
+        }))
+    if not check(world.pilot_logbook_r61["ada"]["flights"] == 1 and
+        world.pilot_logbook_r61["kai"]["flights"] == r61_kai_history_before["flights"] and
+        world.pilot_logbook_r61["kai"]["successes"] == r61_kai_history_before["successes"] and
+        world.pilot_logbook_r61["kai"]["distance_m"] == r61_kai_history_before["distance_m"] and
+        world.credits == r61_credits_before,
+        "R61 legacy version-1 saves must retain independent real pilot records"):return
+    world.ship.flight_distance = r61_flown_before
+    var r61_invalid: Dictionary = PilotLogbookR61Script.safe_roster({
+        "ada":{"flights":4,"successes":100,"failures":100,
+            "distance_m":-12,"seconds":INF,"unknown":"premium"},
+        "kai":{"flights":2,"successes":1,"distance_m":2400},
+        "hacker":{"flights":99999}})
+    if not check(r61_invalid["ada"]["successes"] == 4 and
+        r61_invalid["ada"]["failures"] == 0 and
+        r61_invalid["ada"]["distance_m"] == 0 and
+        r61_invalid["ada"]["seconds"] == 0 and
+        not r61_invalid["ada"].has("unknown") and
+        not r61_invalid.has("hacker") and
+        PilotLogbookR61Script.qualification(
+            r61_invalid["kai"]) == "ПОДГОТОВЛЕН",
+        "R61 must sanitize forged logbooks without granting credentials"):return
+    var r61_roster_after_success: Dictionary = PilotLogbookR61Script.record(
+        world.pilot_logbook_r61, "kai", "success", 2200.0, 130.0)
+    if not check(r61_roster_after_success["kai"]["flights"] ==
+        int(r61_kai_history_before["flights"]) + 1 and
+        r61_roster_after_success["kai"]["successes"] ==
+        int(r61_kai_history_before["successes"]) + 1 and
+        r61_roster_after_success["ada"]["flights"] == 1 and
+        world.pilot_logbook_r61["kai"]["flights"] ==
+        r61_kai_history_before["flights"] and
+        PilotLogbookR61Script.qualification(
+            r61_roster_after_success["kai"]) == "ПОДГОТОВЛЕН",
+        "R61 genuine success must award only earned captain experience"):return
+    print("NEBULA_R61_REAL_PILOT_FLIGHT_LOGBOOK_SAVE_NO_MINT_SUCCESS")
     var wallet_before_no_reward: int = world.credits
     world._complete_mission()
     if not check(world.credits == wallet_before_no_reward,
@@ -3100,6 +3175,12 @@ func _run() -> void:
     world.mission_index = world.MISSIONS.size()
     world._r39_refresh_garage()
     world._r39_launch_sortie()
+    var r61_free_pilot: String = world.selected_captain_r42
+    var r61_free_history: Dictionary = (
+        world.pilot_logbook_r61[r61_free_pilot] as Dictionary).duplicate(true)
+    if not check(world.r61_sortie_active and
+        world.r61_sortie_pilot_id == r61_free_pilot,
+        "R61 free-flight logbook starts only on real unlocked launch"):return
     var freeflight_cr_before: int = world.credits
     var freeflight_xp_before: int = world.xp
     var freeflight_crashes_before: int = world.r60_crash_count
@@ -3147,7 +3228,13 @@ func _run() -> void:
         world.xp == freeflight_xp_before and
         world.ship.visible and world.ship.hull > 0.0 and
         not world.garage_open_r39 and not world.r57_patrol.active and
-        world.r60_crash_count == freeflight_crashes_before + 1)
+        world.r60_crash_count == freeflight_crashes_before + 1 and
+        world.r61_sortie_active and
+        world.r61_sortie_pilot_id == r61_free_pilot and
+        int(world.pilot_logbook_r61[r61_free_pilot]["flights"]) ==
+            int(r61_free_history["flights"]) + 1 and
+        int(world.pilot_logbook_r61[r61_free_pilot]["failures"]) ==
+            int(r61_free_history["failures"]) + 1)
     if not r60_recovered_cleanly:
         print("NEBULA_R60_FREEFLIGHT_RECOVERY_FAILURE_DETAILS: " +
             JSON.stringify({
@@ -3178,6 +3265,39 @@ func _run() -> void:
     if not check(world.credits == r60_normal_flight_cr_before + 45 and
         world.xp == freeflight_xp_before and not world.r60_crash_pending,
         "R60 recovery must restore legitimate normal-flight CR payouts"):return
+    # A second real free-flight catastrophe must earn a second FAILED
+    # record, never a second reward. This catches auto-repair loops whose
+    # logbook remained disarmed after the first legitimate crash.
+    var r61_second_wallet: int = world.credits
+    world.ship.shield = 0.0
+    world.ship.hull = 0.0
+    await process_frame
+    await process_frame
+    if not check(world.r60_crash_pending and
+        not world.r61_sortie_active and
+        int(world.pilot_logbook_r61[r61_free_pilot]["failures"]) ==
+            int(r61_free_history["failures"]) + 2 and
+        world.credits == r61_second_wallet and
+        world.xp == freeflight_xp_before,
+        "R61 a second real wreck must close exactly one newly armed pilot flight"):return
+    var r61_second_crash_started_ms: int = Time.get_ticks_msec()
+    var r61_second_crash_frames: int = 0
+    while (world.r60_crash_pending and
+            Time.get_ticks_msec() - r61_second_crash_started_ms < 4000 and
+            r61_second_crash_frames < 450):
+        await process_frame
+        r61_second_crash_frames += 1
+    if not check(not world.r60_crash_pending and
+        world.r61_sortie_active and
+        world.r61_sortie_pilot_id == r61_free_pilot and
+        int(world.pilot_logbook_r61[r61_free_pilot]["flights"]) ==
+            int(r61_free_history["flights"]) + 2 and
+        int(world.pilot_logbook_r61[r61_free_pilot]["successes"]) ==
+            int(r61_free_history["successes"]) and
+        world.credits == maxi(0, r61_second_wallet - 220) and
+        world.xp == freeflight_xp_before,
+        "R61 second real free-flight recovery must rearm pilot stats with exact CR fee"):return
+    print("NEBULA_R61_FREEFLIGHT_REARM_TWO_REAL_CRASHES_NO_DOUBLE_REWARD_SUCCESS")
     print("NEBULA_R60_REAL_PHYSICS_9_SHARDS_WRECK_HOLD_DAMAGE_AND_RECOVERY_SUCCESS")
     print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)

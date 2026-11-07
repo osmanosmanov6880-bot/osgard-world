@@ -1347,4 +1347,38 @@ require(
     "13", "220", "Godot", "WebAssembly", "HTTPS 4/4",
 )
 
+r61_logbook = require(
+    "scripts/pilot_logbook_r61.gd",
+    "extends RefCounted",
+    "static func safe_roster(",
+    "static func record(",
+    "static func qualification(",
+    "static func summary(",
+    "MAX_SORTIE_SECONDS",
+)
+assert "credits +=" not in r61_logbook
+assert "FileAccess.open(" not in r61_logbook
+assert 'PilotLogbookR61Script = preload(' in world
+assert '"pilot_logbook_r61":pilot_logbook_r61' in world
+assert 'PilotLogbookR61Script.safe_roster(raw.get("pilot_logbook_r61", {}))' in world
+assert 'func _r61_begin_sortie() -> void:' in world
+assert 'func _r61_finish_sortie(outcome: String) -> void:' in world
+assert 'PilotLogbookR61Script = preload(' in require(
+    "scripts/garage_hub_r39.gd", "r61_logbook_status",
+    "PilotLogbookR61Script.summary(")
+assert "NEBULA_R61_REAL_PILOT_FLIGHT_LOGBOOK_SAVE_NO_MINT_SUCCESS" in smoke
+assert "NEBULA_R61_FREEFLIGHT_REARM_TWO_REAL_CRASHES_NO_DOUBLE_REWARD_SUCCESS" in smoke
+assert '        _r61_begin_sortie()\n        _save_progress()' in world
+assert '"crash_hold_active": r60_crash_pending' in world
+assert '"garage_open": garage_open_r39' in world
+assert 'state["garage_sortie_visible"]' in world
+mobile_r61 = require("tests/browser_mobile_r31.mjs",
+    "R60 actual wreck hold settles to accessible real R43 garage retry",
+    "compact portrait real CSS and Godot touch geometry synchronized",
+    "R43 actual touchscreen garage retry unlocks ship")
+assert "actualGarageReady(state)" in mobile_r61
+
+require("docs/R61-REAL-PILOT-LOGBOOK-QA.md",
+    "R61", "R54", "CR", "Godot", "NOT_PERFORMED", "flight_distance")
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")

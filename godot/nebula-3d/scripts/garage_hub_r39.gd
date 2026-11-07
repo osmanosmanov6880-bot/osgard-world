@@ -1,6 +1,7 @@
 
 extends CanvasLayer
 const Hangar3DPreviewR44Script = preload("res://scripts/hangar_ship_preview_r44.gd")
+const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
 ## R39 garage command hub. Reads the live campaign state supplied by world.gd.
 signal sortie_requested
 signal shop_requested
@@ -64,6 +65,7 @@ var introductory_section_r54: VBoxContainer
 var squad_controls_r54: HBoxContainer
 var academy_panel_r54: PanelContainer
 var academy_status_r54: Label
+var r61_logbook_status: Label
 var academy_train_button_r54: Button
 var engine_upgrade_r54: Button
 var weapon_upgrade_r54: Button
@@ -399,6 +401,8 @@ func _build() -> void:
     academy_panel_r54.add_child(academy_column)
     _label(academy_column, "АКАДЕМИЯ · ОБУЧЕНИЕ ЗА CR", 13, GOLD)
     academy_status_r54 = _label(academy_column, "РАНГ 0 / 3", 12, MUTED)
+    r61_logbook_status = _label(academy_column,
+        "ЛЁТНАЯ КНИЖКА · КУРСАНТ · 0 ВЫЛЕТОВ", 11, CYAN)
     academy_train_button_r54 = _r54_credit_action(academy_column,
         "R54_ActualCaptainTrainingPurchase", "ОБУЧИТЬ · 650 CR")
     academy_train_button_r54.pressed.connect(
@@ -676,6 +680,9 @@ func refresh(data: Dictionary) -> void:
             else "ОРУЖИЕ · %s CR" % _format_number(600 + weapon_rank * 500))
         weapon_upgrade_r54.disabled = weapon_rank >= 4
     var selected_training: String = str(data.get("captain_id", "ada"))
+    if is_instance_valid(r61_logbook_status):
+        r61_logbook_status.text = PilotLogbookR61Script.summary(
+            data.get("pilot_logbook_r61", {}), selected_training)
     var training_map: Dictionary = data.get("pilot_training_r54", {})
     var trained: int = clampi(int(training_map.get(selected_training, 0)), 0, 3)
     var training_cost: int = [650, 1100, 1800][mini(trained, 2)]
