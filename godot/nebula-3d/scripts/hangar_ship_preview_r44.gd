@@ -228,9 +228,11 @@ func set_inspection_mode_r62(mode: String) -> bool:
             camera_distance_r54 = 15.4
             camera_focus_r62 = Vector3(0.0, -0.20, 3.15)
         "underside":
-            camera_direction_r54 = Vector3(7.1, -6.1, -7.9).normalized()
+            # A camera below the -2.85 m solid deck would only show its
+            # underside, not the aircraft. Aim upward from inside the bay.
+            camera_direction_r54 = Vector3(7.1, -1.35, -9.5).normalized()
             camera_distance_r54 = 17.0
-            camera_focus_r62 = Vector3.ZERO
+            camera_focus_r62 = Vector3(0.0, -0.2, 0.0)
         _:
             camera_direction_r54 = Vector3(12.0, 7.5, -18.2).normalized()
             camera_distance_r54 = 22.8
