@@ -1932,6 +1932,21 @@ func _update_hud() -> void:
     if bool(r63_last_course.get("has_target", false)):
         hud_status.text += "\n" + SortiePlannerR63Script.course_label(
             r63_last_course, r21_mobile_enabled)
+    # The flight HUD shows real aircraft damage and actual engine heat.
+    # Keep one extra compact line on mobile, no overlay on touch throttles.
+    var mechanical: Dictionary = ship.r64_condition
+    var heat_pct: int = roundi(ship.r64_engine_heat)
+    if r21_mobile_enabled:
+        hud_status.text += "\nУЗЛЫ %d/%d/%d%% · ТЕПЛО %d%%%s" % [
+            int(mechanical.get("engine", 100)),
+            int(mechanical.get("controls", 100)),
+            int(mechanical.get("plating", 100)), heat_pct,
+            " · ПЕРЕГРЕВ" if ship.r64_heat_locked else ""]
+    else:
+        hud_status.text += "\nСИСТЕМЫ · %s · ФОРСАЖ %d%%%s" % [
+            AirframeServiceR64Script.summary(
+                airframes_r64, equipped_r15), heat_pct,
+            " · ПЕРЕГРЕВ" if ship.r64_heat_locked else ""]
 
 func _r63_refresh_flight_director() -> void:
     # Reuse the existing 8-10 Hz HUD cadence; do not add physics work.

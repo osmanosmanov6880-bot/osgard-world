@@ -1475,4 +1475,43 @@ require("docs/R63-ACTUAL-FLIGHT-DIRECTOR-QA.md",
     "R63", "Godot", "CR", "NOT_PERFORMED",
     "SwiftShader", "flight corridor")
 
+# R64: five actual integrated code blocks, never browser-minted credits.
+r64_service = require("scripts/airframe_service_r64.gd",
+    "extends RefCounted", "static func strike(", "static func quote(",
+    "static func repair(", "static func safe_roster(",
+    "static func engine_factor(", "static func steering_factor(",
+    "static func armor_factor(")
+r64_real_mesh = require("scripts/airframe_diagnostics_r64.gd",
+    "extends Node3D", "MeshInstance3D.new()",
+    "R64_TrueIntegrityLight_", "set_condition(", "real_mesh_count(")
+assert "FileAccess" not in r64_service and "credits -=" not in r64_service
+assert "FileAccess" not in r64_real_mesh and "credits +=" not in r64_real_mesh
+require("scripts/ship.gd",
+    "signal hull_penetration_r64(actual_damage: float)",
+    "func r64_heat_tick(", "r64_heat_locked",
+    "AirframeServiceR64Script.steering_factor(",
+    "AirframeServiceR64Script.engine_factor(",
+    "hull_penetration_r64.emit(actual_penetration)")
+require("scripts/world.gd",
+    "ship.hull_penetration_r64.connect(_r64_on_hull_penetration)",
+    "func _r64_on_hull_penetration(",
+    "func _r64_purchase_service(", "credits -= cost",
+    '"airframes_r64":airframes_r64',
+    'AirframeServiceR64Script.safe_roster(raw.get("airframes_r64", {}))',
+    'airframes_r64.duplicate(true)',
+    "ship.set_r64_condition(",
+    "СИСТЕМЫ · %s · ФОРСАЖ")
+require("scripts/garage_hub_r39.gd",
+    "signal service_requested_r64(", "R64_Service_",
+    "r64_service_buttons", "AirframeServiceR64Script.quote(",
+    "AirframeServiceR64Script.summary(")
+require("scripts/hangar_ship_preview_r44.gd",
+    "AirframeDiagnosticsR64Script.new()",
+    "func set_r64_airframe_diagnostics(",
+    "actual_system_lights_r64")
+assert "NEBULA_R64_FIVE_REAL_SYSTEMS_WEAR_PHYSICS_HEAT_PAID_SERVICE_3D_SAVE_SUCCESS" in smoke
+require("docs/R64-AIRFRAME-SERVICE-QA.md",
+    "R64", "5", "Godot", "CR",
+    "NX-08", "NX-12", "NX-21", "NOT_PERFORMED")
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")

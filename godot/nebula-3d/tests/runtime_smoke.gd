@@ -6,6 +6,7 @@ const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
 const SortiePlannerR63Script = preload("res://scripts/sortie_planner_r63.gd")
+const AirframeServiceR64Script = preload("res://scripts/airframe_service_r64.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
@@ -3318,6 +3319,126 @@ func _run() -> void:
         "R59 hidden or in-flight cosmetic purchase must never mint access"):return
     world.garage_hub_r39.visible = true
     print("NEBULA_R59_TRUE_3D_PAINT_CR_PURCHASE_HULL_BOUND_AND_V1_SAVE_SUCCESS")
+    # R64: five real functional blocks: per-owned-hull loss ledger, actual
+    # combat/steering physics, thermal boost, garage repair, true 3D lights.
+    var r64_empty: Dictionary = AirframeServiceR64Script.safe_roster({
+        "ship_scout":{"engine":INF,"controls":-15,"plating":"fake"},
+        "ship_guardian":{"engine":76,"controls":88,"plating":42},
+        "unowned_ship":{"engine":0}})
+    if not check(r64_empty.size() == 3 and
+        not r64_empty.has("unowned_ship") and
+        r64_empty["ship_scout"]["engine"] == 100 and
+        r64_empty["ship_scout"]["controls"] == 0 and
+        r64_empty["ship_scout"]["plating"] == 100 and
+        AirframeServiceR64Script.quote(r64_empty, "fake_ship", "engine") == 0 and
+        AirframeServiceR64Script.quote(r64_empty, "ship_guardian", "invalid") == 0,
+        "R64 local save sanitization must reject forged/unowned and invalid metrics"):return
+    var r64_before: Dictionary = AirframeServiceR64Script.safe_roster({})
+    var r64_no_hit: Dictionary = AirframeServiceR64Script.strike(
+        r64_before, "ship_guardian", 0.0)
+    if not check(r64_no_hit == r64_before and
+        AirframeServiceR64Script.engine_factor(100) == 1.0 and
+        AirframeServiceR64Script.engine_factor(0) < 0.80 and
+        AirframeServiceR64Script.steering_factor(0) < 0.80 and
+        AirframeServiceR64Script.armor_factor(0) > 1.1,
+        "R64 only a real positive hull penetration may lower flight performance"):return
+    var r64_start_xp: int = world.xp
+    var r64_start_cr: int = world.credits
+    var r64_start_hits: int = world.r64_actual_hull_hits
+    var r64_guardian_hull: String = world.equipped_r15
+    if not check(r64_guardian_hull == "ship_guardian" and
+        world.garage_open_r39 and world.garage_hub_r39.visible,
+        "R64 requires real previously bought NX21 for service diagnostics"):return
+    world.ship.shield = 0.0
+    world.ship.hull = world.fleet_r15.ship_hull_cap()
+    world.ship.take_damage(25.0)
+    if not check(world.r64_actual_hull_hits == r64_start_hits and
+        world.airframes_r64["ship_guardian"]["engine"] == 100 and
+        world.credits == r64_start_cr,
+        "R64 parked/no-combat damage cannot forge maintenance wear"):return
+    world.ship.shield = world.fleet_r15.ship_shield_cap()
+    world.ship.hull = world.fleet_r15.ship_hull_cap()
+    world._r39_launch_sortie()
+    world.ship.shield = 0.0
+    world.ship.take_damage(38.0)
+    var r64_worn: Dictionary = (
+        world.airframes_r64["ship_guardian"] as Dictionary).duplicate(true)
+    if not check(not world.garage_open_r39 and
+        world.r64_actual_hull_hits == r64_start_hits + 1 and
+        r64_worn["engine"] < 100 and r64_worn["controls"] < 100 and
+        r64_worn["plating"] < 100 and
+        world.ship.r64_condition == r64_worn and
+        world.ship.diagnostic_lights_r64.real_mesh_count() == 6 and
+        world.credits == r64_start_cr and world.xp == r64_start_xp,
+        "R64 real hull strike must degrade three true flight systems, zero CR/XP mint"):return
+    world._update_hud()
+    if not check(world.hud_status.text.contains("СИСТЕМЫ") or
+        world.hud_status.text.contains("УЗЛЫ"),
+        "R64 player must see authentic engine/controls/plating status while flying"):return
+    world._r61_finish_sortie("failed")
+    world._r39_create_garage_hub()
+    world.garage_hub_r39._r54_select_section("workshop")
+    world._r39_refresh_garage()
+    var r64_price: int = AirframeServiceR64Script.quote(
+        world.airframes_r64, "ship_guardian", "engine")
+    var r64_wallet_before: int = world.credits
+    var r64_paid_before: int = world.r64_services_purchased
+    if not check(r64_price > 0 and
+        world.garage_hub_r39.r64_service_buttons.size() == 3 and
+        not world.garage_hub_r39.r64_service_buttons["engine"].disabled and
+        world.garage_hub_r39.ship_preview_r44.actual_system_lights_r64.real_mesh_count() == 6,
+        "R64 must show genuine credited per-hull service and real 3D visual diagnostics"):return
+    world.garage_hub_r39.r64_service_buttons["engine"].pressed.emit()
+    if not check(world.credits == r64_wallet_before - r64_price and
+        world.r64_services_purchased == r64_paid_before + 1 and
+        world.airframes_r64["ship_guardian"]["engine"] == 100 and
+        world.airframes_r64["ship_guardian"]["controls"] ==
+            r64_worn["controls"] and
+        world.ship.r64_condition["engine"] == 100 and
+        world.xp == r64_start_xp,
+        "R64 one true garage purchase repairs one system for exact CR once"):return
+    world._r64_purchase_service("engine")
+    if not check(world.credits == r64_wallet_before - r64_price and
+        world.r64_services_purchased == r64_paid_before + 1,
+        "R64 repeat click on healthy system cannot charge twice"):return
+    world.credits = 0
+    world._r39_refresh_garage()
+    world._r64_purchase_service("controls")
+    if not check(world.credits == 0 and
+        world.airframes_r64["ship_guardian"]["controls"] ==
+            r64_worn["controls"] and
+        world.garage_hub_r39.r64_service_buttons["controls"].disabled,
+        "R64 insufficient CR cannot repair a damaged control system"):return
+    world.credits = r64_wallet_before - r64_price
+    world._save_progress()
+    var r64_saved: Dictionary = world.airframes_r64.duplicate(true)
+    world.airframes_r64 = AirframeServiceR64Script.safe_roster({})
+    world._load_progress()
+    world._r15_apply_loadout()
+    if not check(world.airframes_r64 == r64_saved and
+        world.ship.r64_condition == r64_saved["ship_guardian"] and
+        world.airframes_r64["ship_scout"]["engine"] == 100 and
+        world.credits == r64_wallet_before - r64_price,
+        "R64 v1 saves preserve real per-hull wear with no phantom service charges"):return
+    world.ship.r64_engine_heat = 99.0
+    world.ship.r64_heat_locked = false
+    var r64_overheat_before: int = world.ship.r64_overheat_events
+    world.ship.r64_heat_tick(0.10, true)
+    if not check(world.ship.r64_heat_locked and
+        world.ship.r64_overheat_events == r64_overheat_before + 1,
+        "R64 actual afterburner heat must trigger engine safety lock"):return
+    world.ship.r64_heat_tick(5.0, false)
+    if not check(not world.ship.r64_heat_locked and
+        world.ship.r64_engine_heat < 38.0 and
+        world.credits == r64_wallet_before - r64_price and
+        world.xp == r64_start_xp,
+        "R64 genuine thermal cooling must restore boost without changing wallet"):return
+    world.garage_hub_r39._r54_select_section("fleet")
+    world._r64_purchase_service("plating")
+    if not check(world.airframes_r64["ship_guardian"]["plating"] ==
+        r64_worn["plating"],
+        "R64 hidden service purchase must be rejected"):return
+    print("NEBULA_R64_FIVE_REAL_SYSTEMS_WEAR_PHYSICS_HEAT_PAID_SERVICE_3D_SAVE_SUCCESS")
     # R60 free-flight crash preserves the earlier, explicitly disclosed
     # 220-CR recovery rule; it must be a physically visible accident, not a
     # hidden instant loss. No contract or mission is allowed to pay.
