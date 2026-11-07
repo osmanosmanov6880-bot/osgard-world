@@ -34,6 +34,7 @@ const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
 const SortiePlannerR63Script = preload("res://scripts/sortie_planner_r63.gd")
 const FlightCorridorR63Script = preload("res://scripts/flight_corridor_r63.gd")
+const AirframeServiceR64Script = preload("res://scripts/airframe_service_r64.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const HangarLiveriesR59Script = preload("res://scripts/hangar_liveries_r59.gd")
 const ShipWreckR60Script = preload("res://scripts/ship_wreck_r60.gd")
@@ -173,6 +174,9 @@ var r61_sortie_start_distance: float = 0.0
 var r61_sortie_seconds: float = 0.0
 var r63_last_sortie: Dictionary = {}
 var r63_last_course: Dictionary = {}
+var airframes_r64: Dictionary = AirframeServiceR64Script.safe_roster({})
+var r64_actual_hull_hits: int = 0
+var r64_services_purchased: int = 0
 var r63_flight_corridor
 var hangar_modules_r56: Dictionary = HangarWorkbenchR56Script.default_roster()
 var livery_owned_r59: Dictionary = HangarLiveriesR59Script.default_owned()
@@ -790,6 +794,7 @@ func _spawn_player() -> void:
     ship.position = R21_LAUNCH_CANDIDATES[0]
     add_child(ship)
     ship.fired.connect(_on_ship_fire)
+    ship.hull_penetration_r64.connect(_r64_on_hull_penetration)
     chase_camera = Camera3D.new()
     chase_camera.current = true
     chase_camera.fov = 64.0
@@ -1595,6 +1600,25 @@ func _complete_mission() -> void:
     _r39_create_garage_hub()
     _show_notice("МИССИЯ ВЫПОЛНЕНА · +%d CR · +%d XP" % [awarded_credits, awarded_xp])
 
+func _r64_on_hull_penetration(amount: float) -> void:
+    # Actual shield-penetrating collision/combat damage is the only source
+    # of permanent mechanical wear. Garage and wreck states cannot forge it.
+    if garage_open_r39 or r60_crash_pending or not (
+            AirframeServiceR64Script.valid_hull(equipped_r15)):
+        return
+    var last_row: Dictionary = AirframeServiceR64Script.row_for(
+        airframes_r64, equipped_r15)
+    var result: Dictionary = AirframeServiceR64Script.strike(
+        airframes_r64, equipped_r15, amount)
+    var changed: Dictionary = result[equipped_r15]
+    if changed == last_row:
+        return
+    airframes_r64 = result
+    r64_actual_hull_hits += 1
+    ship.set_r64_condition(changed)
+    # CR and XP are untouched; a real flight hit is persisted promptly.
+    _save_progress()
+
 func _r60_begin_actual_crash() -> void:
     if r60_crash_pending or garage_open_r39 or ship.hull > 0.0:
         return
@@ -1908,6 +1932,21 @@ func _update_hud() -> void:
     if bool(r63_last_course.get("has_target", false)):
         hud_status.text += "\n" + SortiePlannerR63Script.course_label(
             r63_last_course, r21_mobile_enabled)
+    # The flight HUD shows real aircraft damage and actual engine heat.
+    # Keep one extra compact line on mobile, no overlay on touch throttles.
+    var mechanical: Dictionary = ship.r64_condition
+    var heat_pct: int = roundi(ship.r64_engine_heat)
+    if r21_mobile_enabled:
+        hud_status.text += "\nУЗЛЫ %d/%d/%d%% · ТЕПЛО %d%%%s" % [
+            int(mechanical.get("engine", 100)),
+            int(mechanical.get("controls", 100)),
+            int(mechanical.get("plating", 100)), heat_pct,
+            " · ПЕРЕГРЕВ" if ship.r64_heat_locked else ""]
+    else:
+        hud_status.text += "\nСИСТЕМЫ · %s · ФОРСАЖ %d%%%s" % [
+            AirframeServiceR64Script.summary(
+                airframes_r64, equipped_r15), heat_pct,
+            " · ПЕРЕГРЕВ" if ship.r64_heat_locked else ""]
 
 func _r63_refresh_flight_director() -> void:
     # Reuse the existing 8-10 Hz HUD cadence; do not add physics work.
@@ -2178,6 +2217,8 @@ func _r15_apply_loadout() -> void:
     if is_instance_valid(ship):
         ship.set_livery_r59(str(livery_equipped_r59.get(
             equipped_r15, "factory")))
+        ship.set_r64_condition(
+            AirframeServiceR64Script.row_for(airframes_r64, equipped_r15))
         ship.set_workbench_modules_r56(
             HangarWorkbenchR56Script.rank_of(hangar_modules_r56, equipped_r15, "armor"),
             HangarWorkbenchR56Script.rank_of(hangar_modules_r56, equipped_r15, "shield"),
@@ -2293,7 +2334,7 @@ func _safe_float(value: Variant, fallback: float) -> float:
 func _save_progress() -> void:
     var file:=FileAccess.open(SAVE_PATH,FileAccess.WRITE)
     if file==null:return
-    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"pilot_logbook_r61":pilot_logbook_r61,"r63_last_sortie":r63_last_sortie,"hangar_modules_r56":hangar_modules_r56,"r57_selected_contract":r57_selected_contract,"r57_contract_counts":r57_contract_counts,"r58_risk_tier":r58_risk_tier,"livery_owned_r59":livery_owned_r59,"livery_equipped_r59":livery_equipped_r59}))
+    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"pilot_logbook_r61":pilot_logbook_r61,"r63_last_sortie":r63_last_sortie,"airframes_r64":airframes_r64,"hangar_modules_r56":hangar_modules_r56,"r57_selected_contract":r57_selected_contract,"r57_contract_counts":r57_contract_counts,"r58_risk_tier":r58_risk_tier,"livery_owned_r59":livery_owned_r59,"livery_equipped_r59":livery_equipped_r59}))
     file.close()
 
 func _load_progress() -> void:
@@ -2312,6 +2353,8 @@ func _load_progress() -> void:
     pilot_logbook_r61 = PilotLogbookR61Script.safe_roster(raw.get("pilot_logbook_r61", {}))
     r63_last_sortie = SortiePlannerR63Script.safe_debrief(
         raw.get("r63_last_sortie", {}))
+    airframes_r64 = AirframeServiceR64Script.safe_roster(
+        raw.get("airframes_r64", {}))
     hangar_modules_r56 = HangarWorkbenchR56Script.safe_roster(
         raw.get("hangar_modules_r56", {}))
     livery_owned_r59 = HangarLiveriesR59Script.safe_owned(
@@ -2371,6 +2414,7 @@ func _r39_create_garage_hub() -> void:
     garage_hub_r39.upgrade_requested_r54.connect(_upgrade_docked)
     garage_hub_r39.training_requested_r54.connect(_r54_train_selected_captain)
     garage_hub_r39.module_requested_r56.connect(_r56_purchase_workbench_module)
+    garage_hub_r39.service_requested_r64.connect(_r64_purchase_service)
     garage_hub_r39.livery_requested_r59.connect(_r59_choose_livery)
     garage_hub_r39.contract_selected_r57.connect(_r57_select_contract)
     garage_hub_r39.risk_selected_r58.connect(_r58_select_risk_tier)
@@ -2428,6 +2472,7 @@ func _r39_refresh_garage() -> void:
         "pilot_training_r54": pilot_training_r54.duplicate(true),
         "pilot_logbook_r61": pilot_logbook_r61.duplicate(true),
         "r63_last_sortie": r63_last_sortie.duplicate(true),
+        "airframes_r64": airframes_r64.duplicate(true),
         "r63_flight_plan": SortiePlannerR63Script.plan(
             mission_index, MISSIONS, r57_selected_contract, r58_risk_tier,
             r57_contract_counts, selected_captain_r42, pilot_training_r54,
@@ -2544,6 +2589,39 @@ func _r59_choose_livery(style_id: String) -> void:
     _r39_refresh_garage()
     _show_notice("AURORA PAINT · %s · ГОТОВО" % str(
         HangarLiveriesR59Script.TITLES[style_id]))
+
+func _r64_purchase_service(system_id: String) -> void:
+    # Full garage ownership, visible workshop and funds verified BEFORE
+    # one atomic local-CR debit. No Stripe/real money or negative receipts.
+    if not garage_open_r39 or not is_instance_valid(garage_hub_r39) or (
+            not garage_hub_r39.visible) or (
+            garage_hub_r39.active_section_r54 != "workshop") or not (
+            AirframeServiceR64Script.valid_system(system_id)):
+        return
+    var id: String = equipped_r15
+    if not AirframeServiceR64Script.valid_hull(id) or (
+            id != "ship_scout" and not owned_r15.has(id) and
+            int(premium_r15.get(id, 0)) <= 0):
+        return
+    var receipt: Dictionary = AirframeServiceR64Script.repair(
+        airframes_r64, id, system_id)
+    var cost: int = int(receipt.get("cost", 0))
+    if not bool(receipt.get("ok", false)) or cost <= 0:
+        _show_notice("СЕРВИС · ЭТОТ УЗЕЛ УЖЕ ИСПРАВЕН")
+        return
+    if credits < cost:
+        _show_notice("СЕРВИС · НУЖНО %d CR" % cost)
+        return
+    credits -= cost
+    airframes_r64 = AirframeServiceR64Script.safe_roster(
+        receipt.get("roster", {}))
+    r64_services_purchased += 1
+    ship.set_r64_condition(
+        AirframeServiceR64Script.row_for(airframes_r64, id))
+    _save_progress()
+    _r39_refresh_garage()
+    _show_notice("СЕРВИС · %s · −%d CR" % [
+        AirframeServiceR64Script.system_label(system_id), cost])
 
 func _r56_purchase_workbench_module(module_id: String) -> void:
     # Paid local CR transaction only, never premium receipts or free upgrades.

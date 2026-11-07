@@ -5,8 +5,11 @@ const ShipVisualR5Script = preload("res://scripts/ship_visual_r5.gd")
 const HullVariantsR45Script = preload("res://scripts/hull_variants_r45.gd")
 const FleetAirframesR55Script = preload("res://scripts/fleet_airframes_r55.gd")
 const ShipDamageFXR60Script = preload("res://scripts/ship_damage_fx_r60.gd")
+const AirframeServiceR64Script = preload("res://scripts/airframe_service_r64.gd")
+const AirframeDiagnosticsR64Script = preload("res://scripts/airframe_diagnostics_r64.gd")
 
 signal fired(origin: Vector3, direction: Vector3)
+signal hull_penetration_r64(actual_damage: float)
 
 const FORWARD_ACCEL: float = 70.0
 const REVERSE_ACCEL: float = 38.0
@@ -33,6 +36,11 @@ var visual: Node3D
 var hull_kit_r45: Node3D
 var primary_airframe_r55: Node3D
 var damage_visual_r60: Node3D
+var diagnostic_lights_r64: Node3D
+var r64_condition: Dictionary = AirframeServiceR64Script.fresh()
+var r64_engine_heat: float = 0.0
+var r64_heat_locked: bool = false
+var r64_overheat_events: int = 0
 var engine_flames: Array[MeshInstance3D] = []
 var glow_time: float = 0.0
 var controls_locked: bool = false
@@ -113,6 +121,9 @@ func _ready() -> void:
     damage_visual_r60 = ShipDamageFXR60Script.new()
     visual.add_child(damage_visual_r60)
     damage_visual_r60.follow_real_ship(self)
+    diagnostic_lights_r64 = AirframeDiagnosticsR64Script.new()
+    visual.add_child(diagnostic_lights_r64)
+    diagnostic_lights_r64.set_condition(r64_condition)
     if OS.has_feature("web"):
         browser_window = JavaScriptBridge.get_interface("window")
     # The R8 wing span is large, but collision uses a conservative swept
@@ -129,6 +140,26 @@ func set_hull_variant(id: String) -> void:
         hull_kit_r45.set_hull(id)
     if is_instance_valid(primary_airframe_r55):
         primary_airframe_r55.set_hull(id)
+    if is_instance_valid(diagnostic_lights_r64):
+        diagnostic_lights_r64.set_hull(id)
+
+func set_r64_condition(input: Variant) -> void:
+    # The authoritative hull-bound roster is owned by World. A local
+    # per-flight copy only affects real handling and damage, never CR.
+    r64_condition = AirframeServiceR64Script.safe_row(input)
+    if is_instance_valid(diagnostic_lights_r64):
+        diagnostic_lights_r64.set_condition(r64_condition)
+
+func r64_heat_tick(delta: float, actual_afterburner: bool) -> void:
+    # Hysteresis: an overheated engine may restart boost only after cooling.
+    var rate: float = 23.0 if actual_afterburner else -13.5
+    r64_engine_heat = clampf(r64_engine_heat + rate *
+        clampf(delta, 0.0, 8.0), 0.0, 100.0)
+    if r64_engine_heat >= 99.5 and not r64_heat_locked:
+        r64_heat_locked = true
+        r64_overheat_events += 1
+    elif r64_heat_locked and r64_engine_heat <= 38.0:
+        r64_heat_locked = false
 
 func set_workbench_modules_r56(armor: int, shield_rank: int,
         radar_rank: int) -> void:
@@ -236,6 +267,7 @@ func _physics_process(delta: float) -> void:
         pitch_rate = move_toward(pitch_rate, 0.0, delta * TURN_RESPONSE)
         boost = minf(100.0, boost + 15.0 * delta)
         cooldown = maxf(0.0, cooldown - delta)
+        r64_heat_tick(delta, false)
         return
     var axes: Vector4 = _pilot_axes()
     var yaw: float = axes.x
@@ -244,12 +276,16 @@ func _physics_process(delta: float) -> void:
     var climb: float = axes.w
     var afterburner: bool = (
         (_physical_key(KEY_SHIFT) or (browser_input_mask & KEY_BOOST) != 0 or touch_boost)
-        and throttle > 0.05 and boost > 1.0
+        and throttle > 0.05 and boost > 1.0 and not r64_heat_locked
     )
+    r64_heat_tick(delta, afterburner)
     # Angular acceleration and damping make heavy craft bank and settle.
     var angular_alpha: float = 1.0 - exp(-TURN_RESPONSE * delta)
-    yaw_rate = lerpf(yaw_rate, -yaw * turn_speed, angular_alpha)
-    pitch_rate = lerpf(pitch_rate, pitch * turn_speed * 0.40, angular_alpha)
+    var steering_health: float = AirframeServiceR64Script.steering_factor(
+        r64_condition.get("controls", 100))
+    yaw_rate = lerpf(yaw_rate, -yaw * turn_speed * steering_health, angular_alpha)
+    pitch_rate = lerpf(pitch_rate, pitch * turn_speed * 0.40 *
+        steering_health, angular_alpha)
     rotate_y(yaw_rate * delta)
     rotate_object_local(Vector3.RIGHT, pitch_rate * delta)
     if absf(pitch) < 0.08:
@@ -258,7 +294,9 @@ func _physics_process(delta: float) -> void:
     rotation.x = clampf(rotation.x, -0.56, 0.56)
     rotation.z = 0.0
     var forward: Vector3 = -global_transform.basis.z
-    var strength: float = (FORWARD_ACCEL + float(engine_rank) * 8.0) * clampf(thrust_multiplier, 0.8, 1.2)
+    var strength: float = (FORWARD_ACCEL + float(engine_rank) * 8.0) * (
+        clampf(thrust_multiplier, 0.8, 1.2) *
+        AirframeServiceR64Script.engine_factor(r64_condition.get("engine", 100)))
     var acceleration: float = strength * (1.8 if afterburner else 1.0)
     var forward_acceleration: float = acceleration if throttle >= 0.0 else REVERSE_ACCEL
     velocity += forward * throttle * forward_acceleration * delta
@@ -328,9 +366,18 @@ func _physics_process(delta: float) -> void:
             jet.scale.y = 0.75 + thruster_power * 0.70                 + 0.10 * sin(glow_time * 16.0) + (0.7 if afterburner else 0.0)
 
 func take_damage(amount: float) -> void:
+    if not is_finite(amount) or amount <= 0.0:
+        return
     var remaining: float = maxf(0.0, amount) * clampf(damage_multiplier, 0.75, 1.0)
     if shield > 0.0:
         var absorbed: float = minf(shield, remaining)
         shield -= absorbed
         remaining -= absorbed
-    hull = maxf(0.0, hull - remaining)
+    # Plating loss affects hull penetration, never creates fake shield hits.
+    var previous_hull: float = hull
+    hull = maxf(0.0, hull - remaining *
+        AirframeServiceR64Script.armor_factor(
+            r64_condition.get("plating", 100)))
+    var actual_penetration: float = maxf(0.0, previous_hull - hull)
+    if actual_penetration > 0.0:
+        hull_penetration_r64.emit(actual_penetration)

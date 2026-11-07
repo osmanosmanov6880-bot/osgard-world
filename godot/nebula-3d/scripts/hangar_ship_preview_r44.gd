@@ -9,6 +9,7 @@ const FormationBaysR47Script = preload("res://scripts/formation_bays_r47.gd")
 const AuroraHangarZeroR54Script = preload("res://scripts/hangar_environment_r54.gd")
 const PhysicalInspectionR62Script = preload("res://scripts/hangar_inspection_r62.gd")
 const DiagnosticGantryR62Script = preload("res://scripts/hangar_diagnostics_r62.gd")
+const AirframeDiagnosticsR64Script = preload("res://scripts/airframe_diagnostics_r64.gd")
 
 const VALID_HULLS = [
     "ship_scout", "ship_interceptor", "ship_guardian"
@@ -24,6 +25,7 @@ var inspection_camera: Camera3D
 var hangar_set_r54: Node3D
 var inspection_actuators_r62: Node3D
 var diagnostic_gantry_r62: Node3D
+var actual_system_lights_r64: Node3D
 var inspection_mode_r62: String = "overview"
 var camera_focus_r62: Vector3 = Vector3.ZERO
 const R62_MODES := ["overview", "cockpit", "engines", "underside"]
@@ -153,6 +155,9 @@ func _make_real_viewport() -> void:
     inspection_actuators_r62 = PhysicalInspectionR62Script.new()
     ship_pivot.add_child(inspection_actuators_r62)
     inspection_actuators_r62.set_hull(selected_hull)
+    actual_system_lights_r64 = AirframeDiagnosticsR64Script.new()
+    ship_pivot.add_child(actual_system_lights_r64)
+    actual_system_lights_r64.set_hull(selected_hull)
     real_airframe.visible = false
     distinct_hull_r45.visible = false
     ship_pivot.rotation.y = orbit_angle
@@ -280,6 +285,12 @@ func set_ship_type(id: String) -> void:
         inspection_actuators_r62.set_hull(selected_hull)
     if is_instance_valid(diagnostic_gantry_r62):
         diagnostic_gantry_r62.set_hull(selected_hull)
+    if is_instance_valid(actual_system_lights_r64):
+        actual_system_lights_r64.set_hull(selected_hull)
+
+func set_r64_airframe_diagnostics(row: Variant) -> void:
+    if is_instance_valid(actual_system_lights_r64):
+        actual_system_lights_r64.set_condition(row)
 
 func set_workbench_modules_r56(armor: int, shield_rank: int,
         radar_rank: int) -> void:
