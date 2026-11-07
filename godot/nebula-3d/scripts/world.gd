@@ -32,6 +32,8 @@ const CampaignStoryR41Script = preload("res://scripts/campaign_story_r41.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
+const SortiePlannerR63Script = preload("res://scripts/sortie_planner_r63.gd")
+const FlightCorridorR63Script = preload("res://scripts/flight_corridor_r63.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const HangarLiveriesR59Script = preload("res://scripts/hangar_liveries_r59.gd")
 const ShipWreckR60Script = preload("res://scripts/ship_wreck_r60.gd")
@@ -169,6 +171,9 @@ var r61_sortie_active: bool = false
 var r61_sortie_pilot_id: String = ""
 var r61_sortie_start_distance: float = 0.0
 var r61_sortie_seconds: float = 0.0
+var r63_last_sortie: Dictionary = {}
+var r63_last_course: Dictionary = {}
+var r63_flight_corridor: Node3D
 var hangar_modules_r56: Dictionary = HangarWorkbenchR56Script.default_roster()
 var livery_owned_r59: Dictionary = HangarLiveriesR59Script.default_owned()
 var livery_equipped_r59: Dictionary = HangarLiveriesR59Script.default_equipped()
@@ -254,6 +259,12 @@ func _r25_emit_browser_flight_state() -> void:
     # R51: real engine control geometry and pressed-signal count let the
     # Chromium test distinguish a missed mouse click from broken autopilot.
     # Gameplay positions only; no identifiers or user account telemetry.
+    if is_instance_valid(r63_flight_corridor):
+        state["r63_real_3d_gates"] = r63_flight_corridor.visible_count()
+        state["r63_navigation_distance_m"] = int(
+            r63_last_course.get("distance_m", 0))
+        state["r63_navigation_bearing_deg"] = int(
+            r63_last_course.get("bearing_deg", 0))
     if is_instance_valid(r23_cruise_button):
         var cruise_rect: Rect2 = r23_cruise_button.get_global_rect()
         state["cruise_button_visible"] = r23_cruise_button.is_visible_in_tree()
@@ -422,6 +433,8 @@ func _ready() -> void:
     _setup_environment()
     _build_city()
     _spawn_player()
+    r63_flight_corridor = FlightCorridorR63Script.new()
+    add_child(r63_flight_corridor)
     _spawn_civilians_and_pirates()
     fleet_r15 = FleetCombatR15Script.new()
     fleet_r15.name = "R15_FleetCombat"
@@ -1841,6 +1854,9 @@ func _update_hud() -> void:
     # Avoid reflowing button labels at rendering frame rate on mobile.
     _r49_refresh_buttons()
     if garage_open_r39:
+        if is_instance_valid(r63_flight_corridor):
+            r63_flight_corridor.clear_guides()
+        r63_last_course.clear()
         _r39_refresh_garage()
         return
     if not is_instance_valid(hud_status):
@@ -1887,6 +1903,29 @@ func _update_hud() -> void:
         if is_instance_valid(r50_archive): hud_status.text += "\n" + r50_archive.status_line()
         if is_instance_valid(r51_courier): hud_status.text += "\n" + r51_courier.status_line()
         if is_instance_valid(r52_station): hud_status.text += "\n" + r52_station.status_line()
+
+    _r63_refresh_flight_director()
+    if bool(r63_last_course.get("has_target", false)):
+        hud_status.text += "\n" + SortiePlannerR63Script.course_label(
+            r63_last_course, r21_mobile_enabled)
+
+func _r63_refresh_flight_director() -> void:
+    # Reuse the existing 8-10 Hz HUD cadence; do not add physics work.
+    var route_active: bool = not garage_open_r39 and (
+        mission_index < MISSIONS.size() or r57_patrol.active) and (
+        not r60_crash_pending) and not ship.controls_locked
+    if not route_active:
+        r63_last_course.clear()
+        if is_instance_valid(r63_flight_corridor):
+            r63_flight_corridor.clear_guides()
+        return
+    var goal: Vector3 = _active_mission_goal()
+    r63_last_course = SortiePlannerR63Script.course(
+        ship.global_position, -ship.global_transform.basis.z,
+        goal, ship.velocity.length())
+    if is_instance_valid(r63_flight_corridor):
+        r63_flight_corridor.set_guidance(true,
+            ship.global_position, goal, graphics_quality)
 
 func _fit_hud() -> void:
     if not is_instance_valid(hud_panel):
@@ -2254,7 +2293,7 @@ func _safe_float(value: Variant, fallback: float) -> float:
 func _save_progress() -> void:
     var file:=FileAccess.open(SAVE_PATH,FileAccess.WRITE)
     if file==null:return
-    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"pilot_logbook_r61":pilot_logbook_r61,"hangar_modules_r56":hangar_modules_r56,"r57_selected_contract":r57_selected_contract,"r57_contract_counts":r57_contract_counts,"r58_risk_tier":r58_risk_tier,"livery_owned_r59":livery_owned_r59,"livery_equipped_r59":livery_equipped_r59}))
+    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15,"r41_last_debrief":r41_last_debrief,"captain_r42":selected_captain_r42,"pilot_training_r54":pilot_training_r54,"pilot_logbook_r61":pilot_logbook_r61,"r63_last_sortie":r63_last_sortie,"hangar_modules_r56":hangar_modules_r56,"r57_selected_contract":r57_selected_contract,"r57_contract_counts":r57_contract_counts,"r58_risk_tier":r58_risk_tier,"livery_owned_r59":livery_owned_r59,"livery_equipped_r59":livery_equipped_r59}))
     file.close()
 
 func _load_progress() -> void:
@@ -2271,6 +2310,8 @@ func _load_progress() -> void:
     selected_captain_r42 = saved_captain if CaptainRosterR42Script.valid_id(saved_captain) else "ada"
     pilot_training_r54 = PilotAcademyR54Script.safe_roster(raw.get("pilot_training_r54", {}))
     pilot_logbook_r61 = PilotLogbookR61Script.safe_roster(raw.get("pilot_logbook_r61", {}))
+    r63_last_sortie = SortiePlannerR63Script.safe_debrief(
+        raw.get("r63_last_sortie", {}))
     hangar_modules_r56 = HangarWorkbenchR56Script.safe_roster(
         raw.get("hangar_modules_r56", {}))
     livery_owned_r59 = HangarLiveriesR59Script.safe_owned(
@@ -2337,6 +2378,9 @@ func _r39_create_garage_hub() -> void:
     garage_hub_r39.ship_selected_r45.connect(_r45_select_owned_ship)
     garage_hub_r39.wingman_toggled_r47.connect(_r47_toggle_owned_wingman)
     garage_open_r39 = true
+    if is_instance_valid(r63_flight_corridor):
+        r63_flight_corridor.clear_guides()
+    r63_last_course.clear()
     ship.visible = true
     r47_launch_camera_time = 0.0
     if is_instance_valid(fleet_r15):
@@ -2383,6 +2427,11 @@ func _r39_refresh_garage() -> void:
         "captain_info": CaptainRosterR42Script.info(selected_captain_r42),
         "pilot_training_r54": pilot_training_r54.duplicate(true),
         "pilot_logbook_r61": pilot_logbook_r61.duplicate(true),
+        "r63_last_sortie": r63_last_sortie.duplicate(true),
+        "r63_flight_plan": SortiePlannerR63Script.plan(
+            mission_index, MISSIONS, r57_selected_contract, r58_risk_tier,
+            r57_contract_counts, selected_captain_r42, pilot_training_r54,
+            ship.global_position, rockets_r15, wingmen_r15.size()),
         "engine_rank_r54": ship.engine_rank,
         "weapon_rank_r54": ship.weapon_rank,
         "hangar_modules_r56": hangar_modules_r56.duplicate(true),
@@ -2886,10 +2935,20 @@ func _r61_finish_sortie(outcome: String) -> void:
     if not r61_sortie_active:
         return
     r61_sortie_active = false
+    var flown_distance: float = maxf(0.0,
+        ship.flight_distance - r61_sortie_start_distance)
+    var flight_mode: String = (
+        "campaign" if mission_index < MISSIONS.size() else
+        "contract" if r57_patrol.active else "free")
+    # Real R61 flight closure only; rewards remain in R41/R57 settlement.
+    r63_last_sortie = SortiePlannerR63Script.safe_debrief({
+        "pilot": r61_sortie_pilot_id, "outcome": outcome,
+        "mode": flight_mode, "distance_m": roundi(flown_distance),
+        "seconds": roundi(r61_sortie_seconds)
+    })
     pilot_logbook_r61 = PilotLogbookR61Script.record(
         pilot_logbook_r61, r61_sortie_pilot_id, outcome,
-        maxf(0.0, ship.flight_distance - r61_sortie_start_distance),
-        r61_sortie_seconds)
+        flown_distance, r61_sortie_seconds)
     r61_sortie_pilot_id = ""
     r61_sortie_start_distance = ship.flight_distance
     r61_sortie_seconds = 0.0
