@@ -1446,4 +1446,33 @@ require("docs/R62-CINEMATIC-HANGAR-QA.md",
     "R62", "SpotLight3D", "MeshInstance3D",
     "4", "R11", "NOT_PERFORMED")
 
+# R63 genuine flight direction + campaign briefing. Never a new economy.
+r63_plan = require("scripts/sortie_planner_r63.gd",
+    "extends RefCounted", "static func plan(", "static func course(",
+    "static func safe_debrief(", "static func debrief_text(",
+    "CareerR58.earned_credits(", "CaptainsR42.reward(")
+r63_gates = require("scripts/flight_corridor_r63.gd",
+    "extends Node3D", "Mesh.PRIMITIVE_TRIANGLES",
+    "R63_RealFlightGuideGate_", "func clear_guides(",
+    "func set_guidance(", "func has_collision_geometry()")
+assert "credits +=" not in r63_plan and "credits -=" not in r63_plan
+assert "FileAccess" not in r63_plan
+assert "credits +=" not in r63_gates and "FileAccess" not in r63_gates
+require("scripts/world.gd",
+    "r63_flight_corridor = FlightCorridorR63Script.new()",
+    "r63_last_sortie = SortiePlannerR63Script.safe_debrief(",
+    "r63_last_course = SortiePlannerR63Script.course(",
+    "func _r63_refresh_flight_director()",
+    '"r63_flight_plan": SortiePlannerR63Script.plan(')
+require("scripts/garage_hub_r39.gd",
+    "R63_RealRouteDossier", "r63_route_reward.text",
+    "r63_last_debrief_label.text", "r63_fleet_route_hint.text")
+require("tests/browser_flight_r25.mjs",
+    "R63 real 3D flight corridor tracks true mission goal",
+    "r63_real_3d_gates", "r63_navigation_distance_m")
+assert "NEBULA_R63_ACTUAL_MISSION_PLANNING_NO_MINT_AND_GEOMETRY_SUCCESS" in smoke
+require("docs/R63-ACTUAL-FLIGHT-DIRECTOR-QA.md",
+    "R63", "Godot", "CR", "NOT_PERFORMED",
+    "SwiftShader", "flight corridor")
+
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
