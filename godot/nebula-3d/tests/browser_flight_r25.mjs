@@ -137,6 +137,15 @@ try {
     garageBounds.y+t0.garage_sortie_y*garageBounds.height/t0.garage_view_h);
   await waitForTelemetry(s=>s && s.locked===false,18000);
   const launched=await checkpoint('garage sortie button unlocks real flight',s=>s?.locked===false);
+  // R63: real 3D guide geometry and objective/course read from Godot
+  // physics, not an overlay drawn in the web page or fake telemetry.
+  await waitForTelemetry(s=>s?.r63_real_3d_gates>=1 &&
+    s?.r63_navigation_distance_m>100 &&
+    Number.isFinite(s.r63_navigation_bearing_deg),16000);
+  await checkpoint('R63 real 3D flight corridor tracks true mission goal',
+    s=>s?.r63_real_3d_gates>=1 &&
+      s.r63_navigation_distance_m>100 &&
+      Number.isFinite(s.r63_navigation_bearing_deg));
 
   // Software Chromium freezes locator.focus() even after the real Godot
   // runtime emits world positions. Do not block keyboard QA on compositor
