@@ -3,12 +3,14 @@ extends CanvasLayer
 const Hangar3DPreviewR44Script = preload("res://scripts/hangar_ship_preview_r44.gd")
 const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
 const SortiePlannerR63Script = preload("res://scripts/sortie_planner_r63.gd")
+const AirframeServiceR64Script = preload("res://scripts/airframe_service_r64.gd")
 ## R39 garage command hub. Reads the live campaign state supplied by world.gd.
 signal sortie_requested
 signal shop_requested
 signal upgrade_requested_r54(slot: int)
 signal training_requested_r54
 signal module_requested_r56(module_id: String)
+signal service_requested_r64(system_id: String)
 signal livery_requested_r59(style_id: String)
 signal contract_selected_r57(contract_id: String)
 signal risk_selected_r58(tier: int)
@@ -85,6 +87,8 @@ var r59_paint_buttons: Dictionary = {}
 var r56_workshop_panel: PanelContainer
 var r56_workshop_status: Label
 var r56_module_buttons: Dictionary = {}
+var r64_service_status: Label
+var r64_service_buttons: Dictionary = {}
 var r57_contract_panel: PanelContainer
 var r57_contract_buttons: Dictionary = {}
 var r57_contract_description: Label
@@ -402,6 +406,19 @@ func _build() -> void:
         module_button.pressed.connect(
             _r56_request_module.bind(module_id))
         r56_module_buttons[module_id] = module_button
+    _label(workbench_stack, "R64 · ТЕХНИЧЕСКОЕ СОСТОЯНИЕ САМОЛЁТА", 13, GOLD)
+    r64_service_status = _label(workbench_stack,
+        "ДВИГАТЕЛЬ 100% · РУЛИ 100% · ОБШИВКА 100%", 12, CYAN)
+    _label(workbench_stack,
+        "ПРОБОИТИЯ КОРПУСА СНИЖАЮТ РЕСУРС УЗЛОВ. РЕМОНТ ЗА CR.", 11, MUTED)
+    for system_id in AirframeServiceR64Script.SYSTEMS:
+        var service_button := _r54_credit_action(workbench_stack,
+            "R64_Service_" + system_id,
+            "ВОССТАНОВИТЬ · " +
+            AirframeServiceR64Script.system_label(system_id))
+        service_button.custom_minimum_size.y = 48
+        service_button.pressed.connect(_r64_request_service.bind(system_id))
+        r64_service_buttons[system_id] = service_button
 
     var captain_card := PanelContainer.new()
     captain_card.name = "R39_CaptainCard"
@@ -643,6 +660,12 @@ func _r56_request_module(module_id: String) -> void:
     if r56_module_buttons.has(module_id) and active_section_r54 == "workshop":
         module_requested_r56.emit(module_id)
 
+func _r64_request_service(system_id: String) -> void:
+    if active_section_r54 == "workshop" and (
+            r64_service_buttons.has(system_id)) and (
+            is_instance_valid(r56_workshop_panel) and r56_workshop_panel.visible):
+        service_requested_r64.emit(system_id)
+
 func _r54_select_section(section_id: String) -> void:
     if not section_buttons_r54.has(section_id):
         return
@@ -797,6 +820,27 @@ func refresh(data: Dictionary) -> void:
         button.tooltip_text = ("Максимальная модернизация" if rank >= 3 else
             ("Нужно %s CR" % _format_number(cost) if credits < cost else
             "Установить за игровые кредиты, изменения сохраняются"))
+    # R64: per-hull inspection and exact quotes from authoritative ledger.
+    var r64_hull: String = str(data.get("ship", "ship_scout"))
+    var r64_roster: Dictionary = AirframeServiceR64Script.safe_roster(
+        data.get("airframes_r64", {}))
+    var r64_row: Dictionary = AirframeServiceR64Script.row_for(
+        r64_roster, r64_hull)
+    r64_service_status.text = AirframeServiceR64Script.summary(
+        r64_roster, r64_hull)
+    for system_id in AirframeServiceR64Script.SYSTEMS:
+        var button: Button = r64_service_buttons[system_id]
+        var cost: int = AirframeServiceR64Script.quote(
+            r64_roster, r64_hull, system_id)
+        button.text = ("УЗЕЛ ИСПРАВЕН · %s" % (
+            AirframeServiceR64Script.system_label(system_id)) if cost <= 0
+            else "%s · %d%% · РЕМОНТ %s CR" % [
+                AirframeServiceR64Script.system_label(system_id),
+                int(r64_row[system_id]), _format_number(cost)])
+        button.disabled = cost <= 0 or credits < cost
+        button.tooltip_text = ("Полностью исправен" if cost <= 0 else
+            "Недостаточно CR" if credits < cost else
+            "Оплатить ремонт реального состояния самолёта")
     # R59 actual per-owned-ship paint. The same material palette and
     # physical 3D trims must appear in both hangar viewer and flight.
     var livery_ship: String = str(data.get("ship", "ship_scout"))
@@ -924,6 +968,9 @@ func refresh(data: Dictionary) -> void:
             data.get("r63_last_sortie", {}))
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.set_ship_type(ship_id)
+        ship_preview_r44.set_r64_airframe_diagnostics(
+            AirframeServiceR64Script.row_for(
+                data.get("airframes_r64", {}), ship_id))
         var livery_selected_for_preview: Dictionary = data.get(
             "livery_equipped_r59", {})
         ship_preview_r44.set_livery_r59(str(
