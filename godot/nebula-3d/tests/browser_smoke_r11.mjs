@@ -13,10 +13,85 @@ const browser = await chromium.launch({
     '--disable-features=Vulkan'
   ]
 });
+// CDP screencast consumes ACTUAL presented Chromium frames, without
+// forcing the SwiftShader compositor's blocking screenshot synchronization.
+// A JPEG must contain full-resolution bytes; this is NOT hardware GPU QA.
+function jpegDimensions(bytes) {
+  if (!bytes || bytes.length < 16 || bytes[0] !== 0xff || bytes[1] !== 0xd8)
+    return null;
+  for (let i = 2; i + 9 < bytes.length;) {
+    if (bytes[i] !== 0xff) { i++; continue; }
+    const marker = bytes[i + 1];
+    if (marker === 0xd9 || marker === 0xda) break;
+    const size = bytes.readUInt16BE(i + 2);
+    if (size < 2 || i + 2 + size > bytes.length) break;
+    if ([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7].includes(marker)) {
+      return {width: bytes.readUInt16BE(i + 7),
+        height: bytes.readUInt16BE(i + 5)};
+    }
+    i += size + 2;
+  }
+  return null;
+}
+async function capturePresentedFrame(page, destination, errors) {
+  let cdp;
+  try {
+    cdp = await page.context().newCDPSession(page);
+    await cdp.send('Page.enable');
+    const outcome = await new Promise(resolve => {
+      let settled = false;
+      const finish = result => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(result);
+      };
+      const timer = setTimeout(() => finish(null), 10500);
+      cdp.on('Page.screencastFrame', frame => {
+        // Chrome requires an acknowledgement or stops producing real frames.
+        void cdp.send('Page.screencastFrameAck',
+          {sessionId: frame.sessionId}).catch(() => {});
+        if (!frame?.data) return;
+        const raw = Buffer.from(frame.data, 'base64');
+        const dims = jpegDimensions(raw);
+        if (raw.length >= 12000 &&
+          dims?.width >= 1000 && dims?.height >= 500) {
+          finish({raw, dims});
+        }
+      });
+      void cdp.send('Page.startScreencast', {format: 'jpeg',
+        quality: 82, maxWidth: 1280, maxHeight: 720,
+        everyNthFrame: 1}).catch(err => {
+        errors.push('CDP screencast API refused: ' +
+          String(err.message).slice(0, 180));
+        finish(null);
+      });
+    });
+    if (!outcome) {
+      errors.push('CDP real-frame screencast had no full-resolution image');
+      return null;
+    }
+    fs.writeFileSync(destination, outcome.raw);
+    return 'cdp-presented-frame-' + outcome.dims.width + 'x' +
+      outcome.dims.height;
+  } catch (err) {
+    errors.push('CDP presented-frame capture unavailable: ' +
+      String(err.message).slice(0, 180));
+    return null;
+  } finally {
+    if (cdp) {
+      await Promise.race([cdp.send('Page.stopScreencast').catch(() => {}),
+        new Promise(resolve => setTimeout(resolve, 1000))]);
+      await cdp.detach().catch(() => {});
+    }
+  }
+}
 // Playwright's compositor screenshots may stall under software WebGL, even
 // when the Godot canvas exists. Fall back to direct canvas readback, but only
 // count a substantial JPEG as a visual capture. Never mark a blank as a pass.
 async function captureWithFallback(page, destination, errors) {
+  const presented = await capturePresentedFrame(page, destination, errors);
+  if (presented) return presented;
   // On heavy software WebGL, requesting a screenshot from the browser
   // compositor can wedge the renderer before canvas readback gets a chance.
   // Try actual game pixels FIRST, not after multiple compositor timeouts.
@@ -251,6 +326,26 @@ try {
       };
     });
     const tag = vp.width + 'x' + vp.height;
+    // Save evidence BEFORE a slow hosted software-GPU readback. This is
+    // uploaded even if the process later gets stuck in the renderer.
+    const bootEvidence = {
+      viewport: tag, url, time: new Date().toISOString(),
+      browser: await browser.version(),
+      elapsed_ms: Date.now() - started,
+      canvas: detail,
+      gameplay: await page.evaluate(() => {
+        const t=window.__nebulaPilotTelemetry || {};
+        return {ready: t.ready === true, samples: Number(t.samples || 0),
+          locked: !!t.locked, game_ready: !!t.browser_window_ready};
+      }),
+      screen_capture: {
+        software_renderer: true, source: 'live Godot WebGL',
+        fake_bitmap_allowed: false, hardware_gpu_certified: false
+      }
+    };
+    fs.writeFileSync(path.join(output, 'r11-' + tag + '-boot.json'),
+      JSON.stringify(bootEvidence, null, 2));
+    console.log('NEBULA_R11_PRECAPTURE_EVIDENCE ' + JSON.stringify(bootEvidence));
     if (!detail.webgl_available || detail.canvas_width < 300 || detail.canvas_height < 200) {
       throw new Error('Browser failed to initialize a usable WebGL canvas at ' + tag);
     }
@@ -258,6 +353,17 @@ try {
     screenshots.maximum = await captureWithFallback(
       page, path.join(output, 'r11-' + tag + '-max.jpg'), errors);
     if (screenshots.maximum === 'inconclusive') {
+      const evidence = {
+        viewport: tag, observed_at: new Date().toISOString(),
+        game_boot: bootEvidence, capture_errors: errors,
+        visual_capture_confirmed: false,
+        hardware_device_qa: 'NOT_PERFORMED'
+      };
+      fs.writeFileSync(path.join(output,
+        'r11-' + tag + '-capture-failure.json'),
+        JSON.stringify(evidence, null, 2));
+      console.error('NEBULA_R11_CAPTURE_FAILURE_DETAILS ' +
+        JSON.stringify(evidence));
       result.scenes.push({ viewport: tag, ...detail,
         screenshot_status: screenshots, browser_console_errors: errors });
       result.errors.push(...errors);
