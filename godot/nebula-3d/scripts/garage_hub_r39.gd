@@ -56,6 +56,8 @@ var brand_label_r44: Label
 var shop_header_button_r54: Button
 var zoom_in_button_r54: Button
 var zoom_out_button_r54: Button
+var r62_mode_buttons: Dictionary = {}
+var r62_current_mode: String = "overview"
 var section_buttons_r54: Dictionary = {}
 var active_section_r54: String = "fleet"
 var ship_card_r54: PanelContainer
@@ -184,6 +186,22 @@ func _build() -> void:
     turn_right_r44 = _turn_button_r44(root, "R44_TurnRight", "↷", 1)
     zoom_out_button_r54 = _r54_zoom_button(root, "R54_ZoomOut", "−", 1)
     zoom_in_button_r54 = _r54_zoom_button(root, "R54_ZoomIn", "+", -1)
+    # Cinematic camera selection is an actual interaction with the isolated
+    # 3D camera/physical surfaces. Compact phones use four short labels.
+    for mode in ["overview", "cockpit", "engines", "underside"]:
+        var camera_button := Button.new()
+        camera_button.name = "R62_ActualInspectionMode_" + mode
+        camera_button.text = {"overview":"ОБЗОР", "cockpit":"КАБИНА",
+            "engines":"ДВИГ.", "underside":"СНИЗУ"}[mode]
+        camera_button.focus_mode = Control.FOCUS_ALL
+        camera_button.add_theme_font_override("font", ui_font)
+        camera_button.add_theme_font_size_override("font_size", 11)
+        camera_button.add_theme_color_override("font_color", CYAN)
+        camera_button.add_theme_stylebox_override("normal",
+            _panel_style(Color(0.019, 0.047, 0.065, 0.92), LINE))
+        camera_button.pressed.connect(_r62_request_view.bind(mode))
+        root.add_child(camera_button)
+        r62_mode_buttons[mode] = camera_button
 
     var top := HBoxContainer.new()
     top.add_theme_constant_override("separation", 10)
@@ -521,6 +539,7 @@ func _build() -> void:
     bottom_scroll_space.custom_minimum_size = Vector2(0.0, 78.0)
     column.add_child(bottom_scroll_space)
     _r54_select_section("fleet")
+    _r62_request_view("overview")
 
 func _r54_credit_action(parent: Container, button_name: String,
         label: String) -> Button:
@@ -554,6 +573,26 @@ func _r54_zoom_button(parent: Control, button_name: String, glyph: String,
 func _r54_zoom_preview(direction: int) -> void:
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.zoom_r54(direction)
+
+func _r62_request_view(mode: String) -> void:
+    if not r62_mode_buttons.has(mode) or not is_instance_valid(ship_preview_r44):
+        return
+    if not ship_preview_r44.set_inspection_mode_r62(mode):
+        return
+    r62_current_mode = mode
+    for key in r62_mode_buttons:
+        var button: Button = r62_mode_buttons[key]
+        var active: bool = key == mode
+        button.add_theme_stylebox_override("normal",
+            _panel_style(CYAN if active else PANEL, CYAN if active else LINE))
+        button.add_theme_color_override("font_color", BG if active else CYAN)
+    if is_instance_valid(preview_hint_r44):
+        preview_hint_r44.text = str({
+            "overview":"3D-АНГАР · ВРАЩЕНИЕ · МАСШТАБ",
+            "cockpit":"РЕАЛЬНАЯ КАБИНА · ОСТЕКЛЕНИЕ · РАМЫ",
+            "engines":"РЕАЛЬНЫЕ ДВИГАТЕЛИ · СЕРВОПРИВОДЫ",
+            "underside":"НИЖНИЙ ОСМОТР · ШАССИ · СЕРВОПРИВОДЫ"
+        }[mode])
 
 func _r58_request_risk(tier: int) -> void:
     if tier >= 0 and tier <= 2 and active_section_r54 == "operations" and (
@@ -1043,6 +1082,17 @@ func _layout_hub() -> void:
     preview_title_r44.position = Vector2(stage_left + 19.0, stage_top + 14.0)
     preview_title_r44.size = Vector2(stage_width - 32.0, 20.0)
     preview_title_r44.add_theme_font_size_override("font_size", 10 if compact else 13)
+    var mode_gap: float = 5.0
+    var mode_w: float = maxf(38.0, minf(105.0,
+        (stage_width - 28.0 - 3.0 * mode_gap) / 4.0))
+    for index in range(4):
+        var mode_key: String = ["overview","cockpit","engines","underside"][index]
+        var mode_button: Button = r62_mode_buttons[mode_key]
+        mode_button.position = Vector2(stage_left + 14.0 +
+            float(index) * (mode_w + mode_gap), stage_top + 37.0)
+        mode_button.size = Vector2(mode_w, 30.0 if compact else 34.0)
+        mode_button.add_theme_font_size_override("font_size",
+            9 if compact else 11)
     preview_hint_r44.position = Vector2(stage_left + 18.0,
         stage_top + stage_height - 32.0)
     preview_hint_r44.visible = landscape and stage_width >= 480.0

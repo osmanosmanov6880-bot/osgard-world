@@ -88,6 +88,63 @@ func _run() -> void:
         r44_view.stretch and r44_view.stretch_shrink == 1 and
         r44_view.preview_viewport.own_world_3d,
         "R54 true 3D hangar needs detail geometry and 1:1 resizable WebGL viewport"):return
+    # R62: 4 real camera modes, articulated aircraft hardware and
+    # physically built optical hangar rig. No gameplay economy mutation.
+    var r62_controls = world.garage_hub_r39
+    var r62_wallet_before: int = world.credits
+    var r62_gear = r44_view.inspection_actuators_r62
+    var r62_gantry = r44_view.diagnostic_gantry_r62
+    if not check(is_instance_valid(r62_gear) and
+        is_instance_valid(r62_gantry) and
+        r62_gear.physical_mesh_count() >= 12 and
+        r62_gantry.physical_mesh_count() >= 20 and
+        is_instance_valid(r62_gantry.work_light) and
+        r62_gantry.work_light is SpotLight3D and
+        r62_controls.r62_mode_buttons.size() == 4,
+        "R62 real 3D mechanical inspection and 4 accessible camera modes missing"):return
+    for view_mode in ["cockpit", "engines", "underside", "overview"]:
+        r62_controls.r62_mode_buttons[view_mode].pressed.emit()
+        if not check(r44_view.inspection_mode_r62 == view_mode and
+            r62_controls.r62_current_mode == view_mode and
+            r62_gear.inspection_mode == view_mode and
+            r62_gantry.active_mode == view_mode and
+            world.garage_open_r39 and world.ship.controls_locked and
+            world.credits == r62_wallet_before,
+            "R62 switching real 3D camera may never unlock ship or mint CR"):return
+    if not check(not r44_view.set_inspection_mode_r62("fake_free_ship") and
+        r44_view.inspection_mode_r62 == "overview",
+        "R62 invalid camera preset must be rejected without state mutation"):return
+    for hull_choice in ["ship_scout","ship_interceptor","ship_guardian"]:
+        r44_view.set_ship_type(hull_choice)
+        var predicted_engines: int = ({
+            "ship_scout":1,"ship_interceptor":2,"ship_guardian":4
+        }[hull_choice])
+        var physical_name: String = "R62_RealExhaustGuide_%d" % (
+            predicted_engines - 1)
+        var hull_model = r44_view.primary_airframe_r55
+        if not check(r62_gear.selected_hull == hull_choice and
+            r62_gear.active_engine_guides() == predicted_engines and
+            r62_gear.mounted_root.get_node_or_null(physical_name)
+                is MeshInstance3D and
+            r62_gantry.selected_hull == hull_choice and
+            hull_model.real_parts.size() >= 19 and
+            hull_model.get_node_or_null(
+                "R55_Exclusive_" + hull_choice) is Node3D,
+            "R62 must use real hull-dependent engines and physical mesh details"):return
+    r44_view.set_ship_type("ship_scout")
+    r62_gantry.set_quality_tier(1)
+    r62_gear.set_low_detail(true)
+    if not check(not r62_gantry.work_light.visible and
+        not r62_gantry.scan_beam.visible and
+        r62_gear.control_hinges.size() == 2 and
+        world.ship.controls_locked,
+        "R62 mobile quality must disable expensive lamp but retain real controls"):return
+    r62_gantry.set_quality_tier(0)
+    r62_gear.set_low_detail(false)
+    if not check(r62_gantry.work_light.visible and
+        world.credits == r62_wallet_before,
+        "R62 desktop stage must restore real cinematic worklight"):return
+    print("NEBULA_R62_CINEMATIC_REAL_HANGAR_4_VIEWS_ACTUATORS_SUCCESS")
     var orbit_safe_zoom: float = r44_view.camera_distance_r54
     world.garage_hub_r39.zoom_in_button_r54.pressed.emit()
     if not check(r44_view.camera_distance_r54 < orbit_safe_zoom and

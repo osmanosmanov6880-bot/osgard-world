@@ -317,6 +317,56 @@ func _build_guardian(titanium: Material, armor: Material,
                 -0.30, 5.68, 0.63 if tandem < 0.0 else 0.50,
                 titanium, dark, amber)
 
+func _build_precision_r62(titanium: Material, armor: Material,
+        light: Material) -> void:
+    # The SAME physically meshed details are generated on the actual flight
+    # airframe and the garage gallery, never a painted UI-only illustration.
+    match selected_hull:
+        "ship_scout":
+            for side in [-1.0, 1.0]:
+                _box("R62_NX08_RealNavigationPod_%s" % str(side),
+                    Vector3(0.24, 0.20, 1.18),
+                    Vector3(side * 2.34, -0.11, -0.60), titanium,
+                    Vector3(0, side * 15.0, 0), true)
+                _box("R62_NX08_SurveyWingRib_%s" % str(side),
+                    Vector3(0.15, 0.12, 1.75),
+                    Vector3(side * 4.10, 0.23, 0.75), armor,
+                    Vector3(0, side * 9.0, 0), true)
+                _box("R62_NX08_GenuineWingtipStrobe_%s" % str(side),
+                    Vector3(0.16, 0.08, 0.30),
+                    Vector3(side * 5.43, 0.23, 0.99), light,
+                    Vector3.ZERO, true)
+        "ship_interceptor":
+            for side in [-1.0, 1.0]:
+                _box("R62_NX12_TwinDriveHeatBaffle_%s" % str(side),
+                    Vector3(0.80, 0.18, 1.75),
+                    Vector3(side * 1.36, 0.53, 4.30), armor,
+                    Vector3(0, side * 13.0, 0), true)
+                _box("R62_NX12_ArmoredCanopyRail_%s" % str(side),
+                    Vector3(0.12, 0.12, 2.1),
+                    Vector3(side * 0.79, 0.92, -2.70), titanium,
+                    Vector3.ZERO, true)
+                _box("R62_NX12_ActualPylonStatusLight_%s" % str(side),
+                    Vector3(0.24, 0.08, 0.74),
+                    Vector3(side * 4.10, -0.25, 0.40), light,
+                    Vector3.ZERO, true)
+        "ship_guardian":
+            for side in [-1.0, 1.0]:
+                for plate in range(3):
+                    _box("R62_NX21_SlopedArmorPanel_%s_%d" %
+                        [str(side), plate], Vector3(0.36, 0.15, 1.48),
+                        Vector3(side * (3.32 + float(plate) * 1.44),
+                            0.49, 1.05), armor,
+                        Vector3(0, side * 14.0, side * 8.0), true)
+                _box("R62_NX21_HeavyBridgeSpine_%s" % str(side),
+                    Vector3(0.19, 0.16, 3.45),
+                    Vector3(side * 1.12, 1.99, -0.6), titanium,
+                    Vector3.ZERO, true)
+                _box("R62_NX21_QuadEngineServiceRail_%s" % str(side),
+                    Vector3(0.24, 0.13, 2.35),
+                    Vector3(side * 1.96, 0.25, 4.41), light,
+                    Vector3.ZERO, true)
+
 func _refresh_lod() -> void:
     for detail in detail_parts:
         if is_instance_valid(detail):
@@ -353,6 +403,7 @@ func set_hull(id: String) -> void:
             _build_interceptor(titanium, armor, dark, light, glass, amber)
         "ship_guardian":
             _build_guardian(titanium, armor, dark, light, glass, amber)
+    _build_precision_r62(titanium, armor, light)
     _refresh_lod()
     set_modules_r56(armor_rank_r56, shield_rank_r56, radar_rank_r56)
     set_livery_r59(livery_style_r59)

@@ -7,6 +7,8 @@ const HullVariantsR45Script = preload("res://scripts/hull_variants_r45.gd")
 const FleetAirframesR55Script = preload("res://scripts/fleet_airframes_r55.gd")
 const FormationBaysR47Script = preload("res://scripts/formation_bays_r47.gd")
 const AuroraHangarZeroR54Script = preload("res://scripts/hangar_environment_r54.gd")
+const PhysicalInspectionR62Script = preload("res://scripts/hangar_inspection_r62.gd")
+const DiagnosticGantryR62Script = preload("res://scripts/hangar_diagnostics_r62.gd")
 
 const VALID_HULLS = [
     "ship_scout", "ship_interceptor", "ship_guardian"
@@ -20,6 +22,11 @@ var primary_airframe_r55: Node3D
 var formation_bays_r47: Node3D
 var inspection_camera: Camera3D
 var hangar_set_r54: Node3D
+var inspection_actuators_r62: Node3D
+var diagnostic_gantry_r62: Node3D
+var inspection_mode_r62: String = "overview"
+var camera_focus_r62: Vector3 = Vector3.ZERO
+const R62_MODES := ["overview", "cockpit", "engines", "underside"]
 var camera_distance_r54: float = 22.8
 var camera_direction_r54: Vector3 = Vector3(12.0, 7.5, -18.2).normalized()
 var last_compact_r54: bool = false
@@ -81,6 +88,8 @@ func _make_real_viewport() -> void:
     # R54: a complete enclosed maintenance hall in this isolated 3D scene.
     hangar_set_r54 = AuroraHangarZeroR54Script.new()
     world_root.add_child(hangar_set_r54)
+    diagnostic_gantry_r62 = DiagnosticGantryR62Script.new()
+    world_root.add_child(diagnostic_gantry_r62)
 
     var background := WorldEnvironment.new()
     background.name = "R44_DockAtmosphere"
@@ -141,6 +150,9 @@ func _make_real_viewport() -> void:
     primary_airframe_r55.name = "R55_RealIndependentlySculptedShipViewer"
     ship_pivot.add_child(primary_airframe_r55)
     primary_airframe_r55.set_hull(selected_hull)
+    inspection_actuators_r62 = PhysicalInspectionR62Script.new()
+    ship_pivot.add_child(inspection_actuators_r62)
+    inspection_actuators_r62.set_hull(selected_hull)
     real_airframe.visible = false
     distinct_hull_r45.visible = false
     ship_pivot.rotation.y = orbit_angle
@@ -196,14 +208,47 @@ func _r54_fit_quality() -> void:
         hangar_set_r54.set_quality_tier(1 if compact else 0)
     if is_instance_valid(primary_airframe_r55):
         primary_airframe_r55.set_low_detail(compact)
+    if is_instance_valid(inspection_actuators_r62):
+        inspection_actuators_r62.set_low_detail(compact)
+    if is_instance_valid(diagnostic_gantry_r62):
+        diagnostic_gantry_r62.set_quality_tier(1 if compact else 0)
+
+func set_inspection_mode_r62(mode: String) -> bool:
+    if not R62_MODES.has(mode):
+        return false
+    inspection_mode_r62 = mode
+    # Cinematic inspection presets use the real hull, not a mocked screenshot.
+    match mode:
+        "cockpit":
+            camera_direction_r54 = Vector3(5.0, 3.1, -10.4).normalized()
+            camera_distance_r54 = 12.6
+            camera_focus_r62 = Vector3(0.0, 0.65, -2.0)
+        "engines":
+            camera_direction_r54 = Vector3(6.0, 2.6, 10.8).normalized()
+            camera_distance_r54 = 15.4
+            camera_focus_r62 = Vector3(0.0, -0.20, 3.15)
+        "underside":
+            camera_direction_r54 = Vector3(7.1, -6.1, -7.9).normalized()
+            camera_distance_r54 = 17.0
+            camera_focus_r62 = Vector3.ZERO
+        _:
+            camera_direction_r54 = Vector3(12.0, 7.5, -18.2).normalized()
+            camera_distance_r54 = 22.8
+            camera_focus_r62 = Vector3.ZERO
+    if is_instance_valid(inspection_actuators_r62):
+        inspection_actuators_r62.set_inspection_mode(mode)
+    if is_instance_valid(diagnostic_gantry_r62):
+        diagnostic_gantry_r62.set_mode(mode)
+    return true
 
 func zoom_r54(direction: int) -> void:
     camera_distance_r54 = clampf(
         camera_distance_r54 + float(clampi(direction, -1, 1)) * 2.1,
-        16.0, 32.0)
+        10.5 if inspection_mode_r62 != "overview" else 16.0, 32.0)
     if is_instance_valid(inspection_camera):
-        inspection_camera.position = camera_direction_r54 * camera_distance_r54
-        inspection_camera.look_at(Vector3.ZERO, Vector3.UP)
+        inspection_camera.position = (camera_focus_r62 +
+            camera_direction_r54 * camera_distance_r54)
+        inspection_camera.look_at(camera_focus_r62, Vector3.UP)
 
 func _process(delta: float) -> void:
     if not is_visible_in_tree() or not is_instance_valid(ship_pivot):
@@ -214,6 +259,12 @@ func _process(delta: float) -> void:
             -PI, PI)
     ship_pivot.rotation.y = orbit_angle
     ship_pivot.position.y = 0.11 * sin(elapsed * 0.83)
+    if is_instance_valid(inspection_camera):
+        var destination: Vector3 = (camera_focus_r62 +
+            camera_direction_r54 * camera_distance_r54)
+        inspection_camera.position = inspection_camera.position.lerp(
+            destination, clampf(delta * 4.5, 0.0, 1.0))
+        inspection_camera.look_at(camera_focus_r62, Vector3.UP)
 
 func set_ship_type(id: String) -> void:
     # R55 draws three independent core meshes, matching actual flight craft.
@@ -223,6 +274,10 @@ func set_ship_type(id: String) -> void:
         distinct_hull_r45.set_hull(selected_hull)
     if is_instance_valid(primary_airframe_r55):
         primary_airframe_r55.set_hull(selected_hull)
+    if is_instance_valid(inspection_actuators_r62):
+        inspection_actuators_r62.set_hull(selected_hull)
+    if is_instance_valid(diagnostic_gantry_r62):
+        diagnostic_gantry_r62.set_hull(selected_hull)
 
 func set_workbench_modules_r56(armor: int, shield_rank: int,
         radar_rank: int) -> void:
@@ -232,6 +287,12 @@ func set_workbench_modules_r56(armor: int, shield_rank: int,
 func set_livery_r59(style_id: String) -> void:
     if is_instance_valid(primary_airframe_r55):
         primary_airframe_r55.set_livery_r59(style_id)
+        if is_instance_valid(inspection_actuators_r62):
+            var coat: StandardMaterial3D = (
+                primary_airframe_r55.livery_materials_r59.get("light")
+                as StandardMaterial3D)
+            if is_instance_valid(coat):
+                inspection_actuators_r62.set_livery_accent(coat.albedo_color)
 
 func set_wingmen_r47(ids: Array) -> void:
     if is_instance_valid(formation_bays_r47):
