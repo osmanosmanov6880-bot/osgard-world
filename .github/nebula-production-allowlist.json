@@ -1,12 +1,12 @@
 {
   "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
-  "approved_variant": "R61",
-  "release_status": "R61_OWNER_DIRECTED_OVERRIDE",
+  "approved_variant": "R62",
+  "release_status": "R62_OWNER_DIRECTED_OVERRIDE",
   "artifacts": {
-    "index.html": "409a5ad9049681ef331ff3a7953ced5850d3dc83",
+    "index.html": "b84e78ab301c907d6079488459d034be728ad86e",
     "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
     "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
-    "index.pck": "e76e49ae74077dd380c8e5c8a370b7222cb56710"
+    "index.pck": "93b203c585f0c43d19decfa8a8656611db4495ea"
   },
   "approval": {
     "owner_directed_release": true,
@@ -15,10 +15,10 @@
     "hardware_qa_certified": false,
     "authorization_source": "repository owner instruction",
     "authorized_date": "2026-11-07",
-    "verification_workflow_run_id": 42319552726,
-    "native_source_commit_sha": "c990e29cff2b42763f520fab821499f438893b9f",
-    "web_export_commit_sha": "8a76c7d4907913f44a7091677603886ba6468f08",
-    "source_pr_head_sha": "93d134f8dfaf036c28e7df27979c2bfcbebbc751"
+    "verification_workflow_run_id": 42324906153,
+    "native_source_commit_sha": "94cf29363c15247a9dddb9a93dd385c9b52bef43",
+    "web_export_commit_sha": "1c6bf1fd240c762490789fd7f546229846037342",
+    "source_pr_head_sha": "92f53410726987573727cf63d06df23ca0e2e909"
   },
-  "notes": "PROPOSED R61 software-only source/export pin; NOT PUBLIC until this separately reviewed release PR is merged, rollback-safe SSH deploy succeeds, and independent 4/4 public HTTPS exact-byte parity succeeds. PR #770 head 93d134f8dfaf036c28e7df27979c2bfcbebbc751 passed five source checks, Godot 4.7.2, native R61 real pilot logbook tests, WASM Chromium PC flight and mobile touchscreen. Merged c990e29cff2b42763f520fab821499f438893b9f. Native post-merge export workflow #42319552726 SUCCESS wrote direct sole-child 8a76c7d4907913f44a7091677603886ba6468f08. Four pins are exact original Git blob hashes from that export, without modification. R61 per-pilot earned sortie records Ada/Kai/Leya, flight distance/time, successful and failed missions, persistent safe local saves, genuine R60 crash tracking and repaired free-flight rearming; no CR/XP minting. R60 last verified live HTTPS 4/4 #42257923099 SUCCESS is rollback. Independent post-export R25 and R11 visual results are separate; R11 hosted SwiftShader screenshot NOT VERIFIED, real phone Android/iPhone QA NOT_PERFORMED, hardware_qa_certified=false, no AAA/FPS/real-money claims."
+  "notes": "PROPOSED R62 software-only exact four-Git-blob release. NOT PUBLIC until this separately verified release PR is merged, protected SSH deploy succeeds, and independent public HTTPS exact-byte parity confirms 4/4. R62 gameplay source PR #772 head 92f53410726987573727cf63d06df23ca0e2e909 passed all 5/5 CI incl. Godot 4.7.2 real cinematic hangar, NX hull servo/gear/cockpit, four camera modes, robust genuine Godot cruise-click acknowledgement, actual WebAssembly desktop flight, actual CDP mobile touch at 390x844, and frontend. Source merged as 94cf29363c15247a9dddb9a93dd385c9b52bef43. Native post-merge export #42324906153 generated sole-child 1c6bf1fd240c762490789fd7f546229846037342. Four pins are exact immutable original Git blob hashes. Hosted SwiftShader produced authentic 1280x720 JPEG 112493 bytes by live WebGL framebuffer readPixels in PR workflow #42323912961, visual_capture_confirmed=true, not hardware/FPS/8K/AAA validation. Android/iPhone physical-device QA NOT_PERFORMED; hardware_qa_certified=false. R61 remains publicly verified 4/4 HTTPS via #42320944279 and is rollback. No monetized entitlements/CR/XP shortcuts claimed."
 }

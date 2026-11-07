@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { validateTrustedLineage,validateR58Lineage } from './nebula-release-lineage-guard.mjs';
 const base=JSON.parse(fs.readFileSync('.github/nebula-production-allowlist.json','utf8'));
-assert.equal(base.approved_variant,'R61');
-for(const variant of ['R58','R59','R60','R61']){
+assert.equal(base.approved_variant,'R62');
+for(const variant of ['R58','R59','R60','R61','R62']){
  const policy={...base,approved_variant:variant,
    release_status:variant+'_OWNER_DIRECTED_OVERRIDE'};
  const source=policy.approval.native_source_commit_sha;
@@ -36,5 +36,5 @@ for(const variant of ['R58','R59','R60','R61']){
  reject(policy,{...mock,ancestor(){return false;}});
  reject(policy,{...mock,blob(sha,name){return name.endsWith('index.pck')?'f'.repeat(40):mock.blob(sha,name);}});
 }
-assert.equal(validateTrustedLineage({...base,approved_variant:'R62'},{ }).status,'NOT_TRUSTED_RELEASE');
-console.log('NEBULA_TRUSTED_LINEAGE_NEGATIVE_QA_SUCCESS variants=R58,R59,R60,R61 bad_provenance_rejected=true physical_devices=0');
+assert.equal(validateTrustedLineage({...base,approved_variant:'R63'},{ }).status,'NOT_TRUSTED_RELEASE');
+console.log('NEBULA_TRUSTED_LINEAGE_NEGATIVE_QA_SUCCESS variants=R58,R59,R60,R61,R62 bad_provenance_rejected=true physical_devices=0');
