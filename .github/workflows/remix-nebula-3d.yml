@@ -181,6 +181,12 @@ jobs:
           grep -Fq 'touch-action:none' "$output/index.html"
           grep -Fq 'REMIX ARENA' "$output/index.html"
           du -ah "$output" | tail -n 12
+      - name: Regression test authentic delayed Godot cruise events (R62)
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          node --check godot/nebula-3d/tests/browser_flight_r25.mjs
+          node --test godot/nebula-3d/tests/cruise_click_ack_r62.test.mjs
       - name: Verify the candidate WebAssembly flight in Chromium (PR gate)
         if: github.event_name == 'pull_request'
         run: |

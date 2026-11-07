@@ -1408,6 +1408,24 @@ assert 'func _build_precision_r62(' in require(
     "R62_NX08_RealNavigationPod", "R62_NX12_TwinDriveHeatBaffle",
     "R62_NX21_SlopedArmorPanel")
 assert "NEBULA_R62_CINEMATIC_REAL_HANGAR_4_VIEWS_ACTUATORS_SUCCESS" in smoke
+require("tests/cruise_click_ack_r62.mjs",
+    "export function cruiseClickAck(", "'confirmed'", "'rejected'",
+    "'duplicate'", "'invalid'", "'pending'")
+require("tests/cruise_click_ack_r62.test.mjs",
+    "R62: actual late one-event cruise OFF is a valid action",
+    "state-only spoof never substitutes",
+    "double activation and engine telemetry reset fail closed")
+r25_robust_r62 = require("tests/browser_flight_r25.mjs",
+    "import { cruiseClickAck }", "software_renderer_delayed_ack",
+    "Real cruise button did not reach the requested state",
+    "before_events", "after_events")
+assert "t?.cruise_button_events>before.cruise_button_events,10000" not in r25_robust_r62
+require("../../.github/workflows/remix-nebula-3d.yml",
+    "Regression test authentic delayed Godot cruise events (R62)",
+    "node --test godot/nebula-3d/tests/cruise_click_ack_r62.test.mjs")
+require("../../.github/workflows/nebula-r25-real-browser-flight.yml",
+    "Verify strict R62 delayed-click acknowledgment classifier")
+
 r11_r62 = require("tests/browser_smoke_r11.mjs",
     "capturePresentedFrame(", "Page.startScreencast",
     "NEBULA_R11_PRECAPTURE_EVIDENCE",

@@ -26,3 +26,14 @@ An R11 result remains **NOT VERIFIED** until an actual browser run on the exact 
 ## Physical camera collision and short-screen accessibility
 
 The R62 underside camera stays **above the real -2.85 m maintenance floor**, otherwise a geometric camera looking up from below the floor would render an opaque floor instead of the aircraft. Native Godot QA asserts the computed camera Y remains inside the bay. The 4 inspection view buttons stay visible on 320x480 portrait phones; the redundant orbit/zoom buttons are hidden only when the real stage height is below 155px to avoid overlapping touch targets. Drag rotation still works in that small tier. No camera change touches the live CharacterBody3D.
+
+## R62 R25 live Chromium transient: true delayed Godot click acknowledgment
+
+CI run [#42322935198](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/42322935198) confirmed all native Godot 4.7.2 checks, the R62 camera/mesh regression and original WebAssembly build **SUCCESS**, but the R25 browser job failed at the *cruise OFF* event. The actual uploaded `flight.json` is decisive:
+
+- R25 real garage button launched and unlocked; W physically moved the aircraft 24.6 meters; actual cruise ON press incremented Godot event counter to **1** and turned the ship to heading -0.5529 toward the mission; gap decreased from 425.74 to 362.83 m.
+- The actual cruise OFF press incremented **the same live Godot counter to 2** and set `cruise=false`. The previous helper threw a rejection after an artificial 10-second polling deadline even though its final fresh telemetry already showed the desired OFF state and real pressed event.
+- The game engine and autopilot were correct. R62 now uses `cruiseClickAck` to require an exact **+1** genuine signal and desired state, with a strict 26-second SwiftShader window plus one genuine final snapshot. No event, reset counters, duplicated clicks, mismatched state and fake state-only activation all remain **FAILURES**.
+- Native PR workflow and independent post-merge R25 workflow now both execute Node's six negative/positive classifier regression tests before Chromium. Browser test still sends an actual mouse press/release and validates real Godot physics and navigation; no mocking or forced autopilot toggling.
+
+This does **not** mark the browser gate accepted until the latest-head GitHub run prints `NEBULA_R25_BROWSER_FLIGHT_SUCCESS`. Physical phone QA remains NOT_PERFORMED.
