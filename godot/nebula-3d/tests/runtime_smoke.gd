@@ -3349,6 +3349,13 @@ func _run() -> void:
     if not check(r64_guardian_hull == "ship_guardian" and
         world.garage_open_r39 and world.garage_hub_r39.visible,
         "R64 requires real previously bought NX21 for service diagnostics"):return
+    # Earlier legitimate R21/R48/R60 test flights may already have
+    # penetrated this owned hull. Begin this *isolated* repair-price case
+    # from a healthy aircraft rather than asserting a fabricated 100%.
+    # No CR, XP, ownership or premium purchase is granted by test setup.
+    world.airframes_r64 = AirframeServiceR64Script.safe_roster({})
+    world._r15_apply_loadout()
+    world._r39_refresh_garage()
     world.ship.shield = 0.0
     world.ship.hull = world.fleet_r15.ship_hull_cap()
     world.ship.take_damage(25.0)
