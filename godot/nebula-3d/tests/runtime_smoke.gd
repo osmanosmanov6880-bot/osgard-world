@@ -3365,6 +3365,12 @@ func _run() -> void:
         "R64 parked/no-combat damage cannot forge maintenance wear"):return
     world.ship.shield = world.fleet_r15.ship_shield_cap()
     world.ship.hull = world.fleet_r15.ship_hull_cap()
+    # This service regression must not accidentally begin an R57 paid
+    # contract retained from an earlier smoke scenario. Use a genuine
+    # free-flight launch with no active contract or campaign reward.
+    world.r57_selected_contract = ""
+    world.r57_patrol.abandon()
+    world.mission_index = world.MISSIONS.size()
     world._r39_launch_sortie()
     # Real shield absorption must not be billed as hull-penetrating wear.
     var r64_health_before_shield: Dictionary = (
@@ -3393,7 +3399,10 @@ func _run() -> void:
         world.hud_status.text.contains("УЗЛЫ"),
         "R64 player must see authentic engine/controls/plating status while flying"):return
     world._r61_finish_sortie("failed")
+    world.r57_patrol.abandon()
     world._r39_create_garage_hub()
+    if not check(not world.r57_patrol.active,
+        "R64 test must not leave live R57 contract to contaminate R60 crash recovery"):return
     world.garage_hub_r39._r54_select_section("workshop")
     world._r39_refresh_garage()
     var r64_price: int = AirframeServiceR64Script.quote(
