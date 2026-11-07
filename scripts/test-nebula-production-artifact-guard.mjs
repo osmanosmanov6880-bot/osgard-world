@@ -308,6 +308,23 @@ try{
     await assert.rejects(inspectProductionArtifact(malicious,temp),
       /Owner override|Modern owner override|hardware QA explicitly false|unapproved index|exactly four hashed/);
   }
+  const r63={...r41,approved_variant:'R63',release_status:'R63_OWNER_DIRECTED_OVERRIDE'};
+  const r63Good=await inspectProductionArtifact(r63,temp);
+  assert.equal(r63Good.variant,'R63');
+  assert.equal(r63Good.status,'OWNER_DIRECTED_OVERRIDE_BYTES_MATCH');
+  for(const malicious of [
+    {...r63,release_status:'R63_HARDWARE_QA_APPROVED'},
+    {...r63,approval:{...r63.approval,physical_device_qa:'PASSED'}},
+    {...r63,approval:{...r63.approval,hardware_qa_certified:true}},
+    {...r63,approval:{...r63.approval,verification_workflow_run_id:0}},
+    {...r63,approval:{...r63.approval,web_export_commit_sha:r63.approval.native_source_commit_sha}},
+    {...r63,artifacts:{...expected,'index.html':'0'.repeat(40)}},
+    {...r63,artifacts:{...expected,'index.pck':'0'.repeat(40)}},
+    {...r63,artifacts:{...expected,extra:'0'.repeat(40)}},
+  ]) {
+    await assert.rejects(inspectProductionArtifact(malicious,temp),
+      /Owner override|Modern owner override|hardware QA explicitly false|unapproved index|exactly four hashed/);
+  }
   const unsupported={...stable,approved_variant:'R40',
     release_status:'R40_HARDWARE_QA_APPROVED',approval:{human_visual_approved:true}};
   await assert.rejects(inspectProductionArtifact(unsupported,temp),/requires explicit human-reviewed evidence/);
