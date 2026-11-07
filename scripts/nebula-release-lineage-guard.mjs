@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Git-graph provenance gate for R58, R59 and R60. Read real Git objects, not PR prose.
+// Git-graph provenance gate for R58 through R61. Read real Git objects, not PR prose.
 // This is NOT a substitute for a successful public HTTPS 4/4 parity check.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,7 +13,7 @@ const fail=(message)=>{throw new Error('NEBULA_TRUSTED_LINEAGE_HELD: '+message);
 const eq=(a,b)=>a===b;
 export function validateTrustedLineage(policy,lookup) {
   const variant=policy?.approved_variant;
-  if(!['R58','R59','R60'].includes(variant)) return {status:'NOT_TRUSTED_RELEASE'};
+  if(!['R58','R59','R60','R61'].includes(variant)) return {status:'NOT_TRUSTED_RELEASE'};
   const a=policy?.approval||{};
   if(policy?.schema!=='NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1' ||
     policy.release_status!==variant+'_OWNER_DIRECTED_OVERRIDE' ||
