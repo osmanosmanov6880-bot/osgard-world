@@ -71,6 +71,14 @@ func _construct() -> void:
                 [str(side), index], Vector3(0.18, 0.035, 2.30),
                 Vector3(side * 9.7, -2.47, z), cyan, true)
             guide_rims.append(guide)
+    # Actual low-clearance floor crossrails bound the docking/inspection pad.
+    # Four more structural meshes make the calibration scale legible from
+    # the underside angle without resorting to floating 2D overlays.
+    for index in range(4):
+        var z: float = -7.0 + float(index) * 4.6
+        _box("R62_SpanCalibrationCrossrail_%02d" % index,
+            Vector3(19.2, 0.075, 0.13),
+            Vector3(0.0, -2.44, z), steel, true)
     _box("R62_TrueOverheadServiceTruss", Vector3(23.2, 0.74, 0.96),
         Vector3(0.0, 7.25, 1.5), armor)
     _box("R62_InspectionTrussSignal", Vector3(4.4, 0.22, 0.46),
