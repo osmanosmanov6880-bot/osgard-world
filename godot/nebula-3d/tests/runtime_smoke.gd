@@ -3366,6 +3366,16 @@ func _run() -> void:
     world.ship.shield = world.fleet_r15.ship_shield_cap()
     world.ship.hull = world.fleet_r15.ship_hull_cap()
     world._r39_launch_sortie()
+    # Real shield absorption must not be billed as hull-penetrating wear.
+    var r64_health_before_shield: Dictionary = (
+        world.airframes_r64["ship_guardian"] as Dictionary).duplicate(true)
+    var r64_shield_before: float = world.ship.shield
+    world.ship.take_damage(17.0)
+    if not check(world.ship.shield < r64_shield_before and
+        world.airframes_r64["ship_guardian"] == r64_health_before_shield and
+        world.r64_actual_hull_hits == r64_start_hits and
+        world.credits == r64_start_cr,
+        "R64 a real shield-only impact must NEVER incur hidden service debt"):return
     world.ship.shield = 0.0
     world.ship.take_damage(38.0)
     var r64_worn: Dictionary = (
