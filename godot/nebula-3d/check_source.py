@@ -931,7 +931,13 @@ assert "r38_genuine_button_presses" in world
 assert "cruise_button_events" in world and "cruise_button_visible" in world
 assert "actual clickable cruise switch engaged" in r25_browser
 assert "pressRealCruise(true" in r25_browser
-assert "cruise_button_events>before.cruise_button_events" in r25_browser
+# R62: actual button event still required, but a late event on hosted
+# SwiftShader must not be rejected merely because the previous 10s poll expired.
+# The classifier fails closed on no event, reset, duplicate and wrong state.
+assert "cruiseClickAck(before, latest, desired)" in r25_browser
+assert "before_events:before.cruise_button_events" in r25_browser
+assert "after_events:latest.cruise_button_events" in r25_browser
+assert "if (status !== 'pending')" in r25_browser
 assert "r38_touch_button_presses" in require("scripts/performance_lab_r11.gd", "r38_touch_button_presses")
 assert "nebula_r51_jammer" in world
 assert "_r51_active_interference()" in world
