@@ -5,6 +5,7 @@ const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
 const CaptainRosterR42Script = preload("res://scripts/captain_roster_r42.gd")
 const PilotAcademyR54Script = preload("res://scripts/pilot_academy_r54.gd")
 const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
+const SortiePlannerR63Script = preload("res://scripts/sortie_planner_r63.gd")
 const HangarWorkbenchR56Script = preload("res://scripts/hangar_workbench_r56.gd")
 const PatrolContractsR57Script = preload("res://scripts/patrol_contracts_r57.gd")
 const CareerPrestigeR58Script = preload("res://scripts/career_prestige_r58.gd")
@@ -152,6 +153,68 @@ func _run() -> void:
         world.credits == r62_wallet_before,
         "R62 desktop stage must restore real cinematic worklight"):return
     print("NEBULA_R62_CINEMATIC_REAL_HANGAR_4_VIEWS_ACTUATORS_SUCCESS")
+    # R63 real mission and post-campaign route calculations. This UI never
+    # mints credits, bypasses campaign or grants unearned R58 risk.
+    var r63_plan: Dictionary = world.garage_hub_r39.profile.get(
+        "r63_flight_plan", {})
+    var r63_right: Dictionary = SortiePlannerR63Script.course(
+        Vector3.ZERO, Vector3.FORWARD, Vector3(100, 0, -100), 70.0)
+    var r63_free: Dictionary = SortiePlannerR63Script.plan(
+        world.MISSIONS.size(), world.MISSIONS, "", 2,
+        {"aurora":999}, "ada", {}, Vector3.ZERO, 0, 0)
+    var r63_locked: Dictionary = SortiePlannerR63Script.plan(
+        world.MISSIONS.size(), world.MISSIONS, "neon", 2,
+        {"aurora":0,"neon":0,"rift":0}, "ada", {},
+        Vector3.ZERO, 4, 1)
+    var r63_unlocked: Dictionary = SortiePlannerR63Script.plan(
+        world.MISSIONS.size(), world.MISSIONS, "neon", 1,
+        {"aurora":3,"neon":0,"rift":0}, "ada", {},
+        Vector3.ZERO, 4, 1)
+    if not check(r63_plan.get("mode") == "campaign" and
+        int(r63_plan.get("credits", 0)) == 350 and
+        int(r63_plan.get("xp", 0)) == 150 and
+        int(r63_plan.get("waypoints", 0)) == 1 and
+        int(r63_plan.get("route_m", 0)) > 250 and
+        world.garage_hub_r39.r63_route_title.text.contains("ПЕРВЫЙ ПОЛЁТ") and
+        world.garage_hub_r39.r63_fleet_route_hint.text.contains("ПЕРВЫЙ ПОЛЁТ") and
+        r63_free.get("mode") == "free" and
+        int(r63_free.get("credits", -1)) == 0 and
+        int(r63_free.get("waypoints", -1)) == 0 and
+        r63_locked.get("mode") == "contract" and
+        int(r63_locked.get("risk_tier", -1)) == 0 and
+        int(r63_locked.get("credits", 0)) == 650 and
+        int(r63_locked.get("waypoints", 0)) == 4 and
+        int(r63_unlocked.get("risk_tier", 0)) == 1 and
+        int(r63_unlocked.get("waypoints", 0)) == 5 and
+        r63_right.get("side") == "ВПРАВО" and
+        int(r63_right.get("bearing_deg", -1)) == 45 and
+        int(r63_right.get("eta_sec", 0)) > 0 and
+        world.credits == 950,
+        "R63 plan must use real route, rank and rewards without CR mint"):return
+    var r63_gates = world.r63_flight_corridor
+    if not check(is_instance_valid(r63_gates) and
+        r63_gates.gates.size() == 3 and
+        r63_gates.visible_count() == 0 and
+        not r63_gates.has_collision_geometry() and
+        r63_gates.gates[0].mesh is ArrayMesh and
+        r63_gates.gates[0].mesh.get_surface_count() == 1,
+        "R63 actual 3D navigational rings must not block ship physics"):return
+    r63_gates.set_guidance(true, Vector3.ZERO,
+        Vector3(500, 40, -400), 0)
+    if not check(r63_gates.visible_count() == 3 and
+        r63_gates.updates >= 1 and
+        r63_gates.gates[0].mesh == r63_gates.gates[2].mesh,
+        "R63 real mission guide must share one finite 3D ring mesh"):return
+    r63_gates.set_guidance(true, Vector3.ZERO,
+        Vector3(500, 40, -400), 2)
+    if not check(r63_gates.visible_count() == 1 and
+        not r63_gates.has_collision_geometry(),
+        "R63 mobile quality must retain one true 3D route marker"):return
+    r63_gates.clear_guides()
+    if not check(r63_gates.visible_count() == 0 and
+        world.garage_open_r39 and world.ship.controls_locked,
+        "R63 route planning must never unlock parked pilot"):return
+    print("NEBULA_R63_ACTUAL_MISSION_PLANNING_NO_MINT_AND_GEOMETRY_SUCCESS")
     var orbit_safe_zoom: float = r44_view.camera_distance_r54
     world.garage_hub_r39.zoom_in_button_r54.pressed.emit()
     if not check(r44_view.camera_distance_r54 < orbit_safe_zoom and
@@ -503,6 +566,12 @@ func _run() -> void:
         world.garage_hub_r39.objective_label.text.contains("Долететь"),
         "R41 authored story and objective are missing from garage"):return
     world._r39_launch_sortie()
+    world._r63_refresh_flight_director()
+    if not check(world.r63_flight_corridor.visible_count() >= 1 and
+        world.r63_last_course.get("has_target", false) and
+        int(world.r63_last_course.get("distance_m", 0)) > 200 and
+        not world.garage_open_r39 and not world.ship.controls_locked,
+        "R63 real campaign sortie must display true 3D direction gates"):return
     if not check(world.r47_launch_camera_time > 1.0 and
         world.fleet_r15.combat_active and
         not world.garage_open_r39 and not world.ship.controls_locked,
@@ -2816,6 +2885,13 @@ func _run() -> void:
     world._r61_finish_sortie("failed")
     world._r61_finish_sortie("failed")
     var r61_pilot_record: Dictionary = world.pilot_logbook_r61["ada"]
+    if not check(world.r63_last_sortie.get("pilot") == "ada" and
+        world.r63_last_sortie.get("outcome") == "failed" and
+        int(world.r63_last_sortie.get("distance_m", 0)) == 1875 and
+        int(world.r63_last_sortie.get("seconds", 0)) == 85 and
+        world.credits == r61_credits_before and
+        world.xp == r61_xp_before,
+        "R63 latest real sortie must capture distance/time without CR mint"):return
     if not check(not world.r61_sortie_active and
         r61_pilot_record["flights"] == 1 and
         r61_pilot_record["failures"] == 1 and
@@ -2831,6 +2907,16 @@ func _run() -> void:
     world._save_progress()
     world.pilot_logbook_r61 = PilotLogbookR61Script.safe_roster({})
     world._load_progress()
+    if not check(world.r63_last_sortie.get("pilot") == "ada" and
+        int(world.r63_last_sortie.get("distance_m", 0)) == 1875 and
+        int(world.r63_last_sortie.get("seconds", 0)) == 85 and
+        SortiePlannerR63Script.safe_debrief({
+            "pilot":"hacker","outcome":"success","mode":"contract",
+            "distance_m":9999999}).is_empty() and
+        SortiePlannerR63Script.safe_debrief({
+            "pilot":"ada","outcome":"success","mode":"contract",
+            "distance_m":INF,"seconds":-25})["distance_m"] == 0,
+        "R63 v1 report roundtrip and forged/NaN data must fail closed"):return
     if not (world.pilot_logbook_r61["ada"]["flights"] == 1 and
             world.pilot_logbook_r61["kai"]["flights"] == r61_kai_history_before["flights"] and
             world.pilot_logbook_r61["kai"]["successes"] == r61_kai_history_before["successes"] and
