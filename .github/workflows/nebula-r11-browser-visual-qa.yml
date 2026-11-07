@@ -35,6 +35,12 @@ jobs:
           test -s "$game/index.js"
           test -s "$game/index.pck"
           test -s "$game/index.wasm"
+      - name: Verify live real-frame capture probe and source identity
+        run: |
+          node --check godot/nebula-3d/tests/browser_smoke_r11.mjs
+          echo "NEBULA_R11_TESTED_COMMIT=$(git rev-parse HEAD)"
+          echo "NEBULA_R11_TESTED_PCK_BLOB=$(git hash-object public/games/remix/arena-v2/nebula-3d/index.pck)"
+          echo "NEBULA_R11_SCOPE=committed Web export; not unbuilt game source"
       - name: Capture GL render at 720p/1080p and exercise quality controls
         run: |
           set -euo pipefail
@@ -43,6 +49,39 @@ jobs:
           trap 'kill $server_pid || true' EXIT
           sleep 2
           node godot/nebula-3d/tests/browser_smoke_r11.mjs
+      - name: Summarize genuine WebGL capture evidence
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const root='r11-browser-qa';
+          const names=fs.existsSync(root)?fs.readdirSync(root):[];
+          const jpeg=names.filter(name=>name.endsWith('.jpg'));
+          const boot=names.filter(name=>name.endsWith('-boot.json'));
+          const failed=names.filter(name=>name.endsWith('-capture-failure.json'));
+          const file=root+'/report.json';
+          const report=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):null;
+          const verified=jpeg.length>0 &&
+            report?.scenes?.some(scene=>scene.visual_capture_confirmed===true);
+          const lines=[
+            '### NEBULA R11 hosted software-rendering evidence',
+            '- Verified live game screenshots: '+(verified?'YES':'NO'),
+            '- Actual JPEG artifact count: '+jpeg.length,
+            '- Pre-capture evidence documents: '+boot.length,
+            '- Explicit failure diagnostic documents: '+failed.length,
+            '- Physical GPU / Android / iPhone QA: NOT_PERFORMED',
+            '- Camera screenshots must come from real live Godot, not synthetic images.',
+            '- See the uploaded r11-browser-qa artifact for bytes and errors.'
+          ];
+          if(process.env.GITHUB_STEP_SUMMARY)
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+              lines.join('\n')+'\n');
+          console.log('NEBULA_R11_EVIDENCE_SUMMARY '+JSON.stringify({
+            real_frame:!!verified, jpeg_count:jpeg.length,
+            boot_files:boot.length, failure_files:failed.length,
+            hardware_qa:'NOT_PERFORMED'
+          }));
+          NODE
       - name: Publish screenshots and hosted-renderer report
         if: always()
         uses: actions/upload-artifact@v4

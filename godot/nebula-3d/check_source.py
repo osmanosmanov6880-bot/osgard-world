@@ -931,7 +931,13 @@ assert "r38_genuine_button_presses" in world
 assert "cruise_button_events" in world and "cruise_button_visible" in world
 assert "actual clickable cruise switch engaged" in r25_browser
 assert "pressRealCruise(true" in r25_browser
-assert "cruise_button_events>before.cruise_button_events" in r25_browser
+# R62: actual button event still required, but a late event on hosted
+# SwiftShader must not be rejected merely because the previous 10s poll expired.
+# The classifier fails closed on no event, reset, duplicate and wrong state.
+assert "cruiseClickAck(before, latest, desired)" in r25_browser
+assert "before_events:before.cruise_button_events" in r25_browser
+assert "after_events:latest.cruise_button_events" in r25_browser
+assert "if (status !== 'pending')" in r25_browser
 assert "r38_touch_button_presses" in require("scripts/performance_lab_r11.gd", "r38_touch_button_presses")
 assert "nebula_r51_jammer" in world
 assert "_r51_active_interference()" in world
@@ -1380,5 +1386,64 @@ assert "actualGarageReady(state)" in mobile_r61
 
 require("docs/R61-REAL-PILOT-LOGBOOK-QA.md",
     "R61", "R54", "CR", "Godot", "NOT_PERFORMED", "flight_distance")
+
+r62_inspection = require(
+    "scripts/hangar_inspection_r62.gd",
+    "extends Node3D", "set_hull(", "set_inspection_mode(",
+    "R62_ActualWingControlHinge", "R62_TelescopicLandingLeg",
+    "physical_mesh_count(", "active_engine_guides(")
+r62_gantry = require(
+    "scripts/hangar_diagnostics_r62.gd",
+    "extends Node3D", "SpotLight3D.new()",
+    "R62_RealGantryPillar", "R62_MovingRealOpticalScanBar",
+    "set_quality_tier(", "physical_mesh_count(")
+assert "credits +=" not in r62_inspection
+assert "FileAccess.open(" not in r62_inspection
+assert "credits +=" not in r62_gantry
+assert 'PhysicalInspectionR62Script = preload(' in require(
+    "scripts/hangar_ship_preview_r44.gd",
+    "set_inspection_mode_r62", "R62_MODES",
+    "inspection_actuators_r62", "diagnostic_gantry_r62")
+assert 'r62_mode_buttons: Dictionary' in require(
+    "scripts/garage_hub_r39.gd",
+    "R62_ActualInspectionMode_", "_r62_request_view",
+    "mode_button.position", "mode_button.size",
+    "var full_inspection_controls: bool = stage_height >= 155.0")
+assert 'func _build_precision_r62(' in require(
+    "scripts/fleet_airframes_r55.gd",
+    "R62_NX08_RealNavigationPod", "R62_NX12_TwinDriveHeatBaffle",
+    "R62_NX21_SlopedArmorPanel")
+assert "NEBULA_R62_CINEMATIC_REAL_HANGAR_4_VIEWS_ACTUATORS_SUCCESS" in smoke
+require("tests/cruise_click_ack_r62.mjs",
+    "export function cruiseClickAck(", "'confirmed'", "'rejected'",
+    "'duplicate'", "'invalid'", "'pending'")
+require("tests/cruise_click_ack_r62.test.mjs",
+    "R62: actual late one-event cruise OFF is a valid action",
+    "state-only spoof never substitutes",
+    "double activation and engine telemetry reset fail closed")
+r25_robust_r62 = require("tests/browser_flight_r25.mjs",
+    "import { cruiseClickAck }", "software_renderer_delayed_ack",
+    "Real cruise button did not reach the requested state",
+    "before_events", "after_events")
+assert "t?.cruise_button_events>before.cruise_button_events,10000" not in r25_robust_r62
+require("../../.github/workflows/remix-nebula-3d.yml",
+    "Regression test authentic delayed Godot cruise events (R62)",
+    "node --test godot/nebula-3d/tests/cruise_click_ack_r62.test.mjs")
+require("../../.github/workflows/nebula-r25-real-browser-flight.yml",
+    "Verify strict R62 delayed-click acknowledgment classifier")
+
+r11_r62 = require("tests/browser_smoke_r11.mjs",
+    "capturePresentedFrame(", "Page.startScreencast",
+    "NEBULA_R11_PRECAPTURE_EVIDENCE",
+    "NEBULA_R11_CAPTURE_FAILURE_DETAILS",
+    "jpegDimensions(")
+r11_workflow_r62 = require("../../.github/workflows/nebula-r11-browser-visual-qa.yml",
+    "NEBULA_R11_EVIDENCE_SUMMARY", "node --check",
+    "NEBULA_R11_TESTED_PCK_BLOB")
+assert "fake_bitmap_allowed: false" in r11_r62
+
+require("docs/R62-CINEMATIC-HANGAR-QA.md",
+    "R62", "SpotLight3D", "MeshInstance3D",
+    "4", "R11", "NOT_PERFORMED")
 
 print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")

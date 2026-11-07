@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { cruiseClickAck } from './cruise_click_ack_r62.mjs';
 
 const output = path.resolve('r25-browser-qa');
 fs.mkdirSync(output, {recursive: true});
@@ -38,54 +39,84 @@ async function checkpoint(name, condition) {
   log.checks.push({name,telemetry:v});
   return v;
 }
-// A successful DOM click alone is not a Godot click: use the actual Button
-// rectangle exported by the live engine, then require the real pressed event
-// counter AND the desired autopilot state. A retry is allowed only if the
-// Godot button never received a click; a rejected click fails visibly.
+// A successful DOM mouse click is never sufficient. Observe exactly one
+// genuine Godot pressed event AND the desired craft state. Hosted SwiftShader
+// may deliver telemetry AFTER a 10s wait expired; the final fresh snapshot
+// must be classified, not automatically mislabeled as a rejected action.
 async function pressRealCruise(desired, description) {
   let last = null;
-  for (let attempt=1; attempt<=3; attempt++) {
-    const before=await snapshot();
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const before = await snapshot();
     if (!before?.cruise_button_visible ||
         !Number.isFinite(before.cruise_button_x) ||
         !Number.isFinite(before.cruise_button_y) ||
-        before.cruise_view_w<800 || before.cruise_view_h<400) {
-      throw new Error('Cruise UI is not visibly clickable: '+JSON.stringify(before));
+        before.cruise_view_w < 800 || before.cruise_view_h < 400) {
+      throw new Error('Cruise UI is not visibly clickable: ' +
+        JSON.stringify(before));
     }
-    const bounds=await page.evaluate(()=>{
-      const r=document.querySelector('#canvas')?.getBoundingClientRect();
-      return r?{x:r.x,y:r.y,w:r.width,h:r.height}:null;
+    if (before.cruise === desired) {
+      throw new Error('Cruise already at requested state BEFORE physical click: ' +
+        JSON.stringify({desired, before}));
+    }
+    const bounds = await page.evaluate(() => {
+      const r = document.querySelector('#canvas')?.getBoundingClientRect();
+      return r ? {x:r.x, y:r.y, w:r.width, h:r.height} : null;
     });
-    if (!bounds || bounds.w<800 || bounds.h<400)
+    if (!bounds || bounds.w < 800 || bounds.h < 400)
       throw new Error('Cruise canvas geometry unavailable '+JSON.stringify(bounds));
-    const click={
-      x:bounds.x+before.cruise_button_x*bounds.w/before.cruise_view_w,
-      y:bounds.y+before.cruise_button_y*bounds.h/before.cruise_view_h
+    const click = {
+      x: bounds.x + before.cruise_button_x * bounds.w / before.cruise_view_w,
+      y: bounds.y + before.cruise_button_y * bounds.h / before.cruise_view_h
     };
-    await page.mouse.move(click.x,click.y);
+    await page.mouse.move(click.x, click.y);
     await page.mouse.down();
-    // SwiftShader can stall between a mouse down and the next UI frame;
-    // keep the real input pressed until a Godot frame has time to observe it.
+    // Give the Godot physics loop a true down/up pair, even under WebGL stalls.
     await page.waitForTimeout(300);
     await page.mouse.up();
-    try {
-      const delivered=await waitForTelemetry(
-        t=>t?.cruise_button_events>before.cruise_button_events,10000);
-      if (delivered.cruise!==desired)
-        throw new Error('Real Godot cruise click reached handler but state not '+
-          String(desired)+': '+JSON.stringify(delivered));
-      log.checks.push({name:description,attempt,click,
-        before_events:before.cruise_button_events,actual:delivered});
-      return delivered;
-    } catch (e) {
-      last={attempt,click,before,latest:await snapshot(),message:String(e.message)};
-      if ((last.latest?.cruise_button_events||0)>before.cruise_button_events)
-        throw new Error('Cruise click handler ran but autopilot rejected: '+JSON.stringify(last));
-      log.checks.push({name:description+' missed physical click diagnostic',...last});
+
+    let latest = null;
+    let status = 'pending';
+    const deadline = Date.now() + 26000;
+    while (Date.now() < deadline && status === 'pending') {
+      latest = await snapshot();
+      status = cruiseClickAck(before, latest, desired);
+      if (status === 'pending') await page.waitForTimeout(350);
     }
+    // One final real read after the deadline handles an acknowledgement which
+    // landed between the last timed poll and the timeout boundary. The R62
+    // regression previously called this valid OFF click a "rejection".
+    latest = await snapshot();
+    status = cruiseClickAck(before, latest, desired);
+    if (status === 'confirmed') {
+      log.checks.push({name:description, attempt, click,
+        before_events:before.cruise_button_events,
+        after_events:latest.cruise_button_events, actual:latest,
+        software_renderer_delayed_ack: Date.now() >= deadline});
+      return latest;
+    }
+    last = {attempt, click, desired, before, latest, status};
+    if (status !== 'pending') {
+      throw new Error('Real cruise button did not reach the requested state: ' +
+        JSON.stringify(last));
+    }
+    // Failed delivery is the ONLY legal case for another physical click.
+    // Brief grace protects against a late Godot event before any retry.
+    await page.waitForTimeout(1800);
+    latest = await snapshot();
+    status = cruiseClickAck(before, latest, desired);
+    if (status === 'confirmed') {
+      log.checks.push({name:description + ' delayed Godot frame', attempt,
+        click, before_events:before.cruise_button_events,
+        after_events:latest.cruise_button_events, actual:latest});
+      return latest;
+    }
+    if (status !== 'pending')
+      throw new Error('Late real cruise click rejected or duplicated: ' +
+        JSON.stringify({attempt, click, before, latest, status}));
+    log.checks.push({name:description+' undelivered real click', ...last});
   }
-  throw new Error('Real cruise button did not receive three physical clicks: '+
-    JSON.stringify(last));
+  throw new Error('Cruise button received no physical pressed event after ' +
+    'three attempts: '+JSON.stringify(last));
 }
 try {
   await page.goto('http://127.0.0.1:8765/games/remix/arena-v2/nebula-3d/?r25-browser=1',

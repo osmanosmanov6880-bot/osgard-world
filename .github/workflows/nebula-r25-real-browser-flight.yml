@@ -37,6 +37,10 @@ jobs:
           test -s "$game/index.js"
           grep -Fq 'nebula-r23-physical-keyboard' "$game/index.html"
           grep -Fq 'viewport-fit=cover' "$game/index.html"
+      - name: Verify strict R62 delayed-click acknowledgment classifier
+        run: |
+          node --check godot/nebula-3d/tests/browser_flight_r25.mjs
+          node --test godot/nebula-3d/tests/cruise_click_ack_r62.test.mjs
       - name: Run real Chromium WASM flight/keyboard/autopilot E2E
         run: |
           set -euo pipefail
