@@ -1108,6 +1108,13 @@ func _layout_hub() -> void:
         stage_left + stage_width - 167.0, stage_top + stage_height - 58.0)
     zoom_out_button_r54.size = Vector2(46.0, 44.0)
     zoom_in_button_r54.size = Vector2(46.0, 44.0)
+    # At 320x480, the bay is only 108-122 px high. Preserve touch
+    # camera-preset controls; avoid overlapping them with the lower orbit
+    # buttons. Real finger dragging still rotates the independent 3D hull.
+    var full_inspection_controls: bool = stage_height >= 155.0
+    for control in [turn_left_r44, turn_right_r44,
+            zoom_out_button_r54, zoom_in_button_r54]:
+        control.visible = full_inspection_controls
 
     description_label.visible = not short_view
     status_label.visible = not short_view and active_section_r54 == "operations"

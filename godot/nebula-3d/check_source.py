@@ -1401,7 +1401,8 @@ assert 'PhysicalInspectionR62Script = preload(' in require(
 assert 'r62_mode_buttons: Dictionary' in require(
     "scripts/garage_hub_r39.gd",
     "R62_ActualInspectionMode_", "_r62_request_view",
-    "mode_button.position", "mode_button.size")
+    "mode_button.position", "mode_button.size",
+    "var full_inspection_controls: bool = stage_height >= 155.0")
 assert 'func _build_precision_r62(' in require(
     "scripts/fleet_airframes_r55.gd",
     "R62_NX08_RealNavigationPod", "R62_NX12_TwinDriveHeatBaffle",

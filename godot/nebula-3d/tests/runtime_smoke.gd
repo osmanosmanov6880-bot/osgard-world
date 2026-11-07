@@ -111,6 +111,13 @@ func _run() -> void:
             world.garage_open_r39 and world.ship.controls_locked and
             world.credits == r62_wallet_before,
             "R62 switching real 3D camera may never unlock ship or mint CR"):return
+        if view_mode == "underside":
+            var underside_camera_y: float = (
+                r44_view.camera_focus_r62 +
+                r44_view.camera_direction_r54 *
+                r44_view.camera_distance_r54).y
+            if not check(underside_camera_y > -2.45,
+                "R62 undercarriage camera must stay above actual solid hangar floor"):return
     if not check(not r44_view.set_inspection_mode_r62("fake_free_ship") and
         r44_view.inspection_mode_r62 == "overview",
         "R62 invalid camera preset must be rejected without state mutation"):return
