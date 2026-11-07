@@ -2,6 +2,7 @@
 extends CanvasLayer
 const Hangar3DPreviewR44Script = preload("res://scripts/hangar_ship_preview_r44.gd")
 const PilotLogbookR61Script = preload("res://scripts/pilot_logbook_r61.gd")
+const SortiePlannerR63Script = preload("res://scripts/sortie_planner_r63.gd")
 ## R39 garage command hub. Reads the live campaign state supplied by world.gd.
 signal sortie_requested
 signal shop_requested
@@ -58,6 +59,13 @@ var zoom_in_button_r54: Button
 var zoom_out_button_r54: Button
 var r62_mode_buttons: Dictionary = {}
 var r62_current_mode: String = "overview"
+var r63_fleet_route_hint: Label
+var r63_route_card: PanelContainer
+var r63_route_title: Label
+var r63_route_distance: Label
+var r63_route_reward: Label
+var r63_route_loadout: Label
+var r63_last_debrief_label: Label
 var section_buttons_r54: Dictionary = {}
 var active_section_r54: String = "fleet"
 var ship_card_r54: PanelContainer
@@ -274,6 +282,23 @@ func _build() -> void:
     stakes_label = _label(introductory_section_r54, "Учебный вылет без атаки в начале.", 12, MUTED)
     debrief_label = _label(introductory_section_r54, "", 12, GOLD)
     debrief_label.visible = false
+    # A genuine contract/mission briefing, not generic narrative art.
+    r63_route_card = PanelContainer.new()
+    r63_route_card.name = "R63_RealRouteDossier"
+    r63_route_card.add_theme_stylebox_override("panel",
+        _panel_style(Color(0.020, 0.058, 0.086, 0.98), CYAN))
+    introductory_section_r54.add_child(r63_route_card)
+    var route_stack := VBoxContainer.new()
+    route_stack.add_theme_constant_override("separation", 7)
+    r63_route_card.add_child(route_stack)
+    _label(route_stack, "ПОЛЁТНОЕ ЗАДАНИЕ · РЕАЛЬНЫЕ ДАННЫЕ", 12, GOLD)
+    r63_route_title = _label(route_stack, "ПОДГОТОВКА МАРШРУТА", 15, CYAN)
+    r63_route_distance = _label(route_stack, "ТОЧКИ И ДИСТАНЦИЯ", 12, MUTED)
+    r63_route_reward = _label(route_stack,
+        "НАГРАДА ТОЛЬКО ЗА ЗАВЕРШЕНИЕ", 12, GOLD)
+    r63_route_loadout = _label(route_stack, "КОРАБЛЬ · ЭКИПАЖ", 11, MUTED)
+    r63_last_debrief_label = _label(route_stack,
+        "ПОСЛЕДНИЙ ВЫЛЕТ · ПОКА НЕТ", 11, CYAN)
 
     var ship_card := PanelContainer.new()
     ship_card.name = "R39_FleetCard"
@@ -307,6 +332,8 @@ func _build() -> void:
     ship_ownership_hint_r45 = _label(ship_stack,
         "Недоступную технику можно открыть в магазине.", 11, MUTED)
     readiness_label_r46 = _label(ship_stack, "ПОДГОТОВКА · ОРУЖИЕ / РАКЕТЫ / ВЕДОМЫЕ", 12, CYAN)
+    r63_fleet_route_hint = _label(ship_stack,
+        "РЕАЛЬНЫЙ ПОЛЁТ · ПОДРОБНОСТИ В РАЗДЕЛЕ «МИССИИ»", 11, GOLD)
     var upgrade_tools := HBoxContainer.new()
     upgrade_tools.name = "R54_DockedEngineAndWeaponWorkbench"
     upgrade_tools.add_theme_constant_override("separation", 6)
@@ -865,6 +892,36 @@ func refresh(data: Dictionary) -> void:
         int(equipment.get("rockets", 0)),
         int(equipment.get("wingmen", 0)),
         int(equipment.get("engine_rank", 0))]
+    var plan_r63: Dictionary = data.get("r63_flight_plan", {})
+    if is_instance_valid(r63_route_title):
+        var mode_r63: String = str(plan_r63.get("mode", "free"))
+        var plan_name: String = str(plan_r63.get("title", "СВОБОДНЫЙ ПОЛЁТ"))
+        r63_route_title.text = plan_name.to_upper()
+        r63_route_distance.text = (
+            "МАРШРУТ · %d ТОЧЕК · %d М · ≈%d С ПРИ 70 М/С" % [
+                int(plan_r63.get("waypoints", 0)),
+                int(plan_r63.get("route_m", 0)),
+                int(plan_r63.get("estimated_seconds", 0))]
+            if mode_r63 != "free" else
+            "СВОБОДНОЕ ИССЛЕДОВАНИЕ · БЕЗ ОБЯЗАТЕЛЬНЫХ ТОЧЕК")
+        r63_route_reward.text = (
+            "ПРИ УСПЕХЕ · %d CR / %d XP%s" % [
+                int(plan_r63.get("credits", 0)),
+                int(plan_r63.get("xp", 0)),
+                (" · ЛИМИТ %d С" % int(
+                    plan_r63.get("time_limit_sec", 0))) if
+                    mode_r63 == "contract" else ""]
+            if mode_r63 != "free" else
+            "НАГРАДА ПО МАРШРУТУ · НЕТ · СВОБОДНЫЙ ПОЛЁТ")
+        r63_route_loadout.text = (
+            "ПОДГОТОВКА · %d РАКЕТ · %d/2 ВЕДОМЫХ · МАРШРУТ ОЦЕНОЧНЫЙ" % [
+                int(plan_r63.get("rocket_count", 0)),
+                int(plan_r63.get("wingmen", 0))])
+        r63_fleet_route_hint.text = (
+            "СЛЕДУЮЩИЙ ВЫЛЕТ · %s · %d М" % [
+                plan_name, int(plan_r63.get("route_m", 0))])
+        r63_last_debrief_label.text = SortiePlannerR63Script.debrief_text(
+            data.get("r63_last_sortie", {}))
     if is_instance_valid(ship_preview_r44):
         ship_preview_r44.set_ship_type(ship_id)
         var livery_selected_for_preview: Dictionary = data.get(
