@@ -1407,6 +1407,16 @@ assert 'func _build_precision_r62(' in require(
     "R62_NX08_RealNavigationPod", "R62_NX12_TwinDriveHeatBaffle",
     "R62_NX21_SlopedArmorPanel")
 assert "NEBULA_R62_CINEMATIC_REAL_HANGAR_4_VIEWS_ACTUATORS_SUCCESS" in smoke
+r11_r62 = require("tests/browser_smoke_r11.mjs",
+    "capturePresentedFrame(", "Page.startScreencast",
+    "NEBULA_R11_PRECAPTURE_EVIDENCE",
+    "NEBULA_R11_CAPTURE_FAILURE_DETAILS",
+    "jpegDimensions(")
+r11_workflow_r62 = require("../../.github/workflows/nebula-r11-browser-visual-qa.yml",
+    "NEBULA_R11_EVIDENCE_SUMMARY", "node --check",
+    "NEBULA_R11_TESTED_PCK_BLOB")
+assert "fake_bitmap_allowed: false" in r11_r62
+
 require("docs/R62-CINEMATIC-HANGAR-QA.md",
     "R62", "SpotLight3D", "MeshInstance3D",
     "4", "R11", "NOT_PERFORMED")

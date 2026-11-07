@@ -16,3 +16,9 @@
 - No generated screenshots are substituted for evidence. R11 hosted SwiftShader visual capture currently FAILS and is NOT real GPU/AAA graphics certification. A separate R11 improvements pass must preserve fail-closed visual detection.
 - Physical Android/iPhone hardware QA **NOT_PERFORMED**; nothing claims 8K native output or hardware FPS.
 - Do not merge before 5/5 source CI. After merge require actual post-merge Web export, signed four-Git-blob release approval, rollback-safe SSH deployment and independent 4/4 public HTTPS parity. R61 remains the rollback until then.
+
+## R11 evidence rescue — no fabricated visual certificate
+
+The hosted SwiftShader R11 test historically fails to produce an authentic 720p screen even while separate WebAssembly flight/multitouch tests pass. This R62 branch adds a **Chrome DevTools Page.screencastFrame** *real presented-frame* capture method before slow/cancelled compositor readbacks, preserving the original strict JPEG resolution/byte thresholds. There is no illustration, mocked WebGL draw, generated file or assertion bypass. When the software compositor cannot provide pixels, the test still **FAILS** and uploads pre-capture WebGL/telemetry diagnostics plus the exact attempted methods. The workflow also records the tested committed .pck Git blob, runs `node --check`, and prints a fail-closed evidence summary.
+
+An R11 result remains **NOT VERIFIED** until an actual browser run on the exact exported binary reports SUCCESS. Even then it is only hosted SwiftShader, not physical GPU throughput, Apple/Android frame rate or AAA photorealism.
