@@ -173,7 +173,7 @@ var r61_sortie_start_distance: float = 0.0
 var r61_sortie_seconds: float = 0.0
 var r63_last_sortie: Dictionary = {}
 var r63_last_course: Dictionary = {}
-var r63_flight_corridor: Node3D
+var r63_flight_corridor
 var hangar_modules_r56: Dictionary = HangarWorkbenchR56Script.default_roster()
 var livery_owned_r59: Dictionary = HangarLiveriesR59Script.default_owned()
 var livery_equipped_r59: Dictionary = HangarLiveriesR59Script.default_equipped()
